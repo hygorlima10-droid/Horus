@@ -50,4 +50,7 @@ function pdAbrir(){
   setInterval(function(){ if (!document.hidden) try{ pdAtualizar(); }catch(e){} }, 8000);
   var o = esBarra; esBarra = function(){ var r = o.apply(this, arguments); try{ pdAtualizar(); }catch(e){} return r; };
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { pdLista: pdLista, pdAtualizar: pdAtualizar });
+  /* só para os testes e a auditoria visual abrirem cada ficha de cadastro */
+  var fichas = {}; ['abrirNovo', 'abrirNovoAcordo', 'abrirNovoAlvara', 'abrirNovaDespesa', 'abrirNovaReceita', 'abrirNovaMeta', 'abrirTransferencia', 'abrirModalSaldo', 'abrirRepasse', 'abrirClienteEdit', 'abrirExito', 'abrirReneg', 'abrirBaixa', 'abrirMovMeta', 'abrirLancamentos', 'agAbrir', 'prAbrirNovo', 'pzAbrir', 'abrirModalBackup'].forEach(function(n){ try{ fichas[n] = eval(n); }catch(e){} });
+  window.__horusTeste.fichas = fichas;
 })();
