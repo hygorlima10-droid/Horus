@@ -29,7 +29,7 @@ await page.getByText('Lista', { exact: true }).first().click(); await page.waitF
 const sub0 = await page.locator('#subtitle').innerText();
 check(await page.locator('#esBarra').isVisible() && await page.locator('.es-b.on').innerText() === 'Escritório', 'a barra aparece nas Iniciais, abrindo em "Escritório"');
 let t = await corpo(); check(t.includes('Zeta Meu') && t.includes('Zeta Outro') && t.includes('Zeta Sem'), 'em "Escritório" aparecem todas as Iniciais');
-check(await page.locator('.es-aviso').innerText().then((x) => /sem advogado definido/.test(x)), 'o aviso de registros sem advogado aparece (com o botão Definir)');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); const fp = await page.locator('#overlayPendC').innerText(); check(/sem advogado definido/i.test(fp) && await page.locator('#overlayPendC [data-pdl="sem"]').isVisible(), 'o selo Pendências abre a folha com os registros sem advogado (e o botão Definir)'); await page.evaluate(() => document.getElementById('overlayPend').classList.remove('show')); check(!(await page.locator('.es-aviso').count()), 'e a barra de escopo não repete mais o aviso');
 await page.click('.es-b[data-k="meus"]'); await page.waitForTimeout(700); await shot('meus');
 t = await corpo(); check(t.includes('Zeta Meu') && !t.includes('Zeta Outro') && !t.includes('Zeta Sem'), 'em "Meus" só aparece a Inicial em que a OAB do proprietário está entre os advogados');
 check(sub0 !== await page.locator('#subtitle').innerText() && /\b1 caso/.test(await page.locator('#subtitle').innerText()), 'e os totais da tela acompanham ("' + sub0 + '" → "' + await page.locator('#subtitle').innerText() + '")');
@@ -64,7 +64,7 @@ const doc1 = (await api('GET', '/api/db/casos')).j.docs.find((d) => d.id === 'zz
 
 console.log('\n— revisão: sem advogado definido');
 await page.click('[data-tab="processos"]'); await page.waitForTimeout(600);
-await page.click('.es-aviso [data-es="definir"]'); await page.waitForSelector('#overlayEsRev.show .es-it'); await shot('revisao');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); await page.click('#overlayPendC [data-pdl="sem"]'); await page.waitForSelector('#overlayEsRev.show .es-it'); await shot('revisao');
 t = await page.locator('#overlayEsRevC').textContent();
 check(t.includes('Zeta Sem') && t.includes('Inicial') && /registros? esperando você/.test(t), 'a revisão lista os registros sem advogado');
 await page.click('[data-esv="filtro"][data-k="casos"]'); check(await page.locator('#overlayEsRevC .es-it').count() >= 1, 'filtra por tipo');
@@ -77,7 +77,7 @@ await page.evaluate(() => document.getElementById('overlayEsRev').classList.remo
 
 console.log('\n— Publicações: "Minhas" por padrão');
 await page.click('[data-tab="publicacoes"]'); await page.waitForTimeout(1500);
-check(await page.locator('.es-b.on').innerText() === 'Minhas' && (await page.locator('.es-b').allInnerTexts()).join() === 'Minhas,Todas', 'o proprietário abre em "Minhas" (com "Todas" ao lado)');
+check(await page.locator('.es-b.on').innerText() === 'Minhas' && (await page.locator('.es-b').allInnerTexts()).join() === 'Minhas,Escritório', 'o proprietário abre em "Minhas" (com "Escritório" ao lado)');
 check(urls.some((u) => u.includes('escopo=meus')), 'e o app pede ao servidor só as publicações das OABs dele');
 urls.length = 0; await page.click('.es-b[data-k="todas"]'); await page.waitForTimeout(1200);
 check(urls.length > 0 && urls.every((u) => !u.includes('escopo=meus')), '"Todas" pede o escritório inteiro');

@@ -49,9 +49,7 @@ function esBarra(){
   if (age ? !esS.eu : (!E.ativo || !(ES_TABS[activeTab] || pub))){ barra.style.display = 'none'; return; }   // a Agenda tem a barra para todas as pessoas; as demais listas, só para o proprietário
   var sel = age ? agS.escopo : (pub ? E.pub : E.modo), ops = age ? [['minha', 'Minha agenda'], ['escritorio', 'Escritório']] : (pub ? [['minhas', 'Minhas'], ['todas', 'Escritório']] : [['meus', 'Meus'], ['escritorio', 'Escritório']]);
   var h2 = '<div class="es-seg">' + ops.map(function(o){ return '<button type="button" class="es-b' + (sel === o[0] ? ' on' : '') + '" data-es="modo" data-k="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
-  var n = esS.sem ? esS.sem.itens.length : 0;
-  if (age && esS.eu.papel === 'proprietario'){ var ns = agSemResp().length; if (ns) h2 += '<span class="es-aviso"><b>' + ns + (ns === 1 ? ' prazo ou audiência' : ' prazos e audiências') + '</b> sem responsável <button type="button" class="es-lk" data-es="agrev">Definir</button></span>'; }
-  if (!pub && !age && n) h2 += '<span class="es-aviso"><b>' + n + (n === 1 ? ' registro' : ' registros') + '</b> sem advogado definido <button type="button" class="es-lk" data-es="definir">Definir</button></span>';
+  /* os avisos de registros sem advogado e de prazos sem responsável agora ficam no selo "Pendências" do cabeçalho (cliente/pendencias.js) */
   barra.innerHTML = h2; barra.style.display = '';
   if (!pub && !age && (!esS.sem || Date.now() - esS.semEm > 60000)) esCarregarSem();
 }

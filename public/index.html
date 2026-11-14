@@ -1770,6 +1770,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -1848,6 +1849,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <span class="mes-label" id="mesAtualLabel">—</span>
           <button type="button" class="mes-btn" id="mesProximo" title="Próximo mês">›</button>
         </div>
+        <button type="button" class="pd-selo" id="pdSelo" hidden title="Pendências"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><b>0</b></button>
         <button type="button" class="tb-btn" id="discretoBtn" title="Ocultar valores (modo discreto)"><svg width="19" height="19"><use href="#ic-eye"/></svg></button>
       </div>
     </header>
@@ -19436,7 +19438,7 @@ function prRender(){
   var an = prS.sub === 'analises', res = prS.sub === 'resumo';
   qs('prAnalises').style.display = an ? '' : 'none'; qs('prListaBloco').style.display = (an || res) ? 'none' : ''; qs('prMdResumo').style.display = res ? '' : 'none'; var bn = w.querySelector('.ini-acoes'); if (bn) bn.style.display = an ? 'none' : '';
   if (an){ panRender(); return; }
-  if (res){ try{ qs('prMdResumo').innerHTML = (typeof lgBannerHtml === 'function' ? lgBannerHtml() : '') + mjPainel('processos', mjProcessos()); }catch(e){ console.error('resumo de processos', e); qs('prMdResumo').innerHTML = '<div class="financeiro-vazio">Não consegui montar o resumo. As outras sub-abas continuam funcionando.</div>'; } return; }
+  if (res){ try{ qs('prMdResumo').innerHTML = mjPainel('processos', mjProcessos()); }catch(e){ console.error('resumo de processos', e); qs('prMdResumo').innerHTML = '<div class="financeiro-vazio">Não consegui montar o resumo. As outras sub-abas continuam funcionando.</div>'; } return; }
   var mp = prMapa(), pm = pendentesPorDoc(), linhas = mp.ordem.map(function(n){ return mp.m[n]; });
   var ativos = linhas.filter(function(r){ return !prArquivado(r); });
   var comPrazo = ativos.filter(function(r){ return prPrazosAbertos(r).length > 0; }).length, parados = ativos.filter(function(r){ return prParado(r, pm); }).length;
@@ -20125,8 +20127,8 @@ function prAvisoVinc(){
   var el = qs('prAvisoVinc'); if (!el) return;
   var n = prIniciaisPend(false).length, nr = impContaRev(), rev = '';
   if (nr && prS.filtro === 'revisar') rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Revisão dos importados</div><div class="pb-aviso">Mostrando só os <b>' + nr + '</b> ' + (nr === 1 ? 'processo' : 'processos') + ' que faltam vincular a um cliente: vincule, escolha outro cliente, cadastre um novo ou exclua o que não quiser no sistema.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pr="filtro" data-v="andamento">Voltar à lista completa</button></div></div>';
-  else if (nr) rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Importados do Diário Oficial</div><div class="pb-aviso"><b>' + nr + '</b> ' + (nr === 1 ? 'processo espera' : 'processos esperam') + ' a revisão do cliente.</div><div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pr="rev-ir">Revisar agora</button></div></div>';
-  el.innerHTML = rev + (n ? '<div class="saldo-data" style="margin:0 0 8px">' + n + (n === 1 ? ' Inicial ainda não está ligada a um processo cadastrado' : ' Iniciais ainda não estão ligadas a um processo cadastrado') + '. Ao cadastrar o processo, escolha “Vincular a uma Inicial cadastrada”. Se uma Inicial não tem processo, marque isso no cadastro dela.</div>' : '') + (typeof lgBannerHtml === 'function' ? lgBannerHtml() : '');
+  /* os avisos "Importados esperando cliente", "Iniciais sem processo" e "Ligações a revisar" ficam no selo Pendências do cabeçalho */
+  el.innerHTML = rev;
 }
 function prVincNivel(c){
   var pre = (prEd && prEd.pre) || {}, nomes = (pre.nomes || []).concat([pre.autor, pre.reu]).filter(Boolean);
@@ -21938,9 +21940,7 @@ function esBarra(){
   if (age ? !esS.eu : (!E.ativo || !(ES_TABS[activeTab] || pub))){ barra.style.display = 'none'; return; }   // a Agenda tem a barra para todas as pessoas; as demais listas, só para o proprietário
   var sel = age ? agS.escopo : (pub ? E.pub : E.modo), ops = age ? [['minha', 'Minha agenda'], ['escritorio', 'Escritório']] : (pub ? [['minhas', 'Minhas'], ['todas', 'Escritório']] : [['meus', 'Meus'], ['escritorio', 'Escritório']]);
   var h2 = '<div class="es-seg">' + ops.map(function(o){ return '<button type="button" class="es-b' + (sel === o[0] ? ' on' : '') + '" data-es="modo" data-k="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
-  var n = esS.sem ? esS.sem.itens.length : 0;
-  if (age && esS.eu.papel === 'proprietario'){ var ns = agSemResp().length; if (ns) h2 += '<span class="es-aviso"><b>' + ns + (ns === 1 ? ' prazo ou audiência' : ' prazos e audiências') + '</b> sem responsável <button type="button" class="es-lk" data-es="agrev">Definir</button></span>'; }
-  if (!pub && !age && n) h2 += '<span class="es-aviso"><b>' + n + (n === 1 ? ' registro' : ' registros') + '</b> sem advogado definido <button type="button" class="es-lk" data-es="definir">Definir</button></span>';
+  /* os avisos de registros sem advogado e de prazos sem responsável agora ficam no selo "Pendências" do cabeçalho (cliente/pendencias.js) */
   barra.innerHTML = h2; barra.style.display = '';
   if (!pub && !age && (!esS.sem || Date.now() - esS.semEm > 60000)) esCarregarSem();
 }
@@ -22085,6 +22085,60 @@ function esRevClique(a, k){
     '.es-it{border-top:1px solid var(--border);padding:8px 0;align-items:flex-start}.es-aplicar{margin-top:10px;border:2px solid var(--accent,#C98500);border-radius:14px;padding:10px 12px}#overlayEsRevC>*{flex-shrink:0}';
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { esIniciar: esIniciar, esBarra: esBarra });
+})();
+
+/* ============================================================
+   PENDÊNCIAS (prefixo pd) — Onda 2 da auditoria
+   Um selo "⚑ N" no cabeçalho substitui os avisos repetidos em cada lista
+   ("N registros sem advogado definido · Definir", "Ligações a revisar", "Iniciais sem processo"…).
+   Ao tocar, abre uma folha com cada pendência e o botão que resolve (Definir, Revisar…).
+   ============================================================ */
+var PD_TABS = { processos: 1, peticoes: 1, acordos: 1, alvaras: 1, clientes: 1, arquivados: 1, agenda: 1 };
+function pdLista(){
+  var l = [], eu = esS.eu || {}, dono = eu.papel === 'proprietario', n;
+  try{ n = (dono && esS.sem) ? esS.sem.itens.length : 0; if (n) l.push({ k: 'sem', n: n, t: n + (n === 1 ? ' registro sem advogado definido' : ' registros sem advogado definido'), d: 'Enquanto não houver advogado, só você (e o estagiário) vê o registro.', b: 'Definir' }); }catch(e){}
+  try{ n = dono ? agSemResp().length : 0; if (n) l.push({ k: 'agrev', n: n, t: n + (n === 1 ? ' prazo ou audiência sem responsável' : ' prazos e audiências sem responsável'), d: 'Quem é responsável vê o item na própria agenda.', b: 'Definir' }); }catch(e){}
+  try{
+    if (eu.papel && eu.papel !== 'advogado'){
+      var r = lgRevCalcular(), p = []; n = r.sem.length + r.semCli.length + r.dif.length;
+      if (r.sem.length) p.push(r.sem.length + ' sem processo cadastrado'); if (r.semCli.length) p.push(r.semCli.length + ' sem cliente'); if (r.dif.length) p.push(r.dif.length + ' com cliente diferente');
+      if (n) l.push({ k: 'lg', n: n, t: 'Ligações a revisar', d: p.join(' · '), b: 'Revisar' });
+    }
+  }catch(e){}
+  try{ n = impContaRev(); if (n) l.push({ k: 'imp', n: n, t: n + (n === 1 ? ' processo importado espera o cliente' : ' processos importados esperam o cliente'), d: 'Vieram do Diário Oficial e faltam vincular a um cliente.', b: 'Revisar' }); }catch(e){}
+  try{ n = prIniciaisPend(false).length; if (n) l.push({ k: 'ini', n: n, t: n + (n === 1 ? ' Inicial sem processo cadastrado' : ' Iniciais sem processo cadastrado'), d: 'Ao cadastrar o processo, escolha “Vincular a uma Inicial cadastrada”. Se a Inicial não tem processo, marque isso no cadastro dela.', b: '' }); }catch(e){}
+  return l;
+}
+function pdAtualizar(){
+  var el = qs('pdSelo'); if (!el) return;
+  var dono = esS.eu && esS.eu.papel === 'proprietario';
+  if (dono && PD_TABS[activeTab] && (!esS.sem || Date.now() - esS.semEm > 60000)) esCarregarSem();
+  var l = PD_TABS[activeTab] ? pdLista() : [], n = l.reduce(function(a, x){ return a + x.n; }, 0);
+  el.hidden = !n; el.querySelector('b').textContent = n > 99 ? '99+' : n; el.setAttribute('aria-label', 'Pendências: ' + n + (n === 1 ? ' registro' : ' registros'));
+}
+function pdAbrir(){
+  var ov = sgMontar('overlayPend', 'Pendências');
+  if (!ov.getAttribute('data-pd')){
+    ov.setAttribute('data-pd', '1');
+    ov.addEventListener('click', function(e){
+      var b = e.target.closest ? e.target.closest('[data-pdl]') : null; if (!b) return;
+      var k = b.getAttribute('data-pdl'); ov.classList.remove('show');
+      if (k === 'sem') esAbrirRev(); else if (k === 'agrev') agAbrirRevResp(); else if (k === 'lg') lgAbrirRev();
+      else if (k === 'imp'){ setActiveTab('processos'); prS.sub = 'lista'; prS.filtro = 'revisar'; prS.mais = 1; try{ prRender(); }catch(x){} }
+    });
+  }
+  var l = pdLista();
+  qs('overlayPendC').innerHTML = l.length ? l.map(function(x){ return '<div class="pb-sec pd-it"><div class="pb-sec-t">' + escapeHtml(x.t) + '</div><div class="saldo-data">' + escapeHtml(x.d) + '</div>' + (x.b ? '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pdl="' + x.k + '">' + x.b + '</button></div>' : '') + '</div>'; }).join('') : '<div class="financeiro-vazio">Nada pendente.</div>';
+  ov.classList.add('show');
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.pd-selo{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3);font-weight:700;cursor:pointer;flex:none}.pd-selo[hidden]{display:none}.pd-selo b{background:var(--urgente);color:#fff;border-radius:99px;min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;font-size:var(--t1)}';
+  document.head.appendChild(st);
+  var b = qs('pdSelo'); if (b) b.addEventListener('click', pdAbrir);
+  setInterval(function(){ if (!document.hidden) try{ pdAtualizar(); }catch(e){} }, 8000);
+  var o = esBarra; esBarra = function(){ var r = o.apply(this, arguments); try{ pdAtualizar(); }catch(e){} return r; };
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { pdLista: pdLista, pdAtualizar: pdAtualizar });
 })();
 
 /*ES-FIM*/

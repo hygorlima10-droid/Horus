@@ -36,9 +36,10 @@ const C = () => page.locator('#overlayLgRevC').textContent();
 
 console.log('\n— aviso na aba Processos');
 await page.click('[data-tab="processos"]'); await page.waitForTimeout(1200);
-const av = await page.locator('#prMdResumo').innerText();
-check(/2 sem processo cadastrado/.test(av) && /3 sem cliente/.test(av) && /1 com cliente diferente/.test(av), 'o aviso conta: 2 sem processo, 3 sem cliente, 1 com cliente diferente (' + av.replace(/\n/g, ' ').slice(0, 160) + ')');
-await page.click('[data-lgr="abrir"]'); await page.waitForSelector('#overlayLgRev.show .es-it'); await shot('rev-sem');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(500); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300);
+const av = await page.locator('#overlayPendC').innerText();
+check(/2 sem processo cadastrado/.test(av) && /3 sem cliente/.test(av) && /1 com cliente diferente/.test(av), 'o selo Pendências conta: 2 sem processo, 3 sem cliente, 1 com cliente diferente (' + av.replace(/\n/g, ' ').slice(0, 160) + ')');
+await page.click('#overlayPendC [data-pdl="lg"]'); await page.waitForSelector('#overlayLgRev.show .es-it'); await shot('rev-sem');
 let t = await C();
 check(t.includes(NB) && t.includes(NC) && t.includes('Inicial, Acordo') && t.includes('Agenda'), 'aba "Sem processo": o número que está em Inicial e Acordo e o que só está na Agenda');
 

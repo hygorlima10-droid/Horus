@@ -33,7 +33,7 @@ check(cfg && cfg.corte && cfg.corte >= agora, 'a data de corte (dia da implanta�
 const pend = await page.evaluate(() => window.__horusTeste.prIniciaisPend(true).sort());
 check(JSON.stringify(pend) === JSON.stringify(['ca', 'cb', 'cc']), 'pendentes: Iniciais sem processo cadastrado, inclusive arquivada e a que tem número solto; ficam de fora extrajudicial, "sem processo" e a já ligada: ' + pend.join(','));
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(800);
-check(/2 Iniciais ainda não estão ligadas/.test(await t('#prAvisoVinc')), 'a aba Processos avisa quantas Iniciais faltam (as arquivadas não contam no aviso): ' + (await t('#prAvisoVinc')).slice(0, 60));
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); check(/2 Iniciais sem processo cadastrado/i.test(await t('#overlayPendC')), 'o selo Pendências avisa quantas Iniciais faltam (as arquivadas não contam no aviso): ' + (await t('#overlayPendC')).slice(0, 80)); await page.evaluate(() => document.getElementById('overlayPend').classList.remove('show'));
 
 // cadastrar processo (como se viesse da publicação, com o nome completo do cliente)
 await page.evaluate(n => window.__horusTeste.prAbrirNovo({ numero: n, partes: 'Cooperativa Mista dos Produtores de Leite de Morrinhos - Complem x Banco Alfa', autor: 'Cooperativa Mista dos Produtores de Leite de Morrinhos - Complem', reu: 'Banco Alfa S/A', nomes: ['Cooperativa Mista dos Produtores de Leite de Morrinhos - Complem'], ids: [], origem: 'publicacao' }), NOVO); await page.waitForTimeout(500);
@@ -66,7 +66,7 @@ check(/Toque|Desfazer/i.test(await t('#toast')) || /ligado à Inicial/i.test(awa
 const mapa = await page.evaluate(n => { const c = document.querySelector('[data-pr-card="' + n.replace(/\D/g, '') + '"]'); return c ? c.innerText : ''; }, NOVO);
 check(/Inicial/.test(mapa) && /Complem/.test(mapa), 'na lista única o processo já aparece junto com a Inicial (sem duplicar): ' + mapa.replace(/\n/g, ' | ').slice(0, 100));
 check(await page.evaluate(n => document.querySelectorAll('[data-pr-card="' + n.replace(/\D/g, '') + '"]').length, NOVO) === 1, 'um só cartão para o processo');
-check(/1 Inicial ainda/.test(await t('#prAvisoVinc')), 'o aviso caiu para 1');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); check(/1 Inicial sem processo cadastrado/i.test(await t('#overlayPendC')), 'o aviso caiu para 1'); await page.evaluate(() => document.getElementById('overlayPend').classList.remove('show'));
 // desfazer
 await page.evaluate(() => { const b = document.querySelector('#toast button'); if (b) b.click(); }); await page.waitForTimeout(1200);
 check((await docs('casos')).filter(c => c.id === 'ca')[0].numeroProcesso === '', 'Desfazer devolve a Inicial como estava');

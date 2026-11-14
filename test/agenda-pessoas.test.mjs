@@ -71,8 +71,8 @@ check(tar && tar.data.compartilhada === true && Array.isArray(tar.data.resp) && 
 
 console.log('\n— revisão em lote: sem responsável');
 await page.waitForTimeout(500);
-check(/sem responsável/.test(await page.locator('#esBarra').innerText()), 'a barra avisa quantos prazos e audiências estão sem responsável');
-await page.click('#esBarra [data-es="agrev"]'); await page.waitForSelector('#overlayAgRev.show .es-it'); await shot('revisao');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); check(/sem responsável/i.test(await page.locator('#overlayPendC').innerText()), 'o selo Pendências avisa quantos prazos e audiências estão sem responsável');
+await page.click('#overlayPendC [data-pdl="agrev"]'); await page.waitForSelector('#overlayAgRev.show .es-it'); await shot('revisao');
 t = await page.locator('#overlayAgRevC').textContent();
 check(t.includes('Prazo sem responsável m6 da Ana') && t.includes('Prazo do Bruno m2') && /sugestão: Ana/.test(t) && /sugestão: Bruno/.test(t), 'a revisão lista os itens sem responsável com a sugestão tirada do processo');
 await page.click('[data-arv="sugestoes"]'); await page.click('[data-arv="aplicar"]'); await page.waitForTimeout(2500);
