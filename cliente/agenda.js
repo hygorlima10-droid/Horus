@@ -196,6 +196,7 @@ function agMontarTela(){
   var w = qs('agWrap'); if (!w || w.getAttribute('data-ok')) return; w.setAttribute('data-ok', '1');
   w.addEventListener('input', function(e){ if (e.target && e.target.id === 'agBusca'){ agS.busca = e.target.value; var c = qs('agCorpo'); if (c) c.innerHTML = prComMemo(agCorpo); } });
   w.addEventListener('click', function(e){
+    if (ltS.on){ var sw = e.target.closest ? e.target.closest('.agsel') : null; if (sw){ e.preventDefault(); ltToggle(sw.getAttribute('data-k')); return; } }
     var b = e.target.closest ? e.target.closest('[data-ag]') : null; if (!b) return;
     var a = b.getAttribute('data-ag'), v = b.getAttribute('data-v'), k = b.getAttribute('data-k');
     if (a === 'vista'){ agS.vista = v; mdLembrar('agenda', v); agRender(); }
@@ -204,6 +205,7 @@ function agMontarTela(){
     else if (a === 'rel') rptAgenda();
     else if (a === 'importar'){ agS.menu = false; agiAbrir(); }
     else if (a === 'calc'){ agS.menu = false; pzAbrir({}); }
+    else if (a === 'selmodo') ltAtivar(!ltS.on);
     else if (a === 'flt') agdFiltrosAbrir();
     else if (a === 'menu'){ agS.menu = !agS.menu; agRender(); }
     else if (a === 'det') agdAbrir(k);
@@ -245,10 +247,11 @@ function agRenderIn(){
   agMontarTela();
   var w = qs('agWrap'); if (!w) return;
   if (!agS.ref){ agS.ref = agHoje(); agS.mes = agHoje().slice(0, 7); agS.sel = agHoje(); }
+  if (ltS.on && (agS.vista === 'resumo' || agS.vista === 'quadro')){ ltS.on = false; ltS.sel = {}; ltBarraRemover(); }
   /* sub-abas padrão (Fase 2): Resumo, Semana, Mês, Lista e Quadro; a última usada fica lembrada */
   if (!agS.mdOk){ agS.mdOk = 1; if (agS.vista === 'semana') agS.vista = mdInicial('agenda', ['meudia', 'semana', 'mes', 'lista', 'quadro']); }
   var h = '<div id="agSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['meudia', 'Meu dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['lista', 'Lista'], ['quadro', 'Quadro']], agS.vista, function(k){ return 'data-ag="vista" data-v="' + k + '"'; }) + '</div>' +
-    '<div class="ini-acoes ag-acoes md-um"><button type="button" class="acao acao-ouro" data-ag="novo"><svg><use href="#ic-plus"/></svg><span>Novo compromisso</span></button></div><div style="text-align:right;margin:-4px 2px 2px"><button type="button" class="btn-text" data-ag="calc">🧮 Calculadora de prazos</button></div>';
+    '<div class="ini-acoes ag-acoes md-um"><button type="button" class="acao acao-ouro" data-ag="novo"><svg><use href="#ic-plus"/></svg><span>Novo compromisso</span></button></div><div style="text-align:right;margin:-4px 2px 2px">' + (agS.vista === 'resumo' || agS.vista === 'quadro' ? '' : '<button type="button" class="btn-text" data-ag="selmodo">' + (ltS.on ? '✕ Cancelar seleção' : '☑ Selecionar') + '</button> &nbsp; ') + '<button type="button" class="btn-text" data-ag="calc">🧮 Calculadora de prazos</button></div>';
   if (agS.vista === 'resumo' || agS.vista === 'meudia'){ w.innerHTML = h + '<div id="agCorpo">' + agCorpo() + '</div>'; if (agS.vista === 'resumo') agCarregarCarga(); return; }
   if (agS.vista !== 'quadro' && agS.filtro === 'alvara') agS.filtro = 'tudo';
   h += '<input type="search" id="agBusca" class="ag-busca" placeholder="Buscar compromisso, processo ou cliente" autocomplete="off" value="' + escapeHtml(agS.busca || '') + '" style="margin-top:8px">';
@@ -405,11 +408,11 @@ function agCartao(i){
   if (esS.eu) tags += agRespAvatares(i, 3);
   else (Array.isArray(d.responsaveis) ? d.responsaveis : []).slice(0, 3).forEach(function(n){ tags += '<span class="agc-av" title="' + escapeHtml(n) + '">' + escapeHtml(agdSigla(n)) + '</span>'; });
   var ok = agBotaoOk(i);
-  return '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
+  return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
     (i.cliente ? '<div class="agc-s">' + escapeHtml(i.cliente) + '</div>' : '') +
     (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">📍 ' + escapeHtml(i.local) + '</div>' : '') +
     (i.processo ? '<div class="agc-n"><span>' + escapeHtml(i.processo) + '</span><button type="button" class="agc-cp" data-ag="copiar" data-n="' + escapeHtml(i.processo) + '" aria-label="Copiar o número do processo" title="Copiar o número">' + AGD_COPIA + '</button></div>' : '') +
-    (aberto ? agDatasPrazo(i) : '') + '<div class="agc-tg">' + tags + '</div>' + agAcoesCartao(i) + '</div>' + ok + '</div>';
+    (aberto ? agDatasPrazo(i) : '') + '<div class="agc-tg">' + tags + '</div>' + agAcoesCartao(i) + '</div>' + ok + '</div>');
 }
 
 /* ---------- Meu dia: só o que pede ação hoje ---------- */
@@ -428,7 +431,7 @@ function agMini(i){
   var hoje = agHoje(), c = agChip(i), cls = i.concluido ? 'ok' : (i.situacao === 'pronta' ? 'pronta' : (i.tipo === 'audiencia' ? 'au' : (i.tipo === 'tarefa' ? 'pe' : 'pr')));
   if (agTemTrab(i) && i.trabalhar < hoje && i.data >= hoje) c = { t: 'Trabalho atrasado', c: 'atraso' };
   var lab = i.tipo === 'audiencia' ? 'Audiência' + (i.hora ? ' · ' + i.hora : '') : (i.tipo === 'tarefa' ? 'Tarefa' : 'Prazo');
-  return '<div class="agc ' + cls + '" data-ag="det" data-k="' + escapeHtml(i.key) + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(lab) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div><div class="agc-s">' + agMiniSub(i) + '</div>' + agAcoesCartao(i) + '</div>' + agBotaoOk(i) + '</div>';
+  return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + escapeHtml(i.key) + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(lab) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div><div class="agc-s">' + agMiniSub(i) + '</div>' + agAcoesCartao(i) + '</div>' + agBotaoOk(i) + '</div>');
 }
 function agMeuDiaHtml(){
   var hoje = agHoje(), am = pbSoma(hoje, 1), todos = agEscopoLista(agItens()), ab = todos.filter(function(i){ return !i.concluido; });
