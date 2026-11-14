@@ -1786,6 +1786,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -2394,7 +2400,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
       <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
         <div class="field" id="esResp_casos"></div>
-      <div class="field" id="rcDiv_casos"></div>
         <div class="field" id="rcDiv_casos"></div>
       </div>
       <div class="form-error" id="formError"></div>
@@ -2589,7 +2594,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
       <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
         <div class="field" id="esResp_termosAcordo"></div>
-      <div class="field" id="rcDiv_termosAcordo"></div>
         <div class="field" id="rcDiv_termosAcordo"></div>
       </div>
       <div class="form-error" id="formErrorAcordo"></div>
@@ -2687,7 +2691,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
       <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
         <div class="field" id="esResp_alvaras"></div>
-      <div class="field" id="rcDiv_alvaras"></div>
         <div class="field" id="rcDiv_alvaras"></div>
       </div>
       <div class="form-error" id="formErrorAlvara"></div>
@@ -3266,6 +3269,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       </button>
     </div>
     <div class="modal-body">
+      <div class="f-sec"><div class="f-sec-t">Pagamento</div>
       <div class="segmented" id="baixaModo" style="display:none;">
         <button type="button" class="seg-btn active" data-value="cobrancas">Cobranças cadastradas</button>
         <button type="button" class="seg-btn" data-value="avulsa">Outra receita</button>
@@ -3290,6 +3294,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         <label class="field-label" for="baixaData">Data do recebimento</label>
         <input type="date" id="baixaData">
       </div>
+      </div>
+
+      <div class="f-sec"><div class="f-sec-t">Divisão do que entrou</div>
       <div class="parcela-sum" id="baixaTotal"></div>
       <div class="bx-div" id="baixaDiv" style="display:none;">
         <div class="bx-div-head"><b>Dividir o que entrou</b>
@@ -3304,6 +3311,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <div class="bx-div-lin bx-div-pj"><div class="bx-div-nm">Fica na PJ<small>o que sobra</small></div><b id="bxPj">R$ 0,00</b></div>
         </div>
       </div>
+      </div>
+
       <details class="bx-saldo" id="baixaSaldoBox">
         <summary id="baixaSaldoResumo">Conferir saldo das contas (opcional)</summary>
         <div class="parcela-sum" id="baixaSaldoInfo"></div>
@@ -3349,7 +3358,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       </button>
     </div>
     <div class="modal-body">
-      <div id="rnParcelaBox" style="display:none;">
+      <div id="rnParcelaBox" class="f-sec" style="display:none;"><div class="f-sec-t">Adiar só esta parcela</div>
         <div class="field">
           <label class="field-label" for="rnParcelaSel">Parcela</label>
           <select class="filter-select" id="rnParcelaSel" style="width:100%;"></select>
@@ -3364,10 +3373,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <input type="text" id="rnParcelaObs" placeholder="Ex.: Murilo viajando, volta dia 15" autocomplete="off">
         </div>
         <div class="cli-obs">Só esta parcela muda de data. O valor e as outras parcelas continuam com o vencimento original, a não ser que você adie cada uma.</div>
-        <button type="button" class="btn-text" id="rnParaContrato" style="margin-top:6px;">Renegociar o contrato todo →</button>
+        <button type="button" class="btn btn-ghost" id="rnParaContrato">Renegociar o contrato todo</button>
       </div>
-      <div id="rnContratoBox">
-      <button type="button" class="btn-text" id="rnParaParcela" style="margin-bottom:6px;">← Adiar só uma parcela</button>
+      <div id="rnContratoBox" class="f-sec"><div class="f-sec-t">Renegociar o contrato</div>
+      <button type="button" class="btn btn-ghost" id="rnParaParcela">Adiar só uma parcela</button>
       <div class="cli-box" id="rnInfo"></div>
       <div class="field">
         <label class="field-label" for="rnDesc">Desconto sobre o saldo (opcional)</label>
@@ -15796,7 +15805,7 @@ function obraResumo(){
 function obraAbrirForm(titulo, html, salvar, rotulo, perigo){
   obraForm = { salvar: salvar };
   qs('obraFormTitulo').textContent = titulo;
-  qs('obraFormCorpo').innerHTML = html + '<div class="form-error" id="obraFormErro"></div>';
+  qs('obraFormCorpo').innerHTML = fSec(escapeHtml(String(titulo).replace(/^(Novo|Nova|Editar|Editar\s+o|Editar\s+a)\s+/i, '').replace(/^./, function(c){ return c.toUpperCase(); })), html) + '<div class="form-error" id="obraFormErro"></div>';
   qs('obraFormSalvar').textContent = rotulo || 'Salvar';
   qs('obraFormSalvar').className = 'btn ' + (perigo ? 'btn-ghost acao-excluir' : 'btn-primary');
   qs('overlayObraForm').classList.add('show');
@@ -17091,7 +17100,7 @@ document.addEventListener('change', function(ev){
 
 /* ---------- comprovantes (fotos e PDFs das notas) ---------- */
 var OB7_MAX_ANEXOS = 4, ob7Gasto = null;
-function ob7ClipHtml(m){ var n = (m.anexos || []).length; return '<button type="button" class="btn-text" data-ob7="anexos" data-id="' + escapeHtml(m.id) + '" title="Comprovantes">' + (n ? '\uD83D\uDCCE ' + n : 'Anexar') + '</button>'; }
+function ob7ClipHtml(m){ var n = (m.anexos || []).length; return '<button type="button" class="btn-text" data-ob7="anexos" data-id="' + escapeHtml(m.id) + '" title="Comprovantes">' + (n ? ico('paperclip', 14) + n : 'Anexar') + '</button>'; }
 function ob7B64(blob){ return new Promise(function(res, rej){ var fr = new FileReader(); fr.onload = function(){ res(String(fr.result).split(',')[1]); }; fr.onerror = function(){ rej(new Error('Não consegui ler o arquivo.')); }; fr.readAsDataURL(blob); }); }
 function ob7B64Blob(b64, tipo){ var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: tipo }); }
 function ob7Api(url, metodo, corpo){
@@ -17116,7 +17125,7 @@ function ob7DesenharAnexos(msg){
   var l = m.anexos || [], temImg = l.some(function(a){ return /^image\//.test(a.tipo); });
   qs('anTitulo').textContent = 'Comprovantes — ' + (m.descricao || 'gasto');
   qs('anCorpo').innerHTML = '<div class="saldo-data">' + fmtMoeda(m.valor) + (m.nf ? ' · nota ' + escapeHtml(m.nf) : '') + ' · até ' + OB7_MAX_ANEXOS + ' arquivos. A foto é reduzida no aparelho antes de enviar; só você vê.</div>' +
-    (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? '\uD83D\uDDBC\uFE0F ' : '\uD83D\uDCC4 ') + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
+    (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? ico('file-text', 16) : ico('file-text', 16)) + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
     '<input type="file" id="anArq" accept="image/*,application/pdf" style="display:none;">' +
     (l.length < OB7_MAX_ANEXOS ? '<button type="button" class="btn btn-primary" data-an="add" style="width:100%;justify-content:center;">Anexar foto ou PDF</button>' : '') +
     (temImg && paTemSample() ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
@@ -18312,6 +18321,7 @@ function pbMontarOabs(){
       pbEdOabs.push({ id: '', nome: nome || ('OAB ' + num + '/' + uf), numero: num, uf: uf, ativo: true, escopo: qs('pbo_esc').value, avisar: qs('pbo_av').checked }); pbDesenharOabs();
     }
     else if (a === 'salvar') pbSalvarOabs();
+    else if (a === 'cancelar') d.classList.remove('show');
   });
 }
 function pbAbrirOabs(){ pbMontarOabs(); pbEdOabs = JSON.parse(JSON.stringify(pbS.oabs)); pbDesenharOabs(); qs('overlayPbOab').classList.add('show'); }
@@ -18325,17 +18335,17 @@ function pbDesenharOabs(){
   var c = qs('pboCorpo'); if (!c) return;
   var h = '<div class="parcela-sum">O app lê o Diário Oficial de <b>cada OAB abaixo</b> todo dia às <b>10:00</b>. Use para o seu número e para o de advogados com processos em conjunto (sócio, parceiro).</div>';
   h += pbEdOabs.map(function(o, i){
-    return '<div class="pb-oab"><div class="pb-oab-top"><div class="field" style="flex:1"><label class="field-label" for="pbo_nm' + i + '">Nome</label><input type="text" id="pbo_nm' + i + '" maxlength="60" value="' + escapeHtml(o.nome) + '"></div><div class="pb-oab-n"><b>OAB ' + escapeHtml(o.numero + '/' + o.uf) + '</b>' + (o.principal ? '<span class="pb-tg ok">principal</span>' : '') + '</div></div>' +
+    return '<div class="pb-oab f-sec"><div class="pb-oab-top"><div class="field" style="flex:1"><label class="field-label" for="pbo_nm' + i + '">Nome</label><input type="text" id="pbo_nm' + i + '" maxlength="60" value="' + escapeHtml(o.nome) + '"></div><div class="pb-oab-n"><b>OAB ' + escapeHtml(o.numero + '/' + o.uf) + '</b>' + (o.principal ? '<span class="pb-tg ok">principal</span>' : '') + '</div></div>' +
       '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_at' + i + '"' + (o.ativo ? ' checked' : '') + '><span class="ad-t">Ler esta OAB</span></label>' +
       '<div class="field"><label class="field-label" for="pbo_es' + i + '">Mostrar</label><select id="pbo_es' + i + '" class="filter-select"><option value="tudo"' + (o.escopo === 'tudo' ? ' selected' : '') + '>todas as publicações</option><option value="conjunto"' + (o.escopo === 'conjunto' ? ' selected' : '') + '>só processos em conjunto comigo</option></select></div>' +
       '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_av' + i + '"' + (o.avisar ? ' checked' : '') + '><span class="ad-t">Avisar no celular quando chegar publicação nova</span></label>' +
       (o.erro ? '<div class="form-error">Última leitura falhou: ' + escapeHtml(o.erro) + '</div>' : '') + (!o.principal ? '<button type="button" class="btn-text" data-pbo="remover" data-i="' + i + '" style="color:var(--urgente)">Remover esta OAB</button>' : '') + '</div>';
   }).join('');
-  h += '<div class="pb-oab pb-novo"><div class="pb-sec-t">Adicionar advogado</div><div class="field"><label class="field-label" for="pbo_nome">Nome (para você identificar)</label><input type="text" id="pbo_nome" maxlength="60" placeholder="Ex.: Murilo, sócio"></div>' +
+  h += '<div class="pb-oab pb-novo f-sec"><div class="f-sec-t">Adicionar advogado</div><div class="field"><label class="field-label" for="pbo_nome">Nome (para você identificar)</label><input type="text" id="pbo_nome" maxlength="60" placeholder="Ex.: Murilo, sócio"></div>' +
     '<div class="pb-dois"><div class="field"><label class="field-label" for="pbo_num">Número da OAB</label><input type="text" id="pbo_num" inputmode="numeric" maxlength="7" placeholder="49308"></div><div class="field"><label class="field-label" for="pbo_uf">UF</label><input type="text" id="pbo_uf" maxlength="2" value="GO" style="text-transform:uppercase"></div></div>' +
     '<div class="field"><label class="field-label" for="pbo_esc">Mostrar</label><select id="pbo_esc" class="filter-select"><option value="conjunto">só processos em conjunto comigo</option><option value="tudo">todas as publicações</option></select></div>' +
     '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_av" checked><span class="ad-t">Avisar no celular</span></label><button type="button" class="btn btn-ghost" data-pbo="novo" style="width:100%;justify-content:center;">Adicionar à lista</button></div>' +
-    '<div class="form-error" id="pboErro"></div><button type="button" class="btn btn-primary" data-pbo="salvar" style="width:100%;justify-content:center;">Salvar e buscar agora</button>';
+    '<div class="form-error" id="pboErro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-pbo="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-pbo="salvar">Salvar e buscar agora</button></div>';
   c.innerHTML = h;
 }
 function pbSalvarOabs(){
@@ -21828,14 +21838,14 @@ function usPermsHtml(papel, perm, atr){
 function usHtmlConvidar(){
   var f = usS.form;
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convidar pessoa</div><div class="pb-aviso">Ela recebe um link e cria a própria senha. O e-mail que você informar será o login dela, e ela não consegue trocá-lo.</div></div>' +
-    '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
+    fSec('Quem é', '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
     '<div class="field"><label class="field-label" for="usEmail">E-mail (será o login)</label><input type="email" id="usEmail" data-usf="email" maxlength="120" value="' + escapeHtml(f.email) + '" autocomplete="off"></div>' +
-    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>' +
-    (f.papel === 'advogado' ? '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>' : '') +
-    '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode</div></div>' + usPermsHtml(f.papel, f.perm, 'data-usp') +
+    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>') +
+    (f.papel === 'advogado' ? fSec('OAB', '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>') : '') +
+    fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp')) +
     '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + ' Nenhum dos dois abre as suas finanças pessoais.</div>' +
     (f.erro ? '<div class="form-error">' + escapeHtml(f.erro) + '</div>' : '') +
-    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="gerar">Gerar link de convite</button></div>';
+    '<div class="f-rod-in"><button type="button" class="btn btn-primary" data-us="gerar">Gerar link de convite</button></div>';
 }
 function usGerar(){
   var f = usS.form; if (usS.ocupado) return;
@@ -21862,12 +21872,11 @@ function usAbrirFicha(id){ usS.sel = id; usS.tela = 'ficha'; usS.sessoes = []; u
 function usHtmlFicha(){
   var u = usPessoa(usS.sel); if (!u) return usVoltar() + '<div class="pb-aviso">Pessoa não encontrada.</div>';
   var h = usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">' + escapeHtml(u.nome) + '</div><div class="pb-aviso">' + escapeHtml(u.email) + ' · ' + US_PAPEL[u.papel] + (u.ativo ? '' : ' · <b>desativado</b>') + (u.criadoEm ? ' · entrou em ' + escapeHtml(new Date(u.criadoEm).toLocaleDateString('pt-BR')) : '') + '</div></div>';
-  h += '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>';
-  if (u.papel === 'advogado') h += '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>';
-  h += '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">Permissões</div></div>' + usPermsHtml(u.papel, u.permissoes, 'data-usp');
-  h += '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">Aparelhos conectados</div></div>' + (usS.sessoes.length ? usS.sessoes.map(function(s){
+  h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
+  h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
+ h += fSec('Aparelhos conectados', (usS.sessoes.length ? usS.sessoes.map(function(s){
     return '<div class="pb-card" style="--pb-bar:#8A93AD"><div class="pb-l1"><span>' + sgSegIcone(s.rotulo) + ' ' + escapeHtml(s.rotulo) + '</span></div><div class="pb-proc">' + (s.lugar ? escapeHtml(s.lugar) + ' · ' : '') + 'último uso ' + escapeHtml(sgDataHora(s.ultimo)) + '</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="encerrar" data-k="' + escapeHtml(s.id) + '">Encerrar</button></div></div>';
-  }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>');
+  }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>'));
   h += '<div class="pb-acts">' + (usS.sessoes.length > 1 ? '<button type="button" class="btn btn-ghost pb-b" data-us="encerrar-todas">Encerrar todas as sessões</button>' : '') +
     (u.ativo ? (usS.msg === 'desativar' ? '<button type="button" class="btn btn-primary pb-b" data-us="desativar-ok">Confirmar: desativar agora</button><button type="button" class="btn btn-ghost pb-b" data-us="desativar-nao">Cancelar</button>' : '<button type="button" class="btn btn-ghost pb-b" data-us="desativar">Desativar acesso</button>') : '<button type="button" class="btn btn-primary pb-b" data-us="reativar">Reativar acesso</button>') + '</div>' +
     '<div class="pb-aviso" style="margin:6px 4px">Desativar tira o acesso na hora e encerra as sessões, mas guarda o histórico do que a pessoa fez. Dá para reativar. Não existe “excluir pessoa”.</div>';
@@ -22187,7 +22196,7 @@ function pdAbrir(){
   var o = esBarra; esBarra = function(){ var r = o.apply(this, arguments); try{ pdAtualizar(); }catch(e){} return r; };
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { pdLista: pdLista, pdAtualizar: pdAtualizar });
   /* só para os testes e a auditoria visual abrirem cada ficha de cadastro */
-  var fichas = {}; ['abrirNovo', 'abrirNovoAcordo', 'abrirNovoAlvara', 'abrirNovaDespesa', 'abrirNovaReceita', 'abrirNovaMeta', 'abrirTransferencia', 'abrirModalSaldo', 'abrirRepasse', 'abrirClienteEdit', 'abrirExito', 'abrirReneg', 'abrirBaixa', 'abrirMovMeta', 'abrirLancamentos', 'agAbrir', 'prAbrirNovo', 'pzAbrir', 'abrirModalBackup'].forEach(function(n){ try{ fichas[n] = eval(n); }catch(e){} });
+  var fichas = {}; ['abrirNovo', 'abrirNovoAcordo', 'abrirNovoAlvara', 'abrirNovaDespesa', 'abrirNovaReceita', 'abrirNovaMeta', 'abrirTransferencia', 'abrirModalSaldo', 'abrirRepasse', 'abrirClienteEdit', 'abrirExito', 'abrirReneg', 'abrirBaixa', 'abrirMovMeta', 'abrirLancamentos', 'agAbrir', 'prAbrirNovo', 'pzAbrir', 'abrirModalBackup', 'pbAbrirOabs', 'usAbrir', 'obraAbrirGasto', 'abrirBaixa', 'abrirReneg'].forEach(function(n){ try{ fichas[n] = eval(n); }catch(e){} });
   window.__horusTeste.fichas = fichas;
 })();
 

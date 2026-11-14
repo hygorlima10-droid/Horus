@@ -12,7 +12,7 @@ const MEDE = () => {
     const r = ((e.type === 'checkbox' || e.type === 'radio') && e.closest('label') ? e.closest('label') : e).getBoundingClientRect(); return r.height < 36 || r.width < 36;
   }).map(e => { const r = e.getBoundingClientRect(); return (e.tagName.toLowerCase() + '.' + String(e.className).split(/\s+/).filter(Boolean).slice(0, 2).join('.')) + ' "' + (e.innerText || e.value || e.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim().slice(0, 22) + '" ' + Math.round(r.width) + 'x' + Math.round(r.height); });
 };
-const FICHAS = [['abrirNovo', []], ['abrirNovoAcordo', []], ['abrirNovoAlvara', []], ['abrirNovaDespesa', []], ['abrirNovaReceita', []], ['abrirNovaMeta', []], ['abrirTransferencia', []], ['abrirModalSaldo', []], ['abrirClienteEdit', [{ nome: '', pagador: 'cliente' }]], ['agAbrir', [null]], ['prAbrirNovo', [null]], ['pzAbrir', [{}]]];
+const FICHAS = [['abrirNovo', []], ['abrirNovoAcordo', []], ['abrirNovoAlvara', []], ['abrirNovaDespesa', []], ['abrirNovaReceita', []], ['abrirNovaMeta', []], ['abrirTransferencia', []], ['abrirModalSaldo', []], ['abrirClienteEdit', [{ nome: '', pagador: 'cliente' }]], ['agAbrir', [null]], ['prAbrirNovo', [null]], ['pzAbrir', [{}]], ['pbAbrirOabs', []], ['obraAbrirGasto', []]];
 for (const [w, h] of [[390, 844], [360, 740], [1280, 900]]) {
   const page = await (await br.newContext({ viewport: { width: w, height: h }, timezoneId: 'America/Sao_Paulo' })).newPage(); await page.route(/fonts\./, x => x.abort());
   await page.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { } });

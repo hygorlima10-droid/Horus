@@ -435,9 +435,6 @@ rep("    if (erro){ qs('formError').textContent = erro; return; }\n\n    var cas
 rep("function repasseDoc(doc){\n  var r = doc && doc.repasse;", "function repasseDoc(doc){\n  var rd = rcRepasseDeDivisao(doc); if (rd !== undefined) return rd;   /* divisão entre advogados (5.6) */\n  var r = doc && doc.repasse;")
 rep("    u.parceiro = r ? String(r.parceiro || '').trim() : '';\n  });", "    u.parceiro = r ? String(r.parceiro || '').trim() : '';\n    rcAjustarUnidade(u, doc);   /* pagamento já feito: vale a divisão e a conta daquele momento */\n  });")
 rep("        if (!pagoV) n.recebidoEm = agora;\n        else if (v && v.recebidoEm) n.recebidoEm = v.recebidoEm;\n      } else if ('recebidoEm' in n){\n        delete n.recebidoEm;\n      }", "        if (!pagoV){ n.recebidoEm = agora; rcCarimbarDivisao(n, novo, agora); }\n        else if (v && v.recebidoEm) n.recebidoEm = v.recebidoEm;\n      } else if ('recebidoEm' in n){\n        delete n.recebidoEm; delete n.divisaoRec;\n      }")
-rep('<div class="field" id="esResp_casos"></div>', '<div class="field" id="esResp_casos"></div>\n      <div class="field" id="rcDiv_casos"></div>')
-rep('<div class="field" id="esResp_termosAcordo"></div>', '<div class="field" id="esResp_termosAcordo"></div>\n      <div class="field" id="rcDiv_termosAcordo"></div>')
-rep('<div class="field" id="esResp_alvaras"></div>', '<div class="field" id="esResp_alvaras"></div>\n      <div class="field" id="rcDiv_alvaras"></div>')
 rep("    if (!esRespAplicar('casos', dados, qs('formError'))) return;\n", "    if (!esRespAplicar('casos', dados, qs('formError'))) return;\n    if (!rcDivAplicar('casos', dados, qs('formError'))) return;\n")
 rep("    if (!esRespAplicar('termosAcordo', dados, qs('formErrorAcordo'))) return;\n", "    if (!esRespAplicar('termosAcordo', dados, qs('formErrorAcordo'))) return;\n    if (!rcDivAplicar('termosAcordo', dados, qs('formErrorAcordo'))) return;\n")
 rep("    if (!esRespAplicar('alvaras', dados, qs('formErrorAlvara'))) return;\n", "    if (!esRespAplicar('alvaras', dados, qs('formErrorAlvara'))) return;\n    if (!rcDivAplicar('alvaras', dados, qs('formErrorAlvara'))) return;\n")
@@ -480,4 +477,5 @@ rep("  if (storageMode === 'db' && configRef) return Promise.resolve(configRef.d
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 
+# (o rcDiv_* das fichas de Inicial, Acordo e Alvará agora faz parte do HTML fixo, no bloco Responsáveis)
 # ---------- Fase 5, etapa 5.4: advogados responsáveis e escopo "Meus | Escritório" (ganchos; cliente/responsaveis.js tem a lógica) ----------

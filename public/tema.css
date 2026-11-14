@@ -129,3 +129,14 @@ label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
 .f-rod-in{position:sticky;bottom:-20px;background:var(--surface);display:flex;gap:10px;padding:12px 0 4px;margin-top:4px;border-top:1px solid var(--border)}
 .f-rod-in .btn{flex:1;min-height:48px;justify-content:center}
 #agEdCorpo>.btn-text[data-age="excluir"]{align-self:center}
+
+/* ---------- Onda 3e: fichas restantes (OABs, Obra, Baixa, Renegociação, Usuários) ---------- */
+.f-sec.pb-oab{background:var(--surface);gap:10px}
+.f-sec.pb-oab.pb-novo{background:var(--surface-2)}
+#overlayObraForm .modal-body>.f-sec{gap:14px}
+#rnParcelaBox.f-sec[style*="display:none"],#rnContratoBox.f-sec[style*="display:none"]{display:none}
+#rnParaContrato,#rnParaParcela{align-self:flex-start;min-height:40px}
+#overlayBaixa .bx-saldo{border:1px dashed var(--border);border-radius:18px;background:var(--surface);padding:0 14px}
+#overlayBaixa .bx-saldo>summary{min-height:56px;display:flex;align-items:center;font-weight:600;font-size:14.5px;cursor:pointer}
+#overlayUsuariosC .f-sec{margin-bottom:12px}
+.overlay .modal-body select:not([style*="width"]){width:100%}
