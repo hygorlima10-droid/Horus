@@ -1762,6 +1762,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18466,7 +18467,9 @@ function agRenderIn(){
   /* sub-abas padrão (Fase 2): Resumo, Semana, Mês, Lista e Quadro; a última usada fica lembrada */
   if (!agS.mdOk){ agS.mdOk = 1; if (agS.vista === 'semana') agS.vista = mdInicial('agenda', ['meudia', 'semana', 'mes', 'lista', 'quadro']); }
   var h = '<div id="agSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['meudia', 'Meu dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['lista', 'Lista'], ['quadro', 'Quadro']], agS.vista, function(k){ return 'data-ag="vista" data-v="' + k + '"'; }) + '</div>' +
-    '<div class="ini-acoes ag-acoes md-um"><button type="button" class="acao acao-ouro" data-ag="novo"><svg><use href="#ic-plus"/></svg><span>Novo compromisso</span></button></div><div style="text-align:right;margin:-4px 2px 2px">' + (agS.vista === 'resumo' || agS.vista === 'quadro' ? '' : '<button type="button" class="btn-text" data-ag="selmodo">' + (ltS.on ? '✕ Cancelar seleção' : '☑ Selecionar') + '</button> &nbsp; ') + '<button type="button" class="btn-text" data-ag="calc">🧮 Calculadora de prazos</button></div>';
+    '<div class="ini-acoes ag-acoes md-um"><button type="button" class="acao acao-ouro" data-ag="novo"><svg><use href="#ic-plus"/></svg><span>Novo compromisso</span></button>' +
+    (agS.vista === 'resumo' || agS.vista === 'quadro' ? '' : '<button type="button" class="acao" data-ag="selmodo"><svg><use href="#ic-clip"/></svg><span>' + (ltS.on ? 'Cancelar seleção' : 'Selecionar') + '</span></button>') +
+    '<button type="button" class="acao" data-ag="calc"><svg><use href="#ic-table"/></svg><span>Calculadora de prazos</span></button></div>';
   if (agS.vista === 'resumo' || agS.vista === 'meudia'){ w.innerHTML = h + '<div id="agCorpo">' + agCorpo() + '</div>'; if (agS.vista === 'resumo') agCarregarCarga(); return; }
   if (agS.vista !== 'quadro' && agS.filtro === 'alvara') agS.filtro = 'tudo';
   h += '<input type="search" id="agBusca" class="ag-busca" placeholder="Buscar compromisso, processo ou cliente" autocomplete="off" value="' + escapeHtml(agS.busca || '') + '" style="margin-top:8px">';
@@ -19094,6 +19097,7 @@ function agRevClique(a){
     '.ag-f{font-family:inherit;font-size:var(--t2);font-weight:600;padding:7px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);color:var(--ink-soft);cursor:pointer}.ag-f.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}' +
     '.agd2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 2px}.agd2>div{border-radius:11px;padding:6px 9px;background:var(--surface-2,#f6f4ee);border-left:4px solid var(--c-gold,#C98500)}.agd2>div.f,.agd2>div.at{border-left-color:var(--urgente);background:rgba(217,59,59,.07)}.agd2 small{display:block;font-size:var(--t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}.agd2 b{display:block;font-size:var(--t3)}.agd2 em{font-style:normal;font-size:var(--t1);font-weight:700;color:#8a5a00}.agd2 .f em,.agd2 .at em{color:var(--urgente)}' +
     '.acx{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.acx button,.acx a{display:inline-flex;align-items:center;gap:5px;font-family:inherit;border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 11px;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none}.acx .pri{background:var(--ink);color:var(--bg);border-color:transparent}' +
+    '.ini-acoes.ag-acoes.md-um{flex-wrap:wrap;justify-content:flex-start}' +
     '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}' +
     '.agc.pronta{--ag-c:var(--success)}.acx .vd{background:var(--success);color:#fff;border-color:transparent}.agd2>div.ok{border-left-color:var(--success);background:rgba(23,137,90,.09)}.agd2 .ok em{color:var(--success)}' +
     '.agm-h{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}.agm-h b{font-size:var(--t5,18px)}.agm-h small{font-size:var(--t2);color:var(--ink-soft)}.agm-res{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.agm-res span{border-radius:99px;padding:4px 10px;font-size:var(--t1);font-weight:800;background:var(--surface-2,#eceae4);color:var(--ink)}.agm-res .r{background:rgba(217,59,59,.12);color:var(--urgente)}.agm-res .a{background:rgba(42,120,214,.13);color:var(--info)}.agm-res .g{background:rgba(201,133,0,.16);color:#8a5a00}.agm-res .v{background:rgba(23,137,90,.14);color:var(--success)}' +
@@ -23156,7 +23160,7 @@ function dxDesenhar(){
   var el = qs('dxC'); if (!el) return;
   var sug = Object.keys(PB_FACULTATIVOS).filter(function(dt){ return !dxTem(dt); });
   var h = '<div class="parcela-sum">O app já considera os <b>feriados nacionais e do TJGO</b> (calendário anual) e o <b>recesso de 20/12 a 20/01</b>. Aqui você cadastra o que é do seu juízo. Cada dia entra em <b>todos os cálculos de prazo</b>, e os prazos e tarefas já lançados que caem nele são <b>adiados sozinhos</b> (o app mostra o que mudou e dá para desfazer).</div>' +
-    '<div class="pb-sec-t" style="margin:8px 4px 4px">Novo dia</div><div class="pb-dois"><div class="field"><label class="field-label" for="dx_data">Data</label><input type="date" id="dx_data"></div><div class="field"><label class="field-label" for="dx_tipo">Tipo</label><select id="dx_tipo" class="filter-select" style="width:100%">' + Object.keys(DX_TIPOS).map(function(k){ return '<option value="' + k + '">' + DX_TIPOS[k] + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="pb-sec-t" style="margin:8px 4px 4px">Novo dia</div><div class="pz-dois"><div class="field"><label class="field-label" for="dx_data">Data</label><input type="date" id="dx_data"></div><div class="field"><label class="field-label" for="dx_tipo">Tipo</label><select id="dx_tipo" class="filter-select" style="width:100%">' + Object.keys(DX_TIPOS).map(function(k){ return '<option value="' + k + '">' + DX_TIPOS[k] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="field"><label class="field-label" for="dx_nome">Nome (opcional)</label><input type="text" id="dx_nome" maxlength="60" placeholder="Ex.: aniversário do município"></div><div class="form-error" id="dx_erro"></div>' +
     '<div class="pb-acts"><button type="button" class="btn btn-primary" data-dx="add">Adicionar</button></div>';
   if (sug.length) h += '<div class="pb-sec-t" style="margin:14px 4px 4px">Pontos facultativos do TJGO em 2026 <small style="text-transform:none;letter-spacing:0">(não contam como sem expediente, a não ser que você adicione)</small></div>' + sug.map(function(dt){ return '<div class="cli-linha" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 4px"><span>' + escapeHtml(fmtData(dt)) + ' · ' + escapeHtml(PB_FACULTATIVOS[dt]) + '</span><button type="button" class="btn btn-ghost pb-b" data-dx="sug" data-d="' + dt + '" data-n="' + escapeHtml(PB_FACULTATIVOS[dt]) + '">Adicionar</button></div>'; }).join('');
@@ -23247,7 +23251,7 @@ function dxDesfazerTudo(){
    ============================================================ */
 var pzS = null;
 var PZ_MODOS = [['dje', 'Publicação no Diário (DJe)'], ['ciencia', 'Ciência direta ou eletrônica'], ['inicio', 'Contar a partir de…']];
-var PZ_DATA_ROT = { dje: 'Data da disponibilização no DJe', ciencia: 'Data da ciência (intimação)', inicio: 'Dia do começo da contagem' };
+var PZ_DATA_ROT = { dje: 'Disponibilização no DJe', ciencia: 'Data da ciência', inicio: 'Dia do começo' };
 function pzRegimeSalvo(){ try{ var r = localStorage.getItem('horus.pzRegime'); return PZ_REGIMES[r] ? r : 'cpc'; }catch(e){ return 'cpc'; } }
 function pzMontar(){
   if (qs('overlayPz')) return;
@@ -23284,7 +23288,7 @@ function pzDesenhar(){
   var el = qs('pzC'), op = pzS.op, rg = pzRegime(op), cust = op.regime === 'custom';
   var h = '<div class="field"><label class="field-label" for="pz_regime">Tipo de processo (regra de contagem)</label><select id="pz_regime" class="filter-select" style="width:100%">' + Object.keys(PZ_REGIMES).map(function(k){ return '<option value="' + k + '"' + (op.regime === k ? ' selected' : '') + '>' + PZ_REGIMES[k].nome + '</option>'; }).join('') + '</select><div class="saldo-data" style="margin:3px 2px 0" id="pz_ref"></div></div>' +
     '<div class="field"><label class="field-label">Como você ficou sabendo</label><div class="segmented" id="pzModo">' + PZ_MODOS.map(function(m){ return '<button type="button" class="seg-btn' + (op.modo === m[0] ? ' active' : '') + '" data-pz="modo" data-v="' + m[0] + '" style="flex:1;padding:8px 4px;line-height:1.2;font-size:var(--t2)">' + m[1] + '</button>'; }).join('') + '</div></div>' +
-    '<div class="pb-dois"><div class="field"><label class="field-label" for="pz_data">' + PZ_DATA_ROT[op.modo] + '</label><input type="date" id="pz_data" value="' + escapeHtml(op.data) + '"></div><div class="field"><label class="field-label" for="pz_dias">Prazo (dias)</label><input type="number" id="pz_dias" min="1" max="365" inputmode="numeric" value="' + escapeHtml(String(op.dias)) + '"></div></div>';
+    '<div class="pz-dois"><div class="field"><label class="field-label" for="pz_data">' + PZ_DATA_ROT[op.modo] + '</label><input type="date" id="pz_data" value="' + escapeHtml(op.data) + '"></div><div class="field"><label class="field-label" for="pz_dias">Prazo (dias)</label><input type="number" id="pz_dias" min="1" max="365" inputmode="numeric" value="' + escapeHtml(String(op.dias)) + '"></div></div>';
   if (cust) h += '<div class="pb-sec" style="padding:8px 4px"><div class="field"><label class="field-label" for="pz_unid">Contagem</label><select id="pz_unid" class="filter-select" style="width:100%"><option value="uteis"' + (op.unidade === 'uteis' ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + (op.unidade === 'corridos' ? ' selected' : '') + '>dias corridos (contínuos)</option></select></div>' +
     '<label class="ad-it" style="border:0;padding:3px 0"><input type="checkbox" id="pz_exc"' + (op.excluiInicio ? ' checked' : '') + '><span class="ad-t">Não contar o dia do começo</span></label>' +
     '<label class="ad-it" style="border:0;padding:3px 0"><input type="checkbox" id="pz_rec"' + (op.recesso ? ' checked' : '') + '><span class="ad-t">Suspender no recesso (20/12 a 20/01)</span></label>' +
@@ -23341,6 +23345,8 @@ function pzTextoCalculo(c){
 /* ao entrar, carrega o calendário do escritório */
 (function(){ ppDonoP().then(function(){ dxCarregar(); }); })();
 (function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { pzCalcular: pzCalcular, dxTem: dxTem, dxAplicar: dxAplicar, dxCarregar: dxCarregar, pbNaoUtil: pbNaoUtil, pbSoma: pbSoma, pbDow: pbDow, pzAbrir: pzAbrir }); })();
+/* campos de data e de número dentro das janelas: no iPhone o campo de data tem largura própria e passava por cima do vizinho; aqui as colunas podem encolher */
+(function(){ var st = document.createElement('style'); st.textContent = '.overlay input[type=date],.overlay input[type=time],.overlay input[type=number]{min-width:0;max-width:100%;box-sizing:border-box}.overlay .pb-dois>*{min-width:0}.pz-dois{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px}.pz-dois>.field{min-width:0;margin:0 0 8px}.pz-dois .field-label{white-space:normal}'; document.head.appendChild(st); })();
 
 /* ============================================================
    TAREFAS QUE SE REPETEM (prefixo rp)
