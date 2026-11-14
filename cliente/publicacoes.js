@@ -771,6 +771,7 @@ function pbMontarOabs(){
       pbEdOabs.push({ id: '', nome: nome || ('OAB ' + num + '/' + uf), numero: num, uf: uf, ativo: true, escopo: qs('pbo_esc').value, avisar: qs('pbo_av').checked }); pbDesenharOabs();
     }
     else if (a === 'salvar') pbSalvarOabs();
+    else if (a === 'cancelar') d.classList.remove('show');
   });
 }
 function pbAbrirOabs(){ pbMontarOabs(); pbEdOabs = JSON.parse(JSON.stringify(pbS.oabs)); pbDesenharOabs(); qs('overlayPbOab').classList.add('show'); }
@@ -784,17 +785,17 @@ function pbDesenharOabs(){
   var c = qs('pboCorpo'); if (!c) return;
   var h = '<div class="parcela-sum">O app lê o Diário Oficial de <b>cada OAB abaixo</b> todo dia às <b>10:00</b>. Use para o seu número e para o de advogados com processos em conjunto (sócio, parceiro).</div>';
   h += pbEdOabs.map(function(o, i){
-    return '<div class="pb-oab"><div class="pb-oab-top"><div class="field" style="flex:1"><label class="field-label" for="pbo_nm' + i + '">Nome</label><input type="text" id="pbo_nm' + i + '" maxlength="60" value="' + escapeHtml(o.nome) + '"></div><div class="pb-oab-n"><b>OAB ' + escapeHtml(o.numero + '/' + o.uf) + '</b>' + (o.principal ? '<span class="pb-tg ok">principal</span>' : '') + '</div></div>' +
+    return '<div class="pb-oab f-sec"><div class="pb-oab-top"><div class="field" style="flex:1"><label class="field-label" for="pbo_nm' + i + '">Nome</label><input type="text" id="pbo_nm' + i + '" maxlength="60" value="' + escapeHtml(o.nome) + '"></div><div class="pb-oab-n"><b>OAB ' + escapeHtml(o.numero + '/' + o.uf) + '</b>' + (o.principal ? '<span class="pb-tg ok">principal</span>' : '') + '</div></div>' +
       '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_at' + i + '"' + (o.ativo ? ' checked' : '') + '><span class="ad-t">Ler esta OAB</span></label>' +
       '<div class="field"><label class="field-label" for="pbo_es' + i + '">Mostrar</label><select id="pbo_es' + i + '" class="filter-select"><option value="tudo"' + (o.escopo === 'tudo' ? ' selected' : '') + '>todas as publicações</option><option value="conjunto"' + (o.escopo === 'conjunto' ? ' selected' : '') + '>só processos em conjunto comigo</option></select></div>' +
       '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_av' + i + '"' + (o.avisar ? ' checked' : '') + '><span class="ad-t">Avisar no celular quando chegar publicação nova</span></label>' +
       (o.erro ? '<div class="form-error">Última leitura falhou: ' + escapeHtml(o.erro) + '</div>' : '') + (!o.principal ? '<button type="button" class="btn-text" data-pbo="remover" data-i="' + i + '" style="color:var(--urgente)">Remover esta OAB</button>' : '') + '</div>';
   }).join('');
-  h += '<div class="pb-oab pb-novo"><div class="pb-sec-t">Adicionar advogado</div><div class="field"><label class="field-label" for="pbo_nome">Nome (para você identificar)</label><input type="text" id="pbo_nome" maxlength="60" placeholder="Ex.: Murilo, sócio"></div>' +
+  h += '<div class="pb-oab pb-novo f-sec"><div class="f-sec-t">Adicionar advogado</div><div class="field"><label class="field-label" for="pbo_nome">Nome (para você identificar)</label><input type="text" id="pbo_nome" maxlength="60" placeholder="Ex.: Murilo, sócio"></div>' +
     '<div class="pb-dois"><div class="field"><label class="field-label" for="pbo_num">Número da OAB</label><input type="text" id="pbo_num" inputmode="numeric" maxlength="7" placeholder="49308"></div><div class="field"><label class="field-label" for="pbo_uf">UF</label><input type="text" id="pbo_uf" maxlength="2" value="GO" style="text-transform:uppercase"></div></div>' +
     '<div class="field"><label class="field-label" for="pbo_esc">Mostrar</label><select id="pbo_esc" class="filter-select"><option value="conjunto">só processos em conjunto comigo</option><option value="tudo">todas as publicações</option></select></div>' +
     '<label class="ad-it" style="border:0;padding:4px 0;"><input type="checkbox" id="pbo_av" checked><span class="ad-t">Avisar no celular</span></label><button type="button" class="btn btn-ghost" data-pbo="novo" style="width:100%;justify-content:center;">Adicionar à lista</button></div>' +
-    '<div class="form-error" id="pboErro"></div><button type="button" class="btn btn-primary" data-pbo="salvar" style="width:100%;justify-content:center;">Salvar e buscar agora</button>';
+    '<div class="form-error" id="pboErro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-pbo="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-pbo="salvar">Salvar e buscar agora</button></div>';
   c.innerHTML = h;
 }
 function pbSalvarOabs(){

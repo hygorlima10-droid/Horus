@@ -77,14 +77,14 @@ function usPermsHtml(papel, perm, atr){
 function usHtmlConvidar(){
   var f = usS.form;
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convidar pessoa</div><div class="pb-aviso">Ela recebe um link e cria a própria senha. O e-mail que você informar será o login dela, e ela não consegue trocá-lo.</div></div>' +
-    '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
+    fSec('Quem é', '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
     '<div class="field"><label class="field-label" for="usEmail">E-mail (será o login)</label><input type="email" id="usEmail" data-usf="email" maxlength="120" value="' + escapeHtml(f.email) + '" autocomplete="off"></div>' +
-    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>' +
-    (f.papel === 'advogado' ? '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>' : '') +
-    '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode</div></div>' + usPermsHtml(f.papel, f.perm, 'data-usp') +
+    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>') +
+    (f.papel === 'advogado' ? fSec('OAB', '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>') : '') +
+    fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp')) +
     '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + ' Nenhum dos dois abre as suas finanças pessoais.</div>' +
     (f.erro ? '<div class="form-error">' + escapeHtml(f.erro) + '</div>' : '') +
-    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="gerar">Gerar link de convite</button></div>';
+    '<div class="f-rod-in"><button type="button" class="btn btn-primary" data-us="gerar">Gerar link de convite</button></div>';
 }
 function usGerar(){
   var f = usS.form; if (usS.ocupado) return;
@@ -111,12 +111,11 @@ function usAbrirFicha(id){ usS.sel = id; usS.tela = 'ficha'; usS.sessoes = []; u
 function usHtmlFicha(){
   var u = usPessoa(usS.sel); if (!u) return usVoltar() + '<div class="pb-aviso">Pessoa não encontrada.</div>';
   var h = usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">' + escapeHtml(u.nome) + '</div><div class="pb-aviso">' + escapeHtml(u.email) + ' · ' + US_PAPEL[u.papel] + (u.ativo ? '' : ' · <b>desativado</b>') + (u.criadoEm ? ' · entrou em ' + escapeHtml(new Date(u.criadoEm).toLocaleDateString('pt-BR')) : '') + '</div></div>';
-  h += '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>';
-  if (u.papel === 'advogado') h += '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>';
-  h += '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">Permissões</div></div>' + usPermsHtml(u.papel, u.permissoes, 'data-usp');
-  h += '<div class="pb-sec" style="margin-top:8px"><div class="pb-sec-t">Aparelhos conectados</div></div>' + (usS.sessoes.length ? usS.sessoes.map(function(s){
+  h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
+  h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
+ h += fSec('Aparelhos conectados', (usS.sessoes.length ? usS.sessoes.map(function(s){
     return '<div class="pb-card" style="--pb-bar:#8A93AD"><div class="pb-l1"><span>' + sgSegIcone(s.rotulo) + ' ' + escapeHtml(s.rotulo) + '</span></div><div class="pb-proc">' + (s.lugar ? escapeHtml(s.lugar) + ' · ' : '') + 'último uso ' + escapeHtml(sgDataHora(s.ultimo)) + '</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="encerrar" data-k="' + escapeHtml(s.id) + '">Encerrar</button></div></div>';
-  }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>');
+  }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>'));
   h += '<div class="pb-acts">' + (usS.sessoes.length > 1 ? '<button type="button" class="btn btn-ghost pb-b" data-us="encerrar-todas">Encerrar todas as sessões</button>' : '') +
     (u.ativo ? (usS.msg === 'desativar' ? '<button type="button" class="btn btn-primary pb-b" data-us="desativar-ok">Confirmar: desativar agora</button><button type="button" class="btn btn-ghost pb-b" data-us="desativar-nao">Cancelar</button>' : '<button type="button" class="btn btn-ghost pb-b" data-us="desativar">Desativar acesso</button>') : '<button type="button" class="btn btn-primary pb-b" data-us="reativar">Reativar acesso</button>') + '</div>' +
     '<div class="pb-aviso" style="margin:6px 4px">Desativar tira o acesso na hora e encerra as sessões, mas guarda o histórico do que a pessoa fez. Dá para reativar. Não existe “excluir pessoa”.</div>';

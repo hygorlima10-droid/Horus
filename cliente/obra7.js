@@ -265,7 +265,7 @@ document.addEventListener('change', function(ev){
 
 /* ---------- comprovantes (fotos e PDFs das notas) ---------- */
 var OB7_MAX_ANEXOS = 4, ob7Gasto = null;
-function ob7ClipHtml(m){ var n = (m.anexos || []).length; return '<button type="button" class="btn-text" data-ob7="anexos" data-id="' + escapeHtml(m.id) + '" title="Comprovantes">' + (n ? '\uD83D\uDCCE ' + n : 'Anexar') + '</button>'; }
+function ob7ClipHtml(m){ var n = (m.anexos || []).length; return '<button type="button" class="btn-text" data-ob7="anexos" data-id="' + escapeHtml(m.id) + '" title="Comprovantes">' + (n ? ico('paperclip', 14) + n : 'Anexar') + '</button>'; }
 function ob7B64(blob){ return new Promise(function(res, rej){ var fr = new FileReader(); fr.onload = function(){ res(String(fr.result).split(',')[1]); }; fr.onerror = function(){ rej(new Error('Não consegui ler o arquivo.')); }; fr.readAsDataURL(blob); }); }
 function ob7B64Blob(b64, tipo){ var bin = atob(b64), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: tipo }); }
 function ob7Api(url, metodo, corpo){
@@ -290,7 +290,7 @@ function ob7DesenharAnexos(msg){
   var l = m.anexos || [], temImg = l.some(function(a){ return /^image\//.test(a.tipo); });
   qs('anTitulo').textContent = 'Comprovantes — ' + (m.descricao || 'gasto');
   qs('anCorpo').innerHTML = '<div class="saldo-data">' + fmtMoeda(m.valor) + (m.nf ? ' · nota ' + escapeHtml(m.nf) : '') + ' · até ' + OB7_MAX_ANEXOS + ' arquivos. A foto é reduzida no aparelho antes de enviar; só você vê.</div>' +
-    (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? '\uD83D\uDDBC\uFE0F ' : '\uD83D\uDCC4 ') + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
+    (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? ico('file-text', 16) : ico('file-text', 16)) + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
     '<input type="file" id="anArq" accept="image/*,application/pdf" style="display:none;">' +
     (l.length < OB7_MAX_ANEXOS ? '<button type="button" class="btn btn-primary" data-an="add" style="width:100%;justify-content:center;">Anexar foto ou PDF</button>' : '') +
     (temImg && paTemSample() ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
