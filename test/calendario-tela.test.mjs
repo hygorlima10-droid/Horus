@@ -1,0 +1,34 @@
+// Tela "Audiências no calendário do iPhone" (Configurações): ligar, link, opções, link novo.
+// Use: node test/rodar.mjs calendario-tela
+import { createRequire } from 'node:module';
+const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
+const B = process.env.BASE || 'http://127.0.0.1:8802', SENHA = 'senha-de-teste-123';
+let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
+let r = await fetch(B + '/login', { method: 'POST', redirect: 'manual', body: new URLSearchParams({ senha: SENHA }), headers: { 'cf-connecting-ip': '9.9.9.66' } }); const ck = r.headers.get('set-cookie').split(';')[0];
+await fetch(B + '/api/db/config/backup', { method: 'PUT', headers: { cookie: ck, 'content-type': 'application/json' }, body: JSON.stringify({ ultimoEm: new Date().toISOString() }) });
+await fetch(B + '/api/calendario', { method: 'PUT', headers: { cookie: ck, 'content-type': 'application/json' }, body: JSON.stringify({ ativo: false, escopo: 'minhas', cliente: true, alertas: true }) });
+const br = await chromium.launch(); const page = await (await br.newContext({ viewport: { width: 420, height: 900 } })).newPage(); const erros = []; page.on('pageerror', e => erros.push(e.message)); await page.route(/fonts\./, x => x.abort());
+await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await page.click('button[type=submit]'); await page.waitForTimeout(3000);
+await page.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await page.waitForTimeout(600);
+check(await page.evaluate(() => !!document.querySelector('#cfWrap [data-cf="cal"]')), 'Configurações tem a linha "Audiências no calendário do iPhone"');
+await page.evaluate(() => document.querySelector('#cfWrap [data-cf="cal"]').click()); await page.waitForTimeout(800);
+const txt = () => page.evaluate(() => document.getElementById('clC').innerText.replace(/\s+/g, ' '));
+check(/Só audiências/.test(await txt()) && !(await page.evaluate(() => !!document.querySelector('#clC .lnk'))), 'desligado: explica o recurso e não mostra link');
+await page.evaluate(() => { const c = document.querySelector('#clC [data-clc="ativo"]'); c.click(); }); await page.waitForTimeout(1200);
+const t1 = await txt();
+check(/webcal:\/\/.+\/cal\/[A-Za-z0-9_-]{32}\.ics/.test(t1) && /Assinar no iPhone/.test(t1) && /Copiar link/.test(t1) && /Gerar um link novo/.test(t1), 'ao ligar aparece o link (webcal) e os botões Assinar, Copiar e Gerar novo');
+check(await page.evaluate(() => document.querySelector('#clC a.btn-primary').getAttribute('href').startsWith('webcal://')), '"Assinar no iPhone" abre o endereço webcal://');
+const link1 = (t1.match(/webcal:\/\/\S+\.ics/) || [''])[0];
+await page.evaluate(() => document.querySelector('#clC [data-cl="escopo"][data-v="escritorio"]').click()); await page.waitForTimeout(900);
+await page.evaluate(() => document.querySelector('#clC [data-clc="cliente"]').click()); await page.waitForTimeout(900);
+const est = await (await fetch(B + '/api/calendario', { headers: { cookie: ck } })).json();
+check(est.escopo === 'escritorio' && est.cliente === false && est.alertas === true, 'as opções são guardadas (todas do escritório, sem nome do cliente)');
+await page.evaluate(() => document.querySelector('#clC [data-cl="novo"]').click()); await page.waitForTimeout(300);
+check((await page.evaluate(() => document.querySelector('#clC [data-cl="novo"]').innerText)).includes('Toque de novo'), 'gerar link novo pede um segundo toque (o antigo para de funcionar)');
+check((await (await fetch(B + '/api/calendario', { headers: { cookie: ck } })).json()).url.endsWith(link1.replace('webcal://', '').replace(/^[^/]+/, '')), 'um toque só não troca o link');
+await page.evaluate(() => document.querySelector('#clC [data-cl="novo"]').click()); await page.waitForTimeout(1200);
+const link2 = ((await txt()).match(/webcal:\/\/\S+\.ics/) || [''])[0];
+check(link2 && link2 !== link1, 'no segundo toque o link muda');
+const old = await fetch(link1.replace('webcal://', 'http://')); check(old.status === 404, 'o link antigo deixa de funcionar (404)');
+check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros[0] : ''));
+await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTUDO CERTO'); process.exit(falhas ? 1 : 0);

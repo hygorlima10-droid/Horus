@@ -9,6 +9,7 @@ var CF_LINHAS = [
   { id: 'backup', ic: '💾', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
   { id: 'csv', ic: '📤', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
   { id: 'extregras', ic: '🏦', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
+  { id: 'cal', ic: '📆', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
   { id: 'dias', ic: '📅', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
   { id: 'usuarios', ic: '👥', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
   { id: 'seguranca', ic: '🔒', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
@@ -33,7 +34,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: '🔒', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: '🔔', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: '🔒', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: '🔔', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: '📆', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +

@@ -13,6 +13,7 @@ import { restauracaoRotas } from './restauracao.js';
 import { usuariosRotas } from './usuarios.js';
 import { avisarAtividade, avisarRepasseA, prefsDe, equipeDe, limparPrefs, PREFS_PADRAO, EQUIPE_PADRAO, textoSemanal, usuariosAtivos } from './avisos.js';
 import { indicesRotas, buscarIndices } from './indices.js';
+import { calendarioRotas, calendarioFeed } from './calendario.js';
 import { equipeRotas, semAdvogadoRotas, agendaRotas } from './responsaveis.js';
 import { paginasDeAcesso, autenticar, segurancaRotas, temProprietario, proprietario } from './acesso.js';
 import { auditoriaRotas, historicoRotas, lixeiraRotas, limparSeguranca, stmtRegistro, stmtLixeira, registraColecao, vaiParaLixeira, tituloDe, mudancas, autorDe } from './auditoria.js';
@@ -579,7 +580,7 @@ const ROTAS = {
   backup: ['proprietario', (r, e, p, au) => api(r, e, p, au)], backups: ['proprietario', (r, e, p) => backups(r, e, p)], restaurar: ['proprietario', (r, e, p) => restauracaoRotas(r, e, p)],
   lixeira: ['proprietario', (r, e, p) => lixeiraRotas(r, e, p)], historico: ['sessao', async (r, e, p, a) => historicoRotas(r, e, p, a, a && a.usuario && a.usuario.papel === 'advogado' ? await escopoDoAdvogado(e, a) : null)], auditoria: ['proprietario', (r, e, p) => auditoriaRotas(r, e, p)],
   seguranca: ['sessao', (r, e, p, a) => segurancaRotas(r, e, p, a)], usuarios: ['proprietario', (r, e, p, a) => usuariosRotas(r, e, p, a)],
-  indices: ['proprietario', (r, e, p) => indicesRotas(r, e, p)], equipe: ['sessao', (r, e) => equipeRotas(r, e)], agenda: ['sessao', (r, e, p, a) => agendaRotas(r, e, p, a)], 'sem-advogado': ['proprietario', (r, e, p, a) => semAdvogadoRotas(r, e, p, a)],
+  indices: ['proprietario', (r, e, p) => indicesRotas(r, e, p)], calendario: ['sessao', (r, e, p, a) => calendarioRotas(r, e, p, a)], equipe: ['sessao', (r, e) => equipeRotas(r, e)], agenda: ['sessao', (r, e, p, a) => agendaRotas(r, e, p, a)], 'sem-advogado': ['proprietario', (r, e, p, a) => semAdvogadoRotas(r, e, p, a)],
   eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes }) => ({ id, papel, nome, oabs, permissoes }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
 };
 export const RAIZES_API = Object.keys(ROTAS);
@@ -610,7 +611,8 @@ async function tratar(request, env, ctx) {
   const url = new URL(request.url);
   const dev = env.ALLOW_NO_AUTH === '1', antigo = MODO_ANTIGO(env);
   if (!dev && (!env.SENHA || String(env.SENHA).length < 12)) return new Response('Defina o segredo SENHA (mínimo 12 caracteres) no Cloudflare.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });
-  if (ICONES.has(url.pathname) || url.pathname.startsWith('/logo/')) return env.ASSETS.fetch(request);   // ícones e manifesto: públicos (o iPhone os busca sem sessão)
+  if (ICONES.has(url.pathname) || url.pathname.startsWith('/logo/')) return env.ASSETS.fetch(request);
+  if (url.pathname.startsWith('/cal/')) return calendarioFeed(request, env);   // calendário de audiências (.ics): o token no endereço é a credencial   // ícones e manifesto: públicos (o iPhone os busca sem sessão)
   const deps = { legadoValido: (r) => sessaoValida(r, env), criarLegado: () => criarSessao(env), avisar: (e, aviso) => { try { ctx && ctx.waitUntil ? ctx.waitUntil(enviarAviso(e, aviso).catch((x) => console.error('aviso', x))) : enviarAviso(e, aviso).catch(() => {}); } catch (x) { console.error(x); } } };
   if (!antigo) { const pg = await paginasDeAcesso(request, env, deps); if (pg) return pg; }
   else {
