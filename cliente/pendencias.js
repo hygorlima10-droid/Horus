@@ -44,7 +44,7 @@ function pdAbrir(){
 }
 (function(){
   var st = document.createElement('style');
-  st.textContent = '.pd-selo{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3);font-weight:700;cursor:pointer;flex:none}.pd-selo[hidden]{display:none}.pd-selo b{background:var(--urgente);color:#fff;border-radius:99px;min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;font-size:var(--t1)}';
+  st.textContent = '.pd-selo{position:relative;display:inline-grid;place-items:center;width:38px;height:38px;padding:0;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;flex:none}.pd-selo[hidden]{display:none}.pd-selo b{position:absolute;top:-5px;right:-5px;background:var(--urgente);color:#fff;border-radius:99px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;font-size:var(--t1);font-weight:700}';
   document.head.appendChild(st);
   var b = qs('pdSelo'); if (b) b.addEventListener('click', pdAbrir);
   setInterval(function(){ if (!document.hidden) try{ pdAtualizar(); }catch(e){} }, 8000);

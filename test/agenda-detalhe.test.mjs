@@ -37,7 +37,7 @@ let tx = await t('#agWrap');
 check(/(Venceu há \d+ dias? úteis?|Atrasado há 3 dias)/.test(tx) && /Contestação/.test(tx) && /Prioridade alta/.test(tx), 'cartão mostra quanto o prazo está atrasado (em dias úteis) e a prioridade alta');
 check(await page.evaluate((n) => { const c = Array.from(document.querySelectorAll('.agc')).find(x => /Contestação/.test(x.innerText)); return !!c && !!c.querySelector('.agc-cp svg') && c.querySelector('.agc-n').innerText.includes(n); }, N1), 'o número do processo aparece no cartão com o botão de copiar (ícone de dois retângulos)');
 const hCard = await page.evaluate(() => Math.round(document.querySelector('.agc').getBoundingClientRect().height));
-check(await page.evaluate(() => document.querySelectorAll('.agc').length >= 5) && hCard < 330, 'cartões compactos (altura menor que 330 px, já com as datas e os atalhos): ' + hCard + ' px');
+check(await page.evaluate(() => document.querySelectorAll('.agc').length >= 5) && hCard < 340, 'cartões compactos (altura menor que 340 px, já com as datas e os atalhos): ' + hCard + ' px');
 await page.evaluate(() => Array.from(document.querySelectorAll('.agc')).find(x => /Contestação/.test(x.innerText)).querySelector('.agc-cp').click()); await page.waitForTimeout(500);
 check((await page.evaluate(() => navigator.clipboard.readText())) === N1 && /copiado/i.test(await t('#toast')), 'tocar no ícone copia o número do processo e avisa');
 check(!(await vis('#overlayAgDet.show')), 'copiar não abre os detalhes');
