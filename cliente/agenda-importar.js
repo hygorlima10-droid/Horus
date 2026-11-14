@@ -222,13 +222,13 @@ function agiCartao(it, idx){
   var tags = agiTg(AG_TIPOS[it.tipo], it.tipo === 'audiencia' ? 'nv' : '') + agiTg(it.concluido ? 'Concluído' : 'Pendente', it.concluido ? 'ok' : '');
   if (it.prioridade && /alta/i.test(it.prioridade)) tags += agiTg('Prioridade alta', 'pz');
   if (it.tipoOriginal && it.tipo === 'tarefa') tags += agiTg('era “' + it.tipoOriginal + '”');
-  if (it.num) tags += it.procExiste ? agiTg('✓ processo já cadastrado', 'ok') : agiTg(agiS.cadProc ? '＋ processo novo' : 'processo não cadastrado', 'nv'); else tags += agiTg('sem processo');
+  if (it.num) tags += it.procExiste ? agiTg('processo já cadastrado', 'ok') : agiTg(agiS.cadProc ? '＋ processo novo' : 'processo não cadastrado', 'nv'); else tags += agiTg('sem processo');
   if (it.processoDe === 'observacao') tags += agiTg('número lido da observação');
   if (it.tipo === 'audiencia' && !hf) tags += agiTg('sem hora');
   it.responsaveis.forEach(function(n){ tags += agiTg('responsável: ' + n); });
   it.partes.forEach(function(n){
     var d = agiS.decisao[normNome(n)] || 'sem', x = agiS.nomes[normNome(n)] || {};
-    tags += d.indexOf('c:') === 0 ? agiTg('✓ ' + ((clienteById(d.slice(2)) || {}).nome || n), 'ok') : (d.indexOf('m:') === 0 ? agiTg('＋ mesmo cliente que ' + ((agiS.nomes[d.slice(2)] || {}).nome || '?'), 'nv') : (d === 'novo' ? agiTg('＋ cliente novo: ' + n, 'nv') : agiTg(n + ' · sem cliente')));
+    tags += d.indexOf('c:') === 0 ? agiTg(''+ ((clienteById(d.slice(2)) || {}).nome || n), 'ok') : (d.indexOf('m:') === 0 ? agiTg('＋ mesmo cliente que ' + ((agiS.nomes[d.slice(2)] || {}).nome || '?'), 'nv') : (d === 'novo' ? agiTg('＋ cliente novo: ' + n, 'nv') : agiTg(n + ' · sem cliente')));
   });
   if (dup) tags += agiTg('já está na agenda · pula');
   else if (it.jaExiste === 'parecido') tags += agiTg('parece já estar na agenda', 'pz');

@@ -890,7 +890,7 @@
   .tb-ttl b{display:block;font-family:var(--font-display);font-size:var(--t5);font-weight:700;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tb-ttl span{display:block;font-size:var(--t2);color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tb-mes{display:flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px 4px;flex-shrink:0;}
-  .tb-mes .mes-btn{width:26px;height:26px;border:none;background:transparent;}
+  .tb-mes .mes-btn{width:40px;height:40px;border:none;background:transparent;}
   .tb-mes .mes-label{min-width:0;font-size:var(--t3);padding:0 2px;}
   .tb-hoje{font-size:var(--t2);font-weight:700;color:var(--accent);background:none;border:none;padding:4px 6px;flex-shrink:0;cursor:pointer;}
   .drawer{position:fixed;left:0;top:0;bottom:0;width:284px;max-width:88vw;background:var(--surface);border-right:1px solid var(--border);z-index:90;transform:translateX(-103%);transition:transform .2s ease;display:flex;flex-direction:column;padding:14px 10px 10px;padding-top:calc(14px + env(safe-area-inset-top,0px));box-shadow:var(--shadow);overflow-y:auto;overflow-x:hidden;}
@@ -1502,7 +1502,7 @@
     .tb-in{gap:8px;padding-left:12px;padding-right:12px;}
     .tb-ttl b{font-size:var(--t5);letter-spacing:-0.02em;}
     .tb-mes{padding:3px 2px;gap:0;}
-    .tb-mes .mes-btn{min-width:26px;}
+    .tb-mes .mes-btn{min-width:40px;}
     .tb-mes .mes-label{font-size:var(--t2);}
   }
   @media (max-width:380px){
@@ -1544,6 +1544,11 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 <symbol id="ic-quadro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></symbol>
 <symbol id="ic-proc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
 <symbol id="ic-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+
+
+
+
+
 
 
 
@@ -6560,7 +6565,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else {
       var algum = false;
       ['fixa', 'variavel', 'avulsa'].forEach(function(g){ if (gruposPend[g].length){ algum = true; corpoD += '<div class="fv-grp">' + nomes[g] + '</div>' + gruposPend[g].join(''); } });
-      if (!algum) corpoD = '<div class="financeiro-vazio">Tudo pago neste mês. ✓</div>';
+      if (!algum) corpoD = '<div class="financeiro-vazio">Tudo pago neste mês.</div>';
       if (linhasPagas.length){
         var abertas = !!mostrarPagas[coluna];
         corpoD += '<button type="button" class="btn-pagas" data-toggle-pagas="' + coluna + '">' + (abertas ? '▾' : '▸') + ' Pagas (' + linhasPagas.length + ') · ' + fmtMoeda(despesasResumo.quitado) + '</button>' + (abertas ? linhasPagas.join('') : '');
@@ -7181,7 +7186,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     }
     if (a.valido){
       el.classList.add('ok');
-      el.textContent = '✓ Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano;
+      el.textContent = 'Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano;
     } else {
       el.classList.add('mismatch');
       el.textContent = 'O dígito verificador não confere (o certo seria ' + a.dvCerto + '). Confira a digitação.';
@@ -9119,8 +9124,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var selo = '<span class="fv-selo termo termo-' + cl.nivel + '">Mês ' + NIVEL_LABEL[cl.nivel] + ' ▾<select data-div-nivel="1" aria-label="Classificação do mês">' + optNivel + '</select></span>';
     h += '<div class="financeiro-bloco"><div class="fv-head"><div><h4>Divisão de ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><span class="saldo-data">' + (d.folgaPJ >= 0 ? 'Folga da PJ: ' + fmtMoeda(d.folgaPJ) : 'A PJ não fecha: faltam ' + fmtMoeda(-d.folgaPJ)) + '</span></div><div class="fv-head-d">' + selo + '<button type="button" class="btn-text" data-plan-config="1">Ajustar</button></div></div>' +
       (tot > 0 ? '<div class="fv-stk">' + seg(d.metaPF, '#2A78D6') + seg(d.metaRes, 'var(--success)') + seg(d.metaPJ, '#B7791E') + '</div>' : '') +
-      lin('arrows', '#2A78D6', d.dispensado ? 'Para a PF (cobrir despesas)' : 'Pró-labore para a PF', d.metaPF, d.faltaPF > 0.005 ? 'falta ' + fmtMoeda(d.faltaPF) : (d.metaPF > 0.005 ? '✓ feito' : '')) +
-      lin('shield', '#17895A', 'Aporte na reserva', d.metaRes, d.faltaRes > 0.005 ? 'falta ' + fmtMoeda(d.faltaRes) : (d.metaRes > 0.005 ? '✓ feito' : '')) +
+      lin('arrows', '#2A78D6', d.dispensado ? 'Para a PF (cobrir despesas)' : 'Pró-labore para a PF', d.metaPF, d.faltaPF > 0.005 ? 'falta ' + fmtMoeda(d.faltaPF) : (d.metaPF > 0.005 ? 'feito' : '')) +
+      lin('shield', '#17895A', 'Aporte na reserva', d.metaRes, d.faltaRes > 0.005 ? 'falta ' + fmtMoeda(d.faltaRes) : (d.metaRes > 0.005 ? 'feito' : '')) +
       lin('build', '#B7791E', 'Fica no caixa da PJ', d.metaPJ, '') + '</div>';
     var L = acoes.split('</button>').filter(function(x){ return x.trim(); }).map(function(x){ return x + '</button>'; });
     h += '<div class="financeiro-bloco fv-acao"><div class="fv-ac-top"><span class="fv-k">Próxima ação</span><span class="fv-chip ' + (L.length ? 'pend' : 'ok') + '">' + (L.length ? 'Pendente' : 'Em dia') + '</span></div>';
@@ -10932,7 +10937,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         var sub = [x.tipo === 'caso' ? (d.nomeAcao || '') : '', d.numeroProcesso ? 'Proc. ' + d.numeroProcesso : ''].filter(Boolean).join(' · ');
         var pend = p.receber > 0.004
           ? '<div class="kc-chips">' + rsChip('Ainda a receber ' + fmtMoeda(p.receber), p.atrasado > 0.004 ? 'neg' : 'pend') + (p.prox ? rsChip((p.prox < hoje ? 'venceu em ' : 'próximo vencimento ') + fmtData(p.prox), p.prox < hoje ? 'neg' : '') : '') + '</div>'
-          : '<div class="kc-chips">' + rsChip('Quitado ✓', 'ok') + '</div>';
+          : '<div class="kc-chips">' + rsChip('Quitado', 'ok') + '</div>';
         var key = x.tipo + '|' + escapeHtml(d.id);
         return '<div class="card arq-card ' + (p.atrasado > 0.004 ? 'status-vencido' : (p.receber > 0.004 ? 'status-pendente' : 'status-recebido')) + '" data-arq="' + key + '">' +
           '<div class="arq-top">' + fvIc(x.tipo === 'acordo' ? 'scale' : (x.tipo === 'alvara' ? 'bank' : 'user'), x.tipo === 'acordo' ? '#8B5CF6' : (x.tipo === 'alvara' ? '#2A78D6' : '#B7791E')) + '<span class="badge">' + TIPO_DOC_LABEL[x.tipo] + '</span><span>' + escapeHtml(x.titulo) + '</span></div>' +
@@ -12623,7 +12628,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         h += '<button type="button" class="ed-btn" data-ed-up="' + i + '"' + (i === 0 ? ' disabled' : '') + ' title="Subir">▲</button>';
         h += '<button type="button" class="ed-btn" data-ed-down="' + i + '"' + ((!prox || prox.final) ? ' disabled' : '') + ' title="Descer">▼</button>';
       }
-      if (podeExcluir) h += '<button type="button" class="ed-btn ed-del" data-ed-del="' + i + '" title="Excluir">✕</button>';
+      if (podeExcluir) h += '<button type="button" class="ed-btn ed-del" data-ed-del="' + i + '" title="Excluir">' + ico('x', 14) + '</button>';
       h += '</div>';
       if (ed.modo === 'peticao') h += '<div class="ed-sub"><label><input type="checkbox" data-ed-alerta="' + i + '"' + (it.alerta ? ' checked' : '') + '> Avisar quando um caso ficar parado aqui por ' + STALL_THRESHOLD_DAYS + ' dias ou mais</label></div>';
       if (ed.modo === 'alvara' && it.final) h += '<div class="ed-sub">Fase final: marca o alvará como recebido.</div>';
@@ -14484,7 +14489,7 @@ function anCardCaixa(pr, w, n){
   pr.linhas.forEach(function(l){ if (l.maior && (!gde || l.maior.v > gde.v)) gde = Object.assign({ m: l.m }, l.maior); });
   var fimL = pr.linhas[pr.linhas.length - 1];
   var aviso2 = (gde && gde.v >= 10000 && totEnt > 0 && gde.v / totEnt >= 0.4) ? '<div class="an-alerta an-info">Uma única entrada pesa muito: <b>' + escapeHtml(gde.nome) + '</b>, ' + fmtMoeda(gde.v) + ' previstos para ' + escapeHtml(fmtData(gde.data).slice(0, 5)) + (gde.alvara ? ' (alvará)' : '') + ' \u2014 ' + Math.round(gde.v / totEnt * 100) + '% de tudo o que se espera receber nos próximos ' + n + ' meses. Sem ela, o caixa de ' + escapeHtml(mesCurto(fimL.m)) + ' ficaria em ' + fmtMoeda(fimL.saldoAlv - gde.v) + ' em vez de ' + fmtMoeda(fimL.saldoAlv) + '.</div>' : '';
-  var aviso = minBase < -0.004 ? '<div class="an-alerta">⚠ No cenário só com parcelas e despesas o caixa fica negativo em ' + escapeHtml(mesLabel(pr.linhas.filter(function(l){ return l.saldoBase < 0; })[0].m)) + '. Alvarás e cobranças atrasadas melhoram isso, mas não têm data certa.</div>' : '';
+  var aviso = minBase < -0.004 ? '<div class="an-alerta">' + ico('triangle-alert', 14) + 'No cenário só com parcelas e despesas o caixa fica negativo em ' + escapeHtml(mesLabel(pr.linhas.filter(function(l){ return l.saldoBase < 0; })[0].m)) + '. Alvarás e cobranças atrasadas melhoram isso, mas não têm data certa.</div>' : '';
   return anCard('Para onde o caixa caminha', 'Saldo livre (PJ + PF) no fim de cada mês dos próximos ' + n + ' meses.',
     anLegenda(serPr) + aviso + aviso2 + anLinhas({ w: w, pontos: pontos, series: serPr, rotulo: 'Projeção do caixa livre' }) +
     anTabela(['Mês', 'Entra', 'Sai', 'Só parcelas', 'Com alvarás'], pr.linhas.map(function(l){ return [escapeHtml(mesCurto(l.m)), fmtMoeda(l.parc + l.fixas), fmtMoeda(l.desp + l.dia), fmtMoeda(l.saldoBase), fmtMoeda(l.saldoAlv)]; })) +
@@ -14632,7 +14637,7 @@ function renderAnaliseUltimo(el){
   var ler = '', hist = anMesesFechados(anMesesAte(12)).map(function(x){ return { m: x, r: anRecebidoMes(x).total }; });
   if (hist.length >= 4 && hist.some(function(x){ return x.m === m; })){
     var pos = hist.slice().sort(function(a, b){ return b.r - a.r; }).findIndex(function(x){ return x.m === m; }) + 1;
-    if (pos <= 3) ler += '<div class="plan-alerta ok">★ ' + (pos === 1 ? 'Foi o melhor mês' : 'Foi o ' + pos + 'º melhor mês') + ' em recebimentos entre os últimos ' + hist.length + ' meses fechados.</div>';
+    if (pos <= 3) ler += '<div class="plan-alerta ok">' + ico('star', 14) + (pos === 1 ? 'Foi o melhor mês' : 'Foi o ' + pos + 'º melhor mês') + ' em recebimentos entre os últimos ' + hist.length + ' meses fechados.</div>';
   }
   if (base && base.gas > 0.004){
     var pg = Math.round((D.total - base.gas) / base.gas * 100);
@@ -17852,7 +17857,7 @@ function pbPecaPoloSet(id, polo){
 }
 function pbPecaHtml(p, pc){
   var idx = pbPecaIdx(p, pc);
-  var h = '<div class="pb-sec pb-ia"><div class="pb-sec-t">✦ Peça sugerida</div><div class="saldo-data">' + escapeHtml((PC_NATUREZA[pc.natureza] || 'Ato') + ' · ' + (PB_INST[pc.instancia] || '') + (pc.polo ? ' · seu cliente é o ' + (pc.polo === 'A' ? 'autor' : 'réu') : '')) + '</div>';
+  var h = '<div class="pb-sec pb-ia"><div class="pb-sec-t">' + ico('sparkles', 14) + 'Peça sugerida</div><div class="saldo-data">' + escapeHtml((PC_NATUREZA[pc.natureza] || 'Ato') + ' · ' + (PB_INST[pc.instancia] || '') + (pc.polo ? ' · seu cliente é o ' + (pc.polo === 'A' ? 'autor' : 'réu') : '')) + '</div>';
   if (!pc.polo) h += '<div class="field" style="margin:4px 0"><label class="field-label" for="pbf_polo">Seu cliente neste processo é…</label><select id="pbf_polo" class="filter-select" style="width:100%"><option value="">Não sei (mostrar tudo)</option><option value="A">Autor / exequente</option><option value="P">Réu / executado</option></select></div>';
   if (!pc.itens.length) return h + '<div class="saldo-data">Não encontrei peça para este ato. Use o prazo manual abaixo, se houver.</div></div>';
   h += pc.itens.map(function(it, i){
@@ -17968,9 +17973,9 @@ function pbAvisoLeitura(){
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){
   var nl = pbListaFiltrada().filter(function(p){ return !pbLidaG(p); }).length, n = pbFiltrosAtivos();
-  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="oabs"><span class="pb-mi-i">☰</span>OABs monitoradas<small>quais advogados o app lê no Diário Oficial</small></button><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">✦</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
-    '<button type="button" class="pb-mi" data-pb="rel"><span class="pb-mi-i">🖨</span>Relatório das publicações<small>imprimir ou salvar em PDF</small></button>' +
-    '<button type="button" class="pb-mi" data-pb="todas-lidas"' + (nl ? '' : ' disabled') + '><span class="pb-mi-i">✓</span>Marcar ' + (n ? 'as ' + nl + ' deste filtro' : (nl ? 'todas (' + nl + ')' : 'todas')) + ' como lidas<small>' + (nl ? 'só as que aparecem na lista' : 'não há publicações não lidas') + '</small></button></div>';
+  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="oabs"><span class="pb-mi-i">' + ico('menu', 20) + '</span>OABs monitoradas<small>quais advogados o app lê no Diário Oficial</small></button><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">' + ico('sparkles', 20) + '</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
+    '<button type="button" class="pb-mi" data-pb="rel"><span class="pb-mi-i">' + ico('printer', 20) + '</span>Relatório das publicações<small>imprimir ou salvar em PDF</small></button>' +
+    '<button type="button" class="pb-mi" data-pb="todas-lidas"' + (nl ? '' : ' disabled') + '><span class="pb-mi-i">' + ico('check', 20) + '</span>Marcar ' + (n ? 'as ' + nl + ' deste filtro' : (nl ? 'todas (' + nl + ')' : 'todas')) + ' como lidas<small>' + (nl ? 'só as que aparecem na lista' : 'não há publicações não lidas') + '</small></button></div>';
 }
 function pbPainelHtml(){
   var f = pbS.f, trib = {}, i;
@@ -18113,13 +18118,13 @@ function pbRapConfirmar(b){
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
-  tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">✓ ' + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
+  tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">' + ico('check', 12) + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
   if (!v){ var prov = cliProvaveis(pbDestinatarios(p)); if (prov.length) tags += '<span class="pb-tg ok">provável cliente: ' + escapeHtml(prov.slice(0, 2).map(function(c){ return c.nome; }).join(', ')) + '</span>'; }
-  if (pz) tags += '<span class="pb-tg pz">⏱ prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
-  else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">✦ ' + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
-  else if (p.sug && !semPz) tags += '<span class="pb-tg pz">⏱ sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
+  if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
+  else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">' + ico('sparkles', 12) + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
+  else if (p.sug && !semPz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
   var aud = pbAudDe(p), audOk = aud && pbAudNaAgenda(p, aud);
-  if (aud) tags += '<span class="pb-tg ' + (audOk ? 'ok' : 'pz') + '">🗓 audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + (audOk ? ' · na Agenda' : '') + '</span>';
+  if (aud) tags += '<span class="pb-tg ' + (audOk ? 'ok' : 'pz') + '">' + ico('calendar-days', 12) + 'audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + (audOk ? ' · na Agenda' : '') + '</span>';
   p.oabs.forEach(function(id){ var o = pbOabDe(id); if (o) tags += '<span class="pb-tg">via OAB ' + escapeHtml(pbPrimeiroNome(o)) + '</span>'; });
   var id = escapeHtml(p.id), btn = '', pad = (!pz && !semPz) ? pbPadraoPrazo(p) : null;
   if (aud && !audOk) btn += '<button type="button" class="btn pb-b pb-ouro" data-pb="aud" data-id="' + id + '">Criar audiência · ' + escapeHtml(fmtData(aud.data).slice(0, 5)) + '</button>';
@@ -18194,7 +18199,7 @@ function pbDesenharDetalhe(){
   var p = pbPub(pbDetId), c = qs('pbCorpo'); if (!p || !c) return;
   var v = pbVinculo(p.processo), t = pbTextos[p.id], pz = pbPrazoGrupo(p), sug = (t && t.ok && t.sug) || p.sug, mem = pbMembros(p);
   var pc = pz ? null : pbPecasDe(p), stp = pbPeca[p.id] || {}, pcSel = pz ? null : (pc ? pbPecaSel(p) : (stp.cat || null)), usaPc = !!(pcSel && pcSel.dias);
-  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">✓ ' + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
+  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">' + ico('check', 12) + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
   if (mem.length > 1) h += '<div class="pb-sec"><div class="pb-sec-t">' + mem.length + ' publicações idênticas reunidas</div><div class="saldo-data">Mesmo processo, dia e texto; só muda o destinatário ou a OAB que a encontrou. Elas são marcadas como lidas juntas.</div><div class="txt">' + escapeHtml(pbDestinatarios(p).join(', ')) + '</div></div>';
   h += '<div class="pb-sec"><div class="pb-sec-t">Texto da publicação</div>';
   if (!t) h += '<div class="saldo-data">Buscando o texto completo no Diário Oficial…</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';
@@ -18209,7 +18214,7 @@ function pbDesenharDetalhe(){
   } else {
     if (pc) h += pbPecaHtml(p, pc);
     var tipoPad = pbRegimeSug(p) === 'cpp' ? 'corridos' : (usaPc ? pcSel.contagem : ((sug && sug.tipo === 'corridos') ? 'corridos' : 'uteis'));
-    h += '<div class="pb-sec-t">' + (usaPc ? 'Prazo da peça escolhida' : (sug ? '✦ Prazo sugerido pelo texto' : 'Prazo desta publicação')) + '</div>';
+    h += '<div class="pb-sec-t">' + (usaPc ? 'Prazo da peça escolhida' : (sug ? ico('sparkles', 14) + 'Prazo sugerido pelo texto' : 'Prazo desta publicação')) + '</div>';
     if (sug) h += '<div class="pb-frase">“…' + escapeHtml(sug.frase) + '…”</div>'; else h += '<div class="saldo-data">Não achei um prazo no texto. Se houver, informe os dias abaixo.</div>';
     h += '<div class="field"><label class="field-label" for="pbf_desc">Descrição</label><div class="pb-combo"><input type="text" id="pbf_desc" maxlength="90" value="' + escapeHtml(usaPc ? pcSel.peca : (sug ? 'Prazo de ' + sug.dias + ' dias — ' + (p.tipo || 'publicação') : (p.tipo || 'Prazo'))) + '"><button type="button" class="pb-combo-b" id="pbCatBtn" data-pbd="catalogo" aria-label="Escolher uma peça cadastrada" aria-expanded="false" title="Escolher uma peça cadastrada">▾</button></div><div class="pb-cat" id="pbCatBox" hidden></div></div>' +
       '<div class="pb-dois"><div class="field"><label class="field-label" for="pbf_dias">Dias</label><input type="number" id="pbf_dias" min="1" max="365" inputmode="numeric" value="' + (usaPc ? pcSel.dias : (sug ? sug.dias : 15)) + '"></div><div class="field"><label class="field-label" for="pbf_tipo">Contagem</label><select id="pbf_tipo" class="filter-select"><option value="uteis"' + (tipoPad === 'uteis' ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + (tipoPad === 'corridos' ? ' selected' : '') + '>dias corridos</option></select></div></div>' +
@@ -18223,8 +18228,8 @@ function pbDesenharDetalhe(){
   var au = pbAudDe(p);
   if (au){
     var naAg = pbAudNaAgenda(p, au);
-    h += '<div class="pb-sec pb-ia"><div class="pb-sec-t">🗓 Audiência no texto</div><div class="pb-frase">“…' + escapeHtml(au.frase) + '…”</div><div class="pb-lin"><span>Data e hora</span><b>' + escapeHtml(fmtData(au.data) + (au.hora ? ' às ' + au.hora : ' (hora não encontrada)')) + '</b></div>' + (au.tipo ? '<div class="pb-lin"><span>Tipo</span><b>' + escapeHtml(au.tipo) + '</b></div>' : '') + (au.modalidade ? '<div class="pb-lin"><span>Modalidade</span><b>' + escapeHtml(au.modalidade === 'online' ? 'Online' : 'Presencial') + '</b></div>' : '') + (au.link ? '<div class="pb-lin"><span>Link</span><b style="overflow-wrap:anywhere">' + escapeHtml(au.link) + '</b></div>' : '') +
-      (naAg ? '<div class="saldo-data">✓ Esta audiência já está na Agenda.</div>' : '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pbd="aud">Criar audiência na Agenda</button></div><div class="pb-aviso">O app só sugere. Confira data, hora e local no texto antes de salvar.</div>') + '</div>';
+    h += '<div class="pb-sec pb-ia"><div class="pb-sec-t">' + ico('calendar-days', 14) + 'Audiência no texto</div><div class="pb-frase">“…' + escapeHtml(au.frase) + '…”</div><div class="pb-lin"><span>Data e hora</span><b>' + escapeHtml(fmtData(au.data) + (au.hora ? ' às ' + au.hora : ' (hora não encontrada)')) + '</b></div>' + (au.tipo ? '<div class="pb-lin"><span>Tipo</span><b>' + escapeHtml(au.tipo) + '</b></div>' : '') + (au.modalidade ? '<div class="pb-lin"><span>Modalidade</span><b>' + escapeHtml(au.modalidade === 'online' ? 'Online' : 'Presencial') + '</b></div>' : '') + (au.link ? '<div class="pb-lin"><span>Link</span><b style="overflow-wrap:anywhere">' + escapeHtml(au.link) + '</b></div>' : '') +
+      (naAg ? '<div class="saldo-data">' + ico('check', 14) + 'Esta audiência já está na Agenda.</div>' : '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pbd="aud">Criar audiência na Agenda</button></div><div class="pb-aviso">O app só sugere. Confira data, hora e local no texto antes de salvar.</div>') + '</div>';
   }
   c.innerHTML = h;
   try{ if (qs('esResp_agendapub')){ if (esS.respPubId !== p.id){ var sg = agChavesProcesso(p.numero || p.processo), me = esMinhasChaves(); esRespIniciarAg('agendapub', sg.length ? sg : (me.length ? [me[0]] : []), sg.length ? 'proc' : 'eu'); esS.respPubId = p.id; } else esRespDesenhar('agendapub'); } }catch(e){ console.error('responsáveis do prazo', e); }
@@ -18612,7 +18617,7 @@ function agRenderIn(){
   var nf = agdFiltrosAtivos();
   h += '<div class="ag-filtros" style="margin-top:8px">' + [['tudo', 'Tudo'], ['prazo', 'Prazos'], ['audiencia', 'Audiências'], ['tarefa', 'Tarefas'], ['inicial', 'Iniciais']].concat(agS.vista === 'quadro' ? [['alvara', 'Alvarás']] : []).map(function(f){ return '<button type="button" class="ag-f' + (agS.filtro === f[0] ? ' on' : '') + '" data-ag="filtro" data-v="' + f[0] + '">' + f[1] + '</button>'; }).join('') +
     '<button type="button" class="ag-f' + (nf ? ' tem' : '') + '" data-ag="flt">Filtros' + (nf ? ' · ' + nf : '') + '</button><button type="button" class="ag-f' + (agS.menu ? ' on' : '') + '" data-ag="menu" aria-label="Mais opções">⋯</button></div>';
-  if (agS.menu) h += '<div class="ag-menu" style="margin-top:6px"><button type="button" class="ag-f" data-ag="rel">🖨 Relatório</button><button type="button" class="ag-f" data-ag="importar">📥 Importar do Control Jus</button><button type="button" class="ag-f" data-ag="calc">🧮 Calculadora de prazos</button></div>';
+  if (agS.menu) h += '<div class="ag-menu" style="margin-top:6px"><button type="button" class="ag-f" data-ag="rel">' + ico('printer') + 'Relatório</button><button type="button" class="ag-f" data-ag="importar">' + ico('download') + 'Importar do Control Jus</button><button type="button" class="ag-f" data-ag="calc">' + ico('calculator') + 'Calculadora de prazos</button></div>';
   h += '<div id="agCorpo">' + agCorpo() + '</div>';
   w.innerHTML = h;
 }
@@ -18641,7 +18646,7 @@ function agConflitoHtml(l){
   }
   if (generica && !msgs.length) msgs.push(generica);
   au.forEach(function(a){ if (!a.processo) return; var n = prNum(a.processo); var pz = ab.filter(function(p){ return p.tipo === 'prazo' && p.processo && prNum(p.processo) === n; })[0]; if (pz) msgs.push('O processo <b>' + escapeHtml(a.cliente || a.processo) + '</b> tem audiência (' + escapeHtml(a.hora) + ') e prazo (' + escapeHtml(pz.titulo) + ') no mesmo dia.'); });
-  return msgs.slice(0, 3).map(function(m){ return '<div class="ag-conf">⚠ <span>' + m + '</span></div>'; }).join('');
+  return msgs.slice(0, 3).map(function(m){ return '<div class="ag-conf">' + ico('triangle-alert', 16) + '<span>' + m + '</span></div>'; }).join('');
 }
 function agPorDia(l){ var m = {}; l.forEach(function(i){ var k = agDataAgir(i); (m[k] = m[k] || []).push(i); }); return m; }
 function agPontos(l){
@@ -18652,7 +18657,7 @@ function agPontos(l){
 function agFatais(l){ var m = {}, hoje = agHoje(); l.forEach(function(i){ if (agTemTrab(i) && i.data >= hoje) (m[i.data] = m[i.data] || []).push(i); }); return m; }
 function agLinhaFatal(i){
   var d = agDias(i.data), q = d === 0 ? 'Vence hoje' : (d === 1 ? 'Vence amanhã' : 'Prazo fatal');
-  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">⚑ <span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
+  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
 }
 function agCabDia(iso){
   var f = agNomeFeriado(iso), rec = !f && pbRecesso(iso) && pbDow(iso) !== 0 && pbDow(iso) !== 6;
@@ -18718,7 +18723,7 @@ function agDatasPrazo(i){
   var d = agDias(i.data), u = agUteis(i.data), tem = agTemTrab(i);
   var fe = d < 0 ? 'atrasado' : (d === 0 ? 'hoje' : (d === 1 ? 'amanhã' : (u >= 1 ? 'em ' + agUtilTxt(u) : 'em ' + d + ' dias')));
   var h = '<div class="agd2">';
-  if (i.situacao === 'pronta') h += '<div class="ok"><small>Peça pronta</small><b>✓ ' + escapeHtml(i.prontaEm ? agAbrevDia(i.prontaEm) : 'sim') + '</b><em>' + escapeHtml((i.prontaPor ? 'por ' + String(i.prontaPor).split(' ')[0] + ' · ' : '') + 'falta protocolar') + '</em></div>';
+  if (i.situacao === 'pronta') h += '<div class="ok"><small>Peça pronta</small><b>' + ico('check', 14) + escapeHtml(i.prontaEm ? agAbrevDia(i.prontaEm) : 'sim') + '</b><em>' + escapeHtml((i.prontaPor ? 'por ' + String(i.prontaPor).split(' ')[0] + ' · ' : '') + 'falta protocolar') + '</em></div>';
   if (tem){
     var dt = agDias(i.trabalhar), ut = agUteis(i.trabalhar), te = dt < 0 ? 'passou há ' + (ut < 0 ? agUtilTxt(-ut) : (-dt) + (dt === -1 ? ' dia' : ' dias')) : (dt === 0 ? 'hoje' : (dt === 1 ? 'amanhã' : (ut >= 1 ? 'em ' + agUtilTxt(ut) : 'em ' + dt + ' dias')));
     h += '<div class="t' + (dt < 0 ? ' at' : '') + '"><small>Trabalhar até</small><b>' + escapeHtml(agAbrevDia(i.trabalhar)) + '</b><em>' + escapeHtml(te) + '</em></div>';
@@ -18730,16 +18735,16 @@ function agAcoesCartao(i){
   if (i.concluido) return '';
   var k = escapeHtml(i.key), b = '';
   if (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link || '')) b += '<a class="pri" data-ag="link" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>';
-  if (i.fonte === 'agenda' && i.tipo === 'prazo') b += i.situacao === 'pronta' ? '<button type="button" class="vd" data-ag="concluir" data-k="' + k + '">Protocolar</button>' : '<button type="button" class="vd" data-ag="pronta" data-k="' + k + '">✓ Peça pronta</button>';
-  b += '<button type="button" data-ag="adiar" data-k="' + k + '">⏱ Adiar ▾</button>';
-  b += i.fonte === 'agenda' ? '<button type="button" data-ag="abrir" data-k="' + k + '">✎ Editar</button>' : '<button type="button" data-ag="acao" data-k="' + k + '">✎ Abrir na Iniciais</button>';
-  b += '<button type="button" data-ag="zap" data-k="' + k + '" aria-label="Mensagem de WhatsApp" title="WhatsApp">💬</button>';
+  if (i.fonte === 'agenda' && i.tipo === 'prazo') b += i.situacao === 'pronta' ? '<button type="button" class="vd" data-ag="concluir" data-k="' + k + '">Protocolar</button>' : '<button type="button" class="vd" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button>';
+  b += '<button type="button" data-ag="adiar" data-k="' + k + '">' + ico('clock') + 'Adiar' + ico('chevron-down', 14).replace('class="ico"', 'class="ico ico-d"') + '</button>';
+  b += i.fonte === 'agenda' ? '<button type="button" data-ag="abrir" data-k="' + k + '">' + ico('pencil') + 'Editar</button>' : '<button type="button" data-ag="acao" data-k="' + k + '">' + ico('pencil') + 'Abrir na Iniciais</button>';
+  b += '<button type="button" data-ag="zap" data-k="' + k + '" aria-label="Mensagem de WhatsApp" title="WhatsApp">' + icWhats(20) + '</button>';
   return '<div class="acx">' + b + '</div>';
 }
 function agBotaoOk(i){
   if (i.fonte === 'alvara') return '';
   var rot = i.concluido ? 'Reabrir' : (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Marcar como realizada' : 'Concluir'));
-  return '<button type="button" class="agc-ok' + (i.concluido ? ' on' : '') + '" data-ag="' + (i.concluido ? 'reabrir' : 'concluir') + '" data-k="' + escapeHtml(i.key) + '" aria-label="' + rot + '" title="' + rot + '">✓</button>';
+  return '<button type="button" class="agc-ok' + (i.concluido ? ' on' : '') + '" data-ag="' + (i.concluido ? 'reabrir' : 'concluir') + '" data-k="' + escapeHtml(i.key) + '" aria-label="' + rot + '" title="' + rot + '">' + ico('check', 18) + '</button>';
 }
 /* "Peça pronta": o prazo segue aberto até ser protocolado; quem marcou fica registrado (o proprietário recebe o aviso no celular) */
 function agPronta(key){
@@ -18764,7 +18769,7 @@ function agCartao(i){
   var ok = agBotaoOk(i);
   return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
     (i.cliente ? '<div class="agc-s">' + escapeHtml(i.cliente) + '</div>' : '') +
-    (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">📍 ' + escapeHtml(i.local) + '</div>' : '') +
+    (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') +
     (i.processo ? '<div class="agc-n"><span>' + escapeHtml(i.processo) + '</span><button type="button" class="agc-cp" data-ag="copiar" data-n="' + escapeHtml(i.processo) + '" aria-label="Copiar o número do processo" title="Copiar o número">' + AGD_COPIA + '</button></div>' : '') +
     (aberto ? agDatasPrazo(i) : '') + '<div class="agc-tg">' + tags + '</div>' + agAcoesCartao(i) + '</div>' + ok + '</div>');
 }
@@ -18774,10 +18779,10 @@ function agMiniSub(i){
   var p = [], hoje = agHoje();
   if (i.cliente) p.push(escapeHtml(i.cliente));
   if (i.tipo === 'prazo'){
-    if (i.situacao === 'pronta') p.push('<b class="agm-ok">peça pronta ✓' + (i.prontaPor ? ' por ' + escapeHtml(String(i.prontaPor).split(' ')[0]) : '') + '</b>');
+    if (i.situacao === 'pronta') p.push('<b class="agm-ok">peça pronta ' + ico('check', 13) + (i.prontaPor ? ' por ' + escapeHtml(String(i.prontaPor).split(' ')[0]) : '') + '</b>');
     else if (agTemTrab(i)) p.push('trabalhar até ' + (i.trabalhar < hoje ? '<b class="agm-at">' + escapeHtml(agAbrevDia(i.trabalhar)) + '</b>' : escapeHtml(agAbrevDia(i.trabalhar))));
     p.push(i.data === hoje ? 'prazo fatal hoje' : 'fatal ' + escapeHtml(agAbrevDia(i.data)));
-  } else if (i.tipo === 'audiencia'){ if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push('📍 ' + escapeHtml(i.local)); }
+  } else if (i.tipo === 'audiencia'){ if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push(ico('map-pin', 13) + escapeHtml(i.local)); }
   else if (i.tipo === 'tarefa') p.push('tarefa');
   return p.join(' · ');
 }
@@ -18804,7 +18809,7 @@ function agMeuDiaHtml(){
   var sec = function(cl, tit, l, nota){ return l.length ? '<div class="agm-sec ' + cl + '"><span>' + tit + '</span><small>' + (nota || l.length) + '</small></div>' + l.map(agMini).join('') : ''; };
   h += sec('a', 'Audiência hoje', aud) + sec('r', 'Vence hoje', vence, 'falta protocolar') + sec('v', 'Peça pronta · conferir e protocolar', prontas) + sec('g', 'Para trabalhar hoje', trab) + sec('r', 'Atrasado', atr);
   if (!abertosHoje && !prontas.length) h += '<div class="financeiro-vazio">Nada pedindo ação hoje.</div>';
-  if (amanha.length) h += '<div class="agm-sec"><span>Amanhã · ' + escapeHtml(agdDiaSemana(am).toLowerCase() + ' ' + fmtData(am).slice(0, 5)) + '</span><small>' + amanha.length + '</small></div>' + amanha.slice(0, 6).map(function(i){ var f = i.tipo === 'prazo' && i.data === am && agTemTrab(i); return '<div class="agm-am" data-ag="det" data-k="' + escapeHtml(i.key) + '"><span>' + (f ? '⚑ Vence: ' : (i.tipo === 'prazo' ? 'Trabalhar: ' : (i.tipo === 'audiencia' ? 'Audiência' + (i.hora ? ' ' + escapeHtml(i.hora) : '') + ': ' : ''))) + escapeHtml(i.titulo) + '</span><span>' + escapeHtml(i.cliente || '') + '</span></div>'; }).join('') + (amanha.length > 6 ? '<div class="saldo-data">e mais ' + (amanha.length - 6) + '</div>' : '');
+  if (amanha.length) h += '<div class="agm-sec"><span>Amanhã · ' + escapeHtml(agdDiaSemana(am).toLowerCase() + ' ' + fmtData(am).slice(0, 5)) + '</span><small>' + amanha.length + '</small></div>' + amanha.slice(0, 6).map(function(i){ var f = i.tipo === 'prazo' && i.data === am && agTemTrab(i); return '<div class="agm-am" data-ag="det" data-k="' + escapeHtml(i.key) + '"><span>' + (f ? ico('flag', 14) + 'Vence: ' : (i.tipo === 'prazo' ? 'Trabalhar: ' : (i.tipo === 'audiencia' ? 'Audiência' + (i.hora ? ' ' + escapeHtml(i.hora) : '') + ': ' : ''))) + escapeHtml(i.titulo) + '</span><span>' + escapeHtml(i.cliente || '') + '</span></div>'; }).join('') + (amanha.length > 6 ? '<div class="saldo-data">e mais ' + (amanha.length - 6) + '</div>' : '');
   return h;
 }
 
@@ -18845,7 +18850,7 @@ function agCartaoQuadro(i){
     if (i.fonte === 'alvara') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="acao" data-k="' + k + '">Abrir alvará</button>';
     else if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && i.situacao === 'afazer') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="mover" data-k="' + k + '" data-v="elaboracao">Avançar ›</button>';
     else if (i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'pronta') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">Protocolar</button>';
-    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="pronta" data-k="' + k + '">✓ Peça pronta</button><button type="button" class="btn btn-ghost pb-b" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
+    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button><button type="button" class="btn btn-ghost pb-b" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
     else btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">' + (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Realizada' : 'Concluir')) + '</button>';
     if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && (i.situacao === 'elaboracao' || i.situacao === 'pronta')) btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="mover" data-k="' + k + '" data-v="' + (i.situacao === 'pronta' ? 'elaboracao' : 'afazer') + '">‹ Voltar</button>';
     btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="adiar" data-k="' + k + '">Adiar</button>';
@@ -18853,7 +18858,7 @@ function agCartaoQuadro(i){
     else if (i.fonte === 'agenda') btn += '<button type="button" class="btn-text pb-b" data-ag="abrir" data-k="' + k + '">Editar</button>';
   } else if (i.fonte !== 'alvara') btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="reabrir" data-k="' + k + '">Reabrir</button>';
   return '<div class="kanban-card ag-kc ' + i.cat + (i.concluido ? ' ok' : '') + '" data-agcard="' + k + '" draggable="true"><div class="kc-top">' + fvIc(ic[0], ic[1]) + '<div class="kc-tit"><div class="kc-nome">' + escapeHtml(i.titulo) + '</div><div class="kc-sub">' + escapeHtml((i.cliente || '') + (i.cliente && i.processo ? ' · ' : '') + (i.processo || '')) + '</div></div></div>' +
-    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">📍 ' + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
+    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
 }
 /* solta um cartão do Quadro numa coluna: devolve se pode; com teste = true só confere, sem mudar nada */
 function agSoltar(key, ck, teste){
@@ -19010,7 +19015,7 @@ function agMontarEd(){
     if (e.target && /^age_(tit|data|proc|hora)$/.test(e.target.id)){ agEdDup = false; var dd = qs('age_dup'); if (dd) dd.innerHTML = ''; }
     if (e.target && e.target.id === 'age_proc'){ agProcSugestoes(e.target.value); agSugerirRespSeLivre(); }
     if (e.target && e.target.id === 'age_proc'){
-      var v = pbVinculo(e.target.value), dica = qs('age_dica'); if (dica) dica.textContent = v ? '✓ ' + v.cadastro + ' · cliente: ' + v.cliente : '';
+      var v = pbVinculo(e.target.value), dica = qs('age_dica'); if (dica) dica.textContent = v ? v.cadastro + ' · cliente: ' + v.cliente : '';
       if (v && !qs('age_cli').value.trim()) qs('age_cli').value = v.cliente;
     }
   });
@@ -19045,7 +19050,7 @@ function agAbrir(key, pre){
     '<div class="field" id="esResp_agenda"' + (caso ? ' style="display:none"' : '') + '></div>' +
     '<div class="pb-dois"><div class="field"><label class="field-label" id="age_data_l" for="age_data">Prazo fatal</label><input type="date" id="age_data" value="' + escapeHtml(V('data')) + '"></div><div class="field" id="age_hora_box"><label class="field-label" for="age_hora">Hora</label><input type="time" id="age_hora" value="' + escapeHtml(V('hora')) + '"></div></div>' +
     rpEdHtml(i, V('data')) +
-    '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">🧮 Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' +
+    '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">' + ico('calculator') + 'Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' +
     '<div class="saldo-data" id="age_dica2" style="margin:-4px 0 8px"></div>' +
     '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="field"><label class="field-label" for="age_local">Local</label><input type="text" id="age_local" maxlength="140" value="' + escapeHtml(V('local')) + '" placeholder="Ex.: Fórum de Morrinhos, sala 2"></div>' +
@@ -19111,7 +19116,7 @@ function agDicasConflito(){
     var min = function(h){ return Number(h.slice(0, 2)) * 60 + Number(h.slice(3)); };
     ks.forEach(function(k){ outros.filter(function(x){ return x.tipo === 'audiencia' && /^\d{2}:\d{2}$/.test(x.hora || '') && Math.abs(min(x.hora) - min(hora)) < 60 && agRespChaves(x).indexOf(k) >= 0; }).forEach(function(x){ out.push('<b>' + escapeHtml(esNomeChave(k)) + '</b> já tem audiência às ' + escapeHtml(x.hora) + ' neste dia.'); }); });
   }
-  el.innerHTML = out.map(function(x){ return '<div style="color:#8a5a00">⚠ ' + x + '</div>'; }).join('');
+  el.innerHTML = out.map(function(x){ return '<div style="color:#8a5a00">' + ico('triangle-alert', 14) + x + '</div>'; }).join('');
 }
 function agSalvarEd(){
   var t = agEditTipo, tit = qs('age_tit').value.trim(), data = qs('age_data').value, err = qs('age_erro');
@@ -19197,7 +19202,7 @@ function agRevDesenhar(){
   var el = qs('overlayAgRevC'), R = agRevS; if (!el || !R) return;
   var itens = agSemResp().sort(agOrdem), n = Object.keys(R.sel).length, np = Object.keys(R.pess).length;
   var h = '<div class="pb-sec"><div class="pb-sec-t">' + itens.length + (itens.length === 1 ? ' prazo ou audiência sem responsável' : ' prazos e audiências sem responsável') + '</div><div class="pb-aviso">Enquanto não houver responsável, o item vale para os advogados do processo e para você. A sugestão vem do cadastro do processo. Marque os itens e aplique.</div></div>';
-  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Todos os prazos e audiências têm responsável. 🎉</div>';
+  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Todos os prazos e audiências têm responsável.</div>';
   h += itens.map(function(i){
     var sug = agChavesProcesso(i.processo), tag = sug.length ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(sug.map(function(k){ return esNomeChave(k).split(' ')[0]; }).join(', ')) + '</span>' : '<span class="pb-tg nv" style="margin-left:6px">' + (i.processo ? 'processo sem advogado' : 'sem processo') + '</span>';
     return '<label class="ad-it es-it"><input type="checkbox" data-arv="item" data-k="' + escapeHtml(i.key) + '"' + (R.sel[i.key] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo) + '</b>' + tag + '<br><span class="saldo-data">' + escapeHtml(AG_TIPOS[i.tipo] || i.tipo) + ' · ' + escapeHtml(fmtData(i.data)) + (i.hora ? ' às ' + escapeHtml(i.hora) : '') + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + '</span></span></label>';
@@ -19453,7 +19458,7 @@ function prRender(){
 }
 function prMenuPainel(){
   var el = qs('prMenu'), b = qs('prMenuBtn'); if (b) b.classList.toggle('ativo', !!prS.mAberto); if (!el) return;
-  el.innerHTML = prS.mAberto ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pr="imp"><span class="pb-mi-i">⬇</span>Importar do Diário Oficial<small>traz os processos das suas OABs de uma vez</small></button><button type="button" class="pb-mi" data-pr="rel"><span class="pb-mi-i">🖨</span>Relatório da lista<small>imprimir ou salvar em PDF</small></button></div>' : '';
+  el.innerHTML = prS.mAberto ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pr="imp"><span class="pb-mi-i">' + ico('download', 20) + '</span>Importar do Diário Oficial<small>traz os processos das suas OABs de uma vez</small></button><button type="button" class="pb-mi" data-pr="rel"><span class="pb-mi-i">' + ico('printer', 20) + '</span>Relatório da lista<small>imprimir ou salvar em PDF</small></button></div>' : '';
 }
 /* filtros: por cliente (ou sem cliente vinculado) e por vara/órgão */
 function prOrgaoDe(r){
@@ -19523,9 +19528,9 @@ function prRenderLista(){
     else if (r.doc && r.doc.ultimaPublicacao) tags += '<span class="pb-tg">última publicação ' + fmtData(r.doc.ultimaPublicacao).slice(0, 5) + '</span>';
     prHonChips(r, pm).forEach(function(c){ tags += '<span class="pb-tg ' + (c[1] === 'ok' ? 'ok' : (c[1] === 'neg' ? '' : (c[1] === 'pend' ? 'nv' : ''))) + '"' + (c[1] === 'neg' ? ' style="background:rgba(217,59,59,.12);color:var(--urgente)"' : '') + '>' + escapeHtml(c[0]) + '</span>'; });
     var px = prProximaInfo(r);
-    if (px && !arq) tags += '<span class="pb-tg ' + (px.feito ? 'ok' : 'pz') + '">' + (px.feito ? '✓ ' : 'Próxima: ') + escapeHtml(px.txt.slice(0, 40)) + (px.data ? ' · ' + escapeHtml(fmtData(px.data).slice(0, 5)) : '') + '</span>';
+    if (px && !arq) tags += '<span class="pb-tg ' + (px.feito ? 'ok' : 'pz') + '">' + (px.feito ? ico('check', 12) : 'Próxima: ') + escapeHtml(px.txt.slice(0, 40)) + (px.data ? ' · ' + escapeHtml(fmtData(px.data).slice(0, 5)) : '') + '</span>';
     if (!prClienteIds(r).length) tags += '<span class="pb-tg nv">sem cliente vinculado</span>';
-    if (r.doc && r.doc.origem === 'diario'){ tags += '<span class="pb-tg">importado do Diário Oficial</span>'; if (r.doc.vinculoAuto && !r.doc.revisar) tags += '<span class="pb-tg ok">vinculado automaticamente</span>'; if (r.doc.possivelEncerrado) tags += '<span class="pb-tg pz">⚠ cita ' + escapeHtml(r.doc.possivelEncerrado) + '</span>'; }
+    if (r.doc && r.doc.origem === 'diario'){ tags += '<span class="pb-tg">importado do Diário Oficial</span>'; if (r.doc.vinculoAuto && !r.doc.revisar) tags += '<span class="pb-tg ok">vinculado automaticamente</span>'; if (r.doc.possivelEncerrado) tags += '<span class="pb-tg pz">' + ico('triangle-alert', 12) + 'cita ' + escapeHtml(r.doc.possivelEncerrado) + '</span>'; }
     if (prParado(r, pm)) tags += '<span class="pb-tg pz">sem andamento há 60 dias · arquivar?</span>';
     if (arq) tags += '<span class="pb-tg">arquivado' + (r.doc.motivoArquivo ? ' · ' + escapeHtml(r.doc.motivoArquivo) : '') + '</span>';
     var emb = origens.map(function(o){ return o === 'so' ? 'Só processo' : PR_LBL[o]; }).join(' · ');
@@ -19631,7 +19636,7 @@ function prBuscarDados(forcar){
     if (vazio('pr_valor') && d.valorCausa) qs('pr_valor').value = prFmtValor(d.valorCausa);
     if (d.ativo && d.passivo && (vazio('pr_partes') || pt.value === prEd.iniPartes)) pt.value = (d.ativo + ' x ' + d.passivo).slice(0, 120);
     st.style.color = 'var(--success)';
-    st.textContent = '✓ Dados do Diário Oficial preenchidos (' + d.comunicacoes + (d.comunicacoes === 1 ? ' publicação' : ' publicações') + ', a última em ' + fmtData(d.ultimaPublicacao) + '). Confira.';
+    st.textContent = 'Dados do Diário Oficial preenchidos (' + d.comunicacoes + (d.comunicacoes === 1 ? ' publicação' : ' publicações') + ', a última em ' + fmtData(d.ultimaPublicacao) + '). Confira.';
   }).catch(function(e){ var s2 = qs('pr_dados'); if (s2){ s2.style.color = 'var(--ink-soft)'; s2.textContent = 'Não consegui consultar o Diário Oficial agora. Preencha à mão.'; } });
 }
 /* DataJud (CNJ): vara, classe, assunto e data de ajuizamento. É lento (até 1 min) e às vezes falha: roda em segundo plano e só completa o que estiver vazio */
@@ -19653,7 +19658,7 @@ function prBuscarDatajud(forcar){
     if (vazio('pr_assunto') && d.assuntos && d.assuntos.length) qs('pr_assunto').value = d.assuntos.slice(0, 3).join('; ');
     if (vazio('pr_ajuiz') && d.ajuizamento) qs('pr_ajuiz').value = d.ajuizamento;
     st.style.color = 'var(--success)';
-    st.textContent = '✓ Dados do DataJud preenchidos (' + (d.tribunal || r.tribunal) + (d.grau ? ' · ' + d.grau : '') + (d.ultimoMovimento ? ' · último movimento: ' + d.ultimoMovimento.nome + ' em ' + fmtData(d.ultimoMovimento.data) : '') + ')' + (d.sigilo ? ' · ATENÇÃO: o processo tem nível de sigilo ' + d.sigilo : '') + '. O DataJud não informa partes, valor da causa nem honorários. Confira.';
+    st.textContent = 'Dados do DataJud preenchidos (' + (d.tribunal || r.tribunal) + (d.grau ? ' · ' + d.grau : '') + (d.ultimoMovimento ? ' · último movimento: ' + d.ultimoMovimento.nome + ' em ' + fmtData(d.ultimoMovimento.data) : '') + ')' + (d.sigilo ? ' · ATENÇÃO: o processo tem nível de sigilo ' + d.sigilo : '') + '. O DataJud não informa partes, valor da causa nem honorários. Confira.';
   }).catch(function(){ var s2 = qs('pr_dj'); if (s2){ s2.style.color = 'var(--ink-soft)'; s2.textContent = 'Não consegui consultar o DataJud agora. Preencha à mão ou tente de novo.'; } prEd.buscadoDj = ''; });
 }
 function prInfoNumero(){
@@ -19661,7 +19666,7 @@ function prInfoNumero(){
   el.className = 'saldo-data'; el.textContent = '';
   if (!a) return;
   if (!a.completo){ el.textContent = a.soNumeros ? 'Tem ' + a.digitos + ' dígitos; o padrão do CNJ tem 20.' : ''; return; }
-  if (a.valido){ el.style.color = 'var(--success)'; el.textContent = '✓ Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano; }
+  if (a.valido){ el.style.color = 'var(--success)'; el.textContent = 'Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano; }
   else { el.style.color = 'var(--urgente)'; el.textContent = 'O dígito verificador não confere (o certo seria ' + a.dvCerto + ').'; }
 }
 function prChips(){
@@ -19809,8 +19814,8 @@ function prDesenhar(){
       h += r.links.map(function(l){
         var p = pm[l.tipo + '|' + l.id], d = l.doc, rec = p && p.receber > 0.004, quit = p && p.valor > 0 && !rec;
         var txt, nome;
-        if (l.tipo === 'caso'){ nome = d.doProcesso ? 'Honorários do processo' : 'Inicial · ' + (d.nomeAcao || 'Inicial'); txt = honorarioPrincipal(d) + (rec ? ' · a receber ' + fmtMoeda(p.receber) : (quit ? ' · quitado ✓' : (d.modalidadeHonorario === 'sem_honorarios' ? '' : ' · a definir'))); }
-        else { nome = PR_LBL[l.tipo] + ' · ' + (l.tipo === 'acordo' ? 'Termo de acordo' : 'Alvará'); txt = (l.tipo === 'acordo' && d.semHonorarios) ? 'sem honorários' : (rec ? 'a receber ' + fmtMoeda(p.receber) : (quit ? 'quitado ✓' : 'a definir')); }
+        if (l.tipo === 'caso'){ nome = d.doProcesso ? 'Honorários do processo' : 'Inicial · ' + (d.nomeAcao || 'Inicial'); txt = honorarioPrincipal(d) + (rec ? ' · a receber ' + fmtMoeda(p.receber) : (quit ? ' · quitado' : (d.modalidadeHonorario === 'sem_honorarios' ? '' : ' · a definir'))); }
+        else { nome = PR_LBL[l.tipo] + ' · ' + (l.tipo === 'acordo' ? 'Termo de acordo' : 'Alvará'); txt = (l.tipo === 'acordo' && d.semHonorarios) ? 'sem honorários' : (rec ? 'a receber ' + fmtMoeda(p.receber) : (quit ? 'quitado' : 'a definir')); }
         return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(nome) + '</b><br><span class="saldo-data">' + escapeHtml(txt) + (d.arquivado ? ' · arquivado' : '') + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="link" data-v="' + (l.tipo === 'caso' ? 'peticao' : l.tipo) + '|' + escapeHtml(l.id) + '">' + (l.tipo === 'caso' && d.doProcesso ? 'Editar' : 'Abrir') + ' ›</button></div>';
       }).join('');
     } else {
@@ -19822,7 +19827,7 @@ function prDesenhar(){
   var hProx = ''; { var hp0 = h; h = '';
   var pxi = doc ? prProximaInfo(r) : null;
   h += '<div class="field"><label class="field-label" for="pr_prox">Próxima providência (opcional)</label><input type="text" id="pr_prox" maxlength="140" value="' + escapeHtml(doc ? (doc.proxima || '') : '') + '" placeholder="Ex.: Pedir penhora via SISBAJUD"></div>' +
-    '<div class="field"><label class="field-label" for="pr_proxdata">Fazer até (a data coloca a tarefa na Agenda)</label><input type="date" id="pr_proxdata" value="' + escapeHtml(doc ? (doc.proximaData || '') : '') + '">' + (pxi && pxi.feito ? '<div class="saldo-data" style="color:var(--success)">✓ Concluída' + (pxi.concluidoEm ? ' em ' + escapeHtml(fmtData(pxi.concluidoEm)) : '') + '. Escreva a próxima ou limpe o campo.</div>' : '') + '</div>';
+    '<div class="field"><label class="field-label" for="pr_proxdata">Fazer até (a data coloca a tarefa na Agenda)</label><input type="date" id="pr_proxdata" value="' + escapeHtml(doc ? (doc.proximaData || '') : '') + '">' + (pxi && pxi.feito ? '<div class="saldo-data" style="color:var(--success)">' + ico('check', 13) + 'Concluída' + (pxi.concluidoEm ? ' em ' + escapeHtml(fmtData(pxi.concluidoEm)) : '') + '. Escreva a próxima ou limpe o campo.</div>' : '') + '</div>';
   hProx = h; h = hp0; }
   var hObs = ''; { var ho0 = h; h = '';
   h += '<div class="field"><label class="field-label" for="pr_obs">Observações</label><textarea id="pr_obs" rows="3" maxlength="600" placeholder="Anotações sobre o processo">' + escapeHtml(novo ? '' : ((doc && doc.obs) || '')) + '</textarea></div>';
@@ -20051,7 +20056,7 @@ function prPartesPubHtml(){
   nomes.forEach(function(n, i){
     var ms = cliParecidos(n), ligado = ms.filter(function(m){ return prEd.ids.indexOf(m.c.id) >= 0; })[0];
     h += '<div class="pb-lin" style="flex-direction:column;align-items:stretch;gap:6px"><b style="color:var(--ink)">' + escapeHtml(n) + '</b>';
-    if (ligado) h += '<span class="pb-tg ok" style="align-self:flex-start">✓ cliente: ' + escapeHtml(ligado.c.nome) + '</span>';
+    if (ligado) h += '<span class="pb-tg ok" style="align-self:flex-start">' + ico('check', 12) + 'cliente: ' + escapeHtml(ligado.c.nome) + '</span>';
     else {
       h += '<div class="pb-acts" style="margin:0">' + ms.filter(function(m){ return m.nivel >= 1 && prEd.ids.indexOf(m.c.id) < 0; }).slice(0, 2).map(function(m){ return '<button type="button" class="btn btn-primary pb-b" data-prf="sug-add" data-i="' + i + '" data-v="' + escapeHtml(m.c.id) + '">É o cliente ' + escapeHtml(m.c.nome) + '</button>'; }).join('') +
         '<button type="button" class="btn btn-ghost pb-b" data-prf="sug-new" data-i="' + i + '">Cadastrar como cliente</button></div>';
@@ -20188,7 +20193,7 @@ function prVincEscolher(id, seguir){
     var r = origPerfil.apply(this, arguments);
     try{
       var body = qs('perfilBody'), id = perfilClienteId; if (!body || !id) return r;
-      var ac = body.querySelector('.cli-acoes'); if (ac && !body.querySelector('[data-pr-relcli]')) ac.insertAdjacentHTML('afterend', '<div class="cli-acoes"><button type="button" class="btn btn-ghost" data-pr-relcli="' + escapeHtml(id) + '" style="width:100%;justify-content:center;">🖨 Relatório de processos deste cliente</button></div>');
+      var ac = body.querySelector('.cli-acoes'); if (ac && !body.querySelector('[data-pr-relcli]')) ac.insertAdjacentHTML('afterend', '<div class="cli-acoes"><button type="button" class="btn btn-ghost" data-pr-relcli="' + escapeHtml(id) + '" style="width:100%;justify-content:center;">' + ico('printer') + 'Relatório de processos deste cliente</button></div>');
       var mp = prMapa(), pm = pendentesPorDoc(), l = mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(x){ return x.doc && prClienteIds(x).indexOf(id) >= 0; });
       var det = body.querySelector('details[data-sec="atos"]'); if (!det || !l.length) return r;
       var cont = det.querySelector('.cli-sec-body'), sp = det.querySelector('summary span');
@@ -20570,7 +20575,7 @@ function panHtml(D, op){
   var aud = D.semanas.reduce(function(s, x){ return s + x.aud; }, 0);
   h += panCard('Carga de prazos nas próximas 8 semanas', panColunas(D.semanas, function(s){ return fmtData(s.ini).slice(0, 5); }), 'Prazos em aberto por semana (a semana começa na segunda)' + (aud ? '; mais ' + aud + (aud === 1 ? ' audiência' : ' audiências') + ' no período' : '') + '.');
   h += panCard('Quem pede atenção', '<div class="pb-lin"><span>Processos parados há mais de 60 dias</span><b>' + a.parado + '</b></div><div class="pb-lin"><span>Prazos protocolados fora do prazo</span><b>' + D.protFora + '</b></div><div class="pb-lin"><span>Processos sem cliente vinculado</span><b>' + D.semProcCliente + '</b></div>');
-  h += '<button type="button" class="btn btn-ghost" data-pan="rel" style="width:100%;justify-content:center;margin-top:4px">🖨 Relatório das análises</button>';
+  h += '<button type="button" class="btn btn-ghost" data-pan="rel" style="width:100%;justify-content:center;margin-top:4px">' + ico('printer') + 'Relatório das análises</button>';
   return h;
 }
 function panRender(){
@@ -21132,7 +21137,7 @@ function impLinhaHtml(l){
   var g = l.g, pt = impPartesDe(g), dec = l.dec, tags = '';
   tags += '<span class="pb-tg">última publicação ' + escapeHtml(fmtData(g.ult.data).slice(0, 5)) + (g.ult.tipo ? ' · ' + escapeHtml(g.ult.tipo) : '') + '</span>';
   Object.keys(g.oabs).forEach(function(o){ tags += '<span class="pb-tg">' + escapeHtml(impOabNome(o)) + '</span>'; });
-  if (g.ult.enc) tags += '<span class="pb-tg pz">⚠ cita ' + escapeHtml(g.ult.enc) + '</span>';
+  if (g.ult.enc) tags += '<span class="pb-tg pz">' + ico('triangle-alert', 12) + 'cita ' + escapeHtml(g.ult.enc) + '</span>';
   if (dec.tipo === 'auto') tags += '<span class="pb-tg ok">vincula a ' + escapeHtml(dec.cliente.nome.slice(0, 28)) + '</span>';
   else if (dec.motivo === 'cliente-parecido') tags += '<span class="pb-tg nv">revisar: ' + escapeHtml((clienteById(dec.sugestao) || {}).nome ? clienteById(dec.sugestao).nome.slice(0, 26) : 'cliente parecido') + '?</span>';
   else tags += '<span class="pb-tg nv">revisar: sem cliente</span>';
@@ -21343,7 +21348,7 @@ function impEscolherParaGrupo(i){
 }
 function impListaClientes(){
   var q = normNome(qs('impCBusca').value), l = clientes.filter(function(c){ return !c.arquivado && (!q || normNome(c.nome + ' ' + (c.apelidos || []).join(' ')).indexOf(q) >= 0); }).sort(function(a, b){ return a.nome.localeCompare(b.nome, 'pt-BR'); }).slice(0, 40);
-  qs('impCLista').innerHTML = l.length ? l.map(function(c){ return '<button type="button" class="pb-mi" data-impc="' + escapeHtml(c.id) + '"><span class="pb-mi-i">👤</span>' + escapeHtml(c.nome) + '</button>'; }).join('') : '<div class="pb-aviso">Nenhum cliente com esse nome. Feche e use “Cadastrar cliente novo”.</div>';
+  qs('impCLista').innerHTML = l.length ? l.map(function(c){ return '<button type="button" class="pb-mi" data-impc="' + escapeHtml(c.id) + '"><span class="pb-mi-i">' + ico('user-round', 20) + '</span>' + escapeHtml(c.nome) + '</button>'; }).join('') : '<div class="pb-aviso">Nenhum cliente com esse nome. Feche e use “Cadastrar cliente novo”.</div>';
 }
 
 /* ---------- clientes cadastrados depois: a revisão se atualiza sozinha ---------- */
@@ -21474,24 +21479,24 @@ function bkClique(e){
    Usuários e Perfis e permissões já têm o lugar marcado para a fase de usuários.
    ============================================================ */
 var CF_LINHAS = [
-  { id: 'notif', ic: '🔔', t: 'Notificações e lembretes do iPhone', s: 'avisos de prazos, publicações e compromissos', go: function(){ if (typeof ntAbrir === 'function') ntAbrir(); } },
-  { id: 'backup', ic: '💾', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
-  { id: 'csv', ic: '📤', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
-  { id: 'extregras', ic: '🏦', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
-  { id: 'cal', ic: '📆', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
-  { id: 'dias', ic: '📅', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
-  { id: 'usuarios', ic: '👥', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
-  { id: 'seguranca', ic: '🔒', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
-  { id: 'lixeira', ic: '🗑', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
-  { id: 'registro', ic: '🧾', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
+  { id: 'notif', ic: 'bell', t: 'Notificações e lembretes do iPhone', s: 'avisos de prazos, publicações e compromissos', go: function(){ if (typeof ntAbrir === 'function') ntAbrir(); } },
+  { id: 'backup', ic: 'archive', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
+  { id: 'csv', ic: 'file-up', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
+  { id: 'extregras', ic: 'landmark', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
+  { id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
+  { id: 'dias', ic: 'calendar-days', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
+  { id: 'usuarios', ic: 'users', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
+  { id: 'seguranca', ic: 'lock', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
+  { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
+  { id: 'registro', ic: 'receipt', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
 ];
 var CF_FUTURAS = [
-  { ic: '⚖️', t: 'OABs e publicações', s: 'OAB de cada advogado' },
-  { ic: '🗓', t: 'Agendas e regras operacionais', s: 'compartilhar e listas' },
+  { ic: 'scale', t: 'OABs e publicações', s: 'OAB de cada advogado' },
+  { ic: 'calendar-days', t: 'Agendas e regras operacionais', s: 'compartilhar e listas' },
 ];
 function cfLinha(l, fut){
   var tag = l.breve ? '<span class="cf-tag">em breve</span>' : (fut ? '<span class="cf-tag">depois</span>' : '<span class="cf-seta">›</span>');
-  return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + l.ic + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
+  return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + ico(l.ic, 20) + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
 }
 function cfRender(){
   var w = qs('cfWrap'); if (!w) return;
@@ -21503,7 +21508,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: '🔒', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: '🔔', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: '📆', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +
@@ -21589,7 +21594,7 @@ function sgLixDesenhar(){
   var lista = sgS.lix.filter(function(i){ return !sgS.filtroLix || i.rotulo === sgS.filtroLix; });
   var h = '<div class="pb-sec"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="pb-sec-t">Lixeira</div><div class="pb-aviso">' + sgS.lix.length + (sgS.lix.length === 1 ? ' item' : ' itens') + '. Cada um some sozinho depois de 30 dias.</div></div>' +
     '<button type="button" class="btn btn-ghost pb-funil' + (sgS.menuLix ? ' ativo' : '') + '" data-sg="menu" aria-label="Mais opções" title="Mais opções"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>' +
-    (sgS.menuLix ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-sg="esvaziar-pede"><span class="pb-mi-i">🗑</span>Esvaziar a lixeira<small>apaga tudo de uma vez, sem volta</small></button></div>' : '') +
+    (sgS.menuLix ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-sg="esvaziar-pede"><span class="pb-mi-i">' + ico('trash-2', 20) + '</span>Esvaziar a lixeira<small>apaga tudo de uma vez, sem volta</small></button></div>' : '') +
     (sgS.confirma === '__tudo' ? '<div class="pb-aviso" style="margin-top:8px"><b>Apagar de vez os ' + sgS.lix.length + ' itens?</b> Depois disso não dá para restaurar.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-sg="cancela">Cancelar</button><button type="button" class="btn btn-primary pb-b" data-sg="esvaziar">Apagar de vez</button></div>' : '') + '</div>';
   if (Object.keys(tipos).length > 1) h += '<div class="field"><label class="field-label" for="sgFLix">Tipo</label><select id="sgFLix" class="filter-select" data-sgf="lix" style="width:100%"><option value="">Todos (' + sgS.lix.length + ')</option>' + Object.keys(tipos).sort().map(function(t){ return '<option value="' + escapeHtml(t) + '"' + (sgS.filtroLix === t ? ' selected' : '') + '>' + escapeHtml(t) + ' (' + tipos[t] + ')</option>'; }).join('') + '</select></div>';
   if (!lista.length) h += '<div class="financeiro-vazio">' + (sgS.lix.length ? 'Nada com esse filtro.' : 'A lixeira está vazia. O que você excluir no app aparece aqui por 30 dias.') + '</div>';
@@ -21651,7 +21656,7 @@ function sgSegCarregar(){
     qs('overlaySgSegC').innerHTML = '<div class="pb-aviso">' + (/individual|404/.test(e.message) ? 'Esta tela fica disponível quando o acesso individual (e-mail e senha) está ativo.' : 'Não consegui abrir: ' + escapeHtml(e.message)) + '</div>';
   });
 }
-function sgSegIcone(rotulo){ return /iPhone|iPad|Android/.test(rotulo || '') ? '📱' : '💻'; }
+function sgSegIcone(rotulo){ return /iPhone|iPad|Android/.test(rotulo || '') ? ico('smartphone', 20) : ico('laptop', 20); }
 function sgSegDesenhar(){
   var el = qs('overlaySgSegC'), j = sgS.seg; if (!el || !j) return;
   var h = '<div class="pb-sec"><div class="pb-sec-t">Sessões abertas</div><div class="pb-aviso">Cada aparelho em que você entrou. Encerrar faz o aparelho perder o acesso na hora.</div></div>';
@@ -21809,7 +21814,7 @@ function usHtmlLink(){
   var l = usS.link, txt = 'Olá! Segue o seu convite para o Horus. Abra o link, confira seus dados e crie a sua senha (vale por 48 horas e só pode ser usado uma vez): ' + l.link;
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convite criado · ' + escapeHtml(l.nome) + ' (' + US_PAPEL[l.papel] + ')</div></div>' +
     '<div class="field"><label class="field-label" for="usLink">Link de convite</label><input type="text" id="usLink" readonly value="' + escapeHtml(l.link) + '" style="font-family:ui-monospace,monospace;font-size:var(--t2)"></div>' +
-    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="copiar">' + (l.copiado ? 'Link copiado ✓' : 'Copiar link') + '</button><a class="btn btn-ghost pb-b" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" style="text-decoration:none">Enviar pelo WhatsApp</a></div>' +
+    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="copiar">' + (l.copiado ? 'Link copiado' : 'Copiar link') + '</button><a class="btn btn-ghost pb-b" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" style="text-decoration:none">Enviar pelo WhatsApp</a></div>' +
     '<div class="pb-aviso" style="margin:8px 4px">Vale por <b>48 horas</b> e <b>só pode ser usado uma vez</b>. Este link aparece só agora: se perder, abra o convite na lista e gere outro.</div>';
 }
 /* ---------- ficha de uma pessoa ---------- */
@@ -21979,7 +21984,7 @@ function esRespNome(a){
 function esRespHtml(chave){
   var l = esS.resp[chave] || [], aberto = esS.abertoSel === chave;
   var ag = String(chave).indexOf('agenda') === 0, h = '<label class="field-label">' + (ag ? 'Responsáveis' + (esS.sugerido && esS.sugerido[chave] === 'proc' ? ' <span class="pb-tg ok" style="margin-left:4px">sugeridos pelo processo</span>' : '') : 'Advogados responsáveis') + '</label><div class="es-chips">' + (l.length ? l.map(function(a){
-    return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">✕</button></span>';
+    return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">' + ico('x', 14) + '</button></span>';
   }).join('') : '<span class="es-chip es-vazio">' + (ag ? 'ninguém escolhido' : 'sem advogado definido') + '</span>') +
     '<button type="button" class="es-lk" data-esr="abrir" data-c="' + chave + '">' + (aberto ? 'Fechar lista' : (ag ? 'Adicionar responsável' : 'Adicionar advogado')) + '</button></div>';
   if (aberto) h += '<div class="es-lista">' + (esLista(chave).length ? esLista(chave).map(function(a){
@@ -22049,7 +22054,7 @@ function esRevDesenhar(){
   var h = '<div class="pb-sec"><div class="pb-sec-t">' + tot + (tot === 1 ? ' registro esperando você' : ' registros esperando você') + '</div><div class="pb-aviso">Enquanto não houver advogado, só você (e o estagiário) vê o registro. Marque os registros, escolha os advogados e aplique.</div></div>';
   h += '<div class="es-abas">' + abas.map(function(a){ return '<button type="button" class="es-aba' + (R.filtro === a[0] ? ' on' : '') + '" data-esv="filtro" data-k="' + a[0] + '">' + a[1] + ' ' + a[2] + '</button>'; }).join('') + '</div>';
   var itens = esRevItens();
-  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nada pendente aqui. 🎉</div>';
+  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nada pendente aqui.</div>';
   h += itens.map(function(i){
     var k = i.colecao + '|' + i.id, sug = i.sugestao && i.sugestao.length ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(i.sugestao.map(function(a){ return a.nome.split(' ')[0]; }).join(', ')) + '</span>' : (i.semNumero ? '<span class="pb-tg nv" style="margin-left:6px">sem nº de processo</span>' : '');
     return '<label class="ad-it es-it"><input type="checkbox" data-esv="item" data-k="' + escapeHtml(k) + '"' + (R.sel[k] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo || 'Sem nome') + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(i.rotulo) + (i.numero ? ' · ' + escapeHtml(i.numero) : '') + (i.motivo ? ' · ' + escapeHtml(i.motivo) : '') + '</span></span></label>';
@@ -22183,9 +22188,9 @@ function lgProtAviso(){
   var a = cnjAnalisar(lgS.num), n = prNum(lgS.num);
   if (!a){ el.textContent = ''; box.innerHTML = ''; return; }
   if (!a.completo){ el.textContent = 'Tem ' + a.digitos + ' dígitos; o padrão do CNJ tem 20. Se for protocolo ou número antigo, pode seguir.'; box.innerHTML = ''; return; }
-  el.textContent = a.valido ? ('✓ Número válido' + (a.sigla ? ' · ' + a.sigla : '')) : 'O dígito verificador não confere: confira o número.';
+  el.textContent = a.valido ? ('Número válido' + (a.sigla ? ' · ' + a.sigla : '')) : 'O dígito verificador não confere: confira o número.';
   var r = prMapa().m[a.formatado ? prNum(a.formatado) : n];
-  if (r && r.doc) box.innerHTML = '<div class="pb-aviso">✓ Este processo já está cadastrado (' + escapeHtml(prTitulo(r)) + '). A Inicial fica ligada a ele.</div>';
+  if (r && r.doc) box.innerHTML = '<div class="pb-aviso">' + ico('check', 14) + 'Este processo já está cadastrado (' + escapeHtml(prTitulo(r)) + '). A Inicial fica ligada a ele.</div>';
   else box.innerHTML = '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" id="lgCad"' + (lgS.cad ? ' checked' : '') + '><span class="ad-t">Cadastrar também o processo (com o cliente e os advogados desta Inicial)</span></label>';
 }
 function lgProtClique(a){
@@ -22270,18 +22275,18 @@ function lgRevDesenhar(){
   var n = Object.keys(R.sel).length;
   if (R.aba === 'sem'){
     h += '<div class="pb-aviso">Estes números aparecem em Iniciais, Acordos, Alvarás ou na Agenda, mas o processo não está cadastrado. Cadastrar leva o cliente, as partes e os advogados dos atos.</div>';
-    h += d.sem.length ? d.sem.map(function(x){ return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(x.numero) + ' · em: ' + escapeHtml(x.atos) + '</span></span></label>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os números têm processo cadastrado. 🎉</div>';
+    h += d.sem.length ? d.sem.map(function(x){ return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(x.numero) + ' · em: ' + escapeHtml(x.atos) + '</span></span></label>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os números têm processo cadastrado.</div>';
     if (d.sem.length) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar todos</button><button type="button" class="btn btn-primary pb-b" data-lgr="cadastrar"' + (R.ocupado || !n ? ' disabled' : '') + '>Cadastrar' + (n ? ' ' + n + (n === 1 ? ' processo' : ' processos') : '') + '</button></div>';
   } else if (R.aba === 'semcli'){
     h += '<div class="pb-aviso">Processos sem cliente não aparecem no perfil de ninguém. A sugestão vem dos atos do mesmo número ou do nome das partes; sem sugestão, abra o processo e escolha o cliente.</div>';
     h += d.semCli.length ? d.semCli.map(function(x){
       var sug = x.sug ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(x.sug.map(nomeCliente).join(', ')) + '</span>' : '';
       return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + (x.sug ? '' : ' disabled') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(x.numero) + (x.motivo ? ' · ' + escapeHtml(x.motivo) : '') + '</span></span><button type="button" class="es-lk" data-lgr="abrir-proc" data-k="' + escapeHtml(x.num) + '">Abrir</button></label>';
-    }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os processos têm cliente. 🎉</div>';
+    }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os processos têm cliente.</div>';
     if (d.semCli.some(function(x){ return x.sug; })) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar os que têm sugestão</button><button type="button" class="btn btn-primary pb-b" data-lgr="vincular"' + (R.ocupado || !n ? ' disabled' : '') + '>Vincular o cliente sugerido' + (n ? ' (' + n + ')' : '') + '</button></div>';
   } else {
     h += '<div class="pb-aviso">O cliente do ato é diferente do cliente do processo de mesmo número. Confira qual está certo.</div>';
-    h += d.dif.length ? d.dif.map(function(x, i){ return '<div class="pb-card" style="--pb-bar:#C98500;margin:6px 0"><div class="pb-l1"><span><b>' + escapeHtml(x.titulo) + '</b></span><span class="pb-tg">' + LG_PR[x.tipo] + '</span></div><div class="pb-proc">' + escapeHtml(x.numero) + '</div><div class="pb-proc">Cliente no ' + LG_PR[x.tipo].toLowerCase() + ': <b>' + escapeHtml(x.doAto) + '</b><br>Cliente no processo: <b>' + escapeHtml(x.doProc) + '</b></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-ato" data-k="' + i + '">Usar o do processo no ' + LG_PR[x.tipo].toLowerCase() + '</button><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-proc" data-k="' + i + '">Usar o do ' + LG_PR[x.tipo].toLowerCase() + ' no processo</button></div></div>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Nenhuma divergência. 🎉</div>';
+    h += d.dif.length ? d.dif.map(function(x, i){ return '<div class="pb-card" style="--pb-bar:#C98500;margin:6px 0"><div class="pb-l1"><span><b>' + escapeHtml(x.titulo) + '</b></span><span class="pb-tg">' + LG_PR[x.tipo] + '</span></div><div class="pb-proc">' + escapeHtml(x.numero) + '</div><div class="pb-proc">Cliente no ' + LG_PR[x.tipo].toLowerCase() + ': <b>' + escapeHtml(x.doAto) + '</b><br>Cliente no processo: <b>' + escapeHtml(x.doProc) + '</b></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-ato" data-k="' + i + '">Usar o do processo no ' + LG_PR[x.tipo].toLowerCase() + '</button><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-proc" data-k="' + i + '">Usar o do ' + LG_PR[x.tipo].toLowerCase() + ' no processo</button></div></div>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Nenhuma divergência.</div>';
   }
   el.innerHTML = h;
 }
@@ -22410,7 +22415,7 @@ function rcDivHtml(chave){
   var h = '<label class="field-label">Divisão dos honorários</label><div class="es-lista">' + D.partes.map(function(p, i){
     return '<div class="rc-lin"><span class="rc-nm"><b>' + escapeHtml(p.nome || p.oab) + '</b>' + (p.oab ? '<span class="saldo-data"> OAB ' + escapeHtml(p.oab) + '</span>' : '<span class="saldo-data"> parceiro sem cadastro</span>') + '</span>' +
       '<input type="text" inputmode="decimal" class="rc-pct" data-rcd="pct" data-c="' + chave + '" data-i="' + i + '" value="' + escapeHtml(String(p.pct || '').replace('.', ',')) + '" aria-label="Percentual de ' + escapeHtml(p.nome || p.oab) + '"><span>%</span>' +
-      '<b class="rc-val" id="rcv_' + chave + '_' + i + '">' + (base > 0 ? fmtMoeda(Math.round(base * (Number(p.pct) || 0)) / 100) : '') + '</b>' + (p.oab ? '' : '<button type="button" class="es-x" data-rcd="tirar" data-c="' + chave + '" data-i="' + i + '" aria-label="Tirar">✕</button>') + '</div>';
+      '<b class="rc-val" id="rcv_' + chave + '_' + i + '">' + (base > 0 ? fmtMoeda(Math.round(base * (Number(p.pct) || 0)) / 100) : '') + '</b>' + (p.oab ? '' : '<button type="button" class="es-x" data-rcd="tirar" data-c="' + chave + '" data-i="' + i + '" aria-label="Tirar">' + ico('x', 14) + '</button>') + '</div>';
   }).join('') + '</div><div class="saldo-data" id="rcs_' + chave + '" style="' + (ok ? '' : 'color:var(--urgente);font-weight:700') + '">' + (ok ? 'Soma 100%.' : 'Soma ' + rcFmtPct(soma) + ': precisa fechar 100%.') + ' Vale para os recebimentos deste registro: cada advogado fica com a sua parte.</div>' +
     '<div class="pb-acts" style="justify-content:flex-start;margin:2px 0"><button type="button" class="es-lk" data-rcd="igual" data-c="' + chave + '">Dividir igualmente</button><button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Adicionar parceiro sem cadastro</button></div>';
   return h;
@@ -22892,13 +22897,13 @@ function agiCartao(it, idx){
   var tags = agiTg(AG_TIPOS[it.tipo], it.tipo === 'audiencia' ? 'nv' : '') + agiTg(it.concluido ? 'Concluído' : 'Pendente', it.concluido ? 'ok' : '');
   if (it.prioridade && /alta/i.test(it.prioridade)) tags += agiTg('Prioridade alta', 'pz');
   if (it.tipoOriginal && it.tipo === 'tarefa') tags += agiTg('era “' + it.tipoOriginal + '”');
-  if (it.num) tags += it.procExiste ? agiTg('✓ processo já cadastrado', 'ok') : agiTg(agiS.cadProc ? '＋ processo novo' : 'processo não cadastrado', 'nv'); else tags += agiTg('sem processo');
+  if (it.num) tags += it.procExiste ? agiTg('processo já cadastrado', 'ok') : agiTg(agiS.cadProc ? '＋ processo novo' : 'processo não cadastrado', 'nv'); else tags += agiTg('sem processo');
   if (it.processoDe === 'observacao') tags += agiTg('número lido da observação');
   if (it.tipo === 'audiencia' && !hf) tags += agiTg('sem hora');
   it.responsaveis.forEach(function(n){ tags += agiTg('responsável: ' + n); });
   it.partes.forEach(function(n){
     var d = agiS.decisao[normNome(n)] || 'sem', x = agiS.nomes[normNome(n)] || {};
-    tags += d.indexOf('c:') === 0 ? agiTg('✓ ' + ((clienteById(d.slice(2)) || {}).nome || n), 'ok') : (d.indexOf('m:') === 0 ? agiTg('＋ mesmo cliente que ' + ((agiS.nomes[d.slice(2)] || {}).nome || '?'), 'nv') : (d === 'novo' ? agiTg('＋ cliente novo: ' + n, 'nv') : agiTg(n + ' · sem cliente')));
+    tags += d.indexOf('c:') === 0 ? agiTg(''+ ((clienteById(d.slice(2)) || {}).nome || n), 'ok') : (d.indexOf('m:') === 0 ? agiTg('＋ mesmo cliente que ' + ((agiS.nomes[d.slice(2)] || {}).nome || '?'), 'nv') : (d === 'novo' ? agiTg('＋ cliente novo: ' + n, 'nv') : agiTg(n + ' · sem cliente')));
   });
   if (dup) tags += agiTg('já está na agenda · pula');
   else if (it.jaExiste === 'parecido') tags += agiTg('parece já estar na agenda', 'pz');
@@ -23077,7 +23082,7 @@ function agdDesenhar(){
   if (agdExcluir) h += '<div class="pb-aviso agd-perigo">Excluir este compromisso? <button type="button" class="btn btn-ghost pb-b" data-agd="excluir-nao">Não</button> <button type="button" class="btn btn-primary pb-b" data-agd="excluir-sim">Sim, excluir</button></div>';
   var chips = '<span class="pb-tg ' + (i.tipo === 'audiencia' ? 'nv' : '') + '">' + escapeHtml(AG_TIPOS[i.tipo] || 'Prazo') + (i.tipo === 'audiencia' && i.audTipo ? ' · ' + escapeHtml(i.audTipo) : '') + '</span>';
   if (d.subtipo) chips += '<span class="pb-tg">' + escapeHtml(d.subtipo) + '</span>';
-  if (i.tipo === 'audiencia' && i.hora) chips += '<span class="pb-tg">🕒 ' + escapeHtml(i.hora) + '</span>';
+  if (i.tipo === 'audiencia' && i.hora) chips += '<span class="pb-tg">' + ico('clock', 12) + escapeHtml(i.hora) + '</span>';
   if (i.tipo === 'audiencia' && i.modalidade) chips += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
   if (/alta/i.test(d.prioridade || '')) chips += '<span class="pb-tg pz">Prioridade alta</span>';
   if (i.fonte === 'caso') chips += '<span class="pb-tg">da inicial</span>';
@@ -23303,8 +23308,8 @@ function agdFiltrosAtivos(){ return (agS.resp ? 1 : 0) + ((agS.sit || 'abertos')
     '.agc:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ag-c,#C4C4CB)}.agc.pr{--ag-c:var(--urgente)}.agc.au{--ag-c:var(--info)}.agc.pe{--ag-c:var(--c-gold,#C98500)}.agc.ok{--ag-c:var(--success);opacity:.72}' +
     '.agc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--t1);font-weight:700;color:var(--ink-soft)}.agc-top .est{margin-left:0}' +
     '.agc-t{font-size:var(--t4);font-weight:700;line-height:1.25;margin-top:3px;overflow-wrap:anywhere}.agc-s{font-size:var(--t2);color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere}' +
-    '.agc-n{display:flex;align-items:center;gap:4px;font-size:var(--t2);font-weight:700;color:var(--tutela,#8a5a00);margin-top:3px}.agc-cp{width:30px;height:30px;border-radius:10px;border:0;background:transparent;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;margin-left:-2px}.agc-cp:active{background:var(--surface-2,#eee)}' +
-    '.agc-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.agc-tg:empty{display:none}.agc-ok{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;font-size:16px;font-weight:800;flex:none}.agc-ok.on{background:var(--success);border-color:var(--success);color:#fff}' +
+    '.agc-n{display:flex;align-items:center;gap:4px;font-size:var(--t2);font-weight:700;color:var(--tutela,#8a5a00);margin-top:3px}.agc-cp{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;margin-left:-2px}.agc-cp:active{background:var(--surface-2,#eee)}' +
+    '.agc-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.agc-tg:empty{display:none}.agc-ok{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;font-size:16px;font-weight:800;flex:none}.agc-ok.on{background:var(--success);border-color:var(--success);color:#fff}' +
     '.agc-av{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:9px;font-weight:800;padding:0 3px}' +
     /* barra de busca e filtros */
     '.ag-busca{width:100%;height:44px;padding:0 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t4);outline:none}.ag-busca:focus{border-color:var(--c-gold,#C98500)}' +
@@ -23492,7 +23497,7 @@ function dxResumo(iso, mud){
   }
   var nreal = mud.filter(function(m){ return !m.aviso; }).length;
   qs('dxrC').innerHTML = '<div class="parcela-sum">Por causa de <b>' + escapeHtml(fmtData(iso)) + '</b> (' + escapeHtml(dxNome(iso)) + '), ' + (nreal ? '<b>' + nreal + (nreal === 1 ? ' data foi adiada' : ' datas foram adiadas') + '</b>.' : 'nenhuma data precisou ser adiada.') + '</div>' +
-    mud.map(function(m){ return '<div class="cli-linha" style="padding:7px 4px"><b>' + escapeHtml(m.titulo) + '</b>' + (m.cliente ? ' · ' + escapeHtml(m.cliente) : '') + '<div class="saldo-data" style="margin:2px 0 0">' + (m.aviso ? '⚠ ' : escapeHtml(fmtData(m.de)) + ' → <b>' + escapeHtml(fmtData(m.para)) + '</b> · ') + escapeHtml(m.motivo) + '</div></div>'; }).join('') +
+    mud.map(function(m){ return '<div class="cli-linha" style="padding:7px 4px"><b>' + escapeHtml(m.titulo) + '</b>' + (m.cliente ? ' · ' + escapeHtml(m.cliente) : '') + '<div class="saldo-data" style="margin:2px 0 0">' + (m.aviso ? ico('triangle-alert', 13) : escapeHtml(fmtData(m.de)) + ' → <b>' + escapeHtml(fmtData(m.para)) + '</b> · ') + escapeHtml(m.motivo) + '</div></div>'; }).join('') +
     '<div class="pb-acts" style="margin-top:10px">' + (nreal ? '<button type="button" class="btn btn-ghost" data-dxr="desfazer">Desfazer tudo</button>' : '') + '<button type="button" class="btn btn-primary" data-dxr="ok">Ok</button></div>';
   qs('overlayDxRes').classList.add('show');
 }
@@ -23555,7 +23560,7 @@ function pzDesenhar(){
     '<label class="ad-it" style="border:0;padding:3px 0"><input type="checkbox" id="pz_rec"' + (op.recesso ? ' checked' : '') + '><span class="ad-t">Suspender no recesso (20/12 a 20/01)</span></label>' +
     '<label class="ad-it" style="border:0;padding:3px 0"><input type="checkbox" id="pz_pro"' + (op.prorroga ? ' checked' : '') + '><span class="ad-t">Se vencer em dia sem expediente, passar para o próximo dia útil</span></label></div>';
   h += '<label class="ad-it" style="border:0;padding:6px 0"><input type="checkbox" id="pz_dobro"' + (op.dobro ? ' checked' : '') + '><span class="ad-t">Prazo em dobro <small class="saldo-data">(Fazenda Pública, Ministério Público, Defensoria, litisconsortes com advogados diferentes)</small></span></label>' +
-    '<div class="field"><label class="field-label" for="pz_extra">Dia sem expediente só neste cálculo (opcional)</label><div style="display:flex;gap:8px"><input type="date" id="pz_extra" style="flex:1"><button type="button" class="btn btn-ghost pb-b" data-pz="extra-add">Adicionar</button></div>' + (op.extras.length ? '<div style="margin-top:6px">' + op.extras.map(function(x){ return '<span class="pb-tg" style="margin:2px 4px 2px 0">' + escapeHtml(fmtData(x)) + ' <button type="button" class="btn-text" data-pz="extra-rem" data-v="' + x + '" aria-label="Remover" style="padding:0 2px">✕</button></span>'; }).join('') + '</div>' : '') + '<div class="saldo-data" style="margin:3px 2px 0">Para feriado municipal ou suspensão que vale sempre, cadastre em Configurações › Dias sem expediente.</div></div>' +
+    '<div class="field"><label class="field-label" for="pz_extra">Dia sem expediente só neste cálculo (opcional)</label><div style="display:flex;gap:8px"><input type="date" id="pz_extra" style="flex:1"><button type="button" class="btn btn-ghost pb-b" data-pz="extra-add">Adicionar</button></div>' + (op.extras.length ? '<div style="margin-top:6px">' + op.extras.map(function(x){ return '<span class="pb-tg" style="margin:2px 4px 2px 0">' + escapeHtml(fmtData(x)) + ' <button type="button" class="btn-text" data-pz="extra-rem" data-v="' + x + '" aria-label="Remover" style="padding:0 2px">' + ico('x', 14) + '</button></span>'; }).join('') + '</div>' : '') + '<div class="saldo-data" style="margin:3px 2px 0">Para feriado municipal ou suspensão que vale sempre, cadastre em Configurações › Dias sem expediente.</div></div>' +
     '<div id="pzRes"></div><div class="pb-aviso" style="margin:10px 4px">Conferência obrigatória: o app não conhece suspensões pontuais do tribunal (indisponibilidade do sistema, portarias). A memória de cálculo mostra cada dia para você conferir.</div>';
   el.innerHTML = h; pzAtualizar();
 }
@@ -23770,21 +23775,21 @@ function ltAtivar(on){
 function ltEnvolver(i, html){
   if (!ltS.on) return html;
   var pode = ltPodeAlterar(i) && !i.concluido, k = escapeHtml(i.key), on = !!ltS.sel[i.key];
-  return '<div class="agsel' + (pode ? '' : ' off') + (on ? ' on' : '') + '" data-k="' + k + '"' + (pode ? '' : ' title="Você não pode alterar este item"') + '><span class="agsel-cb">' + (on ? '✓' : '') + '</span><div class="agsel-c">' + html + '</div></div>';
+  return '<div class="agsel' + (pode ? '' : ' off') + (on ? ' on' : '') + '" data-k="' + k + '"' + (pode ? '' : ' title="Você não pode alterar este item"') + '><span class="agsel-cb">' + (on ? ico('check', 14) : '') + '</span><div class="agsel-c">' + html + '</div></div>';
 }
 function ltToggle(k){
   var i = ltItem(k); if (!i || !ltPodeAlterar(i) || i.concluido) return;
   if (ltS.sel[k]) delete ltS.sel[k];
   else { if (Object.keys(ltS.sel).length >= LT_MAX){ toast('No máximo ' + LT_MAX + ' itens por vez.'); return; } ltS.sel[k] = 1; }
   var el = document.querySelector('.agsel[data-k="' + (window.CSS && CSS.escape ? CSS.escape(k) : k) + '"]');
-  if (el){ el.classList.toggle('on', !!ltS.sel[k]); el.querySelector('.agsel-cb').textContent = ltS.sel[k] ? '✓' : ''; }
+  if (el){ el.classList.toggle('on', !!ltS.sel[k]); el.querySelector('.agsel-cb').innerHTML = ltS.sel[k] ? ico('check', 14) : ''; }
   ltAtualizar();
 }
 function ltTodosVisiveis(){
   var els = Array.prototype.slice.call(document.querySelectorAll('#agCorpo .agsel:not(.off)')); ltS.sel = {};
   els.slice(0, LT_MAX).forEach(function(e){ ltS.sel[e.getAttribute('data-k')] = 1; });
   if (els.length > LT_MAX) toast('Selecionei os ' + LT_MAX + ' primeiros (o máximo por vez).');
-  els.forEach(function(e){ var on = !!ltS.sel[e.getAttribute('data-k')]; e.classList.toggle('on', on); e.querySelector('.agsel-cb').textContent = on ? '✓' : ''; });
+  els.forEach(function(e){ var on = !!ltS.sel[e.getAttribute('data-k')]; e.classList.toggle('on', on); e.querySelector('.agsel-cb').innerHTML = on ? ico('check', 14) : ''; });
   ltAtualizar();
 }
 /* ---------- barra de ações ---------- */
@@ -23801,7 +23806,7 @@ function ltAtualizar(){
   var adi = l.filter(function(i){ return i.tipo === 'tarefa' || (i.tipo === 'prazo' && agTemTrab(i)); }).length;
   var btn = function(a, rot, ok, cl){ return '<button type="button" data-lt="' + a + '" class="' + (cl || '') + '"' + (ok ? '' : ' disabled') + '>' + rot + '</button>'; };
   b.innerHTML = '<div class="n"><b>' + n + (n === 1 ? ' selecionado' : ' selecionados') + '</b> · só o que você pode alterar <span class="lk-r"><button type="button" data-lt="todos">Selecionar todos os visíveis</button> <button type="button" data-lt="sair">Cancelar</button></span></div>' +
-    '<div class="ac">' + btn('pronta', '✓ Peça pronta', prz > 0, 'v') + btn('adiar', '⏱ Adiar o trabalho', adi > 0) + btn('resp', '👤 Responsável', n > 0) + btn('concluir', '✔ Concluir', n > 0) + (ltPodeExcluir() ? btn('excluir', '🗑 Excluir', n > 0, 'r') : '') + '</div>';
+    '<div class="ac">' + btn('pronta', ico('check') + 'Peça pronta', prz > 0, 'v') + btn('adiar', ico('clock') + 'Adiar o trabalho', adi > 0) + btn('resp', ico('user-round') + 'Responsável', n > 0) + btn('concluir', ico('check') + 'Concluir', n > 0) + (ltPodeExcluir() ? btn('excluir', ico('trash-2') + 'Excluir', n > 0, 'r') : '') + '</div>';
 }
 function ltClique(a){
   if (a === 'sair') return ltAtivar(false);
@@ -24033,6 +24038,18 @@ function icPorId(id){
 }
 /* miolo do SVG (traço) de um ícone do Lucide; nome que não existe cai no genérico */
 function icMiolo(nomeLucide){ return IC_LUCIDE[nomeLucide] || IC_LUCIDE[IC_GENERICO] || ''; }
+/* ---------- ícones no texto dos botões (Onda 3): substitui os emojis ---------- */
+(function(){   /* os poucos desenhos que faltavam no catálogo (mesmo estilo Lucide) */
+  var X = { 'check': '<path d="M20 6 9 17l-5-5"/>', 'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 'map-pin': '<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>', 'menu': '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>', 'ellipsis': '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>', 'chevron-down': '<path d="m6 9 6 6 6-6"/>', 'chevron-left': '<path d="m15 18-6-6 6-6"/>', 'chevron-right': '<path d="m9 18 6-6-6-6"/>' };
+  Object.keys(X).forEach(function(k){ if (!IC_LUCIDE[k]) IC_LUCIDE[k] = X[k]; });
+})();
+/* ico('printer') → SVG de traço que acompanha o texto (cor e tamanho vêm do botão); sem emoji em lugar nenhum do app */
+function ico(nome, tam){
+  tam = tam || 16;
+  return '<svg class="ico" viewBox="0 0 24 24" width="' + tam + '" height="' + tam + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icMiolo(nome) + '</svg>';
+}
+/* o símbolo oficial do WhatsApp (colorido), em /logo/whatsapp.png */
+function icWhats(tam){ tam = tam || 20; return '<img class="ico ico-wa" src="/logo/whatsapp.png" width="' + tam + '" height="' + tam + '" alt="" aria-hidden="true">'; }
 /* SVG completo (24x24, traço); a cor vem do CSS (currentColor) quando não se informa */
 function icSvg(id, opc){
   opc = opc || {}; var it = icPorId(id), tam = opc.tamanho || 20;

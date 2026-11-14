@@ -102,7 +102,7 @@ function usHtmlLink(){
   var l = usS.link, txt = 'Olá! Segue o seu convite para o Horus. Abra o link, confira seus dados e crie a sua senha (vale por 48 horas e só pode ser usado uma vez): ' + l.link;
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convite criado · ' + escapeHtml(l.nome) + ' (' + US_PAPEL[l.papel] + ')</div></div>' +
     '<div class="field"><label class="field-label" for="usLink">Link de convite</label><input type="text" id="usLink" readonly value="' + escapeHtml(l.link) + '" style="font-family:ui-monospace,monospace;font-size:var(--t2)"></div>' +
-    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="copiar">' + (l.copiado ? 'Link copiado ✓' : 'Copiar link') + '</button><a class="btn btn-ghost pb-b" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" style="text-decoration:none">Enviar pelo WhatsApp</a></div>' +
+    '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-us="copiar">' + (l.copiado ? 'Link copiado' : 'Copiar link') + '</button><a class="btn btn-ghost pb-b" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" style="text-decoration:none">Enviar pelo WhatsApp</a></div>' +
     '<div class="pb-aviso" style="margin:8px 4px">Vale por <b>48 horas</b> e <b>só pode ser usado uma vez</b>. Este link aparece só agora: se perder, abra o convite na lista e gere outro.</div>';
 }
 /* ---------- ficha de uma pessoa ---------- */

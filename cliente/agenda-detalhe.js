@@ -75,7 +75,7 @@ function agdDesenhar(){
   if (agdExcluir) h += '<div class="pb-aviso agd-perigo">Excluir este compromisso? <button type="button" class="btn btn-ghost pb-b" data-agd="excluir-nao">Não</button> <button type="button" class="btn btn-primary pb-b" data-agd="excluir-sim">Sim, excluir</button></div>';
   var chips = '<span class="pb-tg ' + (i.tipo === 'audiencia' ? 'nv' : '') + '">' + escapeHtml(AG_TIPOS[i.tipo] || 'Prazo') + (i.tipo === 'audiencia' && i.audTipo ? ' · ' + escapeHtml(i.audTipo) : '') + '</span>';
   if (d.subtipo) chips += '<span class="pb-tg">' + escapeHtml(d.subtipo) + '</span>';
-  if (i.tipo === 'audiencia' && i.hora) chips += '<span class="pb-tg">🕒 ' + escapeHtml(i.hora) + '</span>';
+  if (i.tipo === 'audiencia' && i.hora) chips += '<span class="pb-tg">' + ico('clock', 12) + escapeHtml(i.hora) + '</span>';
   if (i.tipo === 'audiencia' && i.modalidade) chips += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
   if (/alta/i.test(d.prioridade || '')) chips += '<span class="pb-tg pz">Prioridade alta</span>';
   if (i.fonte === 'caso') chips += '<span class="pb-tg">da inicial</span>';
@@ -301,8 +301,8 @@ function agdFiltrosAtivos(){ return (agS.resp ? 1 : 0) + ((agS.sit || 'abertos')
     '.agc:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ag-c,#C4C4CB)}.agc.pr{--ag-c:var(--urgente)}.agc.au{--ag-c:var(--info)}.agc.pe{--ag-c:var(--c-gold,#C98500)}.agc.ok{--ag-c:var(--success);opacity:.72}' +
     '.agc-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--t1);font-weight:700;color:var(--ink-soft)}.agc-top .est{margin-left:0}' +
     '.agc-t{font-size:var(--t4);font-weight:700;line-height:1.25;margin-top:3px;overflow-wrap:anywhere}.agc-s{font-size:var(--t2);color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere}' +
-    '.agc-n{display:flex;align-items:center;gap:4px;font-size:var(--t2);font-weight:700;color:var(--tutela,#8a5a00);margin-top:3px}.agc-cp{width:30px;height:30px;border-radius:10px;border:0;background:transparent;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;margin-left:-2px}.agc-cp:active{background:var(--surface-2,#eee)}' +
-    '.agc-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.agc-tg:empty{display:none}.agc-ok{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;font-size:16px;font-weight:800;flex:none}.agc-ok.on{background:var(--success);border-color:var(--success);color:#fff}' +
+    '.agc-n{display:flex;align-items:center;gap:4px;font-size:var(--t2);font-weight:700;color:var(--tutela,#8a5a00);margin-top:3px}.agc-cp{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;margin-left:-2px}.agc-cp:active{background:var(--surface-2,#eee)}' +
+    '.agc-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.agc-tg:empty{display:none}.agc-ok{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;font-size:16px;font-weight:800;flex:none}.agc-ok.on{background:var(--success);border-color:var(--success);color:#fff}' +
     '.agc-av{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:9px;font-weight:800;padding:0 3px}' +
     /* barra de busca e filtros */
     '.ag-busca{width:100%;height:44px;padding:0 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t4);outline:none}.ag-busca:focus{border-color:var(--c-gold,#C98500)}' +

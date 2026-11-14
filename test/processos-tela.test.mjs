@@ -73,7 +73,7 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').
 await page.click('[data-ag="vista"][data-v="lista"]'); await page.waitForTimeout(300);
 await page.click('.agc:has-text("Pedir penhora") [data-ag="concluir"]'); await page.waitForTimeout(900);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(700);
-check(/✓ Pedir penhora/.test(await t('#prLista')), 'quando a tarefa é concluída, o cartão mostra ✓');
+check(/Pedir penhora/.test(await t('#prLista')), 'quando a tarefa é concluída, o cartão mostra o ícone de concluída');
 await page.click('[data-pr="abrir"][data-n="' + d(N4) + '"]'); await page.waitForTimeout(500);
 check(/Concluída/.test(await t('#prCorpo')), 'e a ficha avisa que foi concluída');
 // limpar a providência apaga a tarefa

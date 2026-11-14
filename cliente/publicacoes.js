@@ -352,7 +352,7 @@ function pbPecaPoloSet(id, polo){
 }
 function pbPecaHtml(p, pc){
   var idx = pbPecaIdx(p, pc);
-  var h = '<div class="pb-sec pb-ia"><div class="pb-sec-t">✦ Peça sugerida</div><div class="saldo-data">' + escapeHtml((PC_NATUREZA[pc.natureza] || 'Ato') + ' · ' + (PB_INST[pc.instancia] || '') + (pc.polo ? ' · seu cliente é o ' + (pc.polo === 'A' ? 'autor' : 'réu') : '')) + '</div>';
+  var h = '<div class="pb-sec pb-ia"><div class="pb-sec-t">' + ico('sparkles', 14) + 'Peça sugerida</div><div class="saldo-data">' + escapeHtml((PC_NATUREZA[pc.natureza] || 'Ato') + ' · ' + (PB_INST[pc.instancia] || '') + (pc.polo ? ' · seu cliente é o ' + (pc.polo === 'A' ? 'autor' : 'réu') : '')) + '</div>';
   if (!pc.polo) h += '<div class="field" style="margin:4px 0"><label class="field-label" for="pbf_polo">Seu cliente neste processo é…</label><select id="pbf_polo" class="filter-select" style="width:100%"><option value="">Não sei (mostrar tudo)</option><option value="A">Autor / exequente</option><option value="P">Réu / executado</option></select></div>';
   if (!pc.itens.length) return h + '<div class="saldo-data">Não encontrei peça para este ato. Use o prazo manual abaixo, se houver.</div></div>';
   h += pc.itens.map(function(it, i){
@@ -468,9 +468,9 @@ function pbAvisoLeitura(){
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){
   var nl = pbListaFiltrada().filter(function(p){ return !pbLidaG(p); }).length, n = pbFiltrosAtivos();
-  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="oabs"><span class="pb-mi-i">☰</span>OABs monitoradas<small>quais advogados o app lê no Diário Oficial</small></button><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">✦</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
-    '<button type="button" class="pb-mi" data-pb="rel"><span class="pb-mi-i">🖨</span>Relatório das publicações<small>imprimir ou salvar em PDF</small></button>' +
-    '<button type="button" class="pb-mi" data-pb="todas-lidas"' + (nl ? '' : ' disabled') + '><span class="pb-mi-i">✓</span>Marcar ' + (n ? 'as ' + nl + ' deste filtro' : (nl ? 'todas (' + nl + ')' : 'todas')) + ' como lidas<small>' + (nl ? 'só as que aparecem na lista' : 'não há publicações não lidas') + '</small></button></div>';
+  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="oabs"><span class="pb-mi-i">' + ico('menu', 20) + '</span>OABs monitoradas<small>quais advogados o app lê no Diário Oficial</small></button><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">' + ico('sparkles', 20) + '</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
+    '<button type="button" class="pb-mi" data-pb="rel"><span class="pb-mi-i">' + ico('printer', 20) + '</span>Relatório das publicações<small>imprimir ou salvar em PDF</small></button>' +
+    '<button type="button" class="pb-mi" data-pb="todas-lidas"' + (nl ? '' : ' disabled') + '><span class="pb-mi-i">' + ico('check', 20) + '</span>Marcar ' + (n ? 'as ' + nl + ' deste filtro' : (nl ? 'todas (' + nl + ')' : 'todas')) + ' como lidas<small>' + (nl ? 'só as que aparecem na lista' : 'não há publicações não lidas') + '</small></button></div>';
 }
 function pbPainelHtml(){
   var f = pbS.f, trib = {}, i;
@@ -613,13 +613,13 @@ function pbRapConfirmar(b){
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
-  tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">✓ ' + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
+  tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">' + ico('check', 12) + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
   if (!v){ var prov = cliProvaveis(pbDestinatarios(p)); if (prov.length) tags += '<span class="pb-tg ok">provável cliente: ' + escapeHtml(prov.slice(0, 2).map(function(c){ return c.nome; }).join(', ')) + '</span>'; }
-  if (pz) tags += '<span class="pb-tg pz">⏱ prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
-  else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">✦ ' + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
-  else if (p.sug && !semPz) tags += '<span class="pb-tg pz">⏱ sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
+  if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
+  else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">' + ico('sparkles', 12) + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
+  else if (p.sug && !semPz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
   var aud = pbAudDe(p), audOk = aud && pbAudNaAgenda(p, aud);
-  if (aud) tags += '<span class="pb-tg ' + (audOk ? 'ok' : 'pz') + '">🗓 audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + (audOk ? ' · na Agenda' : '') + '</span>';
+  if (aud) tags += '<span class="pb-tg ' + (audOk ? 'ok' : 'pz') + '">' + ico('calendar-days', 12) + 'audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + (audOk ? ' · na Agenda' : '') + '</span>';
   p.oabs.forEach(function(id){ var o = pbOabDe(id); if (o) tags += '<span class="pb-tg">via OAB ' + escapeHtml(pbPrimeiroNome(o)) + '</span>'; });
   var id = escapeHtml(p.id), btn = '', pad = (!pz && !semPz) ? pbPadraoPrazo(p) : null;
   if (aud && !audOk) btn += '<button type="button" class="btn pb-b pb-ouro" data-pb="aud" data-id="' + id + '">Criar audiência · ' + escapeHtml(fmtData(aud.data).slice(0, 5)) + '</button>';
@@ -694,7 +694,7 @@ function pbDesenharDetalhe(){
   var p = pbPub(pbDetId), c = qs('pbCorpo'); if (!p || !c) return;
   var v = pbVinculo(p.processo), t = pbTextos[p.id], pz = pbPrazoGrupo(p), sug = (t && t.ok && t.sug) || p.sug, mem = pbMembros(p);
   var pc = pz ? null : pbPecasDe(p), stp = pbPeca[p.id] || {}, pcSel = pz ? null : (pc ? pbPecaSel(p) : (stp.cat || null)), usaPc = !!(pcSel && pcSel.dias);
-  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">✓ ' + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
+  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">' + ico('check', 12) + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
   if (mem.length > 1) h += '<div class="pb-sec"><div class="pb-sec-t">' + mem.length + ' publicações idênticas reunidas</div><div class="saldo-data">Mesmo processo, dia e texto; só muda o destinatário ou a OAB que a encontrou. Elas são marcadas como lidas juntas.</div><div class="txt">' + escapeHtml(pbDestinatarios(p).join(', ')) + '</div></div>';
   h += '<div class="pb-sec"><div class="pb-sec-t">Texto da publicação</div>';
   if (!t) h += '<div class="saldo-data">Buscando o texto completo no Diário Oficial…</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';
@@ -709,7 +709,7 @@ function pbDesenharDetalhe(){
   } else {
     if (pc) h += pbPecaHtml(p, pc);
     var tipoPad = pbRegimeSug(p) === 'cpp' ? 'corridos' : (usaPc ? pcSel.contagem : ((sug && sug.tipo === 'corridos') ? 'corridos' : 'uteis'));
-    h += '<div class="pb-sec-t">' + (usaPc ? 'Prazo da peça escolhida' : (sug ? '✦ Prazo sugerido pelo texto' : 'Prazo desta publicação')) + '</div>';
+    h += '<div class="pb-sec-t">' + (usaPc ? 'Prazo da peça escolhida' : (sug ? ico('sparkles', 14) + 'Prazo sugerido pelo texto' : 'Prazo desta publicação')) + '</div>';
     if (sug) h += '<div class="pb-frase">“…' + escapeHtml(sug.frase) + '…”</div>'; else h += '<div class="saldo-data">Não achei um prazo no texto. Se houver, informe os dias abaixo.</div>';
     h += '<div class="field"><label class="field-label" for="pbf_desc">Descrição</label><div class="pb-combo"><input type="text" id="pbf_desc" maxlength="90" value="' + escapeHtml(usaPc ? pcSel.peca : (sug ? 'Prazo de ' + sug.dias + ' dias — ' + (p.tipo || 'publicação') : (p.tipo || 'Prazo'))) + '"><button type="button" class="pb-combo-b" id="pbCatBtn" data-pbd="catalogo" aria-label="Escolher uma peça cadastrada" aria-expanded="false" title="Escolher uma peça cadastrada">▾</button></div><div class="pb-cat" id="pbCatBox" hidden></div></div>' +
       '<div class="pb-dois"><div class="field"><label class="field-label" for="pbf_dias">Dias</label><input type="number" id="pbf_dias" min="1" max="365" inputmode="numeric" value="' + (usaPc ? pcSel.dias : (sug ? sug.dias : 15)) + '"></div><div class="field"><label class="field-label" for="pbf_tipo">Contagem</label><select id="pbf_tipo" class="filter-select"><option value="uteis"' + (tipoPad === 'uteis' ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + (tipoPad === 'corridos' ? ' selected' : '') + '>dias corridos</option></select></div></div>' +
@@ -723,8 +723,8 @@ function pbDesenharDetalhe(){
   var au = pbAudDe(p);
   if (au){
     var naAg = pbAudNaAgenda(p, au);
-    h += '<div class="pb-sec pb-ia"><div class="pb-sec-t">🗓 Audiência no texto</div><div class="pb-frase">“…' + escapeHtml(au.frase) + '…”</div><div class="pb-lin"><span>Data e hora</span><b>' + escapeHtml(fmtData(au.data) + (au.hora ? ' às ' + au.hora : ' (hora não encontrada)')) + '</b></div>' + (au.tipo ? '<div class="pb-lin"><span>Tipo</span><b>' + escapeHtml(au.tipo) + '</b></div>' : '') + (au.modalidade ? '<div class="pb-lin"><span>Modalidade</span><b>' + escapeHtml(au.modalidade === 'online' ? 'Online' : 'Presencial') + '</b></div>' : '') + (au.link ? '<div class="pb-lin"><span>Link</span><b style="overflow-wrap:anywhere">' + escapeHtml(au.link) + '</b></div>' : '') +
-      (naAg ? '<div class="saldo-data">✓ Esta audiência já está na Agenda.</div>' : '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pbd="aud">Criar audiência na Agenda</button></div><div class="pb-aviso">O app só sugere. Confira data, hora e local no texto antes de salvar.</div>') + '</div>';
+    h += '<div class="pb-sec pb-ia"><div class="pb-sec-t">' + ico('calendar-days', 14) + 'Audiência no texto</div><div class="pb-frase">“…' + escapeHtml(au.frase) + '…”</div><div class="pb-lin"><span>Data e hora</span><b>' + escapeHtml(fmtData(au.data) + (au.hora ? ' às ' + au.hora : ' (hora não encontrada)')) + '</b></div>' + (au.tipo ? '<div class="pb-lin"><span>Tipo</span><b>' + escapeHtml(au.tipo) + '</b></div>' : '') + (au.modalidade ? '<div class="pb-lin"><span>Modalidade</span><b>' + escapeHtml(au.modalidade === 'online' ? 'Online' : 'Presencial') + '</b></div>' : '') + (au.link ? '<div class="pb-lin"><span>Link</span><b style="overflow-wrap:anywhere">' + escapeHtml(au.link) + '</b></div>' : '') +
+      (naAg ? '<div class="saldo-data">' + ico('check', 14) + 'Esta audiência já está na Agenda.</div>' : '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pbd="aud">Criar audiência na Agenda</button></div><div class="pb-aviso">O app só sugere. Confira data, hora e local no texto antes de salvar.</div>') + '</div>';
   }
   c.innerHTML = h;
   try{ if (qs('esResp_agendapub')){ if (esS.respPubId !== p.id){ var sg = agChavesProcesso(p.numero || p.processo), me = esMinhasChaves(); esRespIniciarAg('agendapub', sg.length ? sg : (me.length ? [me[0]] : []), sg.length ? 'proc' : 'eu'); esS.respPubId = p.id; } else esRespDesenhar('agendapub'); } }catch(e){ console.error('responsáveis do prazo', e); }

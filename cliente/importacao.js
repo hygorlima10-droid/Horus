@@ -282,7 +282,7 @@ function impLinhaHtml(l){
   var g = l.g, pt = impPartesDe(g), dec = l.dec, tags = '';
   tags += '<span class="pb-tg">última publicação ' + escapeHtml(fmtData(g.ult.data).slice(0, 5)) + (g.ult.tipo ? ' · ' + escapeHtml(g.ult.tipo) : '') + '</span>';
   Object.keys(g.oabs).forEach(function(o){ tags += '<span class="pb-tg">' + escapeHtml(impOabNome(o)) + '</span>'; });
-  if (g.ult.enc) tags += '<span class="pb-tg pz">⚠ cita ' + escapeHtml(g.ult.enc) + '</span>';
+  if (g.ult.enc) tags += '<span class="pb-tg pz">' + ico('triangle-alert', 12) + 'cita ' + escapeHtml(g.ult.enc) + '</span>';
   if (dec.tipo === 'auto') tags += '<span class="pb-tg ok">vincula a ' + escapeHtml(dec.cliente.nome.slice(0, 28)) + '</span>';
   else if (dec.motivo === 'cliente-parecido') tags += '<span class="pb-tg nv">revisar: ' + escapeHtml((clienteById(dec.sugestao) || {}).nome ? clienteById(dec.sugestao).nome.slice(0, 26) : 'cliente parecido') + '?</span>';
   else tags += '<span class="pb-tg nv">revisar: sem cliente</span>';
@@ -493,7 +493,7 @@ function impEscolherParaGrupo(i){
 }
 function impListaClientes(){
   var q = normNome(qs('impCBusca').value), l = clientes.filter(function(c){ return !c.arquivado && (!q || normNome(c.nome + ' ' + (c.apelidos || []).join(' ')).indexOf(q) >= 0); }).sort(function(a, b){ return a.nome.localeCompare(b.nome, 'pt-BR'); }).slice(0, 40);
-  qs('impCLista').innerHTML = l.length ? l.map(function(c){ return '<button type="button" class="pb-mi" data-impc="' + escapeHtml(c.id) + '"><span class="pb-mi-i">👤</span>' + escapeHtml(c.nome) + '</button>'; }).join('') : '<div class="pb-aviso">Nenhum cliente com esse nome. Feche e use “Cadastrar cliente novo”.</div>';
+  qs('impCLista').innerHTML = l.length ? l.map(function(c){ return '<button type="button" class="pb-mi" data-impc="' + escapeHtml(c.id) + '"><span class="pb-mi-i">' + ico('user-round', 20) + '</span>' + escapeHtml(c.nome) + '</button>'; }).join('') : '<div class="pb-aviso">Nenhum cliente com esse nome. Feche e use “Cadastrar cliente novo”.</div>';
 }
 
 /* ---------- clientes cadastrados depois: a revisão se atualiza sozinha ---------- */

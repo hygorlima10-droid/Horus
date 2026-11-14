@@ -197,7 +197,7 @@ function prRender(){
 }
 function prMenuPainel(){
   var el = qs('prMenu'), b = qs('prMenuBtn'); if (b) b.classList.toggle('ativo', !!prS.mAberto); if (!el) return;
-  el.innerHTML = prS.mAberto ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pr="imp"><span class="pb-mi-i">⬇</span>Importar do Diário Oficial<small>traz os processos das suas OABs de uma vez</small></button><button type="button" class="pb-mi" data-pr="rel"><span class="pb-mi-i">🖨</span>Relatório da lista<small>imprimir ou salvar em PDF</small></button></div>' : '';
+  el.innerHTML = prS.mAberto ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pr="imp"><span class="pb-mi-i">' + ico('download', 20) + '</span>Importar do Diário Oficial<small>traz os processos das suas OABs de uma vez</small></button><button type="button" class="pb-mi" data-pr="rel"><span class="pb-mi-i">' + ico('printer', 20) + '</span>Relatório da lista<small>imprimir ou salvar em PDF</small></button></div>' : '';
 }
 /* filtros: por cliente (ou sem cliente vinculado) e por vara/órgão */
 function prOrgaoDe(r){
@@ -267,9 +267,9 @@ function prRenderLista(){
     else if (r.doc && r.doc.ultimaPublicacao) tags += '<span class="pb-tg">última publicação ' + fmtData(r.doc.ultimaPublicacao).slice(0, 5) + '</span>';
     prHonChips(r, pm).forEach(function(c){ tags += '<span class="pb-tg ' + (c[1] === 'ok' ? 'ok' : (c[1] === 'neg' ? '' : (c[1] === 'pend' ? 'nv' : ''))) + '"' + (c[1] === 'neg' ? ' style="background:rgba(217,59,59,.12);color:var(--urgente)"' : '') + '>' + escapeHtml(c[0]) + '</span>'; });
     var px = prProximaInfo(r);
-    if (px && !arq) tags += '<span class="pb-tg ' + (px.feito ? 'ok' : 'pz') + '">' + (px.feito ? '✓ ' : 'Próxima: ') + escapeHtml(px.txt.slice(0, 40)) + (px.data ? ' · ' + escapeHtml(fmtData(px.data).slice(0, 5)) : '') + '</span>';
+    if (px && !arq) tags += '<span class="pb-tg ' + (px.feito ? 'ok' : 'pz') + '">' + (px.feito ? ico('check', 12) : 'Próxima: ') + escapeHtml(px.txt.slice(0, 40)) + (px.data ? ' · ' + escapeHtml(fmtData(px.data).slice(0, 5)) : '') + '</span>';
     if (!prClienteIds(r).length) tags += '<span class="pb-tg nv">sem cliente vinculado</span>';
-    if (r.doc && r.doc.origem === 'diario'){ tags += '<span class="pb-tg">importado do Diário Oficial</span>'; if (r.doc.vinculoAuto && !r.doc.revisar) tags += '<span class="pb-tg ok">vinculado automaticamente</span>'; if (r.doc.possivelEncerrado) tags += '<span class="pb-tg pz">⚠ cita ' + escapeHtml(r.doc.possivelEncerrado) + '</span>'; }
+    if (r.doc && r.doc.origem === 'diario'){ tags += '<span class="pb-tg">importado do Diário Oficial</span>'; if (r.doc.vinculoAuto && !r.doc.revisar) tags += '<span class="pb-tg ok">vinculado automaticamente</span>'; if (r.doc.possivelEncerrado) tags += '<span class="pb-tg pz">' + ico('triangle-alert', 12) + 'cita ' + escapeHtml(r.doc.possivelEncerrado) + '</span>'; }
     if (prParado(r, pm)) tags += '<span class="pb-tg pz">sem andamento há 60 dias · arquivar?</span>';
     if (arq) tags += '<span class="pb-tg">arquivado' + (r.doc.motivoArquivo ? ' · ' + escapeHtml(r.doc.motivoArquivo) : '') + '</span>';
     var emb = origens.map(function(o){ return o === 'so' ? 'Só processo' : PR_LBL[o]; }).join(' · ');
@@ -375,7 +375,7 @@ function prBuscarDados(forcar){
     if (vazio('pr_valor') && d.valorCausa) qs('pr_valor').value = prFmtValor(d.valorCausa);
     if (d.ativo && d.passivo && (vazio('pr_partes') || pt.value === prEd.iniPartes)) pt.value = (d.ativo + ' x ' + d.passivo).slice(0, 120);
     st.style.color = 'var(--success)';
-    st.textContent = '✓ Dados do Diário Oficial preenchidos (' + d.comunicacoes + (d.comunicacoes === 1 ? ' publicação' : ' publicações') + ', a última em ' + fmtData(d.ultimaPublicacao) + '). Confira.';
+    st.textContent = 'Dados do Diário Oficial preenchidos (' + d.comunicacoes + (d.comunicacoes === 1 ? ' publicação' : ' publicações') + ', a última em ' + fmtData(d.ultimaPublicacao) + '). Confira.';
   }).catch(function(e){ var s2 = qs('pr_dados'); if (s2){ s2.style.color = 'var(--ink-soft)'; s2.textContent = 'Não consegui consultar o Diário Oficial agora. Preencha à mão.'; } });
 }
 /* DataJud (CNJ): vara, classe, assunto e data de ajuizamento. É lento (até 1 min) e às vezes falha: roda em segundo plano e só completa o que estiver vazio */
@@ -397,7 +397,7 @@ function prBuscarDatajud(forcar){
     if (vazio('pr_assunto') && d.assuntos && d.assuntos.length) qs('pr_assunto').value = d.assuntos.slice(0, 3).join('; ');
     if (vazio('pr_ajuiz') && d.ajuizamento) qs('pr_ajuiz').value = d.ajuizamento;
     st.style.color = 'var(--success)';
-    st.textContent = '✓ Dados do DataJud preenchidos (' + (d.tribunal || r.tribunal) + (d.grau ? ' · ' + d.grau : '') + (d.ultimoMovimento ? ' · último movimento: ' + d.ultimoMovimento.nome + ' em ' + fmtData(d.ultimoMovimento.data) : '') + ')' + (d.sigilo ? ' · ATENÇÃO: o processo tem nível de sigilo ' + d.sigilo : '') + '. O DataJud não informa partes, valor da causa nem honorários. Confira.';
+    st.textContent = 'Dados do DataJud preenchidos (' + (d.tribunal || r.tribunal) + (d.grau ? ' · ' + d.grau : '') + (d.ultimoMovimento ? ' · último movimento: ' + d.ultimoMovimento.nome + ' em ' + fmtData(d.ultimoMovimento.data) : '') + ')' + (d.sigilo ? ' · ATENÇÃO: o processo tem nível de sigilo ' + d.sigilo : '') + '. O DataJud não informa partes, valor da causa nem honorários. Confira.';
   }).catch(function(){ var s2 = qs('pr_dj'); if (s2){ s2.style.color = 'var(--ink-soft)'; s2.textContent = 'Não consegui consultar o DataJud agora. Preencha à mão ou tente de novo.'; } prEd.buscadoDj = ''; });
 }
 function prInfoNumero(){
@@ -405,7 +405,7 @@ function prInfoNumero(){
   el.className = 'saldo-data'; el.textContent = '';
   if (!a) return;
   if (!a.completo){ el.textContent = a.soNumeros ? 'Tem ' + a.digitos + ' dígitos; o padrão do CNJ tem 20.' : ''; return; }
-  if (a.valido){ el.style.color = 'var(--success)'; el.textContent = '✓ Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano; }
+  if (a.valido){ el.style.color = 'var(--success)'; el.textContent = 'Número válido' + (a.sigla ? ' · ' + a.sigla : '') + (a.justica ? ' · ' + a.justica : '') + ' · ano ' + a.ano; }
   else { el.style.color = 'var(--urgente)'; el.textContent = 'O dígito verificador não confere (o certo seria ' + a.dvCerto + ').'; }
 }
 function prChips(){
@@ -553,8 +553,8 @@ function prDesenhar(){
       h += r.links.map(function(l){
         var p = pm[l.tipo + '|' + l.id], d = l.doc, rec = p && p.receber > 0.004, quit = p && p.valor > 0 && !rec;
         var txt, nome;
-        if (l.tipo === 'caso'){ nome = d.doProcesso ? 'Honorários do processo' : 'Inicial · ' + (d.nomeAcao || 'Inicial'); txt = honorarioPrincipal(d) + (rec ? ' · a receber ' + fmtMoeda(p.receber) : (quit ? ' · quitado ✓' : (d.modalidadeHonorario === 'sem_honorarios' ? '' : ' · a definir'))); }
-        else { nome = PR_LBL[l.tipo] + ' · ' + (l.tipo === 'acordo' ? 'Termo de acordo' : 'Alvará'); txt = (l.tipo === 'acordo' && d.semHonorarios) ? 'sem honorários' : (rec ? 'a receber ' + fmtMoeda(p.receber) : (quit ? 'quitado ✓' : 'a definir')); }
+        if (l.tipo === 'caso'){ nome = d.doProcesso ? 'Honorários do processo' : 'Inicial · ' + (d.nomeAcao || 'Inicial'); txt = honorarioPrincipal(d) + (rec ? ' · a receber ' + fmtMoeda(p.receber) : (quit ? ' · quitado' : (d.modalidadeHonorario === 'sem_honorarios' ? '' : ' · a definir'))); }
+        else { nome = PR_LBL[l.tipo] + ' · ' + (l.tipo === 'acordo' ? 'Termo de acordo' : 'Alvará'); txt = (l.tipo === 'acordo' && d.semHonorarios) ? 'sem honorários' : (rec ? 'a receber ' + fmtMoeda(p.receber) : (quit ? 'quitado' : 'a definir')); }
         return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(nome) + '</b><br><span class="saldo-data">' + escapeHtml(txt) + (d.arquivado ? ' · arquivado' : '') + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="link" data-v="' + (l.tipo === 'caso' ? 'peticao' : l.tipo) + '|' + escapeHtml(l.id) + '">' + (l.tipo === 'caso' && d.doProcesso ? 'Editar' : 'Abrir') + ' ›</button></div>';
       }).join('');
     } else {
@@ -566,7 +566,7 @@ function prDesenhar(){
   var hProx = ''; { var hp0 = h; h = '';
   var pxi = doc ? prProximaInfo(r) : null;
   h += '<div class="field"><label class="field-label" for="pr_prox">Próxima providência (opcional)</label><input type="text" id="pr_prox" maxlength="140" value="' + escapeHtml(doc ? (doc.proxima || '') : '') + '" placeholder="Ex.: Pedir penhora via SISBAJUD"></div>' +
-    '<div class="field"><label class="field-label" for="pr_proxdata">Fazer até (a data coloca a tarefa na Agenda)</label><input type="date" id="pr_proxdata" value="' + escapeHtml(doc ? (doc.proximaData || '') : '') + '">' + (pxi && pxi.feito ? '<div class="saldo-data" style="color:var(--success)">✓ Concluída' + (pxi.concluidoEm ? ' em ' + escapeHtml(fmtData(pxi.concluidoEm)) : '') + '. Escreva a próxima ou limpe o campo.</div>' : '') + '</div>';
+    '<div class="field"><label class="field-label" for="pr_proxdata">Fazer até (a data coloca a tarefa na Agenda)</label><input type="date" id="pr_proxdata" value="' + escapeHtml(doc ? (doc.proximaData || '') : '') + '">' + (pxi && pxi.feito ? '<div class="saldo-data" style="color:var(--success)">' + ico('check', 13) + 'Concluída' + (pxi.concluidoEm ? ' em ' + escapeHtml(fmtData(pxi.concluidoEm)) : '') + '. Escreva a próxima ou limpe o campo.</div>' : '') + '</div>';
   hProx = h; h = hp0; }
   var hObs = ''; { var ho0 = h; h = '';
   h += '<div class="field"><label class="field-label" for="pr_obs">Observações</label><textarea id="pr_obs" rows="3" maxlength="600" placeholder="Anotações sobre o processo">' + escapeHtml(novo ? '' : ((doc && doc.obs) || '')) + '</textarea></div>';
@@ -795,7 +795,7 @@ function prPartesPubHtml(){
   nomes.forEach(function(n, i){
     var ms = cliParecidos(n), ligado = ms.filter(function(m){ return prEd.ids.indexOf(m.c.id) >= 0; })[0];
     h += '<div class="pb-lin" style="flex-direction:column;align-items:stretch;gap:6px"><b style="color:var(--ink)">' + escapeHtml(n) + '</b>';
-    if (ligado) h += '<span class="pb-tg ok" style="align-self:flex-start">✓ cliente: ' + escapeHtml(ligado.c.nome) + '</span>';
+    if (ligado) h += '<span class="pb-tg ok" style="align-self:flex-start">' + ico('check', 12) + 'cliente: ' + escapeHtml(ligado.c.nome) + '</span>';
     else {
       h += '<div class="pb-acts" style="margin:0">' + ms.filter(function(m){ return m.nivel >= 1 && prEd.ids.indexOf(m.c.id) < 0; }).slice(0, 2).map(function(m){ return '<button type="button" class="btn btn-primary pb-b" data-prf="sug-add" data-i="' + i + '" data-v="' + escapeHtml(m.c.id) + '">É o cliente ' + escapeHtml(m.c.nome) + '</button>'; }).join('') +
         '<button type="button" class="btn btn-ghost pb-b" data-prf="sug-new" data-i="' + i + '">Cadastrar como cliente</button></div>';
@@ -931,7 +931,7 @@ function prVincEscolher(id, seguir){
     var r = origPerfil.apply(this, arguments);
     try{
       var body = qs('perfilBody'), id = perfilClienteId; if (!body || !id) return r;
-      var ac = body.querySelector('.cli-acoes'); if (ac && !body.querySelector('[data-pr-relcli]')) ac.insertAdjacentHTML('afterend', '<div class="cli-acoes"><button type="button" class="btn btn-ghost" data-pr-relcli="' + escapeHtml(id) + '" style="width:100%;justify-content:center;">🖨 Relatório de processos deste cliente</button></div>');
+      var ac = body.querySelector('.cli-acoes'); if (ac && !body.querySelector('[data-pr-relcli]')) ac.insertAdjacentHTML('afterend', '<div class="cli-acoes"><button type="button" class="btn btn-ghost" data-pr-relcli="' + escapeHtml(id) + '" style="width:100%;justify-content:center;">' + ico('printer') + 'Relatório de processos deste cliente</button></div>');
       var mp = prMapa(), pm = pendentesPorDoc(), l = mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(x){ return x.doc && prClienteIds(x).indexOf(id) >= 0; });
       var det = body.querySelector('details[data-sec="atos"]'); if (!det || !l.length) return r;
       var cont = det.querySelector('.cli-sec-body'), sp = det.querySelector('summary span');

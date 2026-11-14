@@ -47,7 +47,7 @@ check(/DataJud/.test(await t('#prCorpo')), 'a janela de cadastro explica que bus
 await page.fill('#pr_numero', NA); await page.keyboard.press('Tab'); await page.waitForTimeout(2500);
 check(await v('pr_orgao') === 'TJGO · 1ª Vara Cível de Morrinhos', 'preenche tribunal e vara: ' + await v('pr_orgao'));
 check(await v('pr_classe') === 'Procedimento Comum Cível' && await v('pr_assunto') === 'Indenização por Dano Moral; Contratos Bancários' && await v('pr_ajuiz') === '2026-09-30', 'preenche classe, assunto e data de ajuizamento');
-check(/✓ Dados do DataJud/.test(await t('#pr_dj')) && /não informa partes/.test(await t('#pr_dj')), 'avisa que partes e valor não vêm do DataJud: ' + (await t('#pr_dj')).slice(0, 80));
+check(/Dados do DataJud/.test(await t('#pr_dj')) && /não informa partes/.test(await t('#pr_dj')), 'avisa que partes e valor não vêm do DataJud: ' + (await t('#pr_dj')).slice(0, 80));
 check(await v('pr_partes') === '' && await v('pr_valor') === '', 'não inventa partes nem valor da causa');
 await page.fill('#pr_partes', 'Maria x Banco'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 const p1 = (await docs('processos')).filter(p => p.numero === NA)[0];

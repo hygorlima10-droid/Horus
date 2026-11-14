@@ -60,3 +60,40 @@
 @media(max-width:480px){.an-ult-quadro table{font-size:11px}.an-ult-quadro th,.an-ult-quadro td{padding:6px 3px}.an-ult-quadro th:first-child,.an-ult-quadro td:first-child{white-space:nowrap}}   /* tabela dos 4 cenários cabe no celular */
 .md-abas{position:relative}
 
+
+/* ---------- Onda 3: ícones no lugar de emojis (ico() em cliente/icones.js) ---------- */
+.ico{vertical-align:-3px;flex:none;margin-right:6px}
+.ico:only-child,.pb-mi-i .ico,.agc-ok .ico,.ico-wa{margin-right:0}
+.ico-d{margin:0 0 0 4px}
+.ico-wa{display:block;object-fit:contain}
+button .ico-wa{display:inline-block;vertical-align:middle}
+.ag-f,.acx button,.agsel-cb{display:inline-flex;align-items:center;gap:0}
+.agsel-cb .ico{margin:0}
+
+/* ---------- Onda 3a: alvos de toque ----------
+   Regra única: tudo que se toca tem no mínimo 36 px de altura e de largura; botões principais e campos 44–48 px.
+   Itens pequenos de aparência ganham tamanho de toque maior sem mudar o desenho (preenchimento em volta). */
+.mes-btn{min-width:40px;min-height:40px}
+.btn-text,.md-link,.es-lk{min-height:36px;display:inline-flex;align-items:center}
+.btn-text.pb-b,.btn.pb-b{min-height:36px;display:inline-flex;align-items:center;justify-content:center}
+.es-lk{min-height:40px}
+.md-fase{min-height:44px}
+.seg-btn{min-height:40px}
+.es-b,.ag-f,.md-per button{min-height:36px}
+.agc-ok{width:40px;height:40px}
+.agc-cp{width:36px;height:36px}
+.info-btn{min-width:36px;min-height:36px;display:inline-grid;place-items:center}
+.ag-c{min-height:40px}
+.ct-ed,.btn-mais,.acao-pagar,.kc-del,.kc-avancar{min-height:36px;min-width:36px}
+button.pb-tg{min-height:36px;display:inline-flex;align-items:center}
+summary{min-width:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center}
+.es-x{width:36px;height:36px;margin:-9px -10px -9px -4px;display:inline-grid;place-items:center}
+select.filter-select,.field select{min-height:44px}
+select{min-height:36px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px;flex:none}
+label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
+.md-chips button{min-height:40px}
+.kanban-card .kc-acoes button{min-height:36px;min-width:36px;padding:0 6px}
+.btn-text.pb-b,.btn.pb-b{min-width:36px}
+.bt button{min-height:36px;min-width:44px}
+.arq-acoes button{min-height:36px;min-width:44px}

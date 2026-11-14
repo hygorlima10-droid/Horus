@@ -34,6 +34,18 @@ function icPorId(id){
 }
 /* miolo do SVG (traço) de um ícone do Lucide; nome que não existe cai no genérico */
 function icMiolo(nomeLucide){ return IC_LUCIDE[nomeLucide] || IC_LUCIDE[IC_GENERICO] || ''; }
+/* ---------- ícones no texto dos botões (Onda 3): substitui os emojis ---------- */
+(function(){   /* os poucos desenhos que faltavam no catálogo (mesmo estilo Lucide) */
+  var X = { 'check': '<path d="M20 6 9 17l-5-5"/>', 'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 'map-pin': '<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>', 'menu': '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>', 'ellipsis': '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>', 'chevron-down': '<path d="m6 9 6 6 6-6"/>', 'chevron-left': '<path d="m15 18-6-6 6-6"/>', 'chevron-right': '<path d="m9 18 6-6-6-6"/>' };
+  Object.keys(X).forEach(function(k){ if (!IC_LUCIDE[k]) IC_LUCIDE[k] = X[k]; });
+})();
+/* ico('printer') → SVG de traço que acompanha o texto (cor e tamanho vêm do botão); sem emoji em lugar nenhum do app */
+function ico(nome, tam){
+  tam = tam || 16;
+  return '<svg class="ico" viewBox="0 0 24 24" width="' + tam + '" height="' + tam + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icMiolo(nome) + '</svg>';
+}
+/* o símbolo oficial do WhatsApp (colorido), em /logo/whatsapp.png */
+function icWhats(tam){ tam = tam || 20; return '<img class="ico ico-wa" src="/logo/whatsapp.png" width="' + tam + '" height="' + tam + '" alt="" aria-hidden="true">'; }
 /* SVG completo (24x24, traço); a cor vem do CSS (currentColor) quando não se informa */
 function icSvg(id, opc){
   opc = opc || {}; var it = icPorId(id), tam = opc.tamanho || 20;

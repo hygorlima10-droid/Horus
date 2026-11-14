@@ -63,7 +63,7 @@ function sgLixDesenhar(){
   var lista = sgS.lix.filter(function(i){ return !sgS.filtroLix || i.rotulo === sgS.filtroLix; });
   var h = '<div class="pb-sec"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="pb-sec-t">Lixeira</div><div class="pb-aviso">' + sgS.lix.length + (sgS.lix.length === 1 ? ' item' : ' itens') + '. Cada um some sozinho depois de 30 dias.</div></div>' +
     '<button type="button" class="btn btn-ghost pb-funil' + (sgS.menuLix ? ' ativo' : '') + '" data-sg="menu" aria-label="Mais opções" title="Mais opções"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>' +
-    (sgS.menuLix ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-sg="esvaziar-pede"><span class="pb-mi-i">🗑</span>Esvaziar a lixeira<small>apaga tudo de uma vez, sem volta</small></button></div>' : '') +
+    (sgS.menuLix ? '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-sg="esvaziar-pede"><span class="pb-mi-i">' + ico('trash-2', 20) + '</span>Esvaziar a lixeira<small>apaga tudo de uma vez, sem volta</small></button></div>' : '') +
     (sgS.confirma === '__tudo' ? '<div class="pb-aviso" style="margin-top:8px"><b>Apagar de vez os ' + sgS.lix.length + ' itens?</b> Depois disso não dá para restaurar.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-sg="cancela">Cancelar</button><button type="button" class="btn btn-primary pb-b" data-sg="esvaziar">Apagar de vez</button></div>' : '') + '</div>';
   if (Object.keys(tipos).length > 1) h += '<div class="field"><label class="field-label" for="sgFLix">Tipo</label><select id="sgFLix" class="filter-select" data-sgf="lix" style="width:100%"><option value="">Todos (' + sgS.lix.length + ')</option>' + Object.keys(tipos).sort().map(function(t){ return '<option value="' + escapeHtml(t) + '"' + (sgS.filtroLix === t ? ' selected' : '') + '>' + escapeHtml(t) + ' (' + tipos[t] + ')</option>'; }).join('') + '</select></div>';
   if (!lista.length) h += '<div class="financeiro-vazio">' + (sgS.lix.length ? 'Nada com esse filtro.' : 'A lixeira está vazia. O que você excluir no app aparece aqui por 30 dias.') + '</div>';
@@ -125,7 +125,7 @@ function sgSegCarregar(){
     qs('overlaySgSegC').innerHTML = '<div class="pb-aviso">' + (/individual|404/.test(e.message) ? 'Esta tela fica disponível quando o acesso individual (e-mail e senha) está ativo.' : 'Não consegui abrir: ' + escapeHtml(e.message)) + '</div>';
   });
 }
-function sgSegIcone(rotulo){ return /iPhone|iPad|Android/.test(rotulo || '') ? '📱' : '💻'; }
+function sgSegIcone(rotulo){ return /iPhone|iPad|Android/.test(rotulo || '') ? ico('smartphone', 20) : ico('laptop', 20); }
 function sgSegDesenhar(){
   var el = qs('overlaySgSegC'), j = sgS.seg; if (!el || !j) return;
   var h = '<div class="pb-sec"><div class="pb-sec-t">Sessões abertas</div><div class="pb-aviso">Cada aparelho em que você entrou. Encerrar faz o aparelho perder o acesso na hora.</div></div>';

@@ -32,9 +32,9 @@ function lgProtAviso(){
   var a = cnjAnalisar(lgS.num), n = prNum(lgS.num);
   if (!a){ el.textContent = ''; box.innerHTML = ''; return; }
   if (!a.completo){ el.textContent = 'Tem ' + a.digitos + ' dígitos; o padrão do CNJ tem 20. Se for protocolo ou número antigo, pode seguir.'; box.innerHTML = ''; return; }
-  el.textContent = a.valido ? ('✓ Número válido' + (a.sigla ? ' · ' + a.sigla : '')) : 'O dígito verificador não confere: confira o número.';
+  el.textContent = a.valido ? ('Número válido' + (a.sigla ? ' · ' + a.sigla : '')) : 'O dígito verificador não confere: confira o número.';
   var r = prMapa().m[a.formatado ? prNum(a.formatado) : n];
-  if (r && r.doc) box.innerHTML = '<div class="pb-aviso">✓ Este processo já está cadastrado (' + escapeHtml(prTitulo(r)) + '). A Inicial fica ligada a ele.</div>';
+  if (r && r.doc) box.innerHTML = '<div class="pb-aviso">' + ico('check', 14) + 'Este processo já está cadastrado (' + escapeHtml(prTitulo(r)) + '). A Inicial fica ligada a ele.</div>';
   else box.innerHTML = '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" id="lgCad"' + (lgS.cad ? ' checked' : '') + '><span class="ad-t">Cadastrar também o processo (com o cliente e os advogados desta Inicial)</span></label>';
 }
 function lgProtClique(a){
@@ -119,18 +119,18 @@ function lgRevDesenhar(){
   var n = Object.keys(R.sel).length;
   if (R.aba === 'sem'){
     h += '<div class="pb-aviso">Estes números aparecem em Iniciais, Acordos, Alvarás ou na Agenda, mas o processo não está cadastrado. Cadastrar leva o cliente, as partes e os advogados dos atos.</div>';
-    h += d.sem.length ? d.sem.map(function(x){ return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(x.numero) + ' · em: ' + escapeHtml(x.atos) + '</span></span></label>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os números têm processo cadastrado. 🎉</div>';
+    h += d.sem.length ? d.sem.map(function(x){ return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(x.numero) + ' · em: ' + escapeHtml(x.atos) + '</span></span></label>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os números têm processo cadastrado.</div>';
     if (d.sem.length) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar todos</button><button type="button" class="btn btn-primary pb-b" data-lgr="cadastrar"' + (R.ocupado || !n ? ' disabled' : '') + '>Cadastrar' + (n ? ' ' + n + (n === 1 ? ' processo' : ' processos') : '') + '</button></div>';
   } else if (R.aba === 'semcli'){
     h += '<div class="pb-aviso">Processos sem cliente não aparecem no perfil de ninguém. A sugestão vem dos atos do mesmo número ou do nome das partes; sem sugestão, abra o processo e escolha o cliente.</div>';
     h += d.semCli.length ? d.semCli.map(function(x){
       var sug = x.sug ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(x.sug.map(nomeCliente).join(', ')) + '</span>' : '';
       return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + (x.sug ? '' : ' disabled') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(x.numero) + (x.motivo ? ' · ' + escapeHtml(x.motivo) : '') + '</span></span><button type="button" class="es-lk" data-lgr="abrir-proc" data-k="' + escapeHtml(x.num) + '">Abrir</button></label>';
-    }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os processos têm cliente. 🎉</div>';
+    }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os processos têm cliente.</div>';
     if (d.semCli.some(function(x){ return x.sug; })) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar os que têm sugestão</button><button type="button" class="btn btn-primary pb-b" data-lgr="vincular"' + (R.ocupado || !n ? ' disabled' : '') + '>Vincular o cliente sugerido' + (n ? ' (' + n + ')' : '') + '</button></div>';
   } else {
     h += '<div class="pb-aviso">O cliente do ato é diferente do cliente do processo de mesmo número. Confira qual está certo.</div>';
-    h += d.dif.length ? d.dif.map(function(x, i){ return '<div class="pb-card" style="--pb-bar:#C98500;margin:6px 0"><div class="pb-l1"><span><b>' + escapeHtml(x.titulo) + '</b></span><span class="pb-tg">' + LG_PR[x.tipo] + '</span></div><div class="pb-proc">' + escapeHtml(x.numero) + '</div><div class="pb-proc">Cliente no ' + LG_PR[x.tipo].toLowerCase() + ': <b>' + escapeHtml(x.doAto) + '</b><br>Cliente no processo: <b>' + escapeHtml(x.doProc) + '</b></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-ato" data-k="' + i + '">Usar o do processo no ' + LG_PR[x.tipo].toLowerCase() + '</button><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-proc" data-k="' + i + '">Usar o do ' + LG_PR[x.tipo].toLowerCase() + ' no processo</button></div></div>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Nenhuma divergência. 🎉</div>';
+    h += d.dif.length ? d.dif.map(function(x, i){ return '<div class="pb-card" style="--pb-bar:#C98500;margin:6px 0"><div class="pb-l1"><span><b>' + escapeHtml(x.titulo) + '</b></span><span class="pb-tg">' + LG_PR[x.tipo] + '</span></div><div class="pb-proc">' + escapeHtml(x.numero) + '</div><div class="pb-proc">Cliente no ' + LG_PR[x.tipo].toLowerCase() + ': <b>' + escapeHtml(x.doAto) + '</b><br>Cliente no processo: <b>' + escapeHtml(x.doProc) + '</b></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-ato" data-k="' + i + '">Usar o do processo no ' + LG_PR[x.tipo].toLowerCase() + '</button><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-proc" data-k="' + i + '">Usar o do ' + LG_PR[x.tipo].toLowerCase() + ' no processo</button></div></div>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Nenhuma divergência.</div>';
   }
   el.innerHTML = h;
 }

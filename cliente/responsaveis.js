@@ -85,7 +85,7 @@ function esRespNome(a){
 function esRespHtml(chave){
   var l = esS.resp[chave] || [], aberto = esS.abertoSel === chave;
   var ag = String(chave).indexOf('agenda') === 0, h = '<label class="field-label">' + (ag ? 'Responsáveis' + (esS.sugerido && esS.sugerido[chave] === 'proc' ? ' <span class="pb-tg ok" style="margin-left:4px">sugeridos pelo processo</span>' : '') : 'Advogados responsáveis') + '</label><div class="es-chips">' + (l.length ? l.map(function(a){
-    return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">✕</button></span>';
+    return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">' + ico('x', 14) + '</button></span>';
   }).join('') : '<span class="es-chip es-vazio">' + (ag ? 'ninguém escolhido' : 'sem advogado definido') + '</span>') +
     '<button type="button" class="es-lk" data-esr="abrir" data-c="' + chave + '">' + (aberto ? 'Fechar lista' : (ag ? 'Adicionar responsável' : 'Adicionar advogado')) + '</button></div>';
   if (aberto) h += '<div class="es-lista">' + (esLista(chave).length ? esLista(chave).map(function(a){
@@ -155,7 +155,7 @@ function esRevDesenhar(){
   var h = '<div class="pb-sec"><div class="pb-sec-t">' + tot + (tot === 1 ? ' registro esperando você' : ' registros esperando você') + '</div><div class="pb-aviso">Enquanto não houver advogado, só você (e o estagiário) vê o registro. Marque os registros, escolha os advogados e aplique.</div></div>';
   h += '<div class="es-abas">' + abas.map(function(a){ return '<button type="button" class="es-aba' + (R.filtro === a[0] ? ' on' : '') + '" data-esv="filtro" data-k="' + a[0] + '">' + a[1] + ' ' + a[2] + '</button>'; }).join('') + '</div>';
   var itens = esRevItens();
-  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nada pendente aqui. 🎉</div>';
+  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nada pendente aqui.</div>';
   h += itens.map(function(i){
     var k = i.colecao + '|' + i.id, sug = i.sugestao && i.sugestao.length ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(i.sugestao.map(function(a){ return a.nome.split(' ')[0]; }).join(', ')) + '</span>' : (i.semNumero ? '<span class="pb-tg nv" style="margin-left:6px">sem nº de processo</span>' : '');
     return '<label class="ad-it es-it"><input type="checkbox" data-esv="item" data-k="' + escapeHtml(k) + '"' + (R.sel[k] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo || 'Sem nome') + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(i.rotulo) + (i.numero ? ' · ' + escapeHtml(i.numero) : '') + (i.motivo ? ' · ' + escapeHtml(i.motivo) : '') + '</span></span></label>';

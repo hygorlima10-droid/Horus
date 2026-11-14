@@ -25,21 +25,21 @@ function ltAtivar(on){
 function ltEnvolver(i, html){
   if (!ltS.on) return html;
   var pode = ltPodeAlterar(i) && !i.concluido, k = escapeHtml(i.key), on = !!ltS.sel[i.key];
-  return '<div class="agsel' + (pode ? '' : ' off') + (on ? ' on' : '') + '" data-k="' + k + '"' + (pode ? '' : ' title="Você não pode alterar este item"') + '><span class="agsel-cb">' + (on ? '✓' : '') + '</span><div class="agsel-c">' + html + '</div></div>';
+  return '<div class="agsel' + (pode ? '' : ' off') + (on ? ' on' : '') + '" data-k="' + k + '"' + (pode ? '' : ' title="Você não pode alterar este item"') + '><span class="agsel-cb">' + (on ? ico('check', 14) : '') + '</span><div class="agsel-c">' + html + '</div></div>';
 }
 function ltToggle(k){
   var i = ltItem(k); if (!i || !ltPodeAlterar(i) || i.concluido) return;
   if (ltS.sel[k]) delete ltS.sel[k];
   else { if (Object.keys(ltS.sel).length >= LT_MAX){ toast('No máximo ' + LT_MAX + ' itens por vez.'); return; } ltS.sel[k] = 1; }
   var el = document.querySelector('.agsel[data-k="' + (window.CSS && CSS.escape ? CSS.escape(k) : k) + '"]');
-  if (el){ el.classList.toggle('on', !!ltS.sel[k]); el.querySelector('.agsel-cb').textContent = ltS.sel[k] ? '✓' : ''; }
+  if (el){ el.classList.toggle('on', !!ltS.sel[k]); el.querySelector('.agsel-cb').innerHTML = ltS.sel[k] ? ico('check', 14) : ''; }
   ltAtualizar();
 }
 function ltTodosVisiveis(){
   var els = Array.prototype.slice.call(document.querySelectorAll('#agCorpo .agsel:not(.off)')); ltS.sel = {};
   els.slice(0, LT_MAX).forEach(function(e){ ltS.sel[e.getAttribute('data-k')] = 1; });
   if (els.length > LT_MAX) toast('Selecionei os ' + LT_MAX + ' primeiros (o máximo por vez).');
-  els.forEach(function(e){ var on = !!ltS.sel[e.getAttribute('data-k')]; e.classList.toggle('on', on); e.querySelector('.agsel-cb').textContent = on ? '✓' : ''; });
+  els.forEach(function(e){ var on = !!ltS.sel[e.getAttribute('data-k')]; e.classList.toggle('on', on); e.querySelector('.agsel-cb').innerHTML = on ? ico('check', 14) : ''; });
   ltAtualizar();
 }
 /* ---------- barra de ações ---------- */
@@ -56,7 +56,7 @@ function ltAtualizar(){
   var adi = l.filter(function(i){ return i.tipo === 'tarefa' || (i.tipo === 'prazo' && agTemTrab(i)); }).length;
   var btn = function(a, rot, ok, cl){ return '<button type="button" data-lt="' + a + '" class="' + (cl || '') + '"' + (ok ? '' : ' disabled') + '>' + rot + '</button>'; };
   b.innerHTML = '<div class="n"><b>' + n + (n === 1 ? ' selecionado' : ' selecionados') + '</b> · só o que você pode alterar <span class="lk-r"><button type="button" data-lt="todos">Selecionar todos os visíveis</button> <button type="button" data-lt="sair">Cancelar</button></span></div>' +
-    '<div class="ac">' + btn('pronta', '✓ Peça pronta', prz > 0, 'v') + btn('adiar', '⏱ Adiar o trabalho', adi > 0) + btn('resp', '👤 Responsável', n > 0) + btn('concluir', '✔ Concluir', n > 0) + (ltPodeExcluir() ? btn('excluir', '🗑 Excluir', n > 0, 'r') : '') + '</div>';
+    '<div class="ac">' + btn('pronta', ico('check') + 'Peça pronta', prz > 0, 'v') + btn('adiar', ico('clock') + 'Adiar o trabalho', adi > 0) + btn('resp', ico('user-round') + 'Responsável', n > 0) + btn('concluir', ico('check') + 'Concluir', n > 0) + (ltPodeExcluir() ? btn('excluir', ico('trash-2') + 'Excluir', n > 0, 'r') : '') + '</div>';
 }
 function ltClique(a){
   if (a === 'sair') return ltAtivar(false);

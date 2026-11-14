@@ -5,24 +5,24 @@
    Usuários e Perfis e permissões já têm o lugar marcado para a fase de usuários.
    ============================================================ */
 var CF_LINHAS = [
-  { id: 'notif', ic: '🔔', t: 'Notificações e lembretes do iPhone', s: 'avisos de prazos, publicações e compromissos', go: function(){ if (typeof ntAbrir === 'function') ntAbrir(); } },
-  { id: 'backup', ic: '💾', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
-  { id: 'csv', ic: '📤', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
-  { id: 'extregras', ic: '🏦', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
-  { id: 'cal', ic: '📆', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
-  { id: 'dias', ic: '📅', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
-  { id: 'usuarios', ic: '👥', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
-  { id: 'seguranca', ic: '🔒', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
-  { id: 'lixeira', ic: '🗑', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
-  { id: 'registro', ic: '🧾', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
+  { id: 'notif', ic: 'bell', t: 'Notificações e lembretes do iPhone', s: 'avisos de prazos, publicações e compromissos', go: function(){ if (typeof ntAbrir === 'function') ntAbrir(); } },
+  { id: 'backup', ic: 'archive', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
+  { id: 'csv', ic: 'file-up', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
+  { id: 'extregras', ic: 'landmark', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
+  { id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
+  { id: 'dias', ic: 'calendar-days', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
+  { id: 'usuarios', ic: 'users', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
+  { id: 'seguranca', ic: 'lock', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
+  { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
+  { id: 'registro', ic: 'receipt', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
 ];
 var CF_FUTURAS = [
-  { ic: '⚖️', t: 'OABs e publicações', s: 'OAB de cada advogado' },
-  { ic: '🗓', t: 'Agendas e regras operacionais', s: 'compartilhar e listas' },
+  { ic: 'scale', t: 'OABs e publicações', s: 'OAB de cada advogado' },
+  { ic: 'calendar-days', t: 'Agendas e regras operacionais', s: 'compartilhar e listas' },
 ];
 function cfLinha(l, fut){
   var tag = l.breve ? '<span class="cf-tag">em breve</span>' : (fut ? '<span class="cf-tag">depois</span>' : '<span class="cf-seta">›</span>');
-  return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + l.ic + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
+  return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + ico(l.ic, 20) + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
 }
 function cfRender(){
   var w = qs('cfWrap'); if (!w) return;
@@ -34,7 +34,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: '🔒', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: '🔔', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: '📆', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +

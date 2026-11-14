@@ -260,7 +260,7 @@ function agRenderIn(){
   var nf = agdFiltrosAtivos();
   h += '<div class="ag-filtros" style="margin-top:8px">' + [['tudo', 'Tudo'], ['prazo', 'Prazos'], ['audiencia', 'Audiências'], ['tarefa', 'Tarefas'], ['inicial', 'Iniciais']].concat(agS.vista === 'quadro' ? [['alvara', 'Alvarás']] : []).map(function(f){ return '<button type="button" class="ag-f' + (agS.filtro === f[0] ? ' on' : '') + '" data-ag="filtro" data-v="' + f[0] + '">' + f[1] + '</button>'; }).join('') +
     '<button type="button" class="ag-f' + (nf ? ' tem' : '') + '" data-ag="flt">Filtros' + (nf ? ' · ' + nf : '') + '</button><button type="button" class="ag-f' + (agS.menu ? ' on' : '') + '" data-ag="menu" aria-label="Mais opções">⋯</button></div>';
-  if (agS.menu) h += '<div class="ag-menu" style="margin-top:6px"><button type="button" class="ag-f" data-ag="rel">🖨 Relatório</button><button type="button" class="ag-f" data-ag="importar">📥 Importar do Control Jus</button><button type="button" class="ag-f" data-ag="calc">🧮 Calculadora de prazos</button></div>';
+  if (agS.menu) h += '<div class="ag-menu" style="margin-top:6px"><button type="button" class="ag-f" data-ag="rel">' + ico('printer') + 'Relatório</button><button type="button" class="ag-f" data-ag="importar">' + ico('download') + 'Importar do Control Jus</button><button type="button" class="ag-f" data-ag="calc">' + ico('calculator') + 'Calculadora de prazos</button></div>';
   h += '<div id="agCorpo">' + agCorpo() + '</div>';
   w.innerHTML = h;
 }
@@ -289,7 +289,7 @@ function agConflitoHtml(l){
   }
   if (generica && !msgs.length) msgs.push(generica);
   au.forEach(function(a){ if (!a.processo) return; var n = prNum(a.processo); var pz = ab.filter(function(p){ return p.tipo === 'prazo' && p.processo && prNum(p.processo) === n; })[0]; if (pz) msgs.push('O processo <b>' + escapeHtml(a.cliente || a.processo) + '</b> tem audiência (' + escapeHtml(a.hora) + ') e prazo (' + escapeHtml(pz.titulo) + ') no mesmo dia.'); });
-  return msgs.slice(0, 3).map(function(m){ return '<div class="ag-conf">⚠ <span>' + m + '</span></div>'; }).join('');
+  return msgs.slice(0, 3).map(function(m){ return '<div class="ag-conf">' + ico('triangle-alert', 16) + '<span>' + m + '</span></div>'; }).join('');
 }
 function agPorDia(l){ var m = {}; l.forEach(function(i){ var k = agDataAgir(i); (m[k] = m[k] || []).push(i); }); return m; }
 function agPontos(l){
@@ -300,7 +300,7 @@ function agPontos(l){
 function agFatais(l){ var m = {}, hoje = agHoje(); l.forEach(function(i){ if (agTemTrab(i) && i.data >= hoje) (m[i.data] = m[i.data] || []).push(i); }); return m; }
 function agLinhaFatal(i){
   var d = agDias(i.data), q = d === 0 ? 'Vence hoje' : (d === 1 ? 'Vence amanhã' : 'Prazo fatal');
-  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">⚑ <span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
+  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
 }
 function agCabDia(iso){
   var f = agNomeFeriado(iso), rec = !f && pbRecesso(iso) && pbDow(iso) !== 0 && pbDow(iso) !== 6;
@@ -366,7 +366,7 @@ function agDatasPrazo(i){
   var d = agDias(i.data), u = agUteis(i.data), tem = agTemTrab(i);
   var fe = d < 0 ? 'atrasado' : (d === 0 ? 'hoje' : (d === 1 ? 'amanhã' : (u >= 1 ? 'em ' + agUtilTxt(u) : 'em ' + d + ' dias')));
   var h = '<div class="agd2">';
-  if (i.situacao === 'pronta') h += '<div class="ok"><small>Peça pronta</small><b>✓ ' + escapeHtml(i.prontaEm ? agAbrevDia(i.prontaEm) : 'sim') + '</b><em>' + escapeHtml((i.prontaPor ? 'por ' + String(i.prontaPor).split(' ')[0] + ' · ' : '') + 'falta protocolar') + '</em></div>';
+  if (i.situacao === 'pronta') h += '<div class="ok"><small>Peça pronta</small><b>' + ico('check', 14) + escapeHtml(i.prontaEm ? agAbrevDia(i.prontaEm) : 'sim') + '</b><em>' + escapeHtml((i.prontaPor ? 'por ' + String(i.prontaPor).split(' ')[0] + ' · ' : '') + 'falta protocolar') + '</em></div>';
   if (tem){
     var dt = agDias(i.trabalhar), ut = agUteis(i.trabalhar), te = dt < 0 ? 'passou há ' + (ut < 0 ? agUtilTxt(-ut) : (-dt) + (dt === -1 ? ' dia' : ' dias')) : (dt === 0 ? 'hoje' : (dt === 1 ? 'amanhã' : (ut >= 1 ? 'em ' + agUtilTxt(ut) : 'em ' + dt + ' dias')));
     h += '<div class="t' + (dt < 0 ? ' at' : '') + '"><small>Trabalhar até</small><b>' + escapeHtml(agAbrevDia(i.trabalhar)) + '</b><em>' + escapeHtml(te) + '</em></div>';
@@ -378,16 +378,16 @@ function agAcoesCartao(i){
   if (i.concluido) return '';
   var k = escapeHtml(i.key), b = '';
   if (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link || '')) b += '<a class="pri" data-ag="link" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>';
-  if (i.fonte === 'agenda' && i.tipo === 'prazo') b += i.situacao === 'pronta' ? '<button type="button" class="vd" data-ag="concluir" data-k="' + k + '">Protocolar</button>' : '<button type="button" class="vd" data-ag="pronta" data-k="' + k + '">✓ Peça pronta</button>';
-  b += '<button type="button" data-ag="adiar" data-k="' + k + '">⏱ Adiar ▾</button>';
-  b += i.fonte === 'agenda' ? '<button type="button" data-ag="abrir" data-k="' + k + '">✎ Editar</button>' : '<button type="button" data-ag="acao" data-k="' + k + '">✎ Abrir na Iniciais</button>';
-  b += '<button type="button" data-ag="zap" data-k="' + k + '" aria-label="Mensagem de WhatsApp" title="WhatsApp">💬</button>';
+  if (i.fonte === 'agenda' && i.tipo === 'prazo') b += i.situacao === 'pronta' ? '<button type="button" class="vd" data-ag="concluir" data-k="' + k + '">Protocolar</button>' : '<button type="button" class="vd" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button>';
+  b += '<button type="button" data-ag="adiar" data-k="' + k + '">' + ico('clock') + 'Adiar' + ico('chevron-down', 14).replace('class="ico"', 'class="ico ico-d"') + '</button>';
+  b += i.fonte === 'agenda' ? '<button type="button" data-ag="abrir" data-k="' + k + '">' + ico('pencil') + 'Editar</button>' : '<button type="button" data-ag="acao" data-k="' + k + '">' + ico('pencil') + 'Abrir na Iniciais</button>';
+  b += '<button type="button" data-ag="zap" data-k="' + k + '" aria-label="Mensagem de WhatsApp" title="WhatsApp">' + icWhats(20) + '</button>';
   return '<div class="acx">' + b + '</div>';
 }
 function agBotaoOk(i){
   if (i.fonte === 'alvara') return '';
   var rot = i.concluido ? 'Reabrir' : (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Marcar como realizada' : 'Concluir'));
-  return '<button type="button" class="agc-ok' + (i.concluido ? ' on' : '') + '" data-ag="' + (i.concluido ? 'reabrir' : 'concluir') + '" data-k="' + escapeHtml(i.key) + '" aria-label="' + rot + '" title="' + rot + '">✓</button>';
+  return '<button type="button" class="agc-ok' + (i.concluido ? ' on' : '') + '" data-ag="' + (i.concluido ? 'reabrir' : 'concluir') + '" data-k="' + escapeHtml(i.key) + '" aria-label="' + rot + '" title="' + rot + '">' + ico('check', 18) + '</button>';
 }
 /* "Peça pronta": o prazo segue aberto até ser protocolado; quem marcou fica registrado (o proprietário recebe o aviso no celular) */
 function agPronta(key){
@@ -412,7 +412,7 @@ function agCartao(i){
   var ok = agBotaoOk(i);
   return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
     (i.cliente ? '<div class="agc-s">' + escapeHtml(i.cliente) + '</div>' : '') +
-    (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">📍 ' + escapeHtml(i.local) + '</div>' : '') +
+    (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') +
     (i.processo ? '<div class="agc-n"><span>' + escapeHtml(i.processo) + '</span><button type="button" class="agc-cp" data-ag="copiar" data-n="' + escapeHtml(i.processo) + '" aria-label="Copiar o número do processo" title="Copiar o número">' + AGD_COPIA + '</button></div>' : '') +
     (aberto ? agDatasPrazo(i) : '') + '<div class="agc-tg">' + tags + '</div>' + agAcoesCartao(i) + '</div>' + ok + '</div>');
 }
@@ -422,10 +422,10 @@ function agMiniSub(i){
   var p = [], hoje = agHoje();
   if (i.cliente) p.push(escapeHtml(i.cliente));
   if (i.tipo === 'prazo'){
-    if (i.situacao === 'pronta') p.push('<b class="agm-ok">peça pronta ✓' + (i.prontaPor ? ' por ' + escapeHtml(String(i.prontaPor).split(' ')[0]) : '') + '</b>');
+    if (i.situacao === 'pronta') p.push('<b class="agm-ok">peça pronta ' + ico('check', 13) + (i.prontaPor ? ' por ' + escapeHtml(String(i.prontaPor).split(' ')[0]) : '') + '</b>');
     else if (agTemTrab(i)) p.push('trabalhar até ' + (i.trabalhar < hoje ? '<b class="agm-at">' + escapeHtml(agAbrevDia(i.trabalhar)) + '</b>' : escapeHtml(agAbrevDia(i.trabalhar))));
     p.push(i.data === hoje ? 'prazo fatal hoje' : 'fatal ' + escapeHtml(agAbrevDia(i.data)));
-  } else if (i.tipo === 'audiencia'){ if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push('📍 ' + escapeHtml(i.local)); }
+  } else if (i.tipo === 'audiencia'){ if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push(ico('map-pin', 13) + escapeHtml(i.local)); }
   else if (i.tipo === 'tarefa') p.push('tarefa');
   return p.join(' · ');
 }
@@ -452,7 +452,7 @@ function agMeuDiaHtml(){
   var sec = function(cl, tit, l, nota){ return l.length ? '<div class="agm-sec ' + cl + '"><span>' + tit + '</span><small>' + (nota || l.length) + '</small></div>' + l.map(agMini).join('') : ''; };
   h += sec('a', 'Audiência hoje', aud) + sec('r', 'Vence hoje', vence, 'falta protocolar') + sec('v', 'Peça pronta · conferir e protocolar', prontas) + sec('g', 'Para trabalhar hoje', trab) + sec('r', 'Atrasado', atr);
   if (!abertosHoje && !prontas.length) h += '<div class="financeiro-vazio">Nada pedindo ação hoje.</div>';
-  if (amanha.length) h += '<div class="agm-sec"><span>Amanhã · ' + escapeHtml(agdDiaSemana(am).toLowerCase() + ' ' + fmtData(am).slice(0, 5)) + '</span><small>' + amanha.length + '</small></div>' + amanha.slice(0, 6).map(function(i){ var f = i.tipo === 'prazo' && i.data === am && agTemTrab(i); return '<div class="agm-am" data-ag="det" data-k="' + escapeHtml(i.key) + '"><span>' + (f ? '⚑ Vence: ' : (i.tipo === 'prazo' ? 'Trabalhar: ' : (i.tipo === 'audiencia' ? 'Audiência' + (i.hora ? ' ' + escapeHtml(i.hora) : '') + ': ' : ''))) + escapeHtml(i.titulo) + '</span><span>' + escapeHtml(i.cliente || '') + '</span></div>'; }).join('') + (amanha.length > 6 ? '<div class="saldo-data">e mais ' + (amanha.length - 6) + '</div>' : '');
+  if (amanha.length) h += '<div class="agm-sec"><span>Amanhã · ' + escapeHtml(agdDiaSemana(am).toLowerCase() + ' ' + fmtData(am).slice(0, 5)) + '</span><small>' + amanha.length + '</small></div>' + amanha.slice(0, 6).map(function(i){ var f = i.tipo === 'prazo' && i.data === am && agTemTrab(i); return '<div class="agm-am" data-ag="det" data-k="' + escapeHtml(i.key) + '"><span>' + (f ? ico('flag', 14) + 'Vence: ' : (i.tipo === 'prazo' ? 'Trabalhar: ' : (i.tipo === 'audiencia' ? 'Audiência' + (i.hora ? ' ' + escapeHtml(i.hora) : '') + ': ' : ''))) + escapeHtml(i.titulo) + '</span><span>' + escapeHtml(i.cliente || '') + '</span></div>'; }).join('') + (amanha.length > 6 ? '<div class="saldo-data">e mais ' + (amanha.length - 6) + '</div>' : '');
   return h;
 }
 
@@ -493,7 +493,7 @@ function agCartaoQuadro(i){
     if (i.fonte === 'alvara') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="acao" data-k="' + k + '">Abrir alvará</button>';
     else if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && i.situacao === 'afazer') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="mover" data-k="' + k + '" data-v="elaboracao">Avançar ›</button>';
     else if (i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'pronta') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">Protocolar</button>';
-    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="pronta" data-k="' + k + '">✓ Peça pronta</button><button type="button" class="btn btn-ghost pb-b" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
+    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button><button type="button" class="btn btn-ghost pb-b" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
     else btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">' + (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Realizada' : 'Concluir')) + '</button>';
     if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && (i.situacao === 'elaboracao' || i.situacao === 'pronta')) btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="mover" data-k="' + k + '" data-v="' + (i.situacao === 'pronta' ? 'elaboracao' : 'afazer') + '">‹ Voltar</button>';
     btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="adiar" data-k="' + k + '">Adiar</button>';
@@ -501,7 +501,7 @@ function agCartaoQuadro(i){
     else if (i.fonte === 'agenda') btn += '<button type="button" class="btn-text pb-b" data-ag="abrir" data-k="' + k + '">Editar</button>';
   } else if (i.fonte !== 'alvara') btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="reabrir" data-k="' + k + '">Reabrir</button>';
   return '<div class="kanban-card ag-kc ' + i.cat + (i.concluido ? ' ok' : '') + '" data-agcard="' + k + '" draggable="true"><div class="kc-top">' + fvIc(ic[0], ic[1]) + '<div class="kc-tit"><div class="kc-nome">' + escapeHtml(i.titulo) + '</div><div class="kc-sub">' + escapeHtml((i.cliente || '') + (i.cliente && i.processo ? ' · ' : '') + (i.processo || '')) + '</div></div></div>' +
-    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">📍 ' + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
+    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
 }
 /* solta um cartão do Quadro numa coluna: devolve se pode; com teste = true só confere, sem mudar nada */
 function agSoltar(key, ck, teste){
@@ -658,7 +658,7 @@ function agMontarEd(){
     if (e.target && /^age_(tit|data|proc|hora)$/.test(e.target.id)){ agEdDup = false; var dd = qs('age_dup'); if (dd) dd.innerHTML = ''; }
     if (e.target && e.target.id === 'age_proc'){ agProcSugestoes(e.target.value); agSugerirRespSeLivre(); }
     if (e.target && e.target.id === 'age_proc'){
-      var v = pbVinculo(e.target.value), dica = qs('age_dica'); if (dica) dica.textContent = v ? '✓ ' + v.cadastro + ' · cliente: ' + v.cliente : '';
+      var v = pbVinculo(e.target.value), dica = qs('age_dica'); if (dica) dica.textContent = v ? v.cadastro + ' · cliente: ' + v.cliente : '';
       if (v && !qs('age_cli').value.trim()) qs('age_cli').value = v.cliente;
     }
   });
@@ -693,7 +693,7 @@ function agAbrir(key, pre){
     '<div class="field" id="esResp_agenda"' + (caso ? ' style="display:none"' : '') + '></div>' +
     '<div class="pb-dois"><div class="field"><label class="field-label" id="age_data_l" for="age_data">Prazo fatal</label><input type="date" id="age_data" value="' + escapeHtml(V('data')) + '"></div><div class="field" id="age_hora_box"><label class="field-label" for="age_hora">Hora</label><input type="time" id="age_hora" value="' + escapeHtml(V('hora')) + '"></div></div>' +
     rpEdHtml(i, V('data')) +
-    '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">🧮 Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' +
+    '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">' + ico('calculator') + 'Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' +
     '<div class="saldo-data" id="age_dica2" style="margin:-4px 0 8px"></div>' +
     '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' +
     '<div class="field"><label class="field-label" for="age_local">Local</label><input type="text" id="age_local" maxlength="140" value="' + escapeHtml(V('local')) + '" placeholder="Ex.: Fórum de Morrinhos, sala 2"></div>' +
@@ -759,7 +759,7 @@ function agDicasConflito(){
     var min = function(h){ return Number(h.slice(0, 2)) * 60 + Number(h.slice(3)); };
     ks.forEach(function(k){ outros.filter(function(x){ return x.tipo === 'audiencia' && /^\d{2}:\d{2}$/.test(x.hora || '') && Math.abs(min(x.hora) - min(hora)) < 60 && agRespChaves(x).indexOf(k) >= 0; }).forEach(function(x){ out.push('<b>' + escapeHtml(esNomeChave(k)) + '</b> já tem audiência às ' + escapeHtml(x.hora) + ' neste dia.'); }); });
   }
-  el.innerHTML = out.map(function(x){ return '<div style="color:#8a5a00">⚠ ' + x + '</div>'; }).join('');
+  el.innerHTML = out.map(function(x){ return '<div style="color:#8a5a00">' + ico('triangle-alert', 14) + x + '</div>'; }).join('');
 }
 function agSalvarEd(){
   var t = agEditTipo, tit = qs('age_tit').value.trim(), data = qs('age_data').value, err = qs('age_erro');
@@ -845,7 +845,7 @@ function agRevDesenhar(){
   var el = qs('overlayAgRevC'), R = agRevS; if (!el || !R) return;
   var itens = agSemResp().sort(agOrdem), n = Object.keys(R.sel).length, np = Object.keys(R.pess).length;
   var h = '<div class="pb-sec"><div class="pb-sec-t">' + itens.length + (itens.length === 1 ? ' prazo ou audiência sem responsável' : ' prazos e audiências sem responsável') + '</div><div class="pb-aviso">Enquanto não houver responsável, o item vale para os advogados do processo e para você. A sugestão vem do cadastro do processo. Marque os itens e aplique.</div></div>';
-  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Todos os prazos e audiências têm responsável. 🎉</div>';
+  if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Todos os prazos e audiências têm responsável.</div>';
   h += itens.map(function(i){
     var sug = agChavesProcesso(i.processo), tag = sug.length ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(sug.map(function(k){ return esNomeChave(k).split(' ')[0]; }).join(', ')) + '</span>' : '<span class="pb-tg nv" style="margin-left:6px">' + (i.processo ? 'processo sem advogado' : 'sem processo') + '</span>';
     return '<label class="ad-it es-it"><input type="checkbox" data-arv="item" data-k="' + escapeHtml(i.key) + '"' + (R.sel[i.key] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo) + '</b>' + tag + '<br><span class="saldo-data">' + escapeHtml(AG_TIPOS[i.tipo] || i.tipo) + ' · ' + escapeHtml(fmtData(i.data)) + (i.hora ? ' às ' + escapeHtml(i.hora) : '') + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + '</span></span></label>';
