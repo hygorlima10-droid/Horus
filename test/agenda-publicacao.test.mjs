@@ -27,7 +27,7 @@ const t = async s => page.evaluate(s => (document.querySelector(s) || {}).innerT
 const v = async id => page.evaluate(i => document.getElementById(i).value, id);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes"]').click()); await page.waitForTimeout(1500);
 check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.pb-card')).some(c => /CONSTRUTORA/i.test(c.innerText) && !!c.querySelector('[data-pb="aud"]')))), 'a publicação "Outros" não tem audiência reconhecida (sem o botão automático)');
-await page.click('.pb-card:has-text("CONSTRUTORA") [data-pb="abrir"]'); await page.waitForTimeout(1200);
+await page.click('.pb-card:has-text("CONSTRUTORA") [data-pb="cm"]'); await page.click('.pb-card:has-text("CONSTRUTORA") [data-pb="abrir"]'); await page.waitForTimeout(1200);
 let tx = await t('#pbCorpo');
 check(/agenda/i.test(tx) && await page.evaluate(() => !!document.querySelector('#pbCorpo [data-pbd="aud-livre"]') && !!document.querySelector('#pbCorpo [data-pbd="tarefa"]')), 'o detalhe da publicação oferece "Criar audiência" e "Criar tarefa" mesmo sem nada reconhecido');
 if (process.env.FOTOS) await page.screenshot({ path: process.env.FOTOS + '/pub-agenda.png' });

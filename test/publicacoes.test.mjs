@@ -102,7 +102,9 @@ check(!/Fulano/i.test(await t('#pbWrap')), 'publicação do Murilo sem processo 
 const cardDe = async id => page.evaluate(id => { const b = document.querySelector('.pb-b[data-id="' + id + '"]'); return b ? b.closest('.pb-card').innerText : ''; }, id);
 const ta = await cardDe('900001'), tb = await cardDe('900002'), tc = await cardDe('900003');
 check(/inicial cadastrada/i.test(ta) && /via OAB Hygor/.test(ta) && /via OAB Murilo/.test(ta) && /Maquele Viana Pacheco/.test(ta), 'processo cadastrado mostra o cliente e as duas OABs de origem');
-check(/processo novo/i.test(tb) && /(sugerido: 15 dias|✦ .{3,60}15 dias)/.test(tb) && /Confirmar/.test(tb) && /Cadastrar processo/.test(tb), 'processo não cadastrado: "+ processo novo", prazo sugerido e botão para cadastrar');
+check(/processo novo/i.test(tb) && /(sugerido: 15 dias|✦ .{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
+{ await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Ver texto', 'Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)), 'o ⋯ do cartão guarda: Ver texto, Marcar como lida, Não é prazo, Cadastrar processo (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
+check(await page.evaluate(() => { const b = document.querySelector('[data-pb="rapido"]'); return !!b && /pb-verde/.test(b.className) && getComputedStyle(b).backgroundColor === getComputedStyle(document.documentElement).getPropertyValue('--success') || (!!b && /pb-verde/.test(b.className)); }), 'o botão de confirmar do cartão é verde (classe pb-verde), não preto');
 check(/Ata/i.test(tc) && !/prazo/i.test(tc) && /STJ/.test(tc) && /TRANSPORTADORA NUNES/.test(tc), 'ata do STJ: sem botão de prazo, com as partes');
 // filtros
 await page.click('[data-pb="filtro"][data-v="meus"]'); await page.waitForTimeout(300);
@@ -110,16 +112,18 @@ check((await page.evaluate(() => document.querySelectorAll('.pb-card').length)) 
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(300);
 check((await page.evaluate(() => document.querySelectorAll('.pb-card').length)) === 4, 'filtro "Todas"');
 // botão "Marcar como lida" igual aos demais
-const lidaBtn = await page.evaluate(() => { const b = document.querySelector('.pb-b[data-pb="lida"]'); return { t: b.innerText.trim(), c: b.className }; });
-check(lidaBtn.t === 'Marcar como lida' && /\bbtn\b/.test(lidaBtn.c) && /btn-ghost/.test(lidaBtn.c) && !/btn-text/.test(lidaBtn.c), 'o botão é "Marcar como lida" e tem o mesmo estilo dos outros: ' + lidaBtn.c);
+await page.click('[data-pb="cm"][data-id="900001"]');
+const lidaBtn = await page.evaluate(() => { const b = document.querySelector('.pb-cmi[data-pb="lida"]'); return { t: b.innerText.trim(), c: b.className }; });
+check(lidaBtn.t === 'Marcar como lida', 'o item do ⋯ é "Marcar como lida"');
+await page.click('[data-pb="cm"][data-id="900001"]');
 // filtros
-check(await page.evaluate(() => !!document.querySelector('.pb-funil svg')) && !(await page.evaluate(() => !!document.querySelector('.pb-painel'))), 'há um botão de filtro com símbolo de funil e o painel começa fechado');
-await page.click('.pb-funil'); await page.waitForTimeout(300);
+check(await page.evaluate(() => !!document.querySelector('.pb-funil[data-pb="painel"] svg')) && !(await page.evaluate(() => !!document.querySelector('.pb-painel'))), 'há um botão de filtro com símbolo de funil e o painel começa fechado');
+await page.click('.pb-funil[data-pb="painel"]'); await page.waitForTimeout(300);
 check(await page.evaluate(() => ['pbf_q', 'pbf_de', 'pbf_ate', 'pbOabSel', 'pbf_adv', 'pbf_trib'].every(id => !!document.getElementById(id))), 'o painel tem cliente, data (de/até), OAB, advogado e tribunal');
 check(await page.evaluate(() => { const pn = document.querySelector('.pb-painel').getBoundingClientRect(); return Array.from(document.querySelectorAll('.pb-painel input, .pb-painel select')).every(e => { const r = e.getBoundingClientRect(); return r.left >= pn.left - 1 && r.right <= pn.right + 1; }); }), 'os campos do painel cabem na largura do celular (datas lado a lado sem sair da caixa)');
 const nCards = () => page.evaluate(() => document.querySelectorAll('.pb-card').length);
 await page.selectOption('#pbOabSel', { index: 2 }); await page.waitForTimeout(400);
-check(await nCards() === 1 && /1/.test(await t('.pb-funil')), 'filtro por OAB (Murilo): só a publicação em comum, e o botão mostra 1 filtro ativo');
+check(await nCards() === 1 && /1/.test(await t('.pb-funil[data-pb="painel"]')), 'filtro por OAB (Murilo): só a publicação em comum, e o botão mostra 1 filtro ativo');
 await page.selectOption('#pbOabSel', { index: 0 }); await page.waitForTimeout(300);
 await page.fill('#pbf_q', 'maquele'); await page.waitForTimeout(600);
 check(await nCards() === 1 && /Maquele/.test(await t('#pbListaBox')), 'filtro por cliente (nome)');
@@ -142,15 +146,18 @@ const ontem = new Date(Date.parse(hoje + 'T12:00:00Z') - 86400000).toISOString()
 await page.fill('#pbf_ate', ontem); await page.waitForTimeout(500);
 check(await nCards() === 0, 'filtro por data (até ontem): nenhuma');
 await page.fill('#pbf_de', ''); await page.fill('#pbf_ate', ''); await page.fill('#pbf_adv', 'hygor'); await page.selectOption('#pbf_trib', 'TJGO'); await page.waitForTimeout(500);
-check(await nCards() === 2 && /2/.test(await t('.pb-funil')), 'filtros combinados (advogado Hygor + TJGO) e o botão mostra 2 filtros');
+check(await nCards() === 2 && /2/.test(await t('.pb-funil[data-pb="painel"]')), 'filtros combinados (advogado Hygor + TJGO) e o botão mostra 2 filtros');
 await page.click('.pb-painel [data-pb="limpar"]'); await page.waitForTimeout(400);
 check(await nCards() === 4 && !(await page.evaluate(() => !!document.querySelector('.pb-n'))), '"Limpar filtros" volta a lista completa e tira o número do botão');
 await page.click('.pb-painel [data-pb="painel"]'); await page.waitForTimeout(300);
 check(!(await page.evaluate(() => !!document.querySelector('.pb-painel'))), '"Fechar" esconde o painel');
 await page.click('[data-pb="filtro"][data-v="naolidas"]'); await page.waitForTimeout(300);
 // detalhe + prazo
-await page.click('.pb-b[data-pb="prazo"][data-id="900002"]'); await page.waitForTimeout(1500);
-check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show')), 'abre o detalhe da publicação');
+await page.click('[data-pb="rapido"][data-id="900002"]'); await page.waitForTimeout(600);
+{ const fs = await page.evaluate(() => { const o = document.getElementById('overlayPbRap'); return { aberta: o && o.classList.contains('show'), t: o ? o.innerText : '', ok: !!o.querySelector('[data-pbr="ok"].pb-verde') }; });
+  check(fs.aberta && /prazo fatal/i.test(fs.t) && /peça/i.test(fs.t) && /regra sugerida/i.test(fs.t) && /responsável/i.test(fs.t) && fs.ok && /Ajustar tudo/.test(fs.t) && /Não é prazo/.test(fs.t), 'a folha curta mostra prazo fatal, peça, regra, responsável e os 3 botões (Confirmar verde): ' + JSON.stringify(fs).slice(0, 700)); }
+await page.click('[data-pbr="ajustar"]'); await page.waitForTimeout(1500);
+check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && !document.getElementById('overlayPbRap').classList.contains('show')), '"Ajustar tudo…" abre o formulário completo da publicação');
 const corpo = await t('#pbCorpo');
 check(/Certifico que, nesta data/.test(corpo) && !/&\w+;/.test(corpo) && /verdade e dou fé/.test(corpo), 'o texto completo aparece, sem códigos estranhos');
 check(/(Prazo sugerido pelo texto|Prazo da peça escolhida)/i.test(corpo) && /no prazo de quinze dias/.test(corpo) && (await page.evaluate(() => document.getElementById('pbf_dias').value)) === '15', 'mostra a frase do prazo e já vem com 15 dias');
@@ -166,6 +173,22 @@ const pz = (await f('GET', '/api/db/agenda')).j.docs;
 check(pz.length === 1 && pz[0].data.pubId === '900002' && pz[0].data.titulo === 'Recolher o sistema (PrevJUD)' && pz[0].data.tipo === 'prazo' && pz[0].data.data.length === 10 && pz[0].data.concluido === false && pz[0].data.contagem === 'uteis', 'o prazo confirmado fica gravado (' + (pz[0] && pz[0].data.data) + ')');
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(300);
 check(/prazo \d\d\/\d\d\/\d{4}/.test(await cardDe('900002')), 'o cartão passa a mostrar o prazo confirmado (e sai de "não lidas" porque já foi aberto)');
+// confirmação em um passo: vara criminal → regra do CPP (dias corridos); confirma sem abrir nada e depois desfaz
+await page.click('[data-pb="rapido"][data-id="900005"]'); await page.waitForTimeout(500);
+{ const tx = await page.evaluate(() => document.getElementById('overlayPbRap').innerText);
+  check(/Processo penal \(CPP\)/.test(tx) && /5 dias corridos/.test(tx), 'em Vara Criminal a folha sugere a regra do CPP, em dias corridos: ' + tx.replace(/\n/g, ' | ').slice(0, 260)); }
+await page.click('[data-pbr="ok"]'); await page.waitForTimeout(1500);
+{ const z = (await f('GET', '/api/db/agenda')).j.docs.map(d => d.data).find(d => d.pubId === '900005');
+  check(!!z && z.contagem === 'corridos' && z.calculo && z.calculo.regime === 'cpp' && z.tipo === 'prazo' && !z.concluido, 'um toque em "Confirmar prazo" grava o prazo penal com a regra do CPP no cálculo');
+  check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === true && !(await page.evaluate(() => document.getElementById('overlayPbRap').classList.contains('show'))), 'a publicação passa a lida e a folha fecha'); }
+await page.click('#toast button'); await page.waitForTimeout(1500);
+check(!(await f('GET', '/api/db/agenda')).j.docs.some(d => d.data.pubId === '900005') && (await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, '"Desfazer" apaga o prazo e devolve a publicação a não lida');
+await f('POST', '/api/djen/marcar', { ids: ['900005'], lida: false });
+// "Não é prazo" pelo ⋯ também tem Desfazer
+await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="naoe"][data-id="900005"]'); await page.waitForTimeout(900);
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').semPrazo === true, '"Não é prazo" no ⋯ marca a publicação como sem prazo');
+await page.click('#toast button'); await page.waitForTimeout(1000);
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').semPrazo !== true, 'e o Desfazer volta atrás');
 // Início, Agenda e avisos das 10h
 const venc = pz[0].data.data;
 await page.evaluate(() => document.querySelector('[data-tab="inicio"]').click()); await page.waitForTimeout(1200);
@@ -181,7 +204,7 @@ check(resumo.prazos.some(i => /Juntar documentos/.test(i.l) && i.t === 'prazo' &
 // cadastrar processo pela publicação: processo já em andamento (sem honorários) ou nova inicial
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(700);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(300);
-await page.click('.pb-b[data-pb="cadastrar"][data-id="900003"]'); await page.waitForTimeout(400);
+await page.click('[data-pb="cm"][data-id="900003"]'); await page.click('.pb-cmi[data-pb="cadastrar"][data-id="900003"]'); await page.waitForTimeout(400);
 check(await page.evaluate(() => document.getElementById('overlayPrEsc').classList.contains('show')) && /Processo já em andamento/.test(await t('#preCorpo')) && /Nova inicial/.test(await t('#preCorpo')), 'o botão "Cadastrar processo" pergunta: processo já em andamento ou nova inicial');
 await page.click('[data-pre="processo"]'); await page.waitForTimeout(500);
 check((await page.evaluate(() => document.getElementById('pr_numero').value)) === '5385296-78.2023.8.09.0071' && /TRANSPORTADORA/.test(await page.evaluate(() => document.getElementById('pr_partes').value)) && /STJ/.test(await page.evaluate(() => document.getElementById('pr_orgao').value)), 'o cadastro já vem preenchido com número, partes e órgão da publicação');
@@ -192,21 +215,23 @@ check(/processo cadastrado/.test(await cardDe('900003')) && !/Cadastrar processo
 await page.click('[data-pb="ir"][data-id="900003"]'); await page.waitForTimeout(500);
 check(await page.evaluate(() => document.getElementById('overlayPr').classList.contains('show')) && /Linha do tempo/i.test(await t('#prCorpo')) && /Publicação/.test(await t('#prCorpo')), 'tocar na etiqueta abre a ficha do processo, com as publicações');
 await page.click('[data-prf="arquivar"]'); await page.waitForTimeout(400); await page.click('#praOk'); await page.waitForTimeout(1200);
-check(/arquivado/.test(await cardDe('900003')) && /Reabrir processo/.test(await cardDe('900003')), 'processo arquivado: a publicação mostra "arquivado" e oferece "Reabrir processo"');
-await page.click('.pb-b[data-pb="reabrir-proc"][data-id="900003"]'); await page.waitForTimeout(1200);
+await page.click('[data-pb="cm"][data-id="900003"]');
+check(/arquivado/.test(await cardDe('900003')) && /Reabrir processo/.test(await cardDe('900003')), 'processo arquivado: a publicação mostra "arquivado" e o ⋯ oferece "Reabrir processo"');
+await page.click('[data-pb="cm"][data-id="900003"]');
+await page.click('[data-pb="cm"][data-id="900003"]'); await page.click('.pb-cmi[data-pb="reabrir-proc"][data-id="900003"]'); await page.waitForTimeout(1200);
 check(!/Reabrir processo/.test(await cardDe('900003')) && (await f('GET', '/api/db/processos')).j.docs[0].data.arquivado === false, 'Reabrir processo desfaz');
-await page.click('.pb-b[data-pb="cadastrar"][data-id="900005"]'); await page.waitForTimeout(400); await page.click('[data-pre="inicial"]'); await page.waitForTimeout(700);
+await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="cadastrar"][data-id="900005"]'); await page.waitForTimeout(400); await page.click('[data-pre="inicial"]'); await page.waitForTimeout(700);
 check(await page.evaluate(() => document.getElementById('overlay').classList.contains('show')) && (await page.evaluate(() => document.getElementById('processoInput').value)) === '5706736-75.2025.8.09.0107', 'a outra opção abre o cadastro de Nova inicial com o número preenchido');
 await page.click('#closeModal'); await page.waitForTimeout(300);
 // dentro do texto da publicação: cadastrar o processo e manter como não lida
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(700);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
-await page.click('.pb-b[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1500);
+await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1500);
 check(await page.evaluate(() => !!document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.querySelector('#pbCorpo [data-pbd="naolida"]')), 'o texto da publicação tem o botão "Cadastrar processo" (processo ainda não cadastrado) e "Manter como não lida"');
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === true, 'abrir marca como lida');
 await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(1000);
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false && !(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show'))), '"Manter como não lida" desfaz e fecha, e a publicação continua em "Não lidas"');
-await page.click('.pb-b[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
+await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
 await page.click('#pbCorpo [data-pbd="cadastrar"]'); await page.waitForTimeout(500);
 const sobre = await page.evaluate(() => { const el = document.getElementById('preCorpo'), r = el.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + 20); return !!(x && x.closest('#overlayPrEsc')); });
 check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && document.getElementById('overlayPrEsc').classList.contains('show')) && sobre && /Processo já em andamento/.test(await t('#preCorpo')), '"Cadastrar processo" no texto abre a escolha POR CIMA e a leitura continua aberta por baixo');
@@ -216,7 +241,7 @@ await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && !!document.querySelector('#pbCorpo [data-pbd="irproc"]') && !document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.getElementById('pbPrazoBox')), 'depois de cadastrar, a leitura continua aberta e já mostra "Abrir o processo", o prazo e as opções de lida / não lida');
 await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(800);
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, 'e dá para escolher depois se fica lida ou não lida');
-await page.click('.pb-b[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
+await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
 await page.click('#pbFechar'); await page.waitForTimeout(300);
 // publicações idênticas (um autor em cada uma) viram um cartão só
 const NG = '5700000-10.2026.8.09.0107', numG = NG.replace(/\D/g, '');
@@ -234,14 +259,14 @@ const grupo = cg.find(x => /idênticas reunidas/.test(x)) || '';
 check(/3 publicações idênticas reunidas/.test(grupo) && /AUTOR UM/.test(grupo) && /AUTOR DOIS/.test(grupo) && /AUTOR TRES/.test(grupo), 'o cartão reunido diz quantas são e para quem: ' + grupo.replace(/\n/g, ' | ').slice(0, 130));
 const heroNum = async () => Number(await page.evaluate(() => (document.querySelector('#pbSeg [data-v="naolidas"] .md-n') || { innerText: '0' }).innerText));   // o total de não lidas agora fica no selo da sub-aba
 const antes = await heroNum();
-await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); c.querySelector('[data-pb="lida"]').click(); }); await page.waitForTimeout(1200);
+await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); (c.querySelector('[data-pb="lida"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="lida"]'))).click(); }); await page.waitForTimeout(1200);
 const lg = (await f('GET', '/api/djen/lista')).j.pubs.filter(p => p.processo === numG);
 check(lg.filter(p => p.lida).map(p => p.id).sort().join() === '900101,900102,900103' && lg.find(p => p.id === '900104').lida === false, 'um toque em "Marcar como lida" marca as 3 de uma vez (e só elas)');
 check(await heroNum() === antes - 1 && String(await page.evaluate(() => document.getElementById('menuNPub').textContent)) === String(await heroNum()), 'o contador de não lidas conta o grupo como 1 (de ' + antes + ' para ' + (antes - 1) + ')');
-await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); c.querySelector('[data-pb="abrir"]').click(); }); await page.waitForTimeout(1500);
+await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); (c.querySelector('[data-pb="abrir"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="abrir"]'))).click(); }); await page.waitForTimeout(1500);
 check(/3 publicações idênticas reunidas/i.test(await t('#pbCorpo')) && /AUTOR DOIS/.test(await t('#pbCorpo')), 'o detalhe mostra os destinatários reunidos');
 await page.click('#pbFechar'); await page.waitForTimeout(300);
-await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); c.querySelector('[data-pb="lida"]').click(); }); await page.waitForTimeout(1000);
+await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); (c.querySelector('[data-pb="lida"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="lida"]'))).click(); }); await page.waitForTimeout(1000);
 check((await f('GET', '/api/djen/lista')).j.pubs.filter(p => p.processo === numG && !p.lida).length === 4, '"Marcar como não lida" desfaz nas 3');
 // vários autores na mesma publicação, processo ainda não cadastrado: reconhece clientes e cadastra os que faltam
 const NG2 = '5800000-20.2026.8.09.0107', NG3 = '5900000-30.2026.8.09.0107', NOME_COMPL = 'COOPERATIVA MISTA DOS PRODUTORES DE LEITE DE MORRINHOS - COMPLEM';
@@ -255,7 +280,7 @@ await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeou
 const cartaoNG2 = async () => page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); return c ? c.innerText : ''; }, NG2);
 const ct2 = await cartaoNG2();
 check(/3 publicações idênticas reunidas/.test(ct2) && /provável cliente: Complem, Fulano de Tal|provável cliente: Fulano de Tal, Complem/.test(ct2), 'o cartão reunido sugere os clientes prováveis (Complem e Fulano de Tal): ' + ct2.replace(/\n/g, ' | ').slice(0, 150));
-await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); c.querySelector('[data-pb="cadastrar"]').click(); }, NG2); await page.waitForTimeout(500);
+await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); (c.querySelector('[data-pb="cadastrar"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="cadastrar"]'))).click(); }, NG2); await page.waitForTimeout(500);
 await page.click('[data-pre="processo"]'); await page.waitForTimeout(600);
 check(/Fulano de Tal/.test(await t('#pr_chips')) && !/Complem/.test(await t('#pr_chips')), 'o nome igual (Fulano de Tal) já vem vinculado e o abreviado só como sugestão');
 const partesPub = await t('#pr_partesPub');
@@ -279,7 +304,7 @@ await f('POST', '/api/djen/buscar', {});
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(800);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
-await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); c.querySelector('[data-pb="cadastrar"]').click(); }, NG3); await page.waitForTimeout(500);
+await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); (c.querySelector('[data-pb="cadastrar"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="cadastrar"]'))).click(); }, NG3); await page.waitForTimeout(500);
 await page.click('[data-pre="processo"]'); await page.waitForTimeout(600);
 check(/Complem/.test(await t('#pr_chips')), 'depois de aprender, o mesmo nome completo vem vinculado ao Complem sozinho');
 await page.click('#prX'); await page.waitForTimeout(300);
@@ -297,7 +322,7 @@ check(pH.ativo === 'Cooperativa Mista' && pH.passivo === 'Banco Exemplo S.A.' &&
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(800);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
-await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); c.querySelector('[data-pb="cadastrar"]').click(); }, NH); await page.waitForTimeout(500);
+await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => c.innerText.includes(n)); (c.querySelector('[data-pb="cadastrar"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="cadastrar"]'))).click(); }, NH); await page.waitForTimeout(500);
 await page.click('[data-pre="processo"]'); await page.waitForTimeout(1500);
 const fh = await page.evaluate(() => ({ reu: document.getElementById('pr_reu').value, autor: document.getElementById('pr_autor').value, partes: document.getElementById('pr_partes').value, orgao: document.getElementById('pr_orgao').value, classe: document.getElementById('pr_classe').value, valor: document.getElementById('pr_valor').value, msg: document.getElementById('pr_dados').innerText }));
 check(fh.reu === 'Banco Exemplo S.A.' && fh.autor === 'Cooperativa Mista' && fh.partes === 'Cooperativa Mista x Banco Exemplo S.A.' && /Morrinhos - 2ª Vara Cível/.test(fh.orgao) && fh.valor === '25.000,00' && /Dados do Diário Oficial preenchidos/.test(fh.msg), 'ao cadastrar pela publicação, o réu, o órgão, as partes e o valor da causa vêm sozinhos: ' + JSON.stringify(fh));
@@ -324,7 +349,7 @@ await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 check(/Réu: Construtora Beta Ltda|Maria Souza x Construtora Beta Ltda/.test(await t('#prLista')), 'e a lista de Processos mostra o réu para diferenciar os processos do mesmo cliente');
 // OABs na tela
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(900);
-await page.click('[data-pb="oabs"]'); await page.waitForTimeout(500);
+await page.click('[data-pb="menu"]'); await page.click('.pb-menu [data-pb="oabs"]'); await page.waitForTimeout(500);
 check(await page.evaluate(() => document.getElementById('overlayPbOab').classList.contains('show') && document.querySelectorAll('#pboCorpo .pb-oab').length === 3), 'a janela de OABs lista as duas cadastradas e o formulário para adicionar');
 await page.fill('#pbo_nome', 'Dr. Carlos'); await page.fill('#pbo_num', '12345'); await page.click('[data-pbo="novo"]'); await page.waitForTimeout(300);
 check(await page.evaluate(() => document.querySelectorAll('#pboCorpo .pb-oab').length === 4), 'adiciona outra OAB à lista');

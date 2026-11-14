@@ -35,13 +35,13 @@ await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await pag
 const t = async s => page.evaluate(s => (document.querySelector(s) || {}).innerText || '', s);
 const v = async id => page.evaluate(i => (document.getElementById(i) || {}).value, id);
 const cartao = nome => page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(x => x.innerText.includes(n)); return c ? c.innerText : ''; }, nome);
-const abrir = async nome => { await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(x => x.innerText.includes(n)); c.querySelector('[data-pb="abrir"]').click(); }, nome); await page.waitForTimeout(900); };
+const abrir = async nome => { await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-card')).find(x => x.innerText.includes(n)); (c.querySelector('[data-pb="abrir"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="abrir"]'))).click(); }, nome); await page.waitForTimeout(900); };
 const fechar = async () => { await page.click('#pbFechar'); await page.waitForTimeout(300); };
 await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes"]').click()); await page.waitForTimeout(1500);
 
 // 1) cartão
 let c1 = await cartao('Reta Replica');
-check(/✦ Réplica/.test(c1) && /15 dias/.test(c1) && /Confirmar: Réplica/.test(c1), 'o cartão mostra a peça sugerida e o botão “Confirmar: Réplica”');
+check(/✦ Réplica/.test(c1) && /15 dias/.test(c1) && /Confirmar prazo · vence \d\d\/\d\d/.test(c1), 'o cartão mostra a peça sugerida e o botão “Confirmar prazo · vence dd/mm”');
 // 2) detalhe: opções, escolha, prazo
 await abrir('Reta Replica');
 let det = await t('#pbCorpo');

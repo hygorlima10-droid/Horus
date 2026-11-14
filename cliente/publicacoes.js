@@ -4,7 +4,7 @@
    - aqui você vê, abre o texto completo, liga ao processo cadastrado e confirma o prazo
    - o prazo é sempre SUGERIDO (texto da publicação) e CONFIRMADO por você; a data usa o calendário do TJGO
    ============================================================ */
-var pbS = { carregado: false, carregando: false, buscando: false, pubs: [], oabs: [], ultima: null, filtro: 'naolidas', f: { q: '', de: '', ate: '', oab: 'todas', adv: '', trib: '' }, fAberto: false, mAberto: false, mais: 1 };
+var pbS = { carregado: false, carregando: false, buscando: false, pubs: [], oabs: [], ultima: null, filtro: 'naolidas', f: { q: '', de: '', ate: '', oab: 'todas', adv: '', trib: '' }, fAberto: false, mAberto: false, cm: null, mais: 1 };
 var pbEdOabs = [], pbDetId = null, pbTextos = {};
 function pbApi(url, metodo, corpo){
   return fetch(url, { method: metodo || 'GET', credentials: 'same-origin', cache: 'no-store', headers: corpo !== undefined ? { 'content-type': 'application/json' } : undefined, body: corpo !== undefined ? JSON.stringify(corpo) : undefined })
@@ -47,9 +47,11 @@ function pbMotivoNaoUtil(iso){
 }
 function pbProxUtil(iso){ var d = iso; do { d = pbSoma(d, 1); } while (pbNaoUtil(d)); return d; }
 /* disponibilização → publicação (1º dia útil seguinte) → começa a contar no 1º dia útil seguinte à publicação */
-function pbCalcular(disp, dias, tipo){
+function pbCalcular(disp, dias, tipo, regime){
   dias = Math.max(1, parseInt(dias, 10) || 1);
   var corr = tipo === 'corridos', op = { modo: 'dje', data: disp, dias: dias, regime: corr ? 'custom' : 'cpc', unidade: corr ? 'corridos' : 'uteis', recesso: true, prorroga: true, excluiInicio: true, inicioUtil: true, sobre: 1, dobro: false, extras: [] };
+  /* regime sugerido pela vara/tribunal (CPP, Juizado, CLT): vale só quando a unidade do regime é a da contagem escolhida */
+  if (regime && regime !== 'cpc' && PZ_REGIMES[regime] && PZ_REGIMES[regime].unidade === (corr ? 'corridos' : 'uteis')) op = { modo: 'dje', data: disp, dias: dias, regime: regime, dobro: false, extras: [] };
   var r = pzCalcular(op), obs = [];   /* a contagem é do motor de cliente/prazos.js (a mesma da Calculadora de prazos) */
   for (var x = r.inicio; x <= r.vencimento; x = pbSoma(x, 1)) if (PB_FACULTATIVOS[x]) obs.push(fmtData(x) + ' foi ' + PB_FACULTATIVOS[x]);
   return { pub: r.publicacao, ini: r.inicio, venc: r.vencimento, obs: obs, op: op };
@@ -133,6 +135,7 @@ function pbMontarTela(){
   qs('pbWrap').addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('[data-pb]') : null; if (!b) return;
     var a = b.getAttribute('data-pb'), id = b.getAttribute('data-id');
+    if (a !== 'cm' && pbS.cm){ pbS.cm = null; if (a === 'lida' || a === 'cadastrar' || a === 'reabrir-proc') setTimeout(function(){ if (activeTab === 'publicacoes') pbRenderLista(); }, 0); }
     if (a === 'filtro'){ var fv = b.getAttribute('data-v'); mdLembrar('publicacoes', fv); if (fv === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = fv; } pbS.mais = 1; pbRender(); }
     else if (a === 'buscar') pbBuscarAgora();
     else if (a === 'oabs') pbAbrirOabs();
@@ -147,6 +150,9 @@ function pbMontarTela(){
     else if (a === 'reabrir-proc'){ var pp = pbPub(id), vv = pp && pbVinculo(pp.processo); if (vv) prReabrir(vv.id).then(function(){ pbRender(); }); }
     else if (a === 'ir') pbIrVinculo(id);
     else if (a === 'prazo') pbAbrirPrazoPub(id);
+    else if (a === 'rapido') pbRapAbrir(id);
+    else if (a === 'naoe'){ pbS.cm = null; pbNaoE(id); }
+    else if (a === 'cm'){ pbS.cm = pbS.cm === id ? null : id; pbRenderLista(); }
     else if (a === 'aud') pbCriarAudiencia(id);
     else if (a === 'aud-livre') pbCriarAudiencia(id, true);
     else if (a === 'tarefa') pbCriarTarefa(id);
@@ -421,25 +427,34 @@ function pbRender(){
   if (!pbS.mdOk){ pbS.mdOk = 1; var s0 = mdInicial('publicacoes', ['naolidas', 'meus', 'todas']); if (s0 === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = s0; } }
   var res = pbS.sub === 'resumo';
   var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos'], ['todas', 'Todas']], res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
-  h += '<div class="ini-acoes pb-barra"><button type="button" class="acao acao-ouro" data-pb="buscar"' + (pbS.buscando ? ' disabled' : '') + '><svg><use href="#ic-sync"/></svg><span>' + (pbS.buscando ? 'Buscando…' : 'Buscar agora') + '</span></button><button type="button" class="acao" data-pb="oabs"><svg><use href="#ic-users"/></svg><span>OABs monitoradas</span></button></div>';
   var n = pbFiltrosAtivos();
   if (res){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
+    h += pbBarraHtml(true, vis, naoLidas, aDefinir);
+    if (pbS.mAberto) h += pbMenuHtml(vis);
     h += pbAvisoLeitura();
     try{ h += mjPainel('publicacoes', mjPublicacoes()); }catch(e){ console.error('resumo de publicações', e); h += '<div class="financeiro-vazio">Não consegui montar o resumo. As outras sub-abas continuam funcionando.</div>'; }
     w.innerHTML = h; return;
   }
-  h += '<div class="pb-filtros"><div class="pb-seg-lin"><span class="saldo-data" style="flex:1;align-self:center">' + naoLidas.length + (naoLidas.length === 1 ? ' não lida' : ' não lidas') + (aDefinir ? ' · ' + aDefinir + ' com prazo a definir' : '') + ' · atualizado ' + escapeHtml(pbQuandoAtualizou()) + '</span>' +
-    '<button type="button" class="btn btn-ghost pb-funil' + (n ? ' ativo' : '') + '" data-pb="painel" aria-label="Filtros" aria-expanded="' + (pbS.fAberto ? 'true' : 'false') + '" title="Filtros"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>' + (n ? '<i class="pb-n">' + n + '</i>' : '') + '</button>' +
-    '<button type="button" class="btn btn-ghost pb-funil' + (pbS.mAberto ? ' ativo' : '') + '" data-pb="menu" aria-label="Mais opções" aria-expanded="' + (pbS.mAberto ? 'true' : 'false') + '" title="Mais opções"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>';
+  h += '<div class="pb-filtros">' + pbBarraHtml(false, vis, naoLidas, aDefinir);
   if (pbS.fAberto) h += pbPainelHtml();
   if (pbS.mAberto) h += pbMenuHtml(vis);
   h += '</div>';
   if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
   h += pbAvisoLeitura();
-  if (!pbS.oabs.some(function(o){ return o.ativo; })) h += '<div class="financeiro-vazio">Nenhuma OAB ativa. Toque em “OABs monitoradas” para cadastrar.</div>';
+  if (!pbS.oabs.some(function(o){ return o.ativo; })) h += '<div class="financeiro-vazio">Nenhuma OAB ativa. Abra ⋯ e escolha “OABs monitoradas” para cadastrar.</div>';
   h += '<div id="pbListaBox" class="pb-lista">' + pbListaHtml() + '</div>';
   w.innerHTML = h;
+}
+/* cabeçalho enxuto: texto de situação + ⟳ buscar agora + filtros + ⋯ (OABs monitoradas, peças e prazos, relatório, marcar todas) */
+function pbBarraHtml(res, vis, naoLidas, aDefinir){
+  var n = pbFiltrosAtivos(), btn = function(a, rot, ativo, svg){ return '<button type="button" class="btn btn-ghost pb-funil' + (ativo ? ' ativo' : '') + '" data-pb="' + a + '" aria-label="' + rot + '" title="' + rot + '"' + (a === 'painel' ? ' aria-expanded="' + (pbS.fAberto ? 'true' : 'false') + '"' : (a === 'menu' ? ' aria-expanded="' + (pbS.mAberto ? 'true' : 'false') + '"' : (pbS.buscando ? ' disabled' : ''))) + '>' + svg + '</button>'; };
+  var ico = function(d){ return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; };
+  var txt = res ? ('atualizado ' + pbQuandoAtualizou()) : (naoLidas.length + (naoLidas.length === 1 ? ' não lida' : ' não lidas') + (aDefinir ? ' · ' + aDefinir + ' com prazo a definir' : '') + ' · atualizado ' + pbQuandoAtualizou());
+  return '<div class="pb-seg-lin"><span class="saldo-data" style="flex:1;align-self:center">' + escapeHtml(txt) + '</span>' +
+    btn('buscar', pbS.buscando ? 'Buscando…' : 'Buscar agora', pbS.buscando, ico('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>')) +
+    (res ? '' : btn('painel', 'Filtros', n > 0, ico('<path d="M3 5h18l-7 8v6l-4 2v-8z"/>')).replace('</button>', (n ? '<i class="pb-n">' + n + '</i>' : '') + '</button>')) +
+    btn('menu', 'Mais opções', pbS.mAberto, ico('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>')) + '</div>';
 }
 /* a leitura automática das 10h falhar em silêncio custa um prazo: avisa quando passou de 1 dia ou quando uma OAB deu erro */
 function pbAvisoLeitura(){
@@ -448,12 +463,12 @@ function pbAvisoLeitura(){
   if (comErro.length) msg = 'A última leitura falhou para ' + comErro.map(function(o){ return o.nome; }).join(', ') + ' (' + comErro[0].erro + '). Pode haver publicação que você ainda não viu.';
   else if (parada) msg = pbS.ultima ? 'A leitura automática não roda desde ' + pbQuandoAtualizou() + '. Pode haver publicação que você ainda não viu.' : 'A leitura automática do Diário Oficial ainda não rodou.';
   if (comErro.length && /\b(403|429|5\d\d)\b/.test(comErro[0].erro)) msg += ' A leitura feita daqui do app costuma funcionar: o app tenta sozinho ao ser aberto, e o servidor tenta de novo de 2 em 2 horas, até as 18h.';
-  return msg ? '<div class="aviso-sis" id="pbAvisoLeitura"><span class="as-txt">' + escapeHtml(msg) + ' Toque em “Buscar agora”.</span></div>' : '';
+  return msg ? '<div class="aviso-sis" id="pbAvisoLeitura"><span class="as-txt">' + escapeHtml(msg) + ' Toque em ⟳ (Buscar agora).</span></div>' : '';
 }
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){
   var nl = pbListaFiltrada().filter(function(p){ return !pbLidaG(p); }).length, n = pbFiltrosAtivos();
-  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">✦</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
+  return '<div class="pb-painel pb-menu"><button type="button" class="pb-mi" data-pb="oabs"><span class="pb-mi-i">☰</span>OABs monitoradas<small>quais advogados o app lê no Diário Oficial</small></button><button type="button" class="pb-mi" data-pb="pecas"><span class="pb-mi-i">✦</span>Peças e prazos<small>regras e o que o app aprendeu</small></button>' +
     '<button type="button" class="pb-mi" data-pb="rel"><span class="pb-mi-i">🖨</span>Relatório das publicações<small>imprimir ou salvar em PDF</small></button>' +
     '<button type="button" class="pb-mi" data-pb="todas-lidas"' + (nl ? '' : ' disabled') + '><span class="pb-mi-i">✓</span>Marcar ' + (n ? 'as ' + nl + ' deste filtro' : (nl ? 'todas (' + nl + ')' : 'todas')) + ' como lidas<small>' + (nl ? 'só as que aparecem na lista' : 'não há publicações não lidas') + '</small></button></div>';
 }
@@ -483,7 +498,117 @@ function pbListaHtml(){
 function pbRenderLista(){
   var box = qs('pbListaBox'); if (!box) { pbRender(); return; }
   box.innerHTML = pbListaHtml();
-  var n = pbFiltrosAtivos(), fb = document.querySelector('.pb-funil'); if (fb){ fb.classList.toggle('ativo', n > 0); var i = fb.querySelector('.pb-n'); if (n){ if (!i){ i = document.createElement('i'); i.className = 'pb-n'; fb.appendChild(i); } i.textContent = n; } else if (i) i.remove(); }
+  var n = pbFiltrosAtivos(), fb = document.querySelector('.pb-funil[data-pb="painel"]'); if (fb){ fb.classList.toggle('ativo', n > 0); var i = fb.querySelector('.pb-n'); if (n){ if (!i){ i = document.createElement('i'); i.className = 'pb-n'; fb.appendChild(i); } i.textContent = n; } else if (i) i.remove(); }
+}
+/* ---------- confirmação em um passo (Onda 2): botão no cartão + folha curta ---------- */
+var PB_REG_ROTULO = { cpc: 'Processo civil (CPC)', jec: 'Juizados (Lei 9.099)', clt: 'Trabalho (CLT)', cpp: 'Processo penal (CPP)' };
+/* a contagem sugerida vem da vara/tribunal; quem decide é você (a folha mostra a regra e "Ajustar tudo…" muda) */
+function pbRegimeSug(p){
+  var t = [p.tribunal, p.orgao, p.classe].join(' ').toLowerCase();
+  if (/juizado|turma recursal/.test(t)) return 'jec';
+  if (/criminal|j[úu]ri|execu[çc][ãa]o penal|\bpenal\b/.test(t)) return 'cpp';
+  if (/\btrt|\btst\b|trabalh/.test(t)) return 'clt';
+  return 'cpc';
+}
+/* texto que cita Fazenda/INSS/MP/Defensoria: só uma dica; o dobro vale para quem representa esses órgãos, então nunca vem marcado por palavra no texto */
+function pbDobroDica(p){
+  var t = [p.orgao, p.classe, p.trecho].concat((p.dest || []).map(function(d){ return d.n; })).join(' ');
+  var m = /Fazenda P[úu]blica|INSS|Instituto Nacional do Seguro Social|Munic[íi]pio de|Estado de Goi|Minist[ée]rio P[úu]blico|Defensoria|Uni[ãa]o\b|Autarquia/i.exec(t);
+  return m ? m[0] : '';
+}
+function pbRegimeDaConta(p, tipo){ var rg = pbRegimeSug(p); return (PZ_REGIMES[rg] && PZ_REGIMES[rg].unidade === tipo) ? rg : ''; }
+/* o que "Confirmar prazo" faria sem você mexer em nada (peça escolhida ou sugerida; senão o prazo achado no texto); null = não há o que confirmar */
+function pbPadraoPrazo(p, dobroSobre){
+  var t = pbTextos[p.id], sug = (t && t.ok && t.sug) || p.sug, pcSel = pbPecaSel(p), pc = pbPecasDe(p), st = pbPeca[p.id] || {}, rg = pbRegimeSug(p), desc, dias, tipo;
+  if (pcSel && pcSel.dias){ desc = pcSel.peca; dias = pcSel.dias; tipo = pcSel.contagem; }
+  else if (sug){ desc = 'Prazo de ' + sug.dias + ' dias — ' + (p.tipo || 'publicação'); dias = sug.dias; tipo = sug.tipo; }
+  else return null;
+  if (rg === 'cpp') tipo = 'corridos';   /* prazo penal é contínuo */
+  var dobro = (typeof dobroSobre === 'string') ? dobroSobre : ((typeof st.dobro === 'string') ? st.dobro : (pc ? pc.dobro : ''));
+  if (rg === 'jec' || (pc && pc.instancia === 'juizado')) dobro = '';
+  var regime = pbRegimeDaConta(p, tipo), r = pbCalcular(p.data, dias * (dobro ? 2 : 1), tipo, regime);
+  return { desc: desc, dias: dias, tipo: tipo, dobro: dobro || '', regime: regime, rg: rg, peca: pcSel, r: r };
+}
+function pbRespPadrao(p){ var sg = agChavesProcesso(p.numero || p.processo), me = esMinhasChaves(); return sg.length ? sg : (me.length ? [me[0]] : []); }
+/* grava o prazo na Agenda; a folha curta e o formulário completo usam este mesmo caminho */
+function pbGravarPrazo(p, o){
+  var mult = o.dobro ? 2 : 1, r = pbCalcular(p.data, o.dias * mult, o.tipo, o.regime), venc = o.manual || r.venc, v = pbVinculo(p.processo), trab = '', psel = pbPecaSel(p), pcz = pbPecasDe(p);
+  var auto = agAntesUteis(venc, 2); if (auto >= todayISO() && auto < venc) trab = auto;
+  var lidaAntes = pbLidaG(p), ids = pbMembros(p).map(function(x){ return x.id; });
+  return agCriar({ tipo: 'prazo', titulo: o.desc, processo: p.numero || p.processo, cliente: pbNomeParte(p, v), data: venc, hora: '', trabalhar: trab, situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: o.resp, pubId: p.id, calculo: o.manual ? undefined : r.op, dias: o.dias * mult, diasBase: o.dias, dobro: mult > 1 ? o.dobro : '', contagem: o.tipo, disp: p.data, inicio: r.ini, manual: !!o.manual, tribunal: p.tribunal || '',
+    peca: psel ? psel.peca : '', pecaId: psel ? psel.rid : '', pecaBase: psel ? psel.base : '', pecaOrigem: psel && psel.peca === o.desc ? (psel.rid === 'catalogo' ? 'escolhida' : 'sugerida') : (psel ? 'ajustada' : 'manual'), natureza: pcz ? pcz.natureza : '', criadoEm: new Date().toISOString() }).then(function(doc){
+    pbMarcar(ids, { lida: true, semPrazo: false });
+    try{ pbRegistrarEscolha(p, pcz, psel, o.desc, o.dias, o.tipo); }catch(e){ console.error('aprendizado', e); }
+    return { doc: doc, venc: venc, ids: ids, lidaAntes: lidaAntes };
+  });
+}
+function pbDesfazerPrazo(res){
+  if (!res || !res.doc || !res.doc.id) return;
+  pbApi('/api/db/agenda/' + encodeURIComponent(res.doc.id), 'DELETE').then(function(){
+    agDocs = agDocs.filter(function(x){ return x.id !== res.doc.id; }); agDepois();
+    pbMarcar(res.ids, { lida: !!res.lidaAntes, semPrazo: false }); toast('Prazo desfeito.');
+  }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
+}
+function pbNaoE(id){
+  var p = pbPub(id); if (!p) return; var ids = pbMembros(p).map(function(x){ return x.id; }), antes = pbLidaG(p);
+  pbMarcar(ids, { semPrazo: true, lida: true });
+  toast('Marcada como sem prazo.', 'Desfazer', function(){ pbMarcar(ids, { semPrazo: false, lida: antes }); });
+}
+/* depois de confirmar, leva o olhar à próxima publicação ainda não lida que espera um prazo */
+function pbAvancar(id){
+  var l = pbListaFiltrada(), i = -1; l.forEach(function(x, k){ if (x.id === id) i = k; });
+  var prox = l.slice(i + 1).concat(l.slice(0, Math.max(i, 0))).filter(function(x){ return x.id !== id && !pbLidaG(x) && !pbPrazoGrupo(x) && !pbSemPrazoG(x); })[0];
+  if (!prox) return;
+  setTimeout(function(){ var c = document.querySelector('.pb-card[data-cid="' + prox.id + '"]'); if (c && c.scrollIntoView){ c.scrollIntoView({ block: 'center', behavior: 'smooth' }); c.classList.add('pb-prox'); setTimeout(function(){ c.classList.remove('pb-prox'); }, 2200); } }, 120);
+}
+var pbRap = { id: null, dobro: '' };
+function pbRapMontar(){
+  if (qs('overlayPbRap')) return;
+  var d = document.createElement('div'); d.className = 'overlay'; d.id = 'overlayPbRap';
+  d.innerHTML = '<div class="modal"><div class="modal-head"><h2>Confirmar prazo</h2><button class="icon-btn" id="pbrX" type="button" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="modal-body" id="pbrCorpo"></div></div>';
+  document.body.appendChild(d);
+  d.addEventListener('click', function(e){
+    if (e.target === d || (e.target.closest && e.target.closest('#pbrX'))){ d.classList.remove('show'); return; }
+    var b = e.target.closest ? e.target.closest('[data-pbr]') : null; if (!b) return;
+    var a = b.getAttribute('data-pbr'), p = pbPub(pbRap.id); if (!p) return;
+    if (a === 'ok') pbRapConfirmar(b);
+    else if (a === 'ajustar'){ d.classList.remove('show'); pbAbrirPrazoPub(p.id); }
+    else if (a === 'naoe'){ d.classList.remove('show'); pbNaoE(p.id); pbAvancar(p.id); }
+  });
+  d.addEventListener('change', function(e){ if (e.target && e.target.id === 'pbr_dobro'){ pbRap.dobro = e.target.checked ? (pbRap.dobroTipo || 'fazenda') : ''; pbRapDesenhar(); } });
+}
+function pbRapAbrir(id){
+  var p = pbPub(id); if (!p) return;
+  var pad = pbPadraoPrazo(p); if (!pad){ pbAbrirPrazoPub(id); return; }
+  pbRapMontar(); pbRap = { id: id, dobro: pad.dobro, dobroTipo: pad.dobro || 'fazenda' }; pbRapDesenhar(); qs('overlayPbRap').classList.add('show');
+}
+function pbRapDesenhar(){
+  var p = pbPub(pbRap.id), c = qs('pbrCorpo'); if (!p || !c) return;
+  var pad = pbPadraoPrazo(p, pbRap.dobro), v = pbVinculo(p.processo), venc = pad.r.venc, u = agUteis(venc), trab = agAntesUteis(venc, 2), dica = pbDobroDica(p), pcz = pbPecasDe(p);
+  var podeDobro = pad.rg !== 'jec' && !(pcz && pcz.instancia === 'juizado');
+  var un = pad.tipo === 'corridos' ? 'dias corridos' : 'dias úteis', resp = pbRespPadrao(p).map(function(k){ return esNomeChave(k); });
+  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || p.processo || '') + '</div></div>' +
+    '<div class="pbr-venc"><span>Prazo fatal</span><b>' + escapeHtml(pbDiaSem(venc) + ', ' + fmtData(venc)) + '</b><small>' + (u > 0 ? 'daqui a ' + agUtilTxt(u) : (u === 0 ? 'é hoje' : 'já passou')) + '</small></div>' +
+    '<div class="pb-lin"><span>Peça</span><b>' + escapeHtml(pad.desc.slice(0, 60)) + '</b></div>' +
+    '<div class="pb-lin"><span>Contagem</span><b>' + pad.dias * (pad.dobro ? 2 : 1) + ' ' + un + (pad.dobro ? ' (em dobro)' : '') + '</b></div>' +
+    '<div class="pb-lin"><span>Regra sugerida</span><b>' + escapeHtml(pad.regime ? (PB_REG_ROTULO[pad.regime] || pad.regime) : 'Processo civil (CPC)') + '</b></div>' +
+    '<div class="pb-lin"><span>Começa a contar</span><b>' + escapeHtml(fmtData(pad.r.ini)) + '</b></div>' +
+    (pad.r.venc > trab && trab >= todayISO() ? '<div class="pb-lin"><span>Trabalhar até</span><b>' + escapeHtml(pbDiaSem(trab) + ' ' + fmtData(trab).slice(0, 5)) + '</b></div>' : '') +
+    '<div class="pb-lin"><span>Responsável</span><b>' + escapeHtml(resp.join(', ') || 'você') + '</b></div>' +
+    (podeDobro ? '<label class="ad-it pbr-dobro"><input type="checkbox" id="pbr_dobro"' + (pbRap.dobro ? ' checked' : '') + '><span class="ad-t">Prazo em dobro (Fazenda, MP ou Defensoria)</span></label>' + (dica && !pbRap.dobro ? '<div class="saldo-data">O texto cita “' + escapeHtml(dica) + '”. O dobro só vale se o seu cliente for esse órgão.</div>' : '') : '') +
+    (pad.r.obs.length ? '<div class="pb-obs">Atenção: ' + escapeHtml(pad.r.obs.join('; ')) + ' no período.</div>' : '') +
+    '<div class="form-error" id="pbrErro"></div>' +
+    '<div class="pb-acts pbr-acts"><button type="button" class="btn pb-b pb-verde" data-pbr="ok">Confirmar prazo</button><button type="button" class="btn btn-ghost pb-b" data-pbr="ajustar">Ajustar tudo…</button><button type="button" class="btn btn-ghost pb-b" data-pbr="naoe">Não é prazo</button></div>' +
+    '<div class="pb-aviso">O app só sugere. Confira a contagem antes de confirmar.</div>';
+  c.innerHTML = h;
+}
+function pbRapConfirmar(b){
+  var p = pbPub(pbRap.id); if (!p) return; var pad = pbPadraoPrazo(p, pbRap.dobro); b.disabled = true;
+  pbGravarPrazo(p, { desc: pad.desc, dias: pad.dias, tipo: pad.tipo, dobro: pad.dobro, regime: pad.regime, manual: '', resp: pbRespPadrao(p) }).then(function(res){
+    qs('overlayPbRap').classList.remove('show');
+    toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); });
+    pbAvancar(p.id);
+  }).catch(function(e){ b.disabled = false; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
 }
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
@@ -496,18 +621,19 @@ function pbCartao(p){
   var aud = pbAudDe(p), audOk = aud && pbAudNaAgenda(p, aud);
   if (aud) tags += '<span class="pb-tg ' + (audOk ? 'ok' : 'pz') + '">🗓 audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + (audOk ? ' · na Agenda' : '') + '</span>';
   p.oabs.forEach(function(id){ var o = pbOabDe(id); if (o) tags += '<span class="pb-tg">via OAB ' + escapeHtml(pbPrimeiroNome(o)) + '</span>'; });
-  var btn = '';
-  if (aud && !audOk) btn += '<button type="button" class="btn btn-primary pb-b" data-pb="aud" data-id="' + escapeHtml(p.id) + '">Criar audiência</button>';
-  var ppr = pbPecaPrincipal(pbPecasDe(p));
-  if (!pz && ppr && ppr.dias && !semPz) btn += '<button type="button" class="btn btn-primary pb-b" data-pb="prazo" data-id="' + escapeHtml(p.id) + '">Confirmar: ' + escapeHtml(ppr.peca.split(' (')[0].slice(0, 22)) + '</button>';
-  else if (!pz && p.sug && !semPz) btn += '<button type="button" class="btn btn-primary pb-b" data-pb="prazo" data-id="' + escapeHtml(p.id) + '">Confirmar prazo</button>';
-  else if (!pz && !semPz && cls !== 'out') btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="prazo" data-id="' + escapeHtml(p.id) + '">Criar prazo</button>';
-  if (v && v.arquivado) btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="reabrir-proc" data-id="' + escapeHtml(p.id) + '">Reabrir processo</button>';
-  if (!v) btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="cadastrar" data-id="' + escapeHtml(p.id) + '">Cadastrar processo</button>';
-  btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="abrir" data-id="' + escapeHtml(p.id) + '">Ver texto</button><button type="button" class="btn btn-ghost pb-b" data-pb="lida" data-id="' + escapeHtml(p.id) + '">' + (lida ? 'Marcar como não lida' : 'Marcar como lida') + '</button>';
-  return '<div class="pb-card ' + cls + (lida ? ' lida' : '') + '"><div class="pb-l1"><span>' + (lida ? '' : '<i class="pb-dot"></i>') + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span><span class="pb-tipo ' + cls + '">' + escapeHtml(p.tipo || 'Publicação') + '</span></div>' +
+  var id = escapeHtml(p.id), btn = '', pad = (!pz && !semPz) ? pbPadraoPrazo(p) : null;
+  if (aud && !audOk) btn += '<button type="button" class="btn pb-b pb-ouro" data-pb="aud" data-id="' + id + '">Criar audiência · ' + escapeHtml(fmtData(aud.data).slice(0, 5)) + '</button>';
+  if (pad) btn += '<button type="button" class="btn pb-b pb-verde" data-pb="rapido" data-id="' + id + '">Confirmar prazo · vence ' + escapeHtml(fmtData(pad.r.venc).slice(0, 5)) + '</button>';
+  else if (!pz && !semPz && cls !== 'out') btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="prazo" data-id="' + id + '">Criar prazo</button>';
+  btn += '<button type="button" class="btn btn-ghost pb-b pb-mais" data-pb="cm" data-id="' + id + '" aria-label="Mais ações" aria-expanded="' + (pbS.cm === p.id ? 'true' : 'false') + '" title="Mais ações">⋯</button>';
+  var menu = '';
+  if (pbS.cm === p.id){
+    var mi = function(a, t){ return '<button type="button" class="pb-cmi" data-pb="' + a + '" data-id="' + id + '">' + t + '</button>'; };
+    menu = '<div class="pb-cm">' + mi('abrir', 'Ver texto') + mi('lida', lida ? 'Marcar como não lida' : 'Marcar como lida') + (!pz && !semPz ? mi('naoe', 'Não é prazo') : '') + (v ? mi('ir', 'Abrir processo') : mi('cadastrar', 'Cadastrar processo')) + (v && v.arquivado ? mi('reabrir-proc', 'Reabrir processo') : '') + '</div>';
+  }
+  return '<div class="pb-card ' + cls + (lida ? ' lida' : '') + '" data-cid="' + id + '"><div class="pb-l1"><span>' + (lida ? '' : '<i class="pb-dot"></i>') + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span><span class="pb-tipo ' + cls + '">' + escapeHtml(p.tipo || 'Publicação') + '</span></div>' +
     '<div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || p.processo || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div>' + (mem.length > 1 ? pbDestHtml(p) : '') +
-    (p.trecho ? '<div class="pb-trecho">' + escapeHtml(p.trecho) + '</div>' : '') + '<div class="pb-tags">' + tags + '</div><div class="pb-acts">' + btn + '</div></div>';
+    (p.trecho ? '<div class="pb-trecho">' + escapeHtml(p.trecho) + '</div>' : '') + '<div class="pb-tags">' + tags + '</div><div class="pb-acts pb-um">' + btn + '</div>' + menu + '</div>';
 }
 function pbDestHtml(p){
   var ns = pbDestinatarios(p); if (ns.length < 2) return '';
@@ -582,15 +708,16 @@ function pbDesenharDetalhe(){
     h += '<div class="pb-sec-t">Prazo confirmado</div><div class="pb-prazo-ok"><b>' + escapeHtml(fmtData(pz.data)) + '</b> <span>(' + escapeHtml(pbDiaSem(pz.data)) + ')</span><div class="saldo-data">' + escapeHtml(pz.descricao || '') + (pz.concluido ? ' · cumprido' : '') + '</div></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" id="pbVerPrazo">Abrir prazo</button></div>';
   } else {
     if (pc) h += pbPecaHtml(p, pc);
+    var tipoPad = pbRegimeSug(p) === 'cpp' ? 'corridos' : (usaPc ? pcSel.contagem : ((sug && sug.tipo === 'corridos') ? 'corridos' : 'uteis'));
     h += '<div class="pb-sec-t">' + (usaPc ? 'Prazo da peça escolhida' : (sug ? '✦ Prazo sugerido pelo texto' : 'Prazo desta publicação')) + '</div>';
     if (sug) h += '<div class="pb-frase">“…' + escapeHtml(sug.frase) + '…”</div>'; else h += '<div class="saldo-data">Não achei um prazo no texto. Se houver, informe os dias abaixo.</div>';
     h += '<div class="field"><label class="field-label" for="pbf_desc">Descrição</label><div class="pb-combo"><input type="text" id="pbf_desc" maxlength="90" value="' + escapeHtml(usaPc ? pcSel.peca : (sug ? 'Prazo de ' + sug.dias + ' dias — ' + (p.tipo || 'publicação') : (p.tipo || 'Prazo'))) + '"><button type="button" class="pb-combo-b" id="pbCatBtn" data-pbd="catalogo" aria-label="Escolher uma peça cadastrada" aria-expanded="false" title="Escolher uma peça cadastrada">▾</button></div><div class="pb-cat" id="pbCatBox" hidden></div></div>' +
-      '<div class="pb-dois"><div class="field"><label class="field-label" for="pbf_dias">Dias</label><input type="number" id="pbf_dias" min="1" max="365" inputmode="numeric" value="' + (usaPc ? pcSel.dias : (sug ? sug.dias : 15)) + '"></div><div class="field"><label class="field-label" for="pbf_tipo">Contagem</label><select id="pbf_tipo" class="filter-select"><option value="uteis"' + ((usaPc ? pcSel.contagem === 'uteis' : (!sug || sug.tipo === 'uteis')) ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + ((usaPc ? pcSel.contagem === 'corridos' : (sug && sug.tipo === 'corridos')) ? ' selected' : '') + '>dias corridos</option></select></div></div>' +
+      '<div class="pb-dois"><div class="field"><label class="field-label" for="pbf_dias">Dias</label><input type="number" id="pbf_dias" min="1" max="365" inputmode="numeric" value="' + (usaPc ? pcSel.dias : (sug ? sug.dias : 15)) + '"></div><div class="field"><label class="field-label" for="pbf_tipo">Contagem</label><select id="pbf_tipo" class="filter-select"><option value="uteis"' + (tipoPad === 'uteis' ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + (tipoPad === 'corridos' ? ' selected' : '') + '>dias corridos</option></select></div></div>' +
       ((pc && pc.instancia === 'juizado') ? '' : '<div class="field"><label class="field-label" for="pbf_dobro">Prazo em dobro?</label><select id="pbf_dobro" class="filter-select" style="width:100%"><option value="">Não</option><option value="fazenda"' + (((typeof stp.dobro === 'string') ? stp.dobro : (pc ? pc.dobro : '')) === 'fazenda' ? ' selected' : '') + '>Sim: Fazenda Pública, Ministério Público ou Defensoria (CPC 180, 183 e 186)</option><option value="litis"' + (stp.dobro === 'litis' ? ' selected' : '') + '>Sim: litisconsortes com advogados de escritórios diferentes (CPC 229; não vale em processo eletrônico, §2º)</option></select></div>') +
       '<div class="pb-calc" id="pbCalc"></div><button type="button" class="btn-text" data-pbd="manual">Corrigir a data manualmente</button><div class="field" id="pbManualBox" style="display:none;"><label class="field-label" for="pbf_manual">Data do vencimento (substitui o cálculo)</label><input type="date" id="pbf_manual"></div>' +
       '<div class="field" id="esResp_agendapub"></div>' +
       '<div class="pb-aviso">O app só sugere. Confira a contagem (data da publicação, feriados, suspensões e o tipo de prazo) antes de confirmar. Nada entra na Central de atenção sem o seu OK.</div><div class="form-error" id="pbErro"></div>' +
-      '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pbd="confirmar">Confirmar prazo</button>' + (!p.semPrazo ? '<button type="button" class="btn btn-ghost pb-b" data-pbd="naoe">Não é prazo</button>' : '') + '</div>';
+      '<div class="pb-acts"><button type="button" class="btn pb-b pb-verde" data-pbd="confirmar">Confirmar prazo</button>' + (!p.semPrazo ? '<button type="button" class="btn btn-ghost pb-b" data-pbd="naoe">Não é prazo</button>' : '') + '</div>';
   }
   h += '</div>';
   var au = pbAudDe(p);
@@ -609,7 +736,7 @@ function pbAtualizarCalculo(){
   var p = pbPub(pbDetId), el = qs('pbCalc'); if (!p || !el) return;
   var dias = parseInt(qs('pbf_dias').value, 10), tipo = qs('pbf_tipo').value;
   if (!dias || dias < 1){ el.innerHTML = '<span class="saldo-data">Informe os dias.</span>'; return; }
-  var mult = pbMult(), r = pbCalcular(p.data, dias * mult, tipo), fora = p.tribunal && p.tribunal !== 'TJGO';
+  var mult = pbMult(), r = pbCalcular(p.data, dias * mult, tipo, pbRegimeDaConta(p, tipo)), fora = p.tribunal && p.tribunal !== 'TJGO';
   el.innerHTML = (mult > 1 ? '<div class="pb-lin"><span>Prazo em dobro</span><b>' + dias + ' × 2 = ' + dias * 2 + ' dias</b></div>' : '') + '<div class="pb-lin"><span>Disponibilizada</span><b>' + fmtData(p.data) + '</b></div><div class="pb-lin"><span>Considerada publicada</span><b>' + fmtData(r.pub) + '</b></div><div class="pb-lin"><span>Começa a contar</span><b>' + fmtData(r.ini) + '</b></div><div class="pb-lin pb-venc"><span>Vence em</span><b>' + fmtData(r.venc) + ' <small>(' + pbDiaSem(r.venc) + ')</small></b></div>' +
     (r.obs.length ? '<div class="pb-obs">Atenção: ' + escapeHtml(r.obs.join('; ')) + ' no período. Se o expediente foi suspenso, o prazo pode terminar depois.</div>' : '') +
     '<div class="saldo-data">Calendário: feriados do TJGO' + (Number(r.venc.slice(0, 4)) === 2026 ? ' 2026 (lista oficial)' : ' (regra geral; confira a lista do ano)') + '; recesso de 20/12 a 20/01 não conta.' + (fora ? ' Esta publicação é do ' + escapeHtml(p.tribunal) + ': confira o calendário desse tribunal.' : '') + '</div>';
@@ -619,14 +746,9 @@ function pbSalvarPrazo(){
   var dias = parseInt(qs('pbf_dias').value, 10), tipo = qs('pbf_tipo').value, desc = qs('pbf_desc').value.trim(), manual = qs('pbf_manual').value, err = qs('pbErro');
   if (!dias || dias < 1){ err.textContent = 'Informe os dias do prazo.'; return; }
   if (!desc){ err.textContent = 'Escreva uma descrição.'; return; }
-  var mult = pbMult(), r = pbCalcular(p.data, dias * mult, tipo), venc = manual || r.venc, v = pbVinculo(p.processo), trab = '', psel = pbPecaSel(p), pcz = pbPecasDe(p);
-  var auto = agAntesUteis(venc, 2); if (auto >= todayISO() && auto < venc) trab = auto;
-  var pcMostrado = pbPecasDe(p);
-  agCriar({ tipo: 'prazo', titulo: desc, processo: p.numero || p.processo, cliente: pbNomeParte(p, v), data: venc, hora: '', trabalhar: trab, situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: esRespChaves('agendapub'), pubId: p.id, calculo: manual ? undefined : r.op, dias: dias * mult, diasBase: dias, dobro: mult > 1 ? qs('pbf_dobro').value : '', contagem: tipo, disp: p.data, inicio: r.ini, manual: !!manual, tribunal: p.tribunal || '',
-    peca: psel ? psel.peca : '', pecaId: psel ? psel.rid : '', pecaBase: psel ? psel.base : '', pecaOrigem: psel && psel.peca === desc ? (psel.rid === 'catalogo' ? 'escolhida' : 'sugerida') : (psel ? 'ajustada' : 'manual'), natureza: pcz ? pcz.natureza : '', criadoEm: new Date().toISOString() }).then(function(){
-    pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { lida: true, semPrazo: false });
-    try{ pbRegistrarEscolha(p, pcMostrado, psel, desc, dias, tipo); }catch(e){ console.error('aprendizado', e); }
-    qs('overlayPb').classList.remove('show'); toast('Prazo confirmado para ' + fmtData(venc) + '. Está na Agenda.');
+  var dEl = qs('pbf_dobro');
+  pbGravarPrazo(p, { desc: desc, dias: dias, tipo: tipo, dobro: dEl ? dEl.value : '', regime: pbRegimeDaConta(p, tipo), manual: manual, resp: esRespChaves('agendapub') }).then(function(res){
+    qs('overlayPb').classList.remove('show'); toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); }); pbAvancar(p.id);
   }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 
@@ -706,6 +828,8 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
     '.pb-tipo{font-weight:700;font-size:var(--t1);padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);white-space:nowrap}.pb-tipo.dec{background:rgba(217,59,59,.12);color:var(--urgente)}.pb-tipo.ato{background:rgba(183,121,30,.14);color:var(--tutela)}' +
     '.pb-cli{font-size:var(--t5);font-weight:700;margin:6px 0 1px;overflow-wrap:anywhere}.pb-proc{font-size:var(--t2);color:var(--ink-soft);margin-bottom:6px;overflow-wrap:anywhere}.pb-trecho{font-size:var(--t3);line-height:1.4;color:var(--ink)}' +
     '.pb-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.pb-tg{font-size:var(--t1);font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);border:0;font-family:inherit}.pb-tg.ok{background:rgba(23,137,90,.13);color:var(--success)}.pb-tg.nv{background:rgba(42,120,214,.13);color:var(--info)}.pb-tg.pz{background:rgba(183,121,30,.14);color:var(--tutela)}' +
+    '.pb-verde{background:var(--success);color:#fff;border-color:transparent}.pb-verde:hover{filter:brightness(1.06)}.pb-ouro{background:var(--gold-btn,var(--accent));color:var(--gold-ink,var(--accent-ink));border-color:transparent}.pb-um{align-items:stretch}.pb-um .pb-b{flex:1 1 auto;justify-content:center;min-height:44px}.pb-um .pb-mais{flex:0 0 46px;font-size:20px;line-height:1;padding:0}.pb-cm{display:flex;flex-direction:column;margin-top:8px;border-top:1px solid var(--border)}.pb-cmi{text-align:left;background:none;border:0;border-bottom:1px solid var(--border);padding:12px 4px;font:inherit;font-size:var(--t4);font-weight:600;color:var(--ink);cursor:pointer}.pb-cmi:last-child{border-bottom:0}.pb-card.pb-prox{box-shadow:0 0 0 2px var(--success)}' +
+    '.pbr-venc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--surface-2);border-radius:14px;padding:12px 14px;margin:2px 0 4px}.pbr-venc span{font-size:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}.pbr-venc b{font-size:var(--t7);color:var(--urgente)}.pbr-venc small{font-size:var(--t3);color:var(--ink-soft)}.pbr-acts .pb-verde{flex:1 1 100%;min-height:48px;justify-content:center;font-size:var(--t4)}.pbr-dobro{border:0;padding:6px 0}' +
     '.pb-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.pb-b{font-size:var(--t3);padding:8px 12px;min-height:0}' +
     '.pb-prazos{padding:0}.pb-prazos-top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;background:none;border:0;padding:12px 16px;cursor:pointer;color:var(--ink);font-family:inherit;font-size:var(--t4)}.pb-prazos-top>span:first-child{display:flex;align-items:center;gap:10px}' +
     '.pb-prazo-lin{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid var(--border);cursor:pointer}.pb-prazo-tx{display:flex;flex-direction:column;min-width:0}.pb-prazo-tx b{font-size:var(--t4)}.pb-prazo-tx span{font-size:var(--t2);color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
