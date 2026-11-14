@@ -1763,6 +1763,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -19096,7 +19097,7 @@ function agRevClique(a){
     '.ag-rod{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:6px}.ag-filtros{display:flex;gap:6px;flex-wrap:wrap}' +
     '.ag-f{font-family:inherit;font-size:var(--t2);font-weight:600;padding:7px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--border);color:var(--ink-soft);cursor:pointer}.ag-f.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}' +
     '.agd2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 2px}.agd2>div{border-radius:11px;padding:6px 9px;background:var(--surface-2,#f6f4ee);border-left:4px solid var(--c-gold,#C98500)}.agd2>div.f,.agd2>div.at{border-left-color:var(--urgente);background:rgba(217,59,59,.07)}.agd2 small{display:block;font-size:var(--t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}.agd2 b{display:block;font-size:var(--t3)}.agd2 em{font-style:normal;font-size:var(--t1);font-weight:700;color:#8a5a00}.agd2 .f em,.agd2 .at em{color:var(--urgente)}' +
-    '.acx{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.acx button,.acx a{display:inline-flex;align-items:center;gap:5px;font-family:inherit;border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 11px;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none}.acx .pri{background:var(--ink);color:var(--bg);border-color:transparent}' +
+    '.acx{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.acx button,.acx a{display:inline-flex;align-items:center;gap:5px;font-family:inherit;border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:8px 14px;min-height:36px;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none}.acx .pri{background:var(--ink);color:var(--bg);border-color:transparent}' +
     '.ini-acoes.ag-acoes.md-um{flex-wrap:wrap;justify-content:flex-start}' +
     '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}' +
     '.agc.pronta{--ag-c:var(--success)}.acx .vd{background:var(--success);color:#fff;border-color:transparent}.agd2>div.ok{border-left-color:var(--success);background:rgba(23,137,90,.09)}.agd2 .ok em{color:var(--success)}' +
@@ -21735,7 +21736,7 @@ function esBarra(){
   }
   var pub = activeTab === 'publicacoes', age = activeTab === 'agenda';
   if (age ? !esS.eu : (!E.ativo || !(ES_TABS[activeTab] || pub))){ barra.style.display = 'none'; return; }   // a Agenda tem a barra para todas as pessoas; as demais listas, só para o proprietário
-  var sel = age ? agS.escopo : (pub ? E.pub : E.modo), ops = age ? [['minha', 'Minha agenda'], ['escritorio', 'Escritório']] : (pub ? [['minhas', 'Minhas'], ['todas', 'Todas']] : [['meus', 'Meus'], ['escritorio', 'Escritório']]);
+  var sel = age ? agS.escopo : (pub ? E.pub : E.modo), ops = age ? [['minha', 'Minha agenda'], ['escritorio', 'Escritório']] : (pub ? [['minhas', 'Minhas'], ['todas', 'Escritório']] : [['meus', 'Meus'], ['escritorio', 'Escritório']]);
   var h2 = '<div class="es-seg">' + ops.map(function(o){ return '<button type="button" class="es-b' + (sel === o[0] ? ' on' : '') + '" data-es="modo" data-k="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
   var n = esS.sem ? esS.sem.itens.length : 0;
   if (age && esS.eu.papel === 'proprietario'){ var ns = agSemResp().length; if (ns) h2 += '<span class="es-aviso"><b>' + ns + (ns === 1 ? ' prazo ou audiência' : ' prazos e audiências') + '</b> sem responsável <button type="button" class="es-lk" data-es="agrev">Definir</button></span>'; }
@@ -23874,6 +23875,15 @@ function mdBarraHtml(abas, atual, attrs){
 }
 
 /* ---------- visual ---------- */
+/* a barra de sub-abas rola sozinha até a aba ativa (com seis abas a última ficava cortada) */
+function mdRolarAtivas(){
+  Array.prototype.forEach.call(document.querySelectorAll('.md-abas'), function(b){
+    var a = b.querySelector('[aria-selected="true"]'); if (!a || !b.offsetParent) return;
+    var l = a.offsetLeft - 14, r = a.offsetLeft + a.offsetWidth + 14;
+    if (l < b.scrollLeft) b.scrollLeft = Math.max(0, l); else if (r > b.scrollLeft + b.clientWidth) b.scrollLeft = r - b.clientWidth;
+  });
+}
+(function(){ var t = null; try{ new MutationObserver(function(){ clearTimeout(t); t = setTimeout(mdRolarAtivas, 60); }).observe(document.body, { childList: true, subtree: true }); }catch(e){} })();
 function mdCss(){
   if (document.getElementById('mdCss')) return;
   var st = document.createElement('style'); st.id = 'mdCss';

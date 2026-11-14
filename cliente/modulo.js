@@ -53,6 +53,15 @@ function mdBarraHtml(abas, atual, attrs){
 }
 
 /* ---------- visual ---------- */
+/* a barra de sub-abas rola sozinha até a aba ativa (com seis abas a última ficava cortada) */
+function mdRolarAtivas(){
+  Array.prototype.forEach.call(document.querySelectorAll('.md-abas'), function(b){
+    var a = b.querySelector('[aria-selected="true"]'); if (!a || !b.offsetParent) return;
+    var l = a.offsetLeft - 14, r = a.offsetLeft + a.offsetWidth + 14;
+    if (l < b.scrollLeft) b.scrollLeft = Math.max(0, l); else if (r > b.scrollLeft + b.clientWidth) b.scrollLeft = r - b.clientWidth;
+  });
+}
+(function(){ var t = null; try{ new MutationObserver(function(){ clearTimeout(t); t = setTimeout(mdRolarAtivas, 60); }).observe(document.body, { childList: true, subtree: true }); }catch(e){} })();
 function mdCss(){
   if (document.getElementById('mdCss')) return;
   var st = document.createElement('style'); st.id = 'mdCss';
