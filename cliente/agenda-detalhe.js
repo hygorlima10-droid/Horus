@@ -123,6 +123,7 @@ function agdDesenhar(){
   if (i.tipo === 'prazo' && d.calculo && !i.concluido) h += agdBloco('Como o prazo foi contado', '<div class="agd-sub" style="margin:0">' + escapeHtml(pzTextoCalculo(d.calculo)) + '</div><div class="agd-sub">Se um dia sem expediente for cadastrado em Configurações, a data é recalculada sozinha.</div>');
   if (i.tipo === 'prazo' && i.trabalhar && i.trabalhar < i.data && !i.concluido) h += agdBloco('Trabalhar na peça até', '<div>' + escapeHtml(fmtData(i.trabalhar)) + '</div>');
   if (i.concluido && i.tipo === 'prazo' && i.protocoladoEm && !i.cancelado) h += agdBloco('Protocolo', '<div>Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + (i.protocoloObs ? ' · ' + escapeHtml(i.protocoloObs) : '') + '</div>');
+  if (i.tipo === 'tarefa' && d.repete) h += agdBloco('Repete', '<div class="agd-sub" style="margin:0">↻ ' + escapeHtml(rpTexto(d.repete)) + '</div>');
   if (d.obs) h += agdBloco('Observações', '<div class="agd-obs">' + escapeHtml(d.obs) + '</div>');
   var rod = [];
   if (ag && !i.concluido) rod.push('Avisos: ' + ((i.avisos || []).length ? (i.avisos.map(function(n){ return n === 0 ? 'no dia' : n + ' dia' + (n === 1 ? '' : 's') + ' antes'; }).join(', ')) : 'nenhum'));

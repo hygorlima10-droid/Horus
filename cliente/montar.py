@@ -144,6 +144,7 @@ else:
     s = s.replace('/*RC-FIM*/\n', '/*RC-FIM*/\n' + bloco_agi)
 agd = open(R + 'cliente/agenda-detalhe.js', encoding='utf-8').read()
 agd = agd + '\n' + open(R + 'cliente/prazos.js', encoding='utf-8').read()
+agd = agd + '\n' + open(R + 'cliente/repetir.js', encoding='utf-8').read()
 bloco_agd = '/*AGD-INICIO*/\n' + agd + '\n/*AGD-FIM*/\n'
 if '/*AGD-INICIO*/' in s:
     s = re.sub(r'/\*AGD-INICIO\*/.*?/\*AGD-FIM\*/\n', lambda m: bloco_agd, s, flags=re.S)

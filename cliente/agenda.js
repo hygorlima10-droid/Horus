@@ -399,6 +399,7 @@ function agCartao(i){
   if (i.fonte === 'caso') tags += '<span class="pb-tg">da inicial</span>';
   if (i.concluido && !i.cancelado && i.tipo === 'prazo' && i.protocoladoEm) tags += '<span class="pb-tg ok">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</span>';
   if (i.tipo === 'tarefa' && d.compartilhada === true) tags += '<span class="pb-tg nv">compartilhada</span>';
+  if (i.tipo === 'tarefa' && d.repete) tags += '<span class="pb-tg nv">↻ ' + escapeHtml(rpTexto(d.repete)) + '</span>';
   if (esS.eu && i.tipo !== 'tarefa' && i.fonte !== 'alvara' && !agRespChaves(i).length) tags += '<span class="pb-tg">sem responsável</span>';
   if (i.concluido && !i.cancelado && d.concluidoPor) tags += '<span class="pb-tg ok">por ' + escapeHtml(String(d.concluidoPor).split(' ')[0]) + '</span>';
   if (esS.eu) tags += agRespAvatares(i, 3);
@@ -523,6 +524,7 @@ function agMover(key, destino){
   var i = agItens({ quadro: true }).filter(function(x){ return x.key === key; })[0]; if (!i) return;
   if (i.fonte === 'caso'){ if (destino === 'feito') agConcluir(key, true); return; }
   if (i.fonte !== 'agenda') return;
+  if (destino === 'feito' && i.tipo === 'tarefa' && i.doc.repete){ agConcluir(key, true); return; }
   var doc = Object.assign({}, i.doc, { situacao: destino, concluido: destino === 'feito', cancelado: false, concluidoEm: destino === 'feito' ? agHoje() : '' }, destino === 'afazer' || destino === 'elaboracao' ? { prontaEm: '', prontaPor: '' } : {}); delete doc.id;
   pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ Object.assign(i.doc, doc); agDepois(); }).catch(function(e){ toast('Não consegui salvar: ' + e.message); });
 }
@@ -618,7 +620,14 @@ function agConcluir(key, feito, prot){
     setTimeout(function(){ agDepois(); }, 400); toast(feito ? 'Prazo concluído.' : 'Prazo reaberto.'); return;
   }
   var doc = Object.assign({}, i.doc, { concluido: feito, cancelado: false, situacao: feito ? 'feito' : 'afazer', concluidoEm: feito ? agHoje() : '', concluidoPor: feito && esS.eu ? esS.eu.nome : '' }, feito ? {} : { prontaEm: '', prontaPor: '' }, i.tipo === 'prazo' ? extra : {}); delete doc.id;   /* um só "concluído" para todos os responsáveis; fica registrado quem concluiu */
-  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ Object.assign(i.doc, doc); agDepois(); toast(feito ? (i.tipo === 'prazo' ? 'Prazo marcado como protocolado.' : 'Concluído.') : 'Reaberto.'); }).catch(function(e){ toast('Não consegui salvar: ' + e.message); });
+  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){
+    Object.assign(i.doc, doc);
+    if (i.tipo === 'tarefa' && i.doc.repete){   /* tarefa que se repete: concluir cria a próxima; reabrir tira a que o app criou */
+      if (feito) return rpCriarProxima(i).then(function(r){ agDepois(); if (r) toast('Concluída. Próxima: ' + agAbrevDia(r.doc.data), 'Desfazer', function(){ rpDesfazerConclusao(i, r.doc); }); else toast('Concluída. A repetição terminou.'); });
+      return rpRemoverProximaAuto(i).then(function(){ agDepois(); toast('Reaberto.'); });
+    }
+    agDepois(); toast(feito ? (i.tipo === 'prazo' ? 'Prazo marcado como protocolado.' : 'Concluído.') : 'Reaberto.');
+  }).catch(function(e){ toast('Não consegui salvar: ' + e.message); });
 }
 function agMontarEd(){
   if (qs('overlayAg')) return;
@@ -660,6 +669,7 @@ function agAjustarCampos(){
   qs('age_aud_box').style.display = t === 'audiencia' ? '' : 'none';
   qs('age_prot_box').style.display = (t === 'prazo' && qs('age_sit').value === 'feito') ? '' : 'none';
   qs('age_data').closest('.pb-dois').style.gridTemplateColumns = t === 'audiencia' ? '1fr 1fr' : '1fr';
+  try{ rpEdAtualizar(); }catch(e){}
 }
 function agPresetAvisos(a){ var s = JSON.stringify(a || AG_PADRAO); return s === '[1,0]' ? 'umdia' : (s === '[0]' ? 'dia' : (s === '[]' ? 'nenhum' : 'padrao')); }
 function agAbrir(key, pre){
@@ -677,6 +687,7 @@ function agAbrir(key, pre){
     '<div class="field" id="age_vis_box"><label class="field-label" for="age_vis">Quem vê esta tarefa</label><select id="age_vis" class="filter-select" style="width:100%"><option value="so_eu">Só eu (tarefa pessoal)</option><option value="resp">Os responsáveis que eu escolher</option><option value="todos">Todo o escritório</option></select></div>' +
     '<div class="field" id="esResp_agenda"' + (caso ? ' style="display:none"' : '') + '></div>' +
     '<div class="pb-dois"><div class="field"><label class="field-label" id="age_data_l" for="age_data">Prazo fatal</label><input type="date" id="age_data" value="' + escapeHtml(V('data')) + '"></div><div class="field" id="age_hora_box"><label class="field-label" for="age_hora">Hora</label><input type="time" id="age_hora" value="' + escapeHtml(V('hora')) + '"></div></div>' +
+    rpEdHtml(i, V('data')) +
     '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">🧮 Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' +
     '<div class="saldo-data" id="age_dica2" style="margin:-4px 0 8px"></div>' +
     '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' +
@@ -692,7 +703,7 @@ function agAbrir(key, pre){
   qs('agEdCorpo').innerHTML = h; qs('agEdTit').textContent = i ? (caso ? 'Prazo da inicial' : 'Editar item') : 'Novo item da agenda';
   adAbrirData(qs('age_data')); adAbrirData(qs('age_trab')); adAbrirData(qs('age_protoc'));
   agEdInicializar(i, caso);
-  agAjustarCampos(); if (i && !caso) qs('age_proc').dispatchEvent(new Event('input', { bubbles: true }));
+  agAjustarCampos(); try{ rpEdIniciar(); }catch(e){ console.error('repetir', e); } if (i && !caso) qs('age_proc').dispatchEvent(new Event('input', { bubbles: true }));
   agDicasConflito();
   if (agEditCalc && qs('age_calc_info')) qs('age_calc_info').textContent = 'contado: ' + pzTextoCalculo(agEditCalc.op);
   qs('overlayAg').classList.add('show');
@@ -770,6 +781,7 @@ function agSalvarEd(){
   if (t === 'tarefa'){
     if (vis === 'resp' && !ks.length){ err.textContent = 'Escolha ao menos um responsável (ou deixe “Só eu”).'; return; }
     doc.compartilhada = vis === 'todos'; doc.resp = vis === 'so_eu' ? [] : ks;
+    var rpR = rpMontarRepete(i, doc); if (rpR) doc.repete = rpR; else delete doc.repete;
   } else doc.resp = ks;   // prazo e audiência: se ficar sem ninguém, vale o advogado do processo
   if (!agEdDup){
     var dup = agDuplicado(doc, i);
