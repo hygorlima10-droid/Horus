@@ -1780,6 +1780,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -2206,6 +2207,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       </button>
     </div>
     <div class="modal-body">
+      <div class="f-sec"><div class="f-sec-t">Quem e o quê</div>
       <div class="field">
         <label class="field-label">Tipo</label>
         <div class="segmented" id="segTipo">
@@ -2213,23 +2215,29 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="extrajudicial">Procedimento extrajudicial</button>
         </div>
       </div>
-
       <div class="field">
         <label class="field-label">Cliente cadastrado</label>
         <div class="cli-picker" id="pickCaso"></div>
         <div class="cli-hint">Vincule ao cadastro para ver tudo do cliente em um só lugar. Pode marcar mais de um.</div>
       </div>
-
       <div class="field">
         <label class="field-label" for="clienteInput">Descrição do cliente</label>
         <input type="text" id="clienteInput" placeholder="Ex.: Maria Aparecida da Silva">
       </div>
-
       <div class="field">
         <label class="field-label" for="nomeAcaoInput">Nome da ação ou do procedimento</label>
         <input type="text" id="nomeAcaoInput" placeholder="Ex.: Ação de Cobrança c/c Danos Morais / Notificação Extrajudicial de Rescisão">
       </div>
+      <div class="field">
+        <label class="field-label">Origem</label>
+        <div class="segmented" id="segOrigem">
+          <button type="button" class="seg-btn" data-value="murilo">Cliente Murilo</button>
+          <button type="button" class="seg-btn" data-value="proprio">Cliente próprio</button>
+        </div>
+      </div>
+      </div>
 
+      <div class="f-sec"><div class="f-sec-t">Processo</div>
       <div class="field">
         <label class="field-label" for="processoInput">Número do processo ou protocolo (opcional)</label>
         <input type="text" id="processoInput" placeholder="Ex.: 5000000-00.2026.8.09.0107">
@@ -2240,44 +2248,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       <div class="field">
         <label class="ad-it" style="border:0;padding:0;"><input type="checkbox" id="semProcessoInput"><span class="ad-t">Esta inicial não tem processo (extrajudicial ou não ajuizada)</span></label>
       </div>
-
-      <div class="field">
-        <label class="field-label">Origem</label>
-        <div class="segmented" id="segOrigem">
-          <button type="button" class="seg-btn" data-value="murilo">Cliente Murilo</button>
-          <button type="button" class="seg-btn" data-value="proprio">Cliente próprio</button>
-        </div>
       </div>
 
-      <div class="field">
-        <label class="field-label">Prioridade</label>
-        <div class="segmented" id="segPrioridade">
-          <button type="button" class="seg-btn" data-value="urgente"><span class="prio-dot p-urgente"></span>Urgente</button>
-          <button type="button" class="seg-btn" data-value="tutela"><span class="prio-dot p-tutela"></span>Tutela de urgência</button>
-          <button type="button" class="seg-btn" data-value="normal"><span class="prio-dot p-normal"></span>Normal</button>
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="field-label">Status</label>
-        <div class="segmented" id="segStatus"></div>
-      </div>
-
-      <div class="field" id="campoModelo">
-        <label class="field-label" for="modeloSelect">Modelo de honorário (opcional)</label>
-        <div class="modelo-linha">
-          <select class="filter-select" id="modeloSelect"><option value="">Sem modelo</option></select>
-          <button type="button" class="btn btn-ghost" id="modeloSalvarBtn">Salvar como modelo</button>
-          <button type="button" class="btn-danger-text" id="modeloExcluirBtn" style="display:none;">Excluir modelo</button>
-        </div>
-        <div class="modelo-linha" id="modeloNomeWrap" style="display:none;margin-top:8px;">
-          <input type="text" id="modeloNomeInput" maxlength="40" placeholder="Nome do modelo (ex.: 6x com entrada)" style="flex:1;min-width:150px;">
-          <button type="button" class="btn btn-primary" id="modeloConfirmarBtn">Salvar</button>
-          <button type="button" class="btn-text" id="modeloCancelarBtn">Cancelar</button>
-        </div>
-        <div class="cli-hint">Guarda a modalidade, o valor e a forma de pagamento para aplicar de uma vez num cadastro novo.</div>
-      </div>
-
+      <div class="f-sec"><div class="f-sec-t">Honorários</div>
       <div class="field">
         <label class="field-label">Modalidade de honorário</label>
         <div class="segmented" id="segModalidade">
@@ -2290,15 +2263,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="sem_honorarios">Sem honorários</button>
         </div>
       </div>
-
       <div class="banner" id="avisoMurilo" style="display:none;">
         O caso será cadastrado sem valor de honorários definido, marcado como aguardando confirmação com Murilo. Você poderá voltar e preencher o valor depois.
       </div>
-
       <div class="banner" id="avisoSemHonorarios" style="display:none;">
         Este caso será cadastrado sem nenhum honorário e não entrará nos totais a receber.
       </div>
-
       <div class="subgroup" id="wrapFixo">
         <div class="field">
           <label class="field-label" for="valorInput" id="labelValorFixo">Valor dos honorários (R$)</label>
@@ -2334,7 +2304,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <div class="parcela-sum" id="parcelaSum" style="margin-top:8px;"></div>
         </div>
       </div>
-
       <div class="subgroup" id="wrapExito" style="display:none;">
         <div class="field" id="campoDesfAcordo" style="display:none;">
           <label class="field-label" for="desfAcordoValor">Se houver acordo</label>
@@ -2363,7 +2332,35 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <input type="text" id="baseExitoInput" placeholder="Ex.: sobre o proveito econômico da ação">
         </div>
       </div>
+      </div>
 
+      <details class="f-mais"><summary><div><b>Mais detalhes</b><small>prioridade · status · modelo de honorário · prazo processual · observações</small></div><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-mais-c">
+      <div class="field">
+        <label class="field-label">Prioridade</label>
+        <div class="segmented" id="segPrioridade" data-padrao="normal">
+          <button type="button" class="seg-btn" data-value="urgente"><span class="prio-dot p-urgente"></span>Urgente</button>
+          <button type="button" class="seg-btn" data-value="tutela"><span class="prio-dot p-tutela"></span>Tutela de urgência</button>
+          <button type="button" class="seg-btn" data-value="normal"><span class="prio-dot p-normal"></span>Normal</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Status</label>
+        <div class="segmented" id="segStatus" data-padrao="pendente"></div>
+      </div>
+      <div class="field" id="campoModelo">
+        <label class="field-label" for="modeloSelect">Modelo de honorário (opcional)</label>
+        <div class="modelo-linha">
+          <select class="filter-select" id="modeloSelect"><option value="">Sem modelo</option></select>
+          <button type="button" class="btn btn-ghost" id="modeloSalvarBtn">Salvar como modelo</button>
+          <button type="button" class="btn-danger-text" id="modeloExcluirBtn" style="display:none;">Excluir modelo</button>
+        </div>
+        <div class="modelo-linha" id="modeloNomeWrap" style="display:none;margin-top:8px;">
+          <input type="text" id="modeloNomeInput" maxlength="40" placeholder="Nome do modelo (ex.: 6x com entrada)" style="flex:1;min-width:150px;">
+          <button type="button" class="btn btn-primary" id="modeloConfirmarBtn">Salvar</button>
+          <button type="button" class="btn-text" id="modeloCancelarBtn">Cancelar</button>
+        </div>
+        <div class="cli-hint">Guarda a modalidade, o valor e a forma de pagamento para aplicar de uma vez num cadastro novo.</div>
+      </div>
       <div class="field">
         <label class="field-label">Prazo processual (opcional)</label>
         <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:8px;">
@@ -2371,7 +2368,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <input type="text" id="prazoDescInput" placeholder="Ex.: contestação, audiência">
         </div>
       </div>
-
       <div class="field repasse-box" id="repBoxCaso" style="display:none;">
         <label class="bx-disp"><input type="checkbox" id="repAtivoCaso"> Repassar parte dos honorários a advogado parceiro</label>
         <div class="rep-campos" id="repCamposCaso" style="display:none;">
@@ -2385,14 +2381,16 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <div class="parcela-sum" id="repResumoCaso"></div>
         </div>
       </div>
-
       <div class="field">
         <label class="field-label" for="obsInput">Observações (opcional)</label>
         <textarea id="obsInput" placeholder="Anotações sobre o caso…"></textarea>
       </div>
+      </div></details>
 
-      <div class="field" id="esResp_casos"></div>
-      <div class="field" id="rcDiv_casos"></div>
+      <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
+        <div class="field" id="esResp_casos"></div>
+        <div class="field" id="rcDiv_casos"></div>
+      </div>
       <div class="form-error" id="formError"></div>
     </div>
     <div class="modal-foot">
@@ -2472,24 +2470,22 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       </button>
     </div>
     <div class="modal-body">
+      <div class="f-sec"><div class="f-sec-t">Acordo</div>
       <div class="field">
         <label class="field-label" for="acordoProcessoInput">Número do processo</label>
         <input type="text" id="acordoProcessoInput" placeholder="Ex.: 5000000-00.2026.8.09.0107">
         <div class="parcela-sum processo-info" id="acordoProcessoInfo"></div>
         <div class="processo-sugestao" id="acordoProcessoSugestao" style="display:none;"></div>
       </div>
-
       <div class="field">
         <label class="field-label">Cliente cadastrado</label>
         <div class="cli-picker" id="pickAcordo"></div>
         <div class="cli-hint">Marque só quem você representa (pode ser mais de uma pessoa do mesmo polo). A parte contrária não entra no cadastro — escreva-a normalmente em “Partes”.</div>
       </div>
-
       <div class="field">
         <label class="field-label" for="acordoPartesInput">Partes</label>
         <input type="text" id="acordoPartesInput" placeholder="Ex.: Fulano de Tal x Beltrano de Tal">
       </div>
-
       <div class="field">
         <label class="field-label">Origem</label>
         <div class="segmented" id="segAcordoOrigem">
@@ -2497,7 +2493,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="proprio">Processo próprio</button>
         </div>
       </div>
+      </div>
 
+      <div class="f-sec"><div class="f-sec-t">Honorários</div>
       <div class="field">
         <label class="field-label">Honorários</label>
         <div class="segmented" id="segAcordoHonorarios">
@@ -2505,11 +2503,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="sem">Sem honorários</button>
         </div>
       </div>
-
       <div class="banner" id="avisoAcordoSemHonorarios" style="display:none;">
         Este termo de acordo será cadastrado sem nenhum honorário para você e não entrará nos totais a receber.
       </div>
-
       <div id="wrapAcordoHonorarios">
         <div class="field">
           <label class="field-label" for="acordoValorTotalInput">Valor total dos honorários do acordo (R$)</label>
@@ -2563,7 +2559,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           </div>
         </div>
       </div>
+      </div>
 
+      <details class="f-mais"><summary><div><b>Mais detalhes</b><small>repasse a parceiro · observações</small></div><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-mais-c">
       <div class="field repasse-box" id="repBoxAcordo" style="display:none;">
         <label class="bx-disp"><input type="checkbox" id="repAtivoAcordo"> Repassar parte dos honorários a advogado parceiro</label>
         <div class="rep-campos" id="repCamposAcordo" style="display:none;">
@@ -2577,14 +2575,16 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <div class="parcela-sum" id="repResumoAcordo"></div>
         </div>
       </div>
-
       <div class="field">
         <label class="field-label" for="acordoObsInput">Observações (opcional)</label>
         <textarea id="acordoObsInput" placeholder="Anotações sobre o termo de acordo…"></textarea>
       </div>
+      </div></details>
 
-      <div class="field" id="esResp_termosAcordo"></div>
-      <div class="field" id="rcDiv_termosAcordo"></div>
+      <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
+        <div class="field" id="esResp_termosAcordo"></div>
+        <div class="field" id="rcDiv_termosAcordo"></div>
+      </div>
       <div class="form-error" id="formErrorAcordo"></div>
     </div>
     <div class="modal-foot">
@@ -2604,24 +2604,22 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       </button>
     </div>
     <div class="modal-body">
+      <div class="f-sec"><div class="f-sec-t">Alvará</div>
       <div class="field">
         <label class="field-label" for="alvaraProcessoInput">Número do processo (onde o alvará será expedido)</label>
         <input type="text" id="alvaraProcessoInput" placeholder="Ex.: 5000000-00.2026.8.09.0107">
         <div class="parcela-sum processo-info" id="alvaraProcessoInfo"></div>
         <div class="processo-sugestao" id="alvaraProcessoSugestao" style="display:none;"></div>
       </div>
-
       <div class="field">
         <label class="field-label">Cliente cadastrado</label>
         <div class="cli-picker" id="pickAlvara"></div>
         <div class="cli-hint">Marque só quem você representa (pode ser mais de uma pessoa do mesmo polo). A parte contrária não entra no cadastro — escreva-a normalmente em “Partes”.</div>
       </div>
-
       <div class="field">
         <label class="field-label" for="alvaraPartesInput">Partes</label>
         <input type="text" id="alvaraPartesInput" placeholder="Ex.: Fulano de Tal x Beltrano de Tal">
       </div>
-
       <div class="field">
         <label class="field-label">Origem</label>
         <div class="segmented" id="segAlvaraOrigem">
@@ -2629,18 +2627,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="proprio">Cliente próprio</button>
         </div>
       </div>
+      </div>
 
+      <div class="f-sec"><div class="f-sec-t">Valores e situação</div>
       <div class="field">
         <label class="field-label" for="alvaraValorTotalInput">Valor total dos honorários (R$)</label>
         <input type="number" id="alvaraValorTotalInput" min="0" step="0.01" placeholder="0,00">
       </div>
-
       <div class="field">
         <label class="field-label" for="alvaraValorMeuInput">Valor que me cabe (R$)</label>
         <input type="number" id="alvaraValorMeuInput" min="0" step="0.01" placeholder="0,00">
         <div class="parcela-sum" id="alvaraPercentualInfo" style="margin-top:6px;"></div>
       </div>
-
       <div class="field">
         <label class="field-label">Status</label>
         <div class="segmented" id="segAlvaraStatus">
@@ -2648,19 +2646,19 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <button type="button" class="seg-btn" data-value="recebido">Recebido</button>
         </div>
       </div>
-
       <div class="field">
         <label class="field-label" for="alvaraFaseSelect">Fase do alvará</label>
         <select class="filter-select" id="alvaraFaseSelect" style="width:100%;"><option value="">Sem fase definida</option></select>
         <div class="parcela-sum" style="margin-top:6px;">Independe da previsão de levantamento. "Depósito em conta efetivado" marca o alvará como recebido.</div>
       </div>
+      </div>
 
+      <details class="f-mais"><summary><div><b>Mais detalhes</b><small>previsão de levantamento · repasse a parceiro · observações</small></div><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="f-mais-c">
       <div class="field">
         <label class="field-label" for="alvaraPrevisaoInput">Previsão de levantamento (opcional)</label>
         <input type="date" id="alvaraPrevisaoInput">
         <div class="parcela-sum" style="margin-top:6px;">Se informada, entra na projeção do mês e na central de atenção.</div>
       </div>
-
       <div class="field repasse-box" id="repBoxAlvara" style="display:none;">
         <label class="bx-disp"><input type="checkbox" id="repAtivoAlvara"> Repassar parte dos honorários a advogado parceiro</label>
         <div class="rep-campos" id="repCamposAlvara" style="display:none;">
@@ -2674,14 +2672,16 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           <div class="parcela-sum" id="repResumoAlvara"></div>
         </div>
       </div>
-
       <div class="field">
         <label class="field-label" for="alvaraObsInput">Observações (opcional)</label>
         <textarea id="alvaraObsInput" placeholder="Anotações sobre o alvará…"></textarea>
       </div>
+      </div></details>
 
-      <div class="field" id="esResp_alvaras"></div>
-      <div class="field" id="rcDiv_alvaras"></div>
+      <div class="f-sec"><div class="f-sec-t">Responsáveis</div>
+        <div class="field" id="esResp_alvaras"></div>
+        <div class="field" id="rcDiv_alvaras"></div>
+      </div>
       <div class="form-error" id="formErrorAlvara"></div>
     </div>
     <div class="modal-foot">
@@ -22151,6 +22151,40 @@ function pdAbrir(){
   /* só para os testes e a auditoria visual abrirem cada ficha de cadastro */
   var fichas = {}; ['abrirNovo', 'abrirNovoAcordo', 'abrirNovoAlvara', 'abrirNovaDespesa', 'abrirNovaReceita', 'abrirNovaMeta', 'abrirTransferencia', 'abrirModalSaldo', 'abrirRepasse', 'abrirClienteEdit', 'abrirExito', 'abrirReneg', 'abrirBaixa', 'abrirMovMeta', 'abrirLancamentos', 'agAbrir', 'prAbrirNovo', 'pzAbrir', 'abrirModalBackup'].forEach(function(n){ try{ fichas[n] = eval(n); }catch(e){} });
   window.__horusTeste.fichas = fichas;
+})();
+
+/* ============================================================
+   FICHAS DE CADASTRO — Onda 3b
+   - "Mais detalhes" (details.f-mais) abre sozinho quando algum campo de dentro já tem valor (edição) e fica fechado num cadastro novo;
+   - o padrão de blocos, rótulos e campos está em public/tema.css (.f-sec, .f-mais, .overlay .modal-body)
+   ============================================================ */
+function fichaPreenchido(el){
+  var f = false;
+  Array.prototype.forEach.call(el.querySelectorAll('input, textarea, select'), function(c){
+    if (f || c.closest('[style*="display:none"]') || c.type === 'hidden') return;
+    if (c.type === 'checkbox' || c.type === 'radio'){ if (c.checked) f = true; return; }
+    if (c.tagName === 'SELECT'){ if (c.selectedIndex > 0) f = true; return; }
+    if (String(c.value || '').trim() !== '') f = true;
+  });
+  if (f) return true;
+  Array.prototype.forEach.call(el.querySelectorAll('.segmented[data-padrao]'), function(sg){
+    var a = sg.querySelector('.seg-btn.active'); if (a && a.getAttribute('data-value') !== sg.getAttribute('data-padrao')) f = true;
+  });
+  return f;
+}
+function fichaMais(ovId){
+  var ov = qs(ovId); if (!ov) return;
+  Array.prototype.forEach.call(ov.querySelectorAll('details.f-mais'), function(d){ d.open = fichaPreenchido(d); });
+}
+(function(){
+  /* depois de abrir cada ficha, ajusta o "Mais detalhes" (cada função é redefinida na mesma escopo, como em processos.js) */
+  var a1 = abrirNovo, a2 = abrirEdicao, b1 = abrirNovoAcordo, b2 = abrirEdicaoAcordo, c1 = abrirNovoAlvara, c2 = abrirEdicaoAlvara;
+  abrirNovo = function(){ var r = a1.apply(this, arguments); try{ fichaMais('overlay'); }catch(e){} return r; };
+  abrirEdicao = function(){ var r = a2.apply(this, arguments); try{ fichaMais('overlay'); }catch(e){} return r; };
+  abrirNovoAcordo = function(){ var r = b1.apply(this, arguments); try{ fichaMais('overlayAcordo'); }catch(e){} return r; };
+  abrirEdicaoAcordo = function(){ var r = b2.apply(this, arguments); try{ fichaMais('overlayAcordo'); }catch(e){} return r; };
+  abrirNovoAlvara = function(){ var r = c1.apply(this, arguments); try{ fichaMais('overlayAlvara'); }catch(e){} return r; };
+  abrirEdicaoAlvara = function(){ var r = c2.apply(this, arguments); try{ fichaMais('overlayAlvara'); }catch(e){} return r; };
 })();
 
 /*ES-FIM*/

@@ -109,6 +109,7 @@ else:
     s = s.replace('/*SG-FIM*/\n', '/*SG-FIM*/\n' + bloco_us)
 es = open(R + 'cliente/responsaveis.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/pendencias.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/fichas.js', encoding='utf-8').read()
 bloco_es = '/*ES-INICIO*/\n' + es + '\n/*ES-FIM*/\n'
 if '/*ES-INICIO*/' in s:
     s = re.sub(r'/\*ES-INICIO\*/.*?/\*ES-FIM\*/\n', lambda m: bloco_es, s, flags=re.S)

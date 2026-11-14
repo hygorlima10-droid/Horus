@@ -97,3 +97,32 @@ label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
 .btn-text.pb-b,.btn.pb-b{min-width:36px}
 .bt button{min-height:36px;min-width:44px}
 .arq-acoes button{min-height:36px;min-width:44px}
+
+/* ---------- Onda 3b: padrão das fichas de cadastro (blocos, rótulos, campos, Mais detalhes) ---------- */
+.overlay .modal-body{gap:12px}
+.overlay .modal-body .field-label{font-size:14px;font-weight:600;color:var(--ink)}
+.overlay .modal-body .field input[type=text],.overlay .modal-body .field input[type=number],.overlay .modal-body .field input[type=date],.overlay .modal-body .field input[type=tel],.overlay .modal-body .field input[type=email],.overlay .modal-body .field select{min-height:48px;border-radius:14px}
+.f-sec{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:14px}
+.f-sec>.field{margin:0}
+.f-sec-t{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.f-sec .subgroup{background:var(--surface-2);border:0}
+.f-mais{border:1px dashed var(--border);border-radius:18px;background:var(--surface)}
+.f-mais>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:10px 16px;cursor:pointer}
+.f-mais>summary::-webkit-details-marker{display:none}
+.f-mais>summary b{display:block;font-size:14.5px}
+.f-mais>summary small{color:var(--ink-soft);font-size:12px}
+.f-mais>summary .ico{margin:0;transition:transform .15s}
+.f-mais[open]>summary .ico{transform:rotate(180deg)}
+.f-mais-c{padding:0 14px 14px;display:flex;flex-direction:column;gap:14px}
+.f-mais-c>.field{margin:0}
+.overlay .modal-body .segmented{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.overlay .modal-body .segmented:has(> :nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+.overlay .modal-body .segmented:has(> :only-child){grid-template-columns:1fr}
+.overlay .modal-body .segmented .seg-btn{min-height:44px;justify-content:center;text-align:center;white-space:normal;line-height:1.2}
+.overlay .modal-foot{position:sticky;bottom:0;background:var(--surface);padding:12px 16px}
+.overlay .modal-foot .btn{min-height:48px;flex:1;justify-content:center}
+#wrapAcordoHonorarios,#wrapAcordoUnico,#campoAcordoParcelado,#wrapFixo,#wrapExito{display:flex;flex-direction:column;gap:14px}
+#wrapAcordoHonorarios[style*="display:none"],#campoAcordoParcelado[style*="display:none"],#wrapExito[style*="display:none"]{display:none}
+.overlay .parcela-edit-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1.25fr) 40px;gap:6px;align-items:center}
+.overlay .parcela-edit-row input{min-height:44px;width:100%;min-width:0;box-sizing:border-box}
+.overlay .parcela-edit-row .rm-parcela{width:40px;height:40px;border-radius:12px;font-size:20px}
