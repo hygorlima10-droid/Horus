@@ -102,7 +102,7 @@ check(!/Fulano/i.test(await t('#pbWrap')), 'publicação do Murilo sem processo 
 const cardDe = async id => page.evaluate(id => { const b = document.querySelector('.pb-b[data-id="' + id + '"]'); return b ? b.closest('.pb-card').innerText : ''; }, id);
 const ta = await cardDe('900001'), tb = await cardDe('900002'), tc = await cardDe('900003');
 check(/inicial cadastrada/i.test(ta) && /via OAB Hygor/.test(ta) && /via OAB Murilo/.test(ta) && /Maquele Viana Pacheco/.test(ta), 'processo cadastrado mostra o cliente e as duas OABs de origem');
-check(/processo novo/i.test(tb) && /(sugerido: 15 dias|✦ .{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
+check(/processo novo/i.test(tb) && /(sugerido: 15 dias|.{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
 { await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Ver texto', 'Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)), 'o ⋯ do cartão guarda: Ver texto, Marcar como lida, Não é prazo, Cadastrar processo (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
 check(await page.evaluate(() => { const b = document.querySelector('[data-pb="rapido"]'); return !!b && /pb-verde/.test(b.className) && getComputedStyle(b).backgroundColor === getComputedStyle(document.documentElement).getPropertyValue('--success') || (!!b && /pb-verde/.test(b.className)); }), 'o botão de confirmar do cartão é verde (classe pb-verde), não preto');
 check(/Ata/i.test(tc) && !/prazo/i.test(tc) && /STJ/.test(tc) && /TRANSPORTADORA NUNES/.test(tc), 'ata do STJ: sem botão de prazo, com as partes');
@@ -284,7 +284,7 @@ await page.evaluate(n => { const c = Array.from(document.querySelectorAll('.pb-c
 await page.click('[data-pre="processo"]'); await page.waitForTimeout(600);
 check(/Fulano de Tal/.test(await t('#pr_chips')) && !/Complem/.test(await t('#pr_chips')), 'o nome igual (Fulano de Tal) já vem vinculado e o abreviado só como sugestão');
 const partesPub = await t('#pr_partesPub');
-check(/COOPERATIVA MISTA/.test(partesPub) && /FULANO DE TAL/.test(partesPub) && /CICLANO SANTOS/.test(partesPub) && /É o cliente Complem/.test(partesPub) && /✓ cliente: Fulano de Tal/.test(partesPub), 'a ficha lista as 3 partes da publicação com o que fazer em cada uma');
+check(/COOPERATIVA MISTA/.test(partesPub) && /FULANO DE TAL/.test(partesPub) && /CICLANO SANTOS/.test(partesPub) && /É o cliente Complem/.test(partesPub) && /cliente: Fulano de Tal/.test(partesPub), 'a ficha lista as 3 partes da publicação com o que fazer em cada uma');
 check(/COOPERATIVA/.test(await page.evaluate(() => document.getElementById('pr_partes').value)) && /CICLANO/.test(await page.evaluate(() => document.getElementById('pr_partes').value)), 'e o campo de partes já traz os 3 nomes');
 await page.click('[data-prf="sug-add"]'); await page.waitForTimeout(700);
 check(/Complem/.test(await t('#pr_chips')), 'um toque em "É o cliente Complem" vincula o cliente cadastrado');

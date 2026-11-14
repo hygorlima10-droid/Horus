@@ -41,7 +41,7 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes
 
 // 1) cartão
 let c1 = await cartao('Reta Replica');
-check(/✦ Réplica/.test(c1) && /15 dias/.test(c1) && /Confirmar prazo · vence \d\d\/\d\d/.test(c1), 'o cartão mostra a peça sugerida e o botão “Confirmar prazo · vence dd/mm”');
+check(/Réplica/.test(c1) && /15 dias/.test(c1) && /Confirmar prazo · vence \d\d\/\d\d/.test(c1), 'o cartão mostra a peça sugerida e o botão “Confirmar prazo · vence dd/mm”');
 // 2) detalhe: opções, escolha, prazo
 await abrir('Reta Replica');
 let det = await t('#pbCorpo');

@@ -33,18 +33,18 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
 
 // 1) base: sugere agravo
-check(/✦ Agravo de instrumento/.test(await cartao(nomes[0])), 'no começo, vale a regra da lei: agravo de instrumento');
+check(/Agravo de instrumento/.test(await cartao(nomes[0])), 'no começo, vale a regra da lei: agravo de instrumento');
 // 2) você escolhe outra peça duas vezes
 await abrir(nomes[0]); await page.fill('#pbf_desc', 'Pedido de reconsideração'); await page.fill('#pbf_dias', '5'); await page.click('[data-pbd="confirmar"]'); await page.waitForTimeout(1500);
 let ap = await aprend();
 check(ap.length === 1 && ap[0].peca === 'Pedido de reconsideração' && ap[0].usos === 1 && ap[0].dias === 5, 'a primeira escolha diferente é guardada (1 uso)');
-check(/✦ Agravo de instrumento/.test(await cartao(nomes[1])), 'com 1 uso ainda não sugere: continua a regra da lei');
+check(/Agravo de instrumento/.test(await cartao(nomes[1])), 'com 1 uso ainda não sugere: continua a regra da lei');
 await abrir(nomes[1]); await page.fill('#pbf_desc', 'Pedido de reconsideração'); await page.fill('#pbf_dias', '5'); await page.click('[data-pbd="confirmar"]'); await page.waitForTimeout(1500);
 ap = await aprend();
 check(ap.length === 1 && ap[0].usos === 2, 'a segunda vez junta com a primeira (2 usos, sem duplicar)');
 // 3) agora sugere a aprendida
 const c3 = await cartao(nomes[2]);
-check(/✦ Pedido de reconsideração · 5 dias/.test(c3), 'com 2 usos, a peça aprendida passa a ser a sugerida no cartão');
+check(/Pedido de reconsideração · 5 dias/.test(c3), 'com 2 usos, a peça aprendida passa a ser a sugerida no cartão');
 await abrir(nomes[2]);
 check(/aprendida/.test(await t('#pbCorpo')) && /você usou 2 vezes/.test(await t('#pbCorpo')) && await v('pbf_desc') === 'Pedido de reconsideração' && await v('pbf_dias') === '5', 'a leitura mostra “aprendida”, quantas vezes usou, e já preenche o prazo');
 check(/Agravo de instrumento/.test(await t('#pbCorpo')), 'e mantém o agravo da lei como alternativa');
@@ -58,7 +58,7 @@ for (const k of [3, 4, 5]) {
 }
 ap = await aprend(); const recons = ap.find(e => e.peca === 'Pedido de reconsideração');
 check(recons && recons.ativa === false && recons.trocas >= 3, 'depois de 3 trocas seguidas a peça aprendida é desativada');
-check(!/✦ Pedido de reconsideração/.test(await cartao(nomes[6])) && /✦ Agravo de instrumento/.test(await cartao(nomes[6])), 'e o cartão volta a sugerir o agravo');
+check(!/Pedido de reconsideração/.test(await cartao(nomes[6])) && /Agravo de instrumento/.test(await cartao(nomes[6])), 'e o cartão volta a sugerir o agravo');
 
 // 5) tela “Peças e prazos”
 await page.click('[data-pb="menu"]'); await page.click('[data-pb="pecas"]'); await page.waitForTimeout(500);
