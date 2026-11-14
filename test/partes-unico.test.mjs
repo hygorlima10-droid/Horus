@@ -22,9 +22,9 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]
 // 1) novo: só o campo de partes é visível; autor e réu ficam escondidos
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(600);
 const vis = id => page.evaluate(id => { const e = document.getElementById(id); return !!e && e.type !== 'hidden' && e.offsetParent !== null; }, id);
-check(await vis('pr_partes') && !(await vis('pr_autor')) && !(await vis('pr_reu')), 'o cadastro mostra só o campo de partes (autor e réu não aparecem mais)');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await vis('pr_partes') && !(await vis('pr_autor')) && !(await vis('pr_reu')), 'o cadastro mostra só o campo de partes (autor e réu não aparecem mais)');
 check(/Partes \(autor x réu\)/.test(await page.evaluate(() => document.querySelector('label[for=pr_partes]').innerText)), 'o rótulo do campo explica o formato "autor x réu"');
-await page.fill('#pr_numero', N1); await page.fill('#pr_partes', 'ASSOCIACAO DE ENSINO DE RIBEIRAO PRETO x ALLYSSON FREITAS DE MORAIS');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_numero', N1); await page.fill('#pr_partes', 'ASSOCIACAO DE ENSINO DE RIBEIRAO PRETO x ALLYSSON FREITAS DE MORAIS');
 await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 let d = (await docs('processos')).filter(x => x.numero === N1)[0];
 check(d && d.autor === 'ASSOCIACAO DE ENSINO DE RIBEIRAO PRETO' && d.reu === 'ALLYSSON FREITAS DE MORAIS', 'ao salvar, autor e réu saem do texto das partes: ' + JSON.stringify(d && [d.autor, d.reu]));
@@ -34,8 +34,8 @@ let d2 = (await docs('processos')).filter(x => x.numero === N2)[0];
 check(d2 && !d2.autor && !d2.reu, 'processo antigo só tinha o texto das partes (sem autor/réu gravados)');
 await page.fill('#prBusca', '5200100'); await page.waitForTimeout(500);
 await page.click('#prLista [data-pr="abrir"]'); await page.waitForTimeout(700); await page.click('[data-prf="aba"][data-v="dados"]'); 
-check((await page.evaluate(() => document.getElementById('pr_partes').value)) === 'Fulano de Tal x Banco Exemplo', 'ao abrir o processo, as partes aparecem no campo');
-await page.fill('#pr_partes', 'Fulano de Tal vs. Banco Novo S.A.');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check((await page.evaluate(() => document.getElementById('pr_partes').value)) === 'Fulano de Tal x Banco Exemplo', 'ao abrir o processo, as partes aparecem no campo');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_partes', 'Fulano de Tal vs. Banco Novo S.A.');
 await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 d2 = (await docs('processos')).filter(x => x.numero === N2)[0];
 check(d2 && d2.autor === 'Fulano de Tal' && d2.reu === 'Banco Novo S.A.', 'com "vs." também divide, e a edição atualiza autor e réu: ' + JSON.stringify(d2 && [d2.autor, d2.reu]));

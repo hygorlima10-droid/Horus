@@ -45,26 +45,26 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(400);
 check(/DataJud/.test(await t('#prCorpo')), 'a janela de cadastro explica que busca no DataJud');
 await page.fill('#pr_numero', NA); await page.keyboard.press('Tab'); await page.waitForTimeout(2500);
-check(await v('pr_orgao') === 'TJGO · 1ª Vara Cível de Morrinhos', 'preenche tribunal e vara: ' + await v('pr_orgao'));
-check(await v('pr_classe') === 'Procedimento Comum Cível' && await v('pr_assunto') === 'Indenização por Dano Moral; Contratos Bancários' && await v('pr_ajuiz') === '2026-09-30', 'preenche classe, assunto e data de ajuizamento');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_orgao') === 'TJGO · 1ª Vara Cível de Morrinhos', 'preenche tribunal e vara: ' + await v('pr_orgao'));
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_classe') === 'Procedimento Comum Cível' && await v('pr_assunto') === 'Indenização por Dano Moral; Contratos Bancários' && await v('pr_ajuiz') === '2026-09-30', 'preenche classe, assunto e data de ajuizamento');
 check(/Dados do DataJud/.test(await t('#pr_dj')) && /não informa partes/.test(await t('#pr_dj')), 'avisa que partes e valor não vêm do DataJud: ' + (await t('#pr_dj')).slice(0, 80));
-check(await v('pr_partes') === '' && await v('pr_valor') === '', 'não inventa partes nem valor da causa');
-await page.fill('#pr_partes', 'Maria x Banco'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_partes') === '' && await v('pr_valor') === '', 'não inventa partes nem valor da causa');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_partes', 'Maria x Banco'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 const p1 = (await docs('processos')).filter(p => p.numero === NA)[0];
 check(p1 && p1.assunto === 'Indenização por Dano Moral; Contratos Bancários' && p1.ajuizamento === '2026-09-30' && p1.classe === 'Procedimento Comum Cível', 'o processo é gravado com assunto e data de ajuizamento');
 
 // 2) o que você já digitou não é sobrescrito
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(400);
-await page.fill('#pr_classe', 'Minha classe'); await page.fill('#pr_numero', NB); await page.keyboard.press('Tab'); await page.waitForTimeout(2500);
-check(await v('pr_classe') === 'Minha classe' && await v('pr_assunto') !== '', 'campo já preenchido é mantido; os vazios são completados');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_classe', 'Minha classe'); await page.fill('#pr_numero', NB); await page.keyboard.press('Tab'); await page.waitForTimeout(2500);
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_classe') === 'Minha classe' && await v('pr_assunto') !== '', 'campo já preenchido é mantido; os vazios são completados');
 // 3) DataJud sobrecarregado: avisa e dá para tentar de novo
 await page.click('#prX'); await page.waitForTimeout(300);
 modo[dig(NC)] = '429';
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(400);
 await page.fill('#pr_numero', NC); await page.keyboard.press('Tab'); await page.waitForTimeout(2500);
-check(/sobrecarregado/.test(await t('#pr_dj')) && await v('pr_classe') === '', 'erro 429: explica e deixa preencher à mão');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(/sobrecarregado/.test(await t('#pr_dj')) && await v('pr_classe') === '', 'erro 429: explica e deixa preencher à mão');
 modo[dig(NC)] = 'ok'; await page.click('[data-prf="buscar-dj"]'); await page.waitForTimeout(2500);
-check(await v('pr_classe') === 'Procedimento Comum Cível', 'o botão “Buscar dados no DataJud” tenta de novo e funciona');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_classe') === 'Procedimento Comum Cível', 'o botão “Buscar dados no DataJud” tenta de novo e funciona');
 // 4) processo que o DataJud ainda não tem
 await page.click('#prX'); await page.waitForTimeout(300);
 const ND = cnj('5400400', '2026', '8', '09', '0107'); modo[dig(ND)] = 'vazio';
@@ -80,7 +80,7 @@ check(chamadas.length === antes && /dígito verificador/.test(await t('#pr_dj'))
 await page.click('#prX'); await page.waitForTimeout(300);
 // 6) ficha do processo já cadastrado
 await page.click('[data-pr="abrir"][data-n="' + dig(NA) + '"]'); await page.waitForTimeout(600); await page.click('[data-prf="aba"][data-v="dados"]'); 
-check(await v('pr_ajuiz') === '2026-09-30' && /Buscar dados no DataJud/.test(await t('#prCorpo')), 'a ficha mostra a data de ajuizamento e o botão do DataJud');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); check(await v('pr_ajuiz') === '2026-09-30' && /Buscar dados no DataJud/.test(await t('#prCorpo')), 'a ficha mostra a data de ajuizamento e o botão do DataJud');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 for (const col of ['processos']) for (const d of (await f('GET', '/api/db/' + col)).j.docs || []) await f('DELETE', '/api/db/' + col + '/' + d.id);
 await br.close(); srv.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);

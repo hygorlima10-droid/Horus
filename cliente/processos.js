@@ -325,6 +325,7 @@ function prMontarFicha(){
     else if (a === 'link'){ d.classList.remove('show'); var p = v.split('|'), dc = p[0] === 'peticao' ? docDe('caso', p[1]) : null; if (dc && dc.doProcesso) abrirEdicao(dc.id); else irParaRelacionado(p[0], p[1]); }   /* honorários do processo editam na própria janela */
     else if (a === 'novo-hon') prNovoHonorario(v);
     else if (a === 'aba') prIrAba(v);
+    else if (a === 'cancelar') d.classList.remove('show');
     else if (a === 'copiar'){ try{ navigator.clipboard.writeText(v); toast('Número copiado.'); }catch(x){ toast('Não consegui copiar.'); } }
     else if (a === 'prazo-novo'){ var nn = prEd.num; d.classList.remove('show'); prAgNovo(nn, 'prazo'); }
     else if (a === 'tarefa-nova'){ var nt = prEd.num; d.classList.remove('show'); prAgNovo(nt, 'tarefa'); }
@@ -531,10 +532,11 @@ function prDesenhar(){
     h += '<div class="pb-sec"><div class="pb-sec-t">Importado do Diário Oficial · falta o cliente</div><div class="pb-aviso">' + (sg ? 'Cliente parecido: <b>' + escapeHtml(sg.nome) + '</b>.' : 'Nenhum cliente parecido. Escolha um cliente abaixo ou cadastre um novo.') + ' Ao salvar com um cliente vinculado, o processo sai da revisão.</div>' +
       (sg ? '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-prf="rev-sug" data-v="' + escapeHtml(sg.id) + '">Vincular a ' + escapeHtml(sg.nome.length > 24 ? sg.nome.slice(0, 24) + '…' : sg.nome) + '</button></div>' : '') + '</div>';
   }
-  if (novo) h += '<div class="parcela-sum">Digite o número do processo: o app busca sozinho no Diário Oficial (partes, valor da causa) e no DataJud do CNJ (vara, classe, assunto, data de ajuizamento). O que não vier você preenche. Honorários a receber ficam em Iniciais, Termos de Acordo ou Alvarás.</div><div id="pr_vinc"></div>';
+  if (novo) h += '<div class="parcela-sum">Digite o número do processo: o app busca sozinho no Diário Oficial e no DataJud. O que não vier, você preenche.</div><div id="pr_vinc"></div>';
   var hI = h; h = '';
-  h += '<div class="field"><label class="field-label" for="pr_numero">Número do processo</label><input type="text" id="pr_numero" maxlength="40" value="' + escapeHtml(novo ? (pre.numero || '') : r.numero) + '"' + (novo ? ' placeholder="0000000-00.0000.0.00.0000"' : ' readonly') + '><div class="saldo-data" id="pr_numinfo"></div><div class="saldo-data" id="pr_dados"></div><div class="saldo-data" id="pr_dj"></div><div class="pb-acts" style="margin-top:4px">' + (novo ? '' : '<button type="button" class="btn-text" data-prf="buscar-dados">Buscar dados no Diário Oficial</button>') + '<button type="button" class="btn-text" data-prf="buscar-dj">Buscar dados no DataJud</button></div></div>' +
-    '<div class="field"><label class="field-label" for="pr_partes">Partes (autor x réu)</label><input type="text" id="pr_partes" maxlength="120" value="' + escapeHtml(novo ? (pre.partes || '') : (doc ? (doc.partes || '') : prPartes(r))) + '" placeholder="Ex.: Fulano de Tal x Banco Exemplo">' +
+  h += '<div class="field"><label class="field-label" for="pr_numero">Número do processo</label><input type="text" id="pr_numero" maxlength="40" value="' + escapeHtml(novo ? (pre.numero || '') : r.numero) + '"' + (novo ? ' placeholder="0000000-00.0000.0.00.0000"' : ' readonly') + '><div class="saldo-data" id="pr_numinfo"></div><div class="saldo-data" id="pr_dados"></div><div class="saldo-data" id="pr_dj"></div><div class="pb-acts" style="margin-top:4px">' + (novo ? '' : '<button type="button" class="btn-text" data-prf="buscar-dados">Buscar dados no Diário Oficial</button>') + '<button type="button" class="btn-text" data-prf="buscar-dj">Buscar dados no DataJud</button></div></div>';
+  var hNum = h; h = '';
+  h += '<div class="field"><label class="field-label" for="pr_partes">Partes (autor x réu)</label><input type="text" id="pr_partes" maxlength="120" value="' + escapeHtml(novo ? (pre.partes || '') : (doc ? (doc.partes || '') : prPartes(r))) + '" placeholder="Ex.: Fulano de Tal x Banco Exemplo">' +
     /* autor e réu não aparecem mais como campos: saem do texto das partes (antes do " x " e depois dele) ao salvar */
     '<input type="hidden" id="pr_autor" value="' + escapeHtml(novo ? (pre.autor || '') : (doc ? (doc.autor || '') : '')) + '"><input type="hidden" id="pr_reu" value="' + escapeHtml(novo ? (pre.reu || '') : (doc ? (doc.reu || prReu(r)) : prReu(r))) + '"></div>' +
     '<div class="field"><label class="field-label" for="pr_orgao">Tribunal / órgão</label><input type="text" id="pr_orgao" maxlength="120" value="' + escapeHtml(novo ? (pre.orgao || '') : (doc ? (doc.orgao || '') : '')) + '" placeholder="Ex.: TJGO · Morrinhos 1ª Vara Cível"></div>' +
@@ -543,9 +545,10 @@ function prDesenhar(){
     (arq ? '<div class="field"><label class="field-label" for="pr_res">Resultado do processo</label><select id="pr_res" class="filter-select" style="width:100%"><option value="">Não informado</option>' + Object.keys(PR_RES).map(function(k){ return '<option value="' + k + '"' + (doc && doc.resultado === k ? ' selected' : '') + '>' + PR_RES[k] + '</option>'; }).join('') + '</select></div>' : '') +
     '<div class="field"><label class="field-label" for="pr_assunto">Assunto</label><input type="text" id="pr_assunto" maxlength="160" value="' + escapeHtml(novo ? (pre.assunto || '') : (doc ? (doc.assunto || '') : '')) + '" placeholder="Ex.: Indenização por dano moral"></div>' +
     '<div class="field"><label class="field-label" for="pr_ajuiz">Data de ajuizamento (opcional)</label><input type="date" id="pr_ajuiz" value="' + escapeHtml(novo ? '' : (doc ? (doc.ajuizamento || '') : '')) + '"></div>' +
-    '<div class="field"><label class="field-label" for="pr_valor">Valor da causa (opcional)</label><input type="text" id="pr_valor" inputmode="decimal" maxlength="20" value="' + escapeHtml(novo ? (pre.valorCausa ? prFmtValor(pre.valorCausa) : '') : (doc && doc.valorCausa ? prFmtValor(doc.valorCausa) : '')) + '" placeholder="Ex.: 40.000,00"></div>' +
-    '<div class="field"><label class="field-label">Clientes vinculados</label><div class="cli-picker"><div class="cli-chips" id="pr_chips"></div><input type="text" id="pr_cli" class="cli-pick-input" placeholder="Buscar ou cadastrar cliente…" autocomplete="off"><div class="cli-sug" id="pr_sug" style="display:none;"></div></div></div>' + (novo && pre.nomes && pre.nomes.length ? '<div id="pr_partesPub"></div>' : '');
-  var hA = h; h = hI;
+    '<div class="field"><label class="field-label" for="pr_valor">Valor da causa (opcional)</label><input type="text" id="pr_valor" inputmode="decimal" maxlength="20" value="' + escapeHtml(novo ? (pre.valorCausa ? prFmtValor(pre.valorCausa) : '') : (doc && doc.valorCausa ? prFmtValor(doc.valorCausa) : '')) + '" placeholder="Ex.: 40.000,00"></div>';
+  var hDad = h; h = '';
+  h += '<div class="field"><label class="field-label">Clientes vinculados</label><div class="cli-picker"><div class="cli-chips" id="pr_chips"></div><input type="text" id="pr_cli" class="cli-pick-input" placeholder="Buscar ou cadastrar cliente…" autocomplete="off"><div class="cli-sug" id="pr_sug" style="display:none;"></div></div></div>' + (novo && pre.nomes && pre.nomes.length ? '<div id="pr_partesPub"></div>' : '');
+  var hCli = h; h = hI;
   var hHon = '';
   if (!novo){ var hh0 = h; h = '';
     h += '<div class="pb-sec"><div class="pb-sec-t">Honorários que vou receber</div>';
@@ -576,8 +579,11 @@ function prDesenhar(){
   hHonNovo = h; h = hn0; }
   var hResp = '<div class="field" id="esResp_processos"></div>';
   var hErro = '<div class="form-error" id="pr_erro"></div>', hSalvar = '<button type="button" class="btn btn-primary" data-prf="salvar" style="width:100%;justify-content:center;">' + (novo ? 'Cadastrar processo' : 'Salvar') + '</button>';
+  var hRodape = '<div class="f-rod-in"><button type="button" class="btn btn-ghost" data-prf="cancelar">Cancelar</button>' + hSalvar.replace(' style="width:100%;justify-content:center;"', '') + '</div>';
   if (novo){
-    h += hA + hProx + hObs + hHonNovo + hResp + hErro + hSalvar;
+    h += fSec('Número', hNum) +
+      '<details class="f-mais" id="pr_dadosDet"><summary><div><b>Dados do processo</b><small id="pr_dadosRes">preenchidos sozinhos pelo número; toque para escrever ou corrigir</small></div>' + ico('chevron-down', 20) + '</summary><div class="f-mais-c">' + hDad + '</div></details>' +
+      fSec('Cliente e honorários', hCli + hHonNovo) + fMais('próxima providência · observações', hProx + hObs) + fSec('Responsáveis', hResp) + hErro + hRodape;
   } else {
     var pz = prPrazosAbertos(r), pubs = prPubsDe(r.num), ab = prEd.aba || 'resumo';
     var hAg = '<div class="pb-sec"><div class="pb-sec-t">Prazos e audiências (Agenda)</div>' + (pz.length ? pz.map(function(i){ var c = agChip(i); return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(i.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(agTipoLinha(i)) + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="prazo-abrir" data-v="' + escapeHtml(i.key) + '">' + escapeHtml(c.t) + ' ›</button></div>'; }).join('') : '<div class="saldo-data">Nenhum prazo aberto.</div>') + '</div>' + prAcoesFicha(true);
@@ -588,11 +594,13 @@ function prDesenhar(){
     h += prCabHtml(r, pm, arq, doc) + '<div id="prAbas">' + mdBarraHtml(abas, ab, function(k){ return 'data-prf="aba" data-v="' + k + '"'; }) + '</div>' +
       pane('resumo', '<div class="pr-res"><div class="pr-res-a">' + prTimelineHtml(r) + '</div><div class="pr-res-b">' + hProx + prAcoesFicha(false) + '</div></div>') +
       pane('agenda', hAg) + pane('pubs', hPubs) + pane('hon', hHon) +
-      pane('dados', hA + hObs + hResp + '<div class="pb-acts">' + (arq ? '<button type="button" class="btn btn-ghost pb-b" data-prf="reabrir">Reabrir processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-prf="arquivar">Concluir e arquivar</button>') + (doc && !r.links.length ? '<button type="button" class="btn-text" data-prf="excluir" style="color:var(--urgente)">Excluir este processo</button>' : '') + '</div>') + pane('hist', hHist) +
-      '<div id="prRodape"' + (/^(resumo|hon|dados)$/.test(ab) ? '' : ' hidden') + '>' + hErro + hSalvar + '</div>';
+      pane('dados', fSec('Dados do processo', hNum + hDad) + fSec('Cliente e observações', hCli + hObs) + fSec('Responsáveis', hResp) + '<div class="pb-acts">' + (arq ? '<button type="button" class="btn btn-ghost pb-b" data-prf="reabrir">Reabrir processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-prf="arquivar">Concluir e arquivar</button>') + (doc && !r.links.length ? '<button type="button" class="btn-text" data-prf="excluir" style="color:var(--urgente)">Excluir este processo</button>' : '') + '</div>') + pane('hist', hHist) +
+      '<div id="prRodape"' + (/^(resumo|hon|dados)$/.test(ab) ? '' : ' hidden') + '>' + hErro + hRodape + '</div>';
   }
   qs('prCorpo').innerHTML = h; try{ esRespIniciar('processos', doc); }catch(e){} prChips(); prInfoNumero(); prRefazVinc(); try{ adAbrirData(qs('pr_ajuiz')); adAbrirData(qs('pr_proxdata')); }catch(e){}
   prEd.buscadoDj = '';
+  try{ fichaMaisEm(qs('prCorpo')); }catch(e){}
+  if (novo){ clearInterval(prResT); prDadosResumo(); prResT = setInterval(function(){ if (!qs('pr_dadosRes') || !qs('overlayPr').classList.contains('show')){ clearInterval(prResT); return; } prDadosResumo(); }, 500); }
   if (novo){ prEd.iniPartes = qs('pr_partes').value; prEd.buscado = ''; if (qs('pr_numero').value.trim()){ prBuscarDados(); prBuscarDatajud(); } }
   else if (prEd.aba === 'hist') prHistCarregar();
 }
@@ -614,6 +622,13 @@ function prCabHtml(r, pm, arq, doc){
     (orgao ? '<div class="saldo-data">' + escapeHtml(orgao) + '</div>' : '') +
     '<div class="saldo-data">' + (cli ? 'Cliente: ' + cli : 'Sem cliente vinculado') + (advs.length ? ' · Advogados: ' + escapeHtml(advs.join(', ')) : '') + '</div></div>' +
     '<div class="pr-kpis">' + kpi('Próximo prazo', pz ? escapeHtml(fmtData(pz.data).slice(0, 5)) : 'Nenhum', c0 ? escapeHtml(c0.t.toLowerCase()) : '', pz && (pz.data < todayISO() || agUteis(pz.data) <= 3) ? 'urg' : '') + kpi('A receber', rec > 0.004 ? escapeHtml(fmtMoeda(rec)) : '—', '', '') + kpi('Última publicação', up ? escapeHtml(fmtData(up).slice(0, 5)) : '—', '', '') + '</div>';
+}
+var prResT = null;
+/* o "Dados do processo" do cadastro novo mostra um resumo do que o número trouxe; tocar abre os campos para corrigir */
+function prDadosResumo(){
+  var el = qs('pr_dadosRes'); if (!el) return;
+  var p = ['pr_partes', 'pr_orgao', 'pr_classe'].map(function(k){ var x = qs(k); return x ? x.value.trim() : ''; }).filter(Boolean);
+  el.textContent = p.length ? p.join(' · ') : 'preenchidos sozinhos pelo número; toque para escrever ou corrigir';
 }
 function prSalvar(){
   var novo = prEd.novo, err = qs('pr_erro'), numero = qs('pr_numero').value.trim();

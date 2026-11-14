@@ -17,13 +17,15 @@ function fichaPreenchido(el){
   });
   return f;
 }
-function fichaMais(ovId){
-  var ov = qs(ovId); if (!ov) return;
-  Array.prototype.forEach.call(ov.querySelectorAll('details.f-mais'), function(d){ d.open = fichaPreenchido(d); });
-}
+function fichaMaisEm(el){ Array.prototype.forEach.call(el.querySelectorAll('details.f-mais'), function(d){ d.open = fichaPreenchido(d); }); }
+function fichaMais(ovId){ var ov = qs(ovId); if (ov) fichaMaisEm(ov); }
+/* blocos e "Mais detalhes" para as fichas montadas por JavaScript (mesmo desenho do HTML fixo) */
+function fSec(titulo, html){ return '<div class="f-sec"><div class="f-sec-t">' + titulo + '</div>' + html + '</div>'; }
+function fMais(sub, html){ return '<details class="f-mais"><summary><div><b>Mais detalhes</b><small>' + sub + '</small></div>' + ico('chevron-down', 20) + '</summary><div class="f-mais-c">' + html + '</div></details>'; }
 (function(){
   /* depois de abrir cada ficha, ajusta o "Mais detalhes" (cada função é redefinida na mesma escopo, como em processos.js) */
-  var d1 = abrirNovaDespesa, d2 = abrirEdicaoDespesa, a1 = abrirNovo, a2 = abrirEdicao, b1 = abrirNovoAcordo, b2 = abrirEdicaoAcordo, c1 = abrirNovoAlvara, c2 = abrirEdicaoAlvara;
+  var k1 = abrirClienteEdit, d1 = abrirNovaDespesa, d2 = abrirEdicaoDespesa, a1 = abrirNovo, a2 = abrirEdicao, b1 = abrirNovoAcordo, b2 = abrirEdicaoAcordo, c1 = abrirNovoAlvara, c2 = abrirEdicaoAlvara;
+  abrirClienteEdit = function(){ var r = k1.apply(this, arguments); try{ fichaMais('overlayClienteEdit'); }catch(e){} return r; };
   abrirNovaDespesa = function(){ var r = d1.apply(this, arguments); try{ fichaMais('overlayDespesa'); }catch(e){} return r; };
   abrirEdicaoDespesa = function(){ var r = d2.apply(this, arguments); try{ fichaMais('overlayDespesa'); }catch(e){} return r; };
   abrirNovo = function(){ var r = a1.apply(this, arguments); try{ fichaMais('overlay'); }catch(e){} return r; };

@@ -26,6 +26,16 @@ for (const [nome, fn, ov, min, mais] of [['Nova despesa', 'abrirNovaDespesa', 'o
 await abre('abrirNovaDespesa'); await page.waitForTimeout(400);
 await page.fill('#despesaNomeInput', 'Despesa de teste da ficha'); await page.fill('#despesaValorInput', '123.45'); await page.click('#saveBtnDespesa'); await page.waitForTimeout(1200);
 check((await f('GET', '/api/db/despesas')).j.docs.some(d => (d.data.nome || d.data.descricao) === 'Despesa de teste da ficha'), 'salvar uma despesa pela ficha nova grava normalmente');
+await abre('abrirClienteEdit', { nome: '', pagador: 'cliente' }); await page.waitForTimeout(400);
+{ const i = await info('overlayClienteEdit'); check(i.secs >= 1 && i.maisN === 1 && i.maisAberto === false && i.rodapeNaTela, 'Novo cliente: ' + i.titulos.join(' · ') + ', "Mais detalhes" fechado e rodapé à vista'); }
+await abre('agAbrir', null); await page.waitForTimeout(500);
+{ const i = await page.evaluate(() => { const c = document.getElementById('agEdCorpo'), r = c.querySelector('.f-rod-in'), d = c.querySelector('details.f-mais'); return { titulos: Array.from(c.querySelectorAll('.f-sec-t')).map(e => e.innerText.trim()), aberto: d && d.open, botoes: Array.from(r.querySelectorAll('button')).map(b => b.innerText.trim()), noAlcance: r.getBoundingClientRect().top < innerHeight }; });
+  check(i.titulos.join() === 'O QUÊ,QUANDO,RESPONSÁVEIS' && i.aberto === false && i.botoes.join() === 'Cancelar,Salvar na agenda' && i.noAlcance, 'Novo item da agenda: ' + i.titulos.join(' · ') + ', "Mais detalhes" fechado e Cancelar | Salvar na agenda à vista'); }
+await abre('prAbrirNovo', null); await page.waitForTimeout(500);
+{ const i = await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); return { aberto: d.open, res: document.getElementById('pr_dadosRes').innerText, foot: Array.from(document.querySelectorAll('#prCorpo .f-rod-in button')).map(b => b.innerText.trim()) }; });
+  check(i.aberto === false && /preenchidos sozinhos/.test(i.res) && i.foot.join() === 'Cancelar,Cadastrar processo', 'Cadastrar processo: dados num bloco fechado com resumo e rodapé Cancelar | Cadastrar processo'); }
+await page.evaluate(() => { document.getElementById('pr_dadosDet').open = true; }); await page.fill('#pr_partes', 'Fulano x Banco Teste'); await page.waitForTimeout(900);
+check(/Fulano x Banco Teste/.test(await page.evaluate(() => document.getElementById('pr_dadosRes').innerText)), 'o resumo dos dados acompanha o que está nos campos');
 await abre('edit', caso.j.id); await page.waitForTimeout(600);
 check((await info('overlay')).maisAberto === true && (await page.evaluate(() => document.getElementById('obsInput').value)) === 'Observação preenchida', 'Editar inicial com observação: "Mais detalhes" abre sozinho e mostra o campo');
 await abre('edit', caso2.j.id); await page.waitForTimeout(600);

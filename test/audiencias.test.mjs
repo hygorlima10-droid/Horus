@@ -80,9 +80,9 @@ const pz2 = (await ag()).filter(d => d.titulo === 'Contestação')[0];
 check(!pz2.concluido && !pz2.protocoladoEm, 'reabrir limpa a data do protocolo');
 // 5) editor com situação “concluído” pede a data do protocolo
 await page.evaluate(() => { const b = Array.from(document.querySelectorAll('#agWrap .agc')).find(x => /Contestação/.test(x.innerText)); b.click(); }); await page.waitForTimeout(350); await page.click('[data-agd="editar"]'); await page.waitForTimeout(400);
-await page.selectOption('#age_sit', 'feito'); await page.waitForTimeout(200);
+await page.evaluate(() => document.querySelectorAll('#agEdCorpo details.f-mais').forEach(d => { d.open = true; })); await page.selectOption('#age_sit', 'feito'); await page.waitForTimeout(200);
 check(await page.evaluate(() => getComputedStyle(document.getElementById('age_prot_box')).display) !== 'none', 'no editor, marcar “Concluído” mostra o campo da data do protocolo');
-await page.fill('#age_protoc', dia(-2)); await page.click('[data-age="salvar"]'); await page.waitForTimeout(900);
+await page.evaluate(() => document.querySelectorAll('#agEdCorpo details.f-mais').forEach(d => { d.open = true; })); await page.fill('#age_protoc', dia(-2)); await page.click('[data-age="salvar"]'); await page.waitForTimeout(900);
 check((await ag()).filter(d => d.titulo === 'Contestação')[0].protocoladoEm === dia(-2), 'e grava a data informada');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 for (const col of ['casos', 'clientes', 'agenda', 'processos', 'config']) for (const d of (await f('GET', '/api/db/' + col)).j.docs || []) await f('DELETE', '/api/db/' + col + '/' + d.id);

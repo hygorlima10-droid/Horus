@@ -41,10 +41,10 @@ await page.click('[data-prf="salvar"]'); await page.waitForTimeout(200);
 check(/Informe o número/.test(await t('#pr_erro')), 'exige o número');
 await page.fill('#pr_numero', N3); await page.waitForTimeout(100);
 check(/Número válido|dígito verificador/.test(await t('#pr_numinfo')), 'confere o número pelo padrão do CNJ: ' + await t('#pr_numinfo'));
-await page.fill('#pr_partes', 'Cooperativa Agropecuária x Fulano'); await page.fill('#pr_orgao', 'TJGO · Bela Vista de Goiás'); await page.fill('#pr_classe', 'Execução de título extrajudicial');
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_partes', 'Cooperativa Agropecuária x Fulano'); await page.fill('#pr_orgao', 'TJGO · Bela Vista de Goiás'); await page.fill('#pr_classe', 'Execução de título extrajudicial');
 await page.fill('#pr_cli', 'cooper'); await page.waitForTimeout(300); await page.click('#pr_sug [data-prf="cli-add"]'); await page.waitForTimeout(200);
 check(/Cooperativa Mista/.test(await t('#pr_chips')), 'vincula o cliente pelo nome');
-await page.selectOption('#pr_hon', 'quitados'); await page.fill('#pr_obs', 'Penhora via PrevJUD'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
+await page.evaluate(() => document.querySelectorAll('#prCorpo details.f-mais').forEach(d => { d.open = true; })); await page.selectOption('#pr_hon', 'quitados'); await page.fill('#pr_obs', 'Penhora via PrevJUD'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 let pd = await docs('processos');
 check(pd.length === 1 && pd[0].numero === N3 && pd[0].honorarios === 'quitados' && pd[0].clienteIds.join() === 'cl2' && pd[0].arquivado === false, 'o processo é gravado com cliente, honorários e observação');
 check(await nCards() === 3 && /Só processo/.test(await cardDe(N3)) && /honorários já quitados/.test(await cardDe(N3)), 'aparece na lista como "Só processo" com a etiqueta de honorários');
@@ -186,7 +186,7 @@ await page.click('#closeModal'); await page.waitForTimeout(500);
 check(await page.evaluate(() => getComputedStyle(document.getElementById('segTipo').closest('.field')).display !== 'none'), 'ao fechar, a janela de Inicial volta ao normal');
 // escolher "tenho honorários a receber" no cadastro do processo abre o cadastro dos honorários depois de salvar
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(400);
-await page.fill('#pr_numero', '5111222-33.2025.8.09.0107'); await page.fill('#pr_partes', 'Novo x Processo'); await page.selectOption('#pr_hon', 'receber'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1500);
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_numero', '5111222-33.2025.8.09.0107'); await page.fill('#pr_partes', 'Novo x Processo'); await page.selectOption('#pr_hon', 'receber'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1500);
 check(await page.evaluate(() => document.getElementById('overlay').classList.contains('show') && document.getElementById('modalTitle').textContent === 'Honorários do processo' && document.getElementById('processoInput').value === '5111222-33.2025.8.09.0107'), 'escolhendo "tenho honorários a receber", depois de salvar o processo abre o cadastro dos honorários');
 await page.click('#closeModal'); await page.waitForTimeout(400);
 

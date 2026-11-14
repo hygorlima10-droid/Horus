@@ -126,3 +126,6 @@ label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
 .overlay .parcela-edit-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1.25fr) 40px;gap:6px;align-items:center}
 .overlay .parcela-edit-row input{min-height:44px;width:100%;min-width:0;box-sizing:border-box}
 .overlay .parcela-edit-row .rm-parcela{width:40px;height:40px;border-radius:12px;font-size:20px}
+.f-rod-in{position:sticky;bottom:-20px;background:var(--surface);display:flex;gap:10px;padding:12px 0 4px;margin-top:4px;border-top:1px solid var(--border)}
+.f-rod-in .btn{flex:1;min-height:48px;justify-content:center}
+#agEdCorpo>.btn-text[data-age="excluir"]{align-self:center}

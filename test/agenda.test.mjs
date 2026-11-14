@@ -78,7 +78,7 @@ check(nova.trabalhar && nova.trabalhar < nova.data, 'sem "trabalhar até", o app
 // audiência
 await page.click('[data-ag="novo"]'); await page.waitForTimeout(300); await page.click('[data-age="tipo"][data-v="audiencia"]'); await page.waitForTimeout(200);
 check(await page.evaluate(() => getComputedStyle(document.getElementById('age_hora_box')).display !== 'none' && getComputedStyle(document.getElementById('age_trab_box')).display === 'none'), 'audiência pede a hora e não pede "trabalhar até"');
-await page.fill('#age_tit', 'Audiência de conciliação'); await page.fill('#age_cli', 'Sergio Penido'); await page.fill('#age_data', dia(1)); await page.fill('#age_hora', '14:30'); await page.selectOption('#age_av', 'dia'); await page.click('[data-age="salvar"]'); await page.waitForTimeout(1200);
+await page.evaluate(() => document.querySelectorAll('#agEdCorpo details.f-mais').forEach(d => { d.open = true; })); await page.fill('#age_tit', 'Audiência de conciliação'); await page.fill('#age_cli', 'Sergio Penido'); await page.fill('#age_data', dia(1)); await page.fill('#age_hora', '14:30'); await page.selectOption('#age_av', 'dia'); await page.click('[data-age="salvar"]'); await page.waitForTimeout(1200);
 docs = await ag(); const aud = docs.find(d => d.tipo === 'audiencia');
 check(aud && aud.hora === '14:30' && aud.data === dia(1) && JSON.stringify(aud.avisos) === '[0]' && !aud.trabalhar, 'audiência gravada com hora e aviso só no dia');
 // tarefa + concluir + reabrir
