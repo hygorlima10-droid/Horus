@@ -23,7 +23,9 @@ function fichaMais(ovId){
 }
 (function(){
   /* depois de abrir cada ficha, ajusta o "Mais detalhes" (cada função é redefinida na mesma escopo, como em processos.js) */
-  var a1 = abrirNovo, a2 = abrirEdicao, b1 = abrirNovoAcordo, b2 = abrirEdicaoAcordo, c1 = abrirNovoAlvara, c2 = abrirEdicaoAlvara;
+  var d1 = abrirNovaDespesa, d2 = abrirEdicaoDespesa, a1 = abrirNovo, a2 = abrirEdicao, b1 = abrirNovoAcordo, b2 = abrirEdicaoAcordo, c1 = abrirNovoAlvara, c2 = abrirEdicaoAlvara;
+  abrirNovaDespesa = function(){ var r = d1.apply(this, arguments); try{ fichaMais('overlayDespesa'); }catch(e){} return r; };
+  abrirEdicaoDespesa = function(){ var r = d2.apply(this, arguments); try{ fichaMais('overlayDespesa'); }catch(e){} return r; };
   abrirNovo = function(){ var r = a1.apply(this, arguments); try{ fichaMais('overlay'); }catch(e){} return r; };
   abrirEdicao = function(){ var r = a2.apply(this, arguments); try{ fichaMais('overlay'); }catch(e){} return r; };
   abrirNovoAcordo = function(){ var r = b1.apply(this, arguments); try{ fichaMais('overlayAcordo'); }catch(e){} return r; };

@@ -19,6 +19,13 @@ for (const [nome, fn, ov] of [['Nova inicial', 'abrirNovo', 'overlay'], ['Novo a
   check(i.secs >= 3 && i.maisN === 1 && i.maisAberto === false, nome + ': ' + i.secs + ' blocos (' + i.titulos.join(' · ') + ') e "Mais detalhes" fechado');
   check(i.rodapeNaTela && i.botoes.join() === 'Cancelar,Salvar', nome + ': rodapé Cancelar | Salvar sempre à vista');
 }
+for (const [nome, fn, ov, min, mais] of [['Nova despesa', 'abrirNovaDespesa', 'overlayDespesa', 2, 1], ['Nova receita', 'abrirNovaReceita', 'overlayReceita', 2, 0], ['Nova meta', 'abrirNovaMeta', 'overlayMeta', 2, 0]]) {
+  await abre(fn); await page.waitForTimeout(500); const i = await info(ov);
+  check(i.secs >= min && i.maisN === mais && (mais === 0 || i.maisAberto === false) && i.rodapeNaTela, nome + ': ' + i.secs + ' blocos (' + i.titulos.join(' · ') + ')' + (mais ? ', "Mais detalhes" fechado' : '') + ' e rodapé à vista');
+}
+await abre('abrirNovaDespesa'); await page.waitForTimeout(400);
+await page.fill('#despesaNomeInput', 'Despesa de teste da ficha'); await page.fill('#despesaValorInput', '123.45'); await page.click('#saveBtnDespesa'); await page.waitForTimeout(1200);
+check((await f('GET', '/api/db/despesas')).j.docs.some(d => (d.data.nome || d.data.descricao) === 'Despesa de teste da ficha'), 'salvar uma despesa pela ficha nova grava normalmente');
 await abre('edit', caso.j.id); await page.waitForTimeout(600);
 check((await info('overlay')).maisAberto === true && (await page.evaluate(() => document.getElementById('obsInput').value)) === 'Observação preenchida', 'Editar inicial com observação: "Mais detalhes" abre sozinho e mostra o campo');
 await abre('edit', caso2.j.id); await page.waitForTimeout(600);
