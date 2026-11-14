@@ -1766,6 +1766,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18319,7 +18323,7 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
     '.pb-tipo{font-weight:700;font-size:var(--t1);padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);white-space:nowrap}.pb-tipo.dec{background:rgba(217,59,59,.12);color:var(--urgente)}.pb-tipo.ato{background:rgba(183,121,30,.14);color:var(--tutela)}' +
     '.pb-cli{font-size:var(--t5);font-weight:700;margin:6px 0 1px;overflow-wrap:anywhere}.pb-proc{font-size:var(--t2);color:var(--ink-soft);margin-bottom:6px;overflow-wrap:anywhere}.pb-trecho{font-size:var(--t3);line-height:1.4;color:var(--ink)}' +
     '.pb-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.pb-tg{font-size:var(--t1);font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);border:0;font-family:inherit}.pb-tg.ok{background:rgba(23,137,90,.13);color:var(--success)}.pb-tg.nv{background:rgba(42,120,214,.13);color:var(--info)}.pb-tg.pz{background:rgba(183,121,30,.14);color:var(--tutela)}' +
-    '.pb-verde{background:var(--success);color:#fff;border-color:transparent}.pb-verde:hover{filter:brightness(1.06)}.pb-ouro{background:var(--gold-btn,var(--accent));color:var(--gold-ink,var(--accent-ink));border-color:transparent}.pb-um{align-items:stretch}.pb-um .pb-b{flex:1 1 auto;justify-content:center;min-height:44px}.pb-um .pb-mais{flex:0 0 46px;font-size:20px;line-height:1;padding:0}.pb-cm{display:flex;flex-direction:column;margin-top:8px;border-top:1px solid var(--border)}.pb-cmi{text-align:left;background:none;border:0;border-bottom:1px solid var(--border);padding:12px 4px;font:inherit;font-size:var(--t4);font-weight:600;color:var(--ink);cursor:pointer}.pb-cmi:last-child{border-bottom:0}.pb-card.pb-prox{box-shadow:0 0 0 2px var(--success)}' +
+    '.pb-seg-lin>.saldo-data{padding-left:4px}.pb-verde{background:var(--success);color:#fff;border-color:transparent}.pb-verde:hover{filter:brightness(1.06)}.pb-ouro{background:var(--gold-btn,var(--accent));color:var(--gold-ink,var(--accent-ink));border-color:transparent}.pb-um{align-items:stretch}.pb-um .pb-b{flex:1 1 auto;justify-content:center;min-height:44px}.pb-um .pb-mais{flex:0 0 46px;font-size:20px;line-height:1;padding:0}.pb-cm{display:flex;flex-direction:column;margin-top:8px;border-top:1px solid var(--border)}.pb-cmi{text-align:left;background:none;border:0;border-bottom:1px solid var(--border);padding:12px 4px;font:inherit;font-size:var(--t4);font-weight:600;color:var(--ink);cursor:pointer}.pb-cmi:last-child{border-bottom:0}.pb-card.pb-prox{box-shadow:0 0 0 2px var(--success)}' +
     '.pbr-venc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--surface-2);border-radius:14px;padding:12px 14px;margin:2px 0 4px}.pbr-venc span{font-size:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft)}.pbr-venc b{font-size:var(--t7);color:var(--urgente)}.pbr-venc small{font-size:var(--t3);color:var(--ink-soft)}.pbr-acts .pb-verde{flex:1 1 100%;min-height:48px;justify-content:center;font-size:var(--t4)}.pbr-dobro{border:0;padding:6px 0}' +
     '.pb-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.pb-b{font-size:var(--t3);padding:8px 12px;min-height:0}' +
     '.pb-prazos{padding:0}.pb-prazos-top{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;background:none;border:0;padding:12px 16px;cursor:pointer;color:var(--ink);font-family:inherit;font-size:var(--t4)}.pb-prazos-top>span:first-child{display:flex;align-items:center;gap:10px}' +
@@ -19253,7 +19257,7 @@ function agRevClique(a){
    - concluir e arquivar (e reabrir); aparece também em Arquivados e no perfil do cliente
    ============================================================ */
 var prCorte = null;   /* dia da implantação do vínculo com Iniciais antigas (config/vinculoIniciais) */
-var prDocs = [], prOk = false, prS = { filtro: 'andamento', busca: '', mais: 1, f: { cli: '', orgao: '' }, fAberto: false, tlTudo: false, sub: 'lista', mAberto: false }, prEd = null, prArqNum = null;
+var prDocs = [], prOk = false, prS = { filtro: 'andamento', busca: '', mais: 1, f: { cli: '', orgao: '' }, fAberto: false, tlTudo: false, sub: 'lista', mAberto: false, cm: null }, prEd = null, prArqNum = null;
 var PR_HON = { sem: 'Sem honorários', quitados: 'Honorários já quitados' };
 var prModoHon = false, prProximoHon = false;   /* a janela de Inicial aberta para cadastrar os honorários de um processo */
 var PR_MOTIVOS = ['Trânsito em julgado / extinto', 'Acordo cumprido', 'Desistência / renúncia ao mandato', 'Outro'];
@@ -19388,9 +19392,12 @@ function prMontarTela(){
     var a = b.getAttribute('data-pr'), n = b.getAttribute('data-n');
     if (a === 'novo') prAbrirNovo(null);
     else if (a === 'filtro'){ prS.filtro = b.getAttribute('data-v'); prS.mais = 1; prRender(); }
-    else if (a === 'abrir') prAbrir(n);
-    else if (a === 'arquivar') prAbrirArquivar(n);
-    else if (a === 'reabrir') prReabrir(n);
+    else if (a === 'abrir'){ prS.cm = null; prAbrir(n); }
+    else if (a === 'cm'){ prS.cm = prS.cm === n ? null : n; prRenderLista(); }
+    else if (a === 'card-prazo'){ prS.cm = null; prAgNovo(n, 'prazo'); }
+    else if (a === 'card-rel'){ prS.cm = null; rptProcesso(n); prRenderLista(); }
+    else if (a === 'arquivar'){ prS.cm = null; prAbrirArquivar(n); }
+    else if (a === 'reabrir'){ prS.cm = null; prReabrir(n); }
     else if (a === 'mais'){ prS.mais++; prRenderLista(); }
     else if (a === 'painel'){ prS.fAberto = !prS.fAberto; prPainel(); }
     else if (a === 'menu'){ prS.mAberto = !prS.mAberto; prMenuPainel(); }
@@ -19503,7 +19510,10 @@ function prRenderLista(){
   box.innerHTML = (prS.f.esp && PR_ESP[prS.f.esp] ? '<div class="saldo-data pb-resfiltro">Mostrando só os processos ' + PR_ESP[prS.f.esp] + ' (' + linhas.length + '). <button type="button" class="btn-text" data-pr="limpar">Limpar</button></div>' : '') + (prS.filtro === 'revisar' ? impGruposHtml() : '') + linhas.slice(0, lim).map(function(r){
     var i = info[r.num], origens = prOrigens(r), arq = prArquivado(r), pubs = prPubsDe(r.num), tags = '';
     var orgao = r.doc ? [r.doc.orgao, r.doc.classe].filter(Boolean).join(' · ') : (pubs[0] ? [pubs[0].tribunal, pubs[0].orgao].filter(Boolean).join(' · ') : '');
-    if (i.pz.length) tags += '<span class="pb-tg" style="background:rgba(217,59,59,.12);color:var(--urgente)">' + i.pz.length + (i.pz.length === 1 ? ' prazo aberto' : ' prazos abertos') + '</span>';
+    var pzs = i.pz.filter(function(x){ return x.tipo === 'prazo'; }), aud = i.pz.filter(function(x){ return x.tipo === 'audiencia'; })[0];
+    if (pzs.length){ var c0 = agChip(pzs[0]), urg = pzs[0].data < todayISO() || agUteis(pzs[0].data) <= 3; tags += '<span class="pb-tg" style="background:rgba(217,59,59,' + (urg ? '.14' : '.08') + ');color:var(--urgente)">Próximo prazo ' + escapeHtml(fmtData(pzs[0].data).slice(0, 5)) + ' · ' + escapeHtml(c0.t.toLowerCase()) + (pzs.length > 1 ? ' · mais ' + (pzs.length - 1) : '') + '</span>'; }
+    else if (i.pz.length && !aud) tags += '<span class="pb-tg">' + i.pz.length + (i.pz.length === 1 ? ' tarefa aberta' : ' tarefas abertas') + '</span>';
+    if (aud) tags += '<span class="pb-tg ok">Audiência ' + escapeHtml(fmtData(aud.data).slice(0, 5) + (aud.hora ? ' ' + aud.hora : '')) + '</span>';
     if (pubs.length) tags += '<span class="pb-tg">última publicação ' + fmtData(pubs[0].data).slice(0, 5) + '</span>';
     else if (r.doc && r.doc.ultimaPublicacao) tags += '<span class="pb-tg">última publicação ' + fmtData(r.doc.ultimaPublicacao).slice(0, 5) + '</span>';
     prHonChips(r, pm).forEach(function(c){ tags += '<span class="pb-tg ' + (c[1] === 'ok' ? 'ok' : (c[1] === 'neg' ? '' : (c[1] === 'pend' ? 'nv' : ''))) + '"' + (c[1] === 'neg' ? ' style="background:rgba(217,59,59,.12);color:var(--urgente)"' : '') + '>' + escapeHtml(c[0]) + '</span>'; });
@@ -19514,10 +19524,19 @@ function prRenderLista(){
     if (prParado(r, pm)) tags += '<span class="pb-tg pz">sem andamento há 60 dias · arquivar?</span>';
     if (arq) tags += '<span class="pb-tg">arquivado' + (r.doc.motivoArquivo ? ' · ' + escapeHtml(r.doc.motivoArquivo) : '') + '</span>';
     var emb = origens.map(function(o){ return o === 'so' ? 'Só processo' : PR_LBL[o]; }).join(' · ');
-    return '<div class="pb-card pr-card' + (arq ? ' lida' : '') + '" style="--pb-bar:' + PR_COR[origens[0]] + '" data-pr-card="' + escapeHtml(r.num) + '"><div class="pb-l1"><span>' + escapeHtml(orgao || 'Processo') + '</span><span class="pb-tipo">' + escapeHtml(emb) + '</span></div>' +
+    var nn = escapeHtml(r.num), rev = r.doc && r.doc.revisar && !arq;
+    var maisBtn = rev ? '' : '<button type="button" class="btn btn-ghost pb-b pr-mais" data-pr="cm" data-n="' + nn + '" aria-label="Mais ações" aria-expanded="' + (prS.cm === r.num ? 'true' : 'false') + '" title="Mais ações">⋯</button>';
+    var menuCard = (!rev && prS.cm === r.num) ? '<div class="pb-cm"><button type="button" class="pb-cmi" data-pr="card-prazo" data-n="' + nn + '">Novo prazo</button><button type="button" class="pb-cmi" data-pr="card-rel" data-n="' + nn + '">Relatório</button>' + (arq ? '<button type="button" class="pb-cmi" data-pr="reabrir" data-n="' + nn + '">Reabrir processo</button>' : '<button type="button" class="pb-cmi" data-pr="arquivar" data-n="' + nn + '">Concluir e arquivar</button>') + '</div>' : '';
+    return '<div class="pb-card pr-card pr-toque' + (arq ? ' lida' : '') + '" style="--pb-bar:' + PR_COR[origens[0]] + '" data-pr-card="' + nn + '" data-pr="abrir" data-n="' + nn + '"><div class="pb-l1"><span>' + escapeHtml(orgao || 'Processo') + '</span><span class="pb-tipo">' + escapeHtml(emb) + '</span>' + maisBtn + '</div>' +
       '<div class="pb-cli">' + escapeHtml(prTitulo(r)) + '</div><div class="pb-proc">' + escapeHtml(r.numero) + '</div>' + prLinhaReu(r) + '<div class="pb-tags">' + tags + '</div>' +
-      (r.doc && r.doc.revisar && !arq ? prAcoesRevisao(r) : '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-pr="abrir" data-n="' + escapeHtml(r.num) + '">Abrir</button>' + (arq ? '<button type="button" class="btn btn-ghost pb-b" data-pr="reabrir" data-n="' + escapeHtml(r.num) + '">Reabrir</button>' : '<button type="button" class="btn btn-ghost pb-b" data-pr="arquivar" data-n="' + escapeHtml(r.num) + '">Concluir e arquivar</button>') + '</div>') + '</div>';
+      (rev ? prAcoesRevisao(r) : menuCard) + '</div>';
   }).join('') + (linhas.length > lim ? '<button type="button" class="btn btn-ghost" data-pr="mais" style="width:100%;justify-content:center;">Mostrar mais (' + (linhas.length - lim) + ')</button>' : '');
+}
+
+/* novo prazo/tarefa já com o processo preenchido (a lista e a ficha usam o mesmo caminho) */
+function prAgNovo(num, tipo, pre){
+  var r = prMapa().m[num]; agAbrir(null, Object.assign({ tipo: tipo, processo: r ? r.numero : '' }, pre || {}));
+  var el = qs('age_proc'); if (el) el.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 /* ---------- ficha e cadastro ---------- */
@@ -19556,7 +19575,11 @@ function prMontarFicha(){
     else if (a === 'excluir') prExcluir(b);
     else if (a === 'link'){ d.classList.remove('show'); var p = v.split('|'), dc = p[0] === 'peticao' ? docDe('caso', p[1]) : null; if (dc && dc.doProcesso) abrirEdicao(dc.id); else irParaRelacionado(p[0], p[1]); }   /* honorários do processo editam na própria janela */
     else if (a === 'novo-hon') prNovoHonorario(v);
-    else if (a === 'prazo-novo'){ var nn = prEd.num; d.classList.remove('show'); agAbrir(null); var r = prMapa().m[nn]; qs('age_proc').value = r ? r.numero : ''; qs('age_proc').dispatchEvent(new Event('input', { bubbles: true })); }
+    else if (a === 'aba') prIrAba(v);
+    else if (a === 'copiar'){ try{ navigator.clipboard.writeText(v); toast('Número copiado.'); }catch(x){ toast('Não consegui copiar.'); } }
+    else if (a === 'prazo-novo'){ var nn = prEd.num; d.classList.remove('show'); prAgNovo(nn, 'prazo'); }
+    else if (a === 'tarefa-nova'){ var nt = prEd.num; d.classList.remove('show'); prAgNovo(nt, 'tarefa'); }
+    else if (a === 'prazo-calc'){ var nc = prEd.num; d.classList.remove('show'); pzAbrir({ processo: nc }); }
     else if (a === 'prazo-abrir'){ d.classList.remove('show'); agAbrir(v); }
     else if (a === 'pub'){ d.classList.remove('show'); setActiveTab('publicacoes'); setTimeout(function(){ pbAbrirDetalhe(v); }, 80); }
     else if (a === 'pubs-todas'){ d.classList.remove('show'); pbS.f = { q: v, de: '', ate: '', oab: 'todas', adv: '', trib: '' }; pbS.filtro = 'todas'; pbS.sub = 'lista'; pbS.mdOk = 1; pbS.fAberto = true; setActiveTab('publicacoes'); }
@@ -19565,6 +19588,14 @@ function prMontarFicha(){
   d.addEventListener('input', function(e){ if (e.target && e.target.id === 'pr_cli') prSug(); if (e.target && e.target.id === 'pr_numero') prInfoNumero(); if (e.target && e.target.id === 'pr_vincq'){ prEd.vincQ = e.target.value; prRefazVincLista(); } });
   d.addEventListener('focusin', function(e){ if (e.target && e.target.id === 'pr_cli') prSug(); });
   d.addEventListener('focusout', function(e){ if (e.target && e.target.id === 'pr_numero' && prEd && prEd.novo){ prBuscarDados(); prBuscarDatajud(); } });
+}
+function prIrAba(k){
+  prEd.aba = k; var ov = qs('overlayPr'); if (!ov) return;
+  Array.prototype.forEach.call(ov.querySelectorAll('.prp'), function(x){ x.classList.toggle('on', x.getAttribute('data-prp') === k); });
+  Array.prototype.forEach.call(ov.querySelectorAll('#prAbas [role=tab]'), function(b){ var on = b.getAttribute('data-v') === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  var rd = qs('prRodape'); if (rd) rd.hidden = !/^(resumo|hon|dados)$/.test(k);
+  if (k === 'hist') prHistCarregar();
+  qs('prCorpo').scrollTop = 0;
 }
 function prFmtValor(v){ return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function prParseValor(t){ var x = String(t || '').replace(/[^\d,.]/g, ''); if (!x) return null; if (x.indexOf(',') >= 0) x = x.replace(/\./g, '').replace(',', '.'); var n = parseFloat(x); return isFinite(n) && n > 0 ? n : null; }
@@ -19735,7 +19766,7 @@ function prRegistrar(p, texto){
 }
 function prAbrir(num){
   var r = prMapa().m[num]; if (!r){ toast('Processo não encontrado.'); return; }
-  prEd = { num: num, novo: false, ids: prClienteIds(r).slice() }; prMontarFicha(); prDesenhar(); qs('overlayPr').classList.add('show'); qs('prCorpo').scrollTop = 0;
+  prEd = { num: num, novo: false, aba: (r.doc && r.doc.revisar) ? 'dados' : 'resumo', ids: prClienteIds(r).slice() }; prMontarFicha(); prDesenhar(); qs('overlayPr').classList.add('show'); qs('prCorpo').scrollTop = 0;
 }
 function prAbrirNovo(pre){
   prEd = { num: '', novo: true, ids: (pre && pre.ids) ? pre.ids.slice() : [], pre: pre || {} }; prMontarFicha(); prDesenhar(); qs('overlayPr').classList.add('show'); qs('prCorpo').scrollTop = 0;
@@ -19752,6 +19783,7 @@ function prDesenhar(){
       (sg ? '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-prf="rev-sug" data-v="' + escapeHtml(sg.id) + '">Vincular a ' + escapeHtml(sg.nome.length > 24 ? sg.nome.slice(0, 24) + '…' : sg.nome) + '</button></div>' : '') + '</div>';
   }
   if (novo) h += '<div class="parcela-sum">Digite o número do processo: o app busca sozinho no Diário Oficial (partes, valor da causa) e no DataJud do CNJ (vara, classe, assunto, data de ajuizamento). O que não vier você preenche. Honorários a receber ficam em Iniciais, Termos de Acordo ou Alvarás.</div><div id="pr_vinc"></div>';
+  var hI = h; h = '';
   h += '<div class="field"><label class="field-label" for="pr_numero">Número do processo</label><input type="text" id="pr_numero" maxlength="40" value="' + escapeHtml(novo ? (pre.numero || '') : r.numero) + '"' + (novo ? ' placeholder="0000000-00.0000.0.00.0000"' : ' readonly') + '><div class="saldo-data" id="pr_numinfo"></div><div class="saldo-data" id="pr_dados"></div><div class="saldo-data" id="pr_dj"></div><div class="pb-acts" style="margin-top:4px">' + (novo ? '' : '<button type="button" class="btn-text" data-prf="buscar-dados">Buscar dados no Diário Oficial</button>') + '<button type="button" class="btn-text" data-prf="buscar-dj">Buscar dados no DataJud</button></div></div>' +
     '<div class="field"><label class="field-label" for="pr_partes">Partes (autor x réu)</label><input type="text" id="pr_partes" maxlength="120" value="' + escapeHtml(novo ? (pre.partes || '') : (doc ? (doc.partes || '') : prPartes(r))) + '" placeholder="Ex.: Fulano de Tal x Banco Exemplo">' +
     /* autor e réu não aparecem mais como campos: saem do texto das partes (antes do " x " e depois dele) ao salvar */
@@ -19764,7 +19796,9 @@ function prDesenhar(){
     '<div class="field"><label class="field-label" for="pr_ajuiz">Data de ajuizamento (opcional)</label><input type="date" id="pr_ajuiz" value="' + escapeHtml(novo ? '' : (doc ? (doc.ajuizamento || '') : '')) + '"></div>' +
     '<div class="field"><label class="field-label" for="pr_valor">Valor da causa (opcional)</label><input type="text" id="pr_valor" inputmode="decimal" maxlength="20" value="' + escapeHtml(novo ? (pre.valorCausa ? prFmtValor(pre.valorCausa) : '') : (doc && doc.valorCausa ? prFmtValor(doc.valorCausa) : '')) + '" placeholder="Ex.: 40.000,00"></div>' +
     '<div class="field"><label class="field-label">Clientes vinculados</label><div class="cli-picker"><div class="cli-chips" id="pr_chips"></div><input type="text" id="pr_cli" class="cli-pick-input" placeholder="Buscar ou cadastrar cliente…" autocomplete="off"><div class="cli-sug" id="pr_sug" style="display:none;"></div></div></div>' + (novo && pre.nomes && pre.nomes.length ? '<div id="pr_partesPub"></div>' : '');
-  if (!novo){
+  var hA = h; h = hI;
+  var hHon = '';
+  if (!novo){ var hh0 = h; h = '';
     h += '<div class="pb-sec"><div class="pb-sec-t">Honorários que vou receber</div>';
     if (r.links.length){
       h += r.links.map(function(l){
@@ -19779,22 +19813,58 @@ function prDesenhar(){
     }
     h += '<div class="field"><label class="field-label" for="pr_honobs">Observação sobre o contrato (opcional)</label><input type="text" id="pr_honobs" maxlength="160" value="' + escapeHtml((doc && doc.honObs) || '') + '" placeholder="Ex.: contrato assinado em 10/03/2024"></div>' +
       '<div class="pb-acts"><button type="button" class="btn btn-primary pb-b" data-prf="novo-hon" data-v="caso">Adicionar honorários (fixo, êxito…)</button><button type="button" class="btn btn-ghost pb-b" data-prf="novo-hon" data-v="acordo">Adicionar termo de acordo</button><button type="button" class="btn btn-ghost pb-b" data-prf="novo-hon" data-v="alvara">Adicionar alvará</button></div></div>';
-    var pz = prPrazosAbertos(r);
-    h += '<div class="pb-sec"><div class="pb-sec-t">Prazos e audiências (Agenda)</div>' + (pz.length ? pz.map(function(i){ var c = agChip(i); return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(i.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(agTipoLinha(i)) + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="prazo-abrir" data-v="' + escapeHtml(i.key) + '">' + escapeHtml(c.t) + ' ›</button></div>'; }).join('') : '<div class="saldo-data">Nenhum prazo aberto.</div>') +
-      '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-prf="prazo-novo">Novo prazo deste processo</button></div></div>';
-    h += prTimelineHtml(r) + '<div class="pb-sec"><div class="pb-sec-t">Histórico</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-prf="hist">Histórico: quem fez o quê</button></div><div id="prHistC"></div></div>' + '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-prf="rel">🖨 Relatório deste processo</button></div>';
-  }
+    hHon = h; h = hh0; }
+  var hProx = ''; { var hp0 = h; h = '';
   var pxi = doc ? prProximaInfo(r) : null;
   h += '<div class="field"><label class="field-label" for="pr_prox">Próxima providência (opcional)</label><input type="text" id="pr_prox" maxlength="140" value="' + escapeHtml(doc ? (doc.proxima || '') : '') + '" placeholder="Ex.: Pedir penhora via SISBAJUD"></div>' +
     '<div class="field"><label class="field-label" for="pr_proxdata">Fazer até (a data coloca a tarefa na Agenda)</label><input type="date" id="pr_proxdata" value="' + escapeHtml(doc ? (doc.proximaData || '') : '') + '">' + (pxi && pxi.feito ? '<div class="saldo-data" style="color:var(--success)">✓ Concluída' + (pxi.concluidoEm ? ' em ' + escapeHtml(fmtData(pxi.concluidoEm)) : '') + '. Escreva a próxima ou limpe o campo.</div>' : '') + '</div>';
+  hProx = h; h = hp0; }
+  var hObs = ''; { var ho0 = h; h = '';
   h += '<div class="field"><label class="field-label" for="pr_obs">Observações</label><textarea id="pr_obs" rows="3" maxlength="600" placeholder="Anotações sobre o processo">' + escapeHtml(novo ? '' : ((doc && doc.obs) || '')) + '</textarea></div>';
+  hObs = h; h = ho0; }
+  var hHonNovo = ''; { var hn0 = h; h = '';
   if (novo) h += '<div class="field"><label class="field-label" for="pr_hon">Honorários</label><select id="pr_hon" class="filter-select" style="width:100%">' + ['sem', 'quitados'].map(function(k){ return '<option value="' + k + '">' + PR_HON[k] + '</option>'; }).join('') + '<option value="receber">Tenho honorários a receber (fixo, êxito…)</option></select><div class="saldo-data">Ao escolher a última opção, depois de salvar abre o cadastro dos honorários.</div></div>';
-  h += '<div class="field" id="esResp_processos"></div>';
-  h += '<div class="form-error" id="pr_erro"></div><button type="button" class="btn btn-primary" data-prf="salvar" style="width:100%;justify-content:center;">' + (novo ? 'Cadastrar processo' : 'Salvar') + '</button>';
-  if (!novo) h += (arq ? '<button type="button" class="btn btn-ghost" data-prf="reabrir" style="width:100%;justify-content:center;">Reabrir processo</button>' : '<button type="button" class="btn btn-ghost" data-prf="arquivar" style="width:100%;justify-content:center;">Concluir e arquivar</button>') + (doc && !r.links.length ? '<button type="button" class="btn-text" data-prf="excluir" style="color:var(--urgente)">Excluir este processo</button>' : '');
+  hHonNovo = h; h = hn0; }
+  var hResp = '<div class="field" id="esResp_processos"></div>';
+  var hErro = '<div class="form-error" id="pr_erro"></div>', hSalvar = '<button type="button" class="btn btn-primary" data-prf="salvar" style="width:100%;justify-content:center;">' + (novo ? 'Cadastrar processo' : 'Salvar') + '</button>';
+  if (novo){
+    h += hA + hProx + hObs + hHonNovo + hResp + hErro + hSalvar;
+  } else {
+    var pz = prPrazosAbertos(r), pubs = prPubsDe(r.num), ab = prEd.aba || 'resumo';
+    var hAg = '<div class="pb-sec"><div class="pb-sec-t">Prazos e audiências (Agenda)</div>' + (pz.length ? pz.map(function(i){ var c = agChip(i); return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(i.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(agTipoLinha(i)) + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="prazo-abrir" data-v="' + escapeHtml(i.key) + '">' + escapeHtml(c.t) + ' ›</button></div>'; }).join('') : '<div class="saldo-data">Nenhum prazo aberto.</div>') + '</div>' + prAcoesFicha(true);
+    var hPubs = '<div class="pb-sec"><div class="pb-sec-t">Publicações deste processo</div>' + (pubs.length ? pubs.slice(0, 8).map(function(x){ return '<div class="pb-lin"><span><b style="color:var(--ink)">' + escapeHtml(x.tipo || 'Publicação') + '</b><br><span class="saldo-data">' + escapeHtml(fmtData(x.data) + ' · ' + (x.tribunal || '') + ' ' + (x.orgao || '')) + '</span></span><button type="button" class="btn btn-ghost pb-b" data-prf="pub" data-v="' + escapeHtml(x.id) + '">ver ›</button></div>'; }).join('') : '<div class="saldo-data">Nenhuma publicação nos últimos 90 dias.</div>') + '<div class="saldo-data">Publicações: dos últimos 90 dias.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-prf="pubs-todas" data-v="' + escapeHtml(r.num) + '">Ver todas as publicações deste processo</button></div></div>';
+    var hHist = '<div class="pb-sec"><div class="pb-sec-t">Histórico: quem fez o quê</div><div id="prHistC"><div class="saldo-data">Carregando…</div></div></div>';
+    var abas = [['resumo', 'Resumo'], ['agenda', 'Agenda', pz.length || ''], ['pubs', 'Publicações', pubs.length || ''], ['hon', 'Honorários'], ['dados', 'Dados'], ['hist', 'Histórico']];
+    var pane = function(k, conteudo){ return '<div class="prp' + (ab === k ? ' on' : '') + '" data-prp="' + k + '">' + conteudo + '</div>'; };
+    h += prCabHtml(r, pm, arq, doc) + '<div id="prAbas">' + mdBarraHtml(abas, ab, function(k){ return 'data-prf="aba" data-v="' + k + '"'; }) + '</div>' +
+      pane('resumo', '<div class="pr-res"><div class="pr-res-a">' + prTimelineHtml(r) + '</div><div class="pr-res-b">' + hProx + prAcoesFicha(false) + '</div></div>') +
+      pane('agenda', hAg) + pane('pubs', hPubs) + pane('hon', hHon) +
+      pane('dados', hA + hObs + hResp + '<div class="pb-acts">' + (arq ? '<button type="button" class="btn btn-ghost pb-b" data-prf="reabrir">Reabrir processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-prf="arquivar">Concluir e arquivar</button>') + (doc && !r.links.length ? '<button type="button" class="btn-text" data-prf="excluir" style="color:var(--urgente)">Excluir este processo</button>' : '') + '</div>') + pane('hist', hHist) +
+      '<div id="prRodape"' + (/^(resumo|hon|dados)$/.test(ab) ? '' : ' hidden') + '>' + hErro + hSalvar + '</div>';
+  }
   qs('prCorpo').innerHTML = h; try{ esRespIniciar('processos', doc); }catch(e){} prChips(); prInfoNumero(); prRefazVinc(); try{ adAbrirData(qs('pr_ajuiz')); adAbrirData(qs('pr_proxdata')); }catch(e){}
   prEd.buscadoDj = '';
   if (novo){ prEd.iniPartes = qs('pr_partes').value; prEd.buscado = ''; if (qs('pr_numero').value.trim()){ prBuscarDados(); prBuscarDatajud(); } }
+  else if (prEd.aba === 'hist') prHistCarregar();
+}
+/* ações do processo (sem "+": rótulos simples, mesmo desenho dos botões do Início) */
+function prAcoesFicha(soAgenda){
+  var b = function(a, ic, t){ return '<button type="button" class="acao" data-prf="' + a + '"><svg><use href="#' + ic + '"/></svg><span>' + t + '</span></button>'; };
+  return '<div class="ini-acoes pr-acoes md-um">' + b('prazo-novo', 'ic-agenda', 'Novo prazo') + b('prazo-calc', 'ic-table', 'Calcular prazo') + b('tarefa-nova', 'ic-clip', 'Nova tarefa') + (soAgenda ? '' : b('rel', 'ic-file', 'Relatório')) + '</div>';
+}
+/* cabeçalho da ficha: partes, número (copiar), cliente, advogados e os três números que importam */
+function prCabHtml(r, pm, arq, doc){
+  var ids = prClienteIds(r), cli = ids.map(function(id){ var c = clienteById(id); return c ? '<button type="button" class="pr-lk" data-prf="cliente" data-v="' + escapeHtml(id) + '">' + escapeHtml(c.nome) + '</button>' : ''; }).filter(Boolean).join(', ');
+  var advs = []; try{ advs = agChavesProcesso(r.numero).map(function(k){ return esNomeChave(k); }); }catch(e){}
+  var orgao = doc ? [doc.orgao, doc.classe].filter(Boolean).join(' · ') : '';
+  var pz = prPrazosAbertos(r).filter(function(x){ return x.tipo === 'prazo'; }).sort(function(a, b){ return a.data.localeCompare(b.data); })[0], rec = prReceberTotal(r, pm), pubs = prPubsDe(r.num), up = pubs.length ? pubs[0].data : ((doc && doc.ultimaPublicacao) || '');
+  var kpi = function(t, v, sub, cls){ return '<div class="pr-kpi"><span>' + t + '</span><b' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; };
+  var c0 = pz ? agChip(pz) : null;
+  return '<div class="pr-cab"><div class="pr-cab-t">' + escapeHtml(prTitulo(r)) + (arq ? ' <span class="pb-tg">arquivado</span>' : '') + '</div>' +
+    '<div class="pr-cab-n"><span>' + escapeHtml(r.numero) + '</span><button type="button" class="btn-text" data-prf="copiar" data-v="' + escapeHtml(r.numero) + '">copiar</button></div>' +
+    (orgao ? '<div class="saldo-data">' + escapeHtml(orgao) + '</div>' : '') +
+    '<div class="saldo-data">' + (cli ? 'Cliente: ' + cli : 'Sem cliente vinculado') + (advs.length ? ' · Advogados: ' + escapeHtml(advs.join(', ')) : '') + '</div></div>' +
+    '<div class="pr-kpis">' + kpi('Próximo prazo', pz ? escapeHtml(fmtData(pz.data).slice(0, 5)) : 'Nenhum', c0 ? escapeHtml(c0.t.toLowerCase()) : '', pz && (pz.data < todayISO() || agUteis(pz.data) <= 3) ? 'urg' : '') + kpi('A receber', rec > 0.004 ? escapeHtml(fmtMoeda(rec)) : '—', '', '') + kpi('Última publicação', up ? escapeHtml(fmtData(up).slice(0, 5)) : '—', '', '') + '</div>';
 }
 function prSalvar(){
   var novo = prEd.novo, err = qs('pr_erro'), numero = qs('pr_numero').value.trim();
@@ -20174,7 +20244,11 @@ function prVincEscolher(id, seguir){
   prRender = function(){ var a = arguments; return prComMemo(function(){ return r1.apply(null, a); }); };
   prRenderLista = function(){ var a = arguments; return prComMemo(function(){ return r2.apply(null, a); }); };
   var st = document.createElement('style');
-  st.textContent = '.pr-card .pb-tipo{flex:none}.pr-tl-g{font-size:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-top:6px}.pr-tl-l{display:grid;grid-template-columns:44px 8px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 0;border-top:1px solid var(--border);font-size:var(--t3)}.pr-tl-d{font-weight:700;color:var(--ink);line-height:1.1}.pr-tl-d small{display:block;font-weight:400;color:var(--ink-soft);font-size:var(--t1)}.pr-tl-p{width:8px;height:8px;border-radius:50%;margin-top:5px}.pr-tl-t{min-width:0;overflow-wrap:anywhere}.pr-tl-t b{color:var(--ink)}';
+  st.textContent = '.pr-toque{cursor:pointer}.pr-card .pb-l1{align-items:center}.pr-mais{flex:none;width:38px;height:34px;padding:0;justify-content:center;font-size:20px;line-height:1;margin:-4px -6px -4px 0}.pr-cab{padding:2px 2px 8px;display:flex;flex-direction:column;gap:3px}.pr-cab-t{font-size:var(--t6,20px);font-weight:800;line-height:1.2;overflow-wrap:anywhere}.pr-cab-n{display:flex;gap:10px;align-items:center;font-size:var(--t3);color:var(--ink-soft);font-weight:600;overflow-wrap:anywhere}.pr-lk{background:none;border:0;padding:0;font:inherit;color:var(--info);text-decoration:underline;cursor:pointer;text-align:left}' +
+    '.pr-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 10px}.pr-kpi{background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0}.pr-kpi span{font-size:var(--t1);font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft)}.pr-kpi b{font-size:var(--t4);white-space:nowrap}.pr-kpi b.urg{color:var(--urgente)}.pr-kpi small{font-size:var(--t2);color:var(--ink-soft)}' +
+    '.prp{display:none;flex-direction:column;gap:12px;margin-top:10px}.prp.on{display:flex}#prRodape{display:flex;flex-direction:column;gap:8px;margin-top:12px}#prRodape[hidden]{display:none}.ini-acoes.pr-acoes.md-um{margin:0;flex-wrap:wrap;justify-content:flex-start}.pr-res{display:flex;flex-direction:column;gap:12px}.pr-res-b{display:flex;flex-direction:column;gap:12px}' +
+    '@media(min-width:900px){#overlayPr .modal{max-width:760px;width:760px}.pr-res{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}}' +
+    '.pr-card .pb-tipo{flex:none}.pr-tl-g{font-size:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-top:6px}.pr-tl-l{display:grid;grid-template-columns:44px 8px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 0;border-top:1px solid var(--border);font-size:var(--t3)}.pr-tl-d{font-weight:700;color:var(--ink);line-height:1.1}.pr-tl-d small{display:block;font-weight:400;color:var(--ink-soft);font-size:var(--t1)}.pr-tl-p{width:8px;height:8px;border-radius:50%;margin-top:5px}.pr-tl-t{min-width:0;overflow-wrap:anywhere}.pr-tl-t b{color:var(--ink)}';
   document.head.appendChild(st);
   prCarregar(); prCarregarCorte();
 })();
@@ -23401,7 +23475,7 @@ function pzMontar(){
 }
 function pzAbrir(o){
   o = o || {}; pzMontar();
-  pzS = { retorno: o.retorno || null, mem: false, op: { modo: o.modo || 'dje', data: o.data || '', dias: o.dias || 15, regime: o.regime || pzRegimeSalvo(), dobro: !!o.dobro, extras: [], unidade: 'uteis', recesso: true, prorroga: false, excluiInicio: true } };
+  pzS = { retorno: o.retorno || null, proc: o.processo || '', mem: false, op: { modo: o.modo || 'dje', data: o.data || '', dias: o.dias || 15, regime: o.regime || pzRegimeSalvo(), dobro: !!o.dobro, extras: [], unidade: 'uteis', recesso: true, prorroga: false, excluiInicio: true } };
   var rg = PZ_REGIMES[pzS.op.regime]; ['unidade', 'recesso', 'prorroga', 'excluiInicio'].forEach(function(k){ pzS.op[k] = rg[k]; });
   pzDesenhar(); qs('overlayPz').classList.add('show');
 }
@@ -23461,7 +23535,7 @@ function pzUsar(){
 }
 function pzCriar(){
   var r = pzS.res; if (!r || r.erro) return; var calc = pzParametros(pzS.op);
-  qs('overlayPz').classList.remove('show'); agAbrir(null, { tipo: 'prazo', data: r.vencimento, trabalhar: r.trabalhar, calculo: calc });
+  qs('overlayPz').classList.remove('show'); agAbrir(null, { tipo: 'prazo', data: r.vencimento, trabalhar: r.trabalhar, calculo: calc, processo: pzS.proc || '' }); if (pzS.proc){ var ep = qs('age_proc'); if (ep) ep.dispatchEvent(new Event('input', { bubbles: true })); }
 }
 /* texto curto de como o prazo foi contado (ficha do item) */
 function pzTextoCalculo(c){

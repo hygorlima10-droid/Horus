@@ -214,7 +214,7 @@ check(procs.length === 1 && procs[0].origem === 'publicacao' && procs[0].honorar
 check(/processo cadastrado/.test(await cardDe('900003')) && !/Cadastrar processo/.test(await cardDe('900003')), 'a publicação passa a mostrar "processo cadastrado"');
 await page.click('[data-pb="ir"][data-id="900003"]'); await page.waitForTimeout(500);
 check(await page.evaluate(() => document.getElementById('overlayPr').classList.contains('show')) && /Linha do tempo/i.test(await t('#prCorpo')) && /Publicação/.test(await t('#prCorpo')), 'tocar na etiqueta abre a ficha do processo, com as publicações');
-await page.click('[data-prf="arquivar"]'); await page.waitForTimeout(400); await page.click('#praOk'); await page.waitForTimeout(1200);
+await page.click('[data-prf="aba"][data-v="dados"]'); await page.click('[data-prf="arquivar"]'); await page.waitForTimeout(400); await page.click('#praOk'); await page.waitForTimeout(1200);
 await page.click('[data-pb="cm"][data-id="900003"]');
 check(/arquivado/.test(await cardDe('900003')) && /Reabrir processo/.test(await cardDe('900003')), 'processo arquivado: a publicação mostra "arquivado" e o ⋯ oferece "Reabrir processo"');
 await page.click('[data-pb="cm"][data-id="900003"]');
@@ -343,7 +343,7 @@ await f('POST', '/api/db/processos', { numero: NI, partes: '', orgao: '', classe
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(800);
 await page.click('[data-pr="abrir"][data-n="' + NI.replace(/\D/g, '') + '"]'); await page.waitForTimeout(500);
-await page.click('[data-prf="buscar-dados"]'); await page.waitForTimeout(1500);
+await page.click('[data-prf="aba"][data-v="dados"]'); await page.click('[data-prf="buscar-dados"]'); await page.waitForTimeout(1500);
 check((await page.evaluate(() => document.getElementById('pr_reu').value)) === 'Construtora Beta Ltda' && /Morrinhos - 1ª Vara Cível/.test(await page.evaluate(() => document.getElementById('pr_orgao').value)), 'na ficha de um processo já cadastrado, "Buscar dados no Diário Oficial" completa o que estiver vazio');
 await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 check(/Réu: Construtora Beta Ltda|Maria Souza x Construtora Beta Ltda/.test(await t('#prLista')), 'e a lista de Processos mostra o réu para diferenciar os processos do mesmo cliente');

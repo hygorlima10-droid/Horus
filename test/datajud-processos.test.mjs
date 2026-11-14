@@ -79,7 +79,7 @@ await page.fill('#pr_numero', '5400500-00.2026.8.09.0107'); await page.keyboard.
 check(chamadas.length === antes && /dígito verificador/.test(await t('#pr_dj')), 'número com dígito errado: não consulta e avisa');
 await page.click('#prX'); await page.waitForTimeout(300);
 // 6) ficha do processo já cadastrado
-await page.click('[data-pr="abrir"][data-n="' + dig(NA) + '"]'); await page.waitForTimeout(600);
+await page.click('[data-pr="abrir"][data-n="' + dig(NA) + '"]'); await page.waitForTimeout(600); await page.click('[data-prf="aba"][data-v="dados"]'); 
 check(await v('pr_ajuiz') === '2026-09-30' && /Buscar dados no DataJud/.test(await t('#prCorpo')), 'a ficha mostra a data de ajuizamento e o botão do DataJud');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 for (const col of ['processos']) for (const d of (await f('GET', '/api/db/' + col)).j.docs || []) await f('DELETE', '/api/db/' + col + '/' + d.id);

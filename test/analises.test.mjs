@@ -75,21 +75,21 @@ await page.click('#rptX'); await page.waitForTimeout(300);
 // campos Área e Resultado
 await page.click('[data-pr="sub"][data-v="lista"]'); await page.waitForTimeout(500);
 await page.click('[data-pr="filtro"][data-v="todos"]'); await page.waitForTimeout(400);
-await page.click('[data-pr="abrir"][data-n="' + N(4).replace(/\D/g, '') + '"]'); await page.waitForTimeout(600);
+await page.click('[data-pr="abrir"][data-n="' + N(4).replace(/\D/g, '') + '"]'); await page.waitForTimeout(600); await page.click('[data-prf="aba"][data-v="dados"]'); 
 check(await page.evaluate(() => document.getElementById('pr_res').value) === 'procedente' && await page.evaluate(() => /Automática \(/.test(document.getElementById('pr_area').innerText)), 'a ficha do processo arquivado mostra o Resultado e a Área (automática, com a sugestão)');
 await page.selectOption('#pr_res', 'parcial'); await page.selectOption('#pr_area', 'Consumidor'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 const p4 = (await docs('processos')).filter(p => p.numero === N(4))[0];
 check(p4.resultado === 'parcial' && p4.area === 'Consumidor' && p4.resultadoEm, 'mudar o resultado e a área na ficha grava no processo');
 // arquivar já com resultado
 await page.click('[data-pr="filtro"][data-v="andamento"]'); await page.waitForTimeout(300);
-await page.click('[data-pr="arquivar"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.waitForTimeout(500);
+await page.click('[data-pr="cm"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.click('.pb-cmi[data-pr="arquivar"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.waitForTimeout(500);
 check(await page.evaluate(() => /Resultado/.test(document.getElementById('praCorpo').innerText)), 'o diálogo de arquivar pergunta o Resultado');
 await page.selectOption('#pra_res', 'acordo'); await page.click('#praOk'); await page.waitForTimeout(1500);
 const p1 = (await docs('processos')).filter(p => p.numero === N(1))[0];
 check(p1 && p1.arquivado && p1.resultado === 'acordo', 'arquivar já grava o resultado (acordo)');
 // reabrir limpa
 await page.click('[data-pr="filtro"][data-v="todos"]'); await page.waitForTimeout(300);
-await page.click('[data-pr="reabrir"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.waitForTimeout(1500);
+await page.click('[data-pr="cm"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.click('.pb-cmi[data-pr="reabrir"][data-n="' + N(1).replace(/\D/g, '') + '"]'); await page.waitForTimeout(1500);
 check(!(await docs('processos')).filter(p => p.numero === N(1))[0].resultado, 'reabrir o processo limpa o resultado');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 for (const col of ['casos', 'clientes', 'agenda', 'processos', 'config']) for (const d of (await f('GET', '/api/db/' + col)).j.docs || []) await f('DELETE', '/api/db/' + col + '/' + d.id);

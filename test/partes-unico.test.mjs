@@ -33,7 +33,7 @@ check(d && d.autor === 'ASSOCIACAO DE ENSINO DE RIBEIRAO PRETO' && d.reu === 'AL
 let d2 = (await docs('processos')).filter(x => x.numero === N2)[0];
 check(d2 && !d2.autor && !d2.reu, 'processo antigo só tinha o texto das partes (sem autor/réu gravados)');
 await page.fill('#prBusca', '5200100'); await page.waitForTimeout(500);
-await page.click('#prLista [data-pr="abrir"]'); await page.waitForTimeout(700);
+await page.click('#prLista [data-pr="abrir"]'); await page.waitForTimeout(700); await page.click('[data-prf="aba"][data-v="dados"]'); 
 check((await page.evaluate(() => document.getElementById('pr_partes').value)) === 'Fulano de Tal x Banco Exemplo', 'ao abrir o processo, as partes aparecem no campo');
 await page.fill('#pr_partes', 'Fulano de Tal vs. Banco Novo S.A.');
 await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);

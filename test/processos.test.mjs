@@ -90,17 +90,20 @@ check(await nCards() === 3, 'o acordo com o mesmo número não cria processo dup
 const c3 = await cardDe(N3);
 check(/Só processo · Acordo|Acordo/.test(c3) && /a receber/.test(c3), 'o processo agora mostra o honorário do acordo vinculado');
 await page.click('[data-pr="abrir"][data-n="' + N3.replace(/\D/g, '') + '"]'); await page.waitForTimeout(500);
+const aba = async k => { await page.click('[data-prf="aba"][data-v="' + k + '"]'); await page.waitForTimeout(200); };
+await aba('hon');
 const fi = await t('#prCorpo');
 check(/Honorários/i.test(fi) && /Acordo · Termo de acordo/.test(fi) && /a receber/.test(fi) && (await page.evaluate(() => !!document.querySelector('[data-prf="link"]'))), 'a ficha tem o link direto para o honorário do acordo: ' + fi.replace(/\n/g, ' ').slice(0, 260));
 check(await page.evaluate(() => ['Adicionar honorários (fixo, êxito…)', 'Adicionar termo de acordo', 'Adicionar alvará'].every(x => Array.from(document.querySelectorAll('[data-prf="novo-hon"]')).some(b => b.innerText.trim() === x))), 'e atalhos para lançar honorários (fixo/êxito, Termo de acordo, Alvará)');
-check(/Prazos e audiências/i.test(fi) && /Linha do tempo/i.test(fi) && /Clientes vinculados/i.test(fi), 'a ficha mostra clientes, prazos e publicações');
-await page.click('[data-prf="link"]'); await page.waitForTimeout(800);
+await aba('agenda'); const fa = await t('#prCorpo'); await aba('resumo'); const fr = await t('#prCorpo'); await aba('dados'); const fd = await t('#prCorpo'); await aba('pubs'); const fp = await t('#prCorpo');
+check(/Prazos e audiências/i.test(fa) && /Linha do tempo/i.test(fr) && /Clientes vinculados/i.test(fd) && /Publicações deste processo/i.test(fp) && /Próximo prazo/i.test(fr) && /A receber/i.test(fr), 'a ficha é um painel: Resumo (linha do tempo e números), Agenda, Publicações, Honorários e Dados');
+await aba('hon'); await page.click('[data-prp="hon"] [data-prf="link"]'); await page.waitForTimeout(800);
 check(await page.evaluate(() => document.body.getAttribute('data-tab')) === 'acordos', 'o link abre o termo de acordo');
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(600);
 
 // Inicial (só derivada): salvar observação cria a ficha do processo
 await page.click('[data-pr="abrir"][data-n="' + N1.replace(/\D/g, '') + '"]'); await page.waitForTimeout(400);
-await page.fill('#pr_obs', 'Aguardando contestação'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
+await page.click('[data-prf="aba"][data-v="dados"]'); await page.fill('#pr_obs', 'Aguardando contestação'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 pd = await docs('processos'); const d1 = pd.find(d => d.numero === N1);
 check(d1 && d1.obs === 'Aguardando contestação' && d1.derivado === true && pd.length === 2, 'observação num processo que vem de Inicial cria a ficha dele (sem duplicar)');
 check(await nCards() === 3, 'continua sem duplicar na lista');
@@ -109,7 +112,7 @@ check(await nCards() === 3, 'continua sem duplicar na lista');
 await f('POST', '/api/db/agenda', { tipo: 'prazo', titulo: 'Réplica', processo: N1, cliente: 'Maquele Viana Pacheco', data: dia(3), situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], criadoEm: agora });
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(800);
-check(/1 prazo aberto/.test(await cardDe(N1)) && /Réplica/.test(await t('#prLista')) === false, 'o cartão mostra o prazo aberto da Agenda');
+check(/Próximo prazo \d\d\/\d\d/.test(await cardDe(N1)) && /Réplica/.test(await t('#prLista')) === false, 'o cartão mostra o prazo aberto da Agenda');
 await page.click('[data-pr="filtro"][data-v="prazo"]'); await page.waitForTimeout(300);
 check(await nCards() === 1, 'filtro "Com prazo" mostra só quem tem prazo aberto');
 await page.click('[data-pr="filtro"][data-v="andamento"]');
@@ -121,7 +124,7 @@ await page.fill('#prBusca', ''); await page.waitForTimeout(300);
 
 // arquivar
 const num1 = N1.replace(/\D/g, '');
-await page.click('[data-pr="arquivar"][data-n="' + num1 + '"]'); await page.waitForTimeout(500);
+await page.click('[data-pr="cm"][data-n="' + num1 + '"]'); await page.click('.pb-cmi[data-pr="arquivar"][data-n="' + num1 + '"]'); await page.waitForTimeout(500);
 const am = await t('#praCorpo');
 check(/Prazos abertos na Agenda\s*1/.test(am) && /Publicações não lidas/.test(am) && /Honorários ainda a receber/.test(am) && /Trânsito em julgado/.test(am), 'a janela de arquivar avisa do prazo aberto e dos honorários');
 await page.click('input[name="pra_mot"][value="Acordo cumprido"]'); await page.click('#praOk'); await page.waitForTimeout(1500);
@@ -153,7 +156,7 @@ await page.reload(); await page.waitForTimeout(3500);
 const pendTxt = async () => (await page.evaluate(() => document.getElementById('resumoPendente').textContent)).replace(/[^\d,]/g, '').replace(',', '.');
 const totAntes = Number(await pendTxt());
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(800);
-await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500);
+await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500); await aba('hon');
 check(!/outra aba/i.test(await t('#prCorpo')) && /Honorários que vou receber/i.test(await t('#prCorpo')) && await page.evaluate(() => !!document.querySelector('[data-prf="novo-hon"][data-v="caso"]')), 'a ficha tem "Honorários que vou receber" e não tem mais "controlados em outra aba"');
 await page.click('[data-prf="novo-hon"][data-v="caso"]'); await page.waitForTimeout(800);
 const frm = await page.evaluate(() => ({ aberto: document.getElementById('overlay').classList.contains('show'), titulo: document.getElementById('modalTitle').textContent, tipoOculto: getComputedStyle(document.getElementById('segTipo').closest('.field')).display === 'none', proc: document.getElementById('processoInput').value, cli: document.getElementById('clienteInput').value, chips: document.querySelector('#pickCaso .cli-chips').innerText }));
@@ -162,7 +165,7 @@ await page.click('#segModalidade [data-value="exito"]'); await page.fill('#perce
 let hs = (await docs('casos')).filter(c => c.doProcesso);
 check(hs.length === 1 && hs[0].modalidadeHonorario === 'exito' && hs[0].percentualExito === 30 && hs[0].numeroProcesso === N4 && hs[0].clienteIds.join() === 'cl1', 'os honorários de êxito (30%) são gravados ligados ao processo');
 check(/30% de êxito/.test(await cardDe(N4)), 'o cartão do processo mostra "30% de êxito": ' + (await cardDe(N4)).replace(/\n/g, ' | ').slice(0, 160));
-await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500);
+await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500); await aba('hon');
 await page.click('[data-prf="novo-hon"][data-v="caso"]'); await page.waitForTimeout(800);
 await page.click('#segModalidade [data-value="fixo"]'); await page.fill('#valorInput', '3000'); await page.click('#segPagamento [data-value="avista"]'); await page.fill('#dataAvistaInput', dia(20)); await page.click('#saveBtn'); await page.waitForTimeout(1500);
 hs = (await docs('casos')).filter(c => c.doProcesso);
@@ -175,9 +178,9 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="inicio"]').
 const totDepois = Number(await pendTxt());
 check(Math.abs(totDepois - totAntes - 3000) < 0.01, 'mas entram no "A receber" geral do Início (de ' + totAntes + ' para ' + totDepois + ')');
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(700);
-await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500);
+await page.click('[data-pr="abrir"][data-n="' + num4 + '"]'); await page.waitForTimeout(500); await aba('hon');
 check(/Honorários do processo/.test(await t('#prCorpo')) && (await page.evaluate(() => Array.from(document.querySelectorAll('[data-prf="link"]')).filter(b => /Editar/.test(b.innerText)).length)) === 2, 'a ficha lista os dois honorários do processo, com "Editar"');
-await page.click('[data-prf="link"]'); await page.waitForTimeout(800);
+await page.click('[data-prp="hon"] [data-prf="link"]'); await page.waitForTimeout(800);
 check(/Editar honorários do processo/.test(await t('#modalTitle')) && await page.evaluate(() => document.getElementById('overlay').classList.contains('show')), 'Editar abre os honorários em modo próprio');
 await page.click('#closeModal'); await page.waitForTimeout(500);
 check(await page.evaluate(() => getComputedStyle(document.getElementById('segTipo').closest('.field')).display !== 'none'), 'ao fechar, a janela de Inicial volta ao normal');

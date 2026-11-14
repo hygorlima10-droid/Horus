@@ -215,7 +215,7 @@ function pzMontar(){
 }
 function pzAbrir(o){
   o = o || {}; pzMontar();
-  pzS = { retorno: o.retorno || null, mem: false, op: { modo: o.modo || 'dje', data: o.data || '', dias: o.dias || 15, regime: o.regime || pzRegimeSalvo(), dobro: !!o.dobro, extras: [], unidade: 'uteis', recesso: true, prorroga: false, excluiInicio: true } };
+  pzS = { retorno: o.retorno || null, proc: o.processo || '', mem: false, op: { modo: o.modo || 'dje', data: o.data || '', dias: o.dias || 15, regime: o.regime || pzRegimeSalvo(), dobro: !!o.dobro, extras: [], unidade: 'uteis', recesso: true, prorroga: false, excluiInicio: true } };
   var rg = PZ_REGIMES[pzS.op.regime]; ['unidade', 'recesso', 'prorroga', 'excluiInicio'].forEach(function(k){ pzS.op[k] = rg[k]; });
   pzDesenhar(); qs('overlayPz').classList.add('show');
 }
@@ -275,7 +275,7 @@ function pzUsar(){
 }
 function pzCriar(){
   var r = pzS.res; if (!r || r.erro) return; var calc = pzParametros(pzS.op);
-  qs('overlayPz').classList.remove('show'); agAbrir(null, { tipo: 'prazo', data: r.vencimento, trabalhar: r.trabalhar, calculo: calc });
+  qs('overlayPz').classList.remove('show'); agAbrir(null, { tipo: 'prazo', data: r.vencimento, trabalhar: r.trabalhar, calculo: calc, processo: pzS.proc || '' }); if (pzS.proc){ var ep = qs('age_proc'); if (ep) ep.dispatchEvent(new Event('input', { bubbles: true })); }
 }
 /* texto curto de como o prazo foi contado (ficha do item) */
 function pzTextoCalculo(c){
