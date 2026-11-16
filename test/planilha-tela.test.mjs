@@ -65,5 +65,8 @@ await page.evaluate(() => { const b = document.querySelector('[data-esr="abrir"]
 const lista = await page.evaluate(() => (document.querySelector('.es-lista') || { innerText: '' }).innerText.replace(/\s+/g, ' '));
 check(/Estagiárias \(sem acesso ao app\)/i.test(lista) && /Kamyla/.test(lista) && /Luiza/.test(lista) && /Advogados/i.test(lista), 'o seletor de responsáveis tem o grupo "Estagiárias (sem acesso ao app)" com Kamyla e Luiza: ' + lista.slice(0, 160));
 check(await page.evaluate(() => Array.from(document.querySelectorAll('.es-chip')).map(x => x.innerText.trim()).join('|')) === 'Kamyla', 'o editor mostra só a Kamyla como responsável (não os advogados do processo)');
+// responsável ligado pelo usuário (ex.: "Hygor" da planilha = u:u1): mostra o nome, nunca "Usuário"
+const nomes = await page.evaluate(() => { const T = window.__horusTeste, e0 = T.esS.eu, n0 = T.esS.nomesChave; T.esS.eu = { id: 'u1', nome: 'Hygor Lima Andrade', oabs: ['60456/GO'], papel: 'proprietario' }; const a = T.esNomeChave('u:u1'); T.esS.eu = { id: 'u2', nome: 'Outra', oabs: [] }; T.esS.nomesChave = { 'u:u1': 'Hygor' }; const b = T.esNomeChave('u:u1'); T.esS.nomesChave = {}; const c = T.esNomeChave('u:u9'); T.esS.eu = e0; T.esS.nomesChave = n0; return [a, b, c]; });
+check(nomes[0] === 'Hygor Lima Andrade' && nomes[1] === 'Hygor' && nomes[2] === 'Usuário', 'responsável ligado pelo usuário mostra o nome (o meu, ou o da planilha), e só cai em "Usuário" quando não há como saber: ' + nomes.join(' | '));
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

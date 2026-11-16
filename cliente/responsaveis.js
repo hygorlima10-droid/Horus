@@ -15,7 +15,7 @@ function esJson(url, metodo, corpo){
 function esIniciar(){
   if (!window.__SERVIDOR) return;
   Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; }), esJson('/api/planilha/ligada').catch(function(){ return {}; })]).then(function(r){
-    esS.eu = r[0]; esS.equipe = r[1].advogados || [];
+    esS.eu = r[0]; esS.equipe = r[1].advogados || []; esS.nomesChave = (r[3] && r[3].mapa) || {};
     esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; })).concat(((r[3] && r[3].semAcesso) || []).map(function(n){ return { oab: 'n:' + n, nome: n }; }));   // estagiárias da planilha sem usuário: só o nome (chave n:Nome)   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
     var E = esEsc(), dono = r[0].papel === 'proprietario';
     var oabs = (r[0].oabs || []).slice();
@@ -77,7 +77,13 @@ function esRespIniciar(chave, doc){
   esRespDesenhar(chave);
 }
 function esLista(chave){ return String(chave || '').indexOf('agenda') === 0 ? esS.equipeAg : esS.equipe; }
-function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('n:') === 0 ? k.slice(2) : (k.indexOf('u:') === 0 ? 'Usuário' : k)); }
+function esNomeChave(k){
+  var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; if (q) return q.nome.replace(/ \(estagiário\)$/, '');
+  if (k.indexOf('n:') === 0) return k.slice(2);
+  if (esS.eu && esS.eu.id && k === 'u:' + esS.eu.id && esS.eu.nome) return esS.eu.nome;   /* eu mesmo, ligado pelo usuário (ex.: "Hygor" da planilha) */
+  if (esS.nomesChave && esS.nomesChave[k]) return esS.nomesChave[k];   /* nome que a planilha usa para esse usuário */
+  return k.indexOf('u:') === 0 ? 'Usuário' : k;
+}
 function esRespNome(a){
   var q = esS.equipeAg.filter(function(x){ return x.oab === a.oab; })[0] || esS.equipe.filter(function(x){ return x.oab === a.oab; })[0];
   return (q && q.nome) || a.nome || a.oab;
@@ -199,3 +205,4 @@ function esRevClique(a, k){
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { esIniciar: esIniciar, esBarra: esBarra });
 })();
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { esNomeChave: esNomeChave, esS: esS }); })();

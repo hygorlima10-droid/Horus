@@ -732,6 +732,7 @@ function agEdInicializar(i, caso){
   var d = i ? (i.doc || {}) : {}, P = agEditPre || {}, proc = i ? i.processo : (P.processo || ''), vis = qs('age_vis');
   if (vis) vis.value = i ? (d.compartilhada === true ? 'todos' : (Array.isArray(d.resp) && d.resp.length ? 'resp' : 'so_eu')) : (proc ? 'resp' : 'so_eu');
   var ks = i ? (Array.isArray(d.resp) ? d.resp.slice() : []) : [], sug = false;
+  if (esS.eu && esS.eu.id && esS.eu.oabs && esS.eu.oabs.length) ks = ks.map(function(k){ return k === 'u:' + esS.eu.id ? esS.eu.oabs[0] : k; });   /* eu, ligado pelo usuário: no seletor aparece como o advogado (mesma pessoa, marcada na lista) */
   if (!i){ var s0 = agSugerirResp(proc); if (s0.length){ ks = s0; sug = 'proc'; } else { var me = esMinhasChaves(); if (me.length){ ks = [me[0]]; sug = 'eu'; } } }   // 'proc' = sugeridos pelo processo; 'eu' = quem cadastra (ambos trocam sozinhos quando se escolhe um processo)
   esRespIniciarAg('agenda', ks, sug);
 }

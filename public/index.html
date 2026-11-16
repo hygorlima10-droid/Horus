@@ -1806,6 +1806,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -19149,6 +19150,7 @@ function agEdInicializar(i, caso){
   var d = i ? (i.doc || {}) : {}, P = agEditPre || {}, proc = i ? i.processo : (P.processo || ''), vis = qs('age_vis');
   if (vis) vis.value = i ? (d.compartilhada === true ? 'todos' : (Array.isArray(d.resp) && d.resp.length ? 'resp' : 'so_eu')) : (proc ? 'resp' : 'so_eu');
   var ks = i ? (Array.isArray(d.resp) ? d.resp.slice() : []) : [], sug = false;
+  if (esS.eu && esS.eu.id && esS.eu.oabs && esS.eu.oabs.length) ks = ks.map(function(k){ return k === 'u:' + esS.eu.id ? esS.eu.oabs[0] : k; });   /* eu, ligado pelo usuário: no seletor aparece como o advogado (mesma pessoa, marcada na lista) */
   if (!i){ var s0 = agSugerirResp(proc); if (s0.length){ ks = s0; sug = 'proc'; } else { var me = esMinhasChaves(); if (me.length){ ks = [me[0]]; sug = 'eu'; } } }   // 'proc' = sugeridos pelo processo; 'eu' = quem cadastra (ambos trocam sozinhos quando se escolhe um processo)
   esRespIniciarAg('agenda', ks, sug);
 }
@@ -21991,7 +21993,7 @@ function esJson(url, metodo, corpo){
 function esIniciar(){
   if (!window.__SERVIDOR) return;
   Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; }), esJson('/api/planilha/ligada').catch(function(){ return {}; })]).then(function(r){
-    esS.eu = r[0]; esS.equipe = r[1].advogados || [];
+    esS.eu = r[0]; esS.equipe = r[1].advogados || []; esS.nomesChave = (r[3] && r[3].mapa) || {};
     esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; })).concat(((r[3] && r[3].semAcesso) || []).map(function(n){ return { oab: 'n:' + n, nome: n }; }));   // estagiárias da planilha sem usuário: só o nome (chave n:Nome)   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
     var E = esEsc(), dono = r[0].papel === 'proprietario';
     var oabs = (r[0].oabs || []).slice();
@@ -22053,7 +22055,13 @@ function esRespIniciar(chave, doc){
   esRespDesenhar(chave);
 }
 function esLista(chave){ return String(chave || '').indexOf('agenda') === 0 ? esS.equipeAg : esS.equipe; }
-function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('n:') === 0 ? k.slice(2) : (k.indexOf('u:') === 0 ? 'Usuário' : k)); }
+function esNomeChave(k){
+  var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; if (q) return q.nome.replace(/ \(estagiário\)$/, '');
+  if (k.indexOf('n:') === 0) return k.slice(2);
+  if (esS.eu && esS.eu.id && k === 'u:' + esS.eu.id && esS.eu.nome) return esS.eu.nome;   /* eu mesmo, ligado pelo usuário (ex.: "Hygor" da planilha) */
+  if (esS.nomesChave && esS.nomesChave[k]) return esS.nomesChave[k];   /* nome que a planilha usa para esse usuário */
+  return k.indexOf('u:') === 0 ? 'Usuário' : k;
+}
 function esRespNome(a){
   var q = esS.equipeAg.filter(function(x){ return x.oab === a.oab; })[0] || esS.equipe.filter(function(x){ return x.oab === a.oab; })[0];
   return (q && q.nome) || a.nome || a.oab;
@@ -22175,6 +22183,7 @@ function esRevClique(a, k){
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { esIniciar: esIniciar, esBarra: esBarra });
 })();
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { esNomeChave: esNomeChave, esS: esS }); })();
 
 /* ============================================================
    PENDÊNCIAS (prefixo pd) — Onda 2 da auditoria
