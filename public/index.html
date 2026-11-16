@@ -1805,6 +1805,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18502,9 +18503,16 @@ function agItens(op){
 }
 /* ---------- responsáveis e escopo (Fase 5, etapa 5.5) ----------
    `resp` do item guarda chaves de pessoas (OAB do advogado ou "u:<id>"). Item sem responsável gravado: vale o advogado do processo (o app sugere, e a revisão em lote grava). */
+function agDaPlanilha(i){ var d = i.doc || {}; return !!(d.plan || d.planilha); }
 function agRespChaves(i){
   var d = i.doc || {};
   if (Array.isArray(d.resp) && d.resp.length) return d.resp.slice();
+  if (agDaPlanilha(i)) return [];   /* tarefa da planilha: responsável é só quem está na coluna Responsável; os advogados do processo não entram */
+  return agRespProcesso(i);
+}
+/* advogados do cadastro do processo (para consulta; na tarefa da planilha aparecem à parte, não como responsáveis) */
+function agRespProcesso(i){
+  var d = i.doc || {};
   var num = i.processo ? prNum(i.processo) : '', r = num ? prMapa().m[num] : null;
   if (r){ var ks = lgUnirAdvogados(r.links.filter(function(l){ return !l.doc.arquivado; }), r.doc).map(function(a){ return a.oab; }); if (ks.length) return ks; }
   if (!r && i.fonte === 'caso' && Array.isArray(d.advogados)) return d.advogados.map(function(a){ return a.oab; }).filter(Boolean);
@@ -18527,8 +18535,16 @@ function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc 
 function agEscopoLista(l){ if (!esS.eu) return l; return l.filter(agS.escopo === 'minha' ? agMinha : agEscritorioOk); }
 function agRespAvatares(i, max){
   var ks = agRespChaves(i).slice(0, max || 3), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '';
-  ks.forEach(function(k, n){ var nm = esNomeChave(k); h += '<span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff" title="' + escapeHtml(nm) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
+  ks.forEach(function(k, n){ var nm = esNomeChave(k), sem = String(k).indexOf('n:') === 0; h += '<span class="agc-av' + (sem ? ' agc-sem' : '') + '"' + (sem ? '' : ' style="background:' + cores[n % cores.length] + ';color:#fff"') + ' title="' + escapeHtml(nm + (sem ? ' (sem acesso ao app)' : '')) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
   return h;
+}
+/* tarefa da planilha: advogados do processo, pequenos e à parte (só para saber de quem é o processo) */
+function agProcAvatares(i){
+  if (!agDaPlanilha(i)) return '';
+  var resp = agRespChaves(i), ks = agRespProcesso(i).filter(function(k){ return resp.indexOf(k) < 0; }).slice(0, 3); if (!ks.length) return '';
+  var cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '<span class="agc-proc" title="Advogados do processo (só para consulta; o responsável é o da planilha)">processo';
+  ks.forEach(function(k, n){ var nm = esNomeChave(k); h += '<span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff" title="' + escapeHtml(nm) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
+  return h + '</span>';
 }
 function agOrdem(a, b){ return (a.data + (a.hora || '00:00')).localeCompare(b.data + (b.hora || '00:00')) || (a.tipo || '').localeCompare(b.tipo || ''); }
 function agOrdemAgir(a, b){ return (agDataAgir(a) + (a.hora || '00:00')).localeCompare(agDataAgir(b) + (b.hora || '00:00')) || (a.tipo || '').localeCompare(b.tipo || '') || a.data.localeCompare(b.data); }
@@ -18817,7 +18833,7 @@ function agCartao(i){
   if (i.situacao === 'elaboracao') tags += '<span class="pb-tg pz">Em andamento</span>';
   if (i.situacao === 'pronta' && !i.concluido) tags += '<span class="pb-tg ok">Peça pronta</span>';
   if (/alta/i.test(d.prioridade || '')) tags += '<span class="pb-tg pz">Prioridade alta</span>';
-  if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.length)) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
+  if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.some(function(k){ return String(k).indexOf('n:') !== 0; }))) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
   if (i.tipo === 'audiencia' && i.modalidade) tags += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
   if (i.pubId) tags += '<span class="pb-tg nv">via publicação</span>';
   if (i.fonte === 'caso') tags += '<span class="pb-tg">da inicial</span>';
@@ -18826,7 +18842,7 @@ function agCartao(i){
   if (i.tipo === 'tarefa' && d.repete) tags += '<span class="pb-tg nv">↻ ' + escapeHtml(rpTexto(d.repete)) + '</span>';
   if (esS.eu && i.tipo !== 'tarefa' && i.fonte !== 'alvara' && !agRespChaves(i).length && !d.respNome) tags += '<span class="pb-tg">sem responsável</span>';
   if (i.concluido && !i.cancelado && d.concluidoPor) tags += '<span class="pb-tg ok">por ' + escapeHtml(String(d.concluidoPor).split(' ')[0]) + '</span>';
-  if (esS.eu) tags += agRespAvatares(i, 3);
+  if (esS.eu) tags += agRespAvatares(i, 3) + agProcAvatares(i);
   else (Array.isArray(d.responsaveis) ? d.responsaveis : []).slice(0, 3).forEach(function(n){ tags += '<span class="agc-av" title="' + escapeHtml(n) + '">' + escapeHtml(agdSigla(n)) + '</span>'; });
   var ok = agBotaoOk(i);
   return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
@@ -21974,9 +21990,9 @@ function esJson(url, metodo, corpo){
 }
 function esIniciar(){
   if (!window.__SERVIDOR) return;
-  Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; })]).then(function(r){
+  Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; }), esJson('/api/planilha/ligada').catch(function(){ return {}; })]).then(function(r){
     esS.eu = r[0]; esS.equipe = r[1].advogados || [];
-    esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; }));   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
+    esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; })).concat(((r[3] && r[3].semAcesso) || []).map(function(n){ return { oab: 'n:' + n, nome: n }; }));   // estagiárias da planilha sem usuário: só o nome (chave n:Nome)   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
     var E = esEsc(), dono = r[0].papel === 'proprietario';
     var oabs = (r[0].oabs || []).slice();
     if (!oabs.length && dono) (r[2].oabs || []).forEach(function(o){ if (o.principal && o.numero) oabs.push(String(o.numero).replace(/\D/g, '').replace(/^0+/, '') + '/' + String(o.uf).toUpperCase()); });
@@ -22037,7 +22053,7 @@ function esRespIniciar(chave, doc){
   esRespDesenhar(chave);
 }
 function esLista(chave){ return String(chave || '').indexOf('agenda') === 0 ? esS.equipeAg : esS.equipe; }
-function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('u:') === 0 ? 'Usuário' : k); }
+function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('n:') === 0 ? k.slice(2) : (k.indexOf('u:') === 0 ? 'Usuário' : k)); }
 function esRespNome(a){
   var q = esS.equipeAg.filter(function(x){ return x.oab === a.oab; })[0] || esS.equipe.filter(function(x){ return x.oab === a.oab; })[0];
   return (q && q.nome) || a.nome || a.oab;
@@ -22048,10 +22064,14 @@ function esRespHtml(chave){
     return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">' + ico('x', 14) + '</button></span>';
   }).join('') : '<span class="es-chip es-vazio">' + (ag ? 'ninguém escolhido' : 'sem advogado definido') + '</span>') +
     '<button type="button" class="es-lk" data-esr="abrir" data-c="' + chave + '">' + (aberto ? 'Fechar lista' : (ag ? 'Adicionar responsável' : 'Adicionar advogado')) + '</button></div>';
-  if (aberto) h += '<div class="es-lista">' + (esLista(chave).length ? esLista(chave).map(function(a){
-    var on = l.some(function(x){ return x.oab === a.oab; });
-    return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" data-esr="marcar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '"' + (on ? ' checked' : '') + '><span class="ad-t">' + escapeHtml(a.nome) + ' <span class="saldo-data">OAB ' + escapeHtml(a.oab) + '</span></span></label>';
-  }).join('') : '<div class="saldo-data">Nenhum advogado cadastrado ainda (Configurações › Usuários e Publicações).</div>') + '</div>';
+  if (aberto){
+    var itemL = function(a){
+      var on = l.some(function(x){ return x.oab === a.oab; }), pess = /^[un]:/.test(a.oab);
+      return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" data-esr="marcar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '"' + (on ? ' checked' : '') + '><span class="ad-t">' + escapeHtml(a.nome) + (pess ? '' : ' <span class="saldo-data">OAB ' + escapeHtml(a.oab) + '</span>') + '</span></label>';
+    }, todos = esLista(chave), adv = todos.filter(function(a){ return !/^[un]:/.test(a.oab); }), est = todos.filter(function(a){ return a.oab.indexOf('u:') === 0; }), sem = todos.filter(function(a){ return a.oab.indexOf('n:') === 0; });
+    var sec = function(t, arr){ return arr.length ? (ag && (est.length || sem.length) ? '<div class="es-sec">' + t + '</div>' : '') + arr.map(itemL).join('') : ''; };
+    h += '<div class="es-lista">' + (todos.length ? sec('Advogados', adv) + sec('Estagiários', est) + sec('Estagiárias (sem acesso ao app)', sem) : '<div class="saldo-data">Nenhum advogado cadastrado ainda (Configurações › Usuários e Publicações).</div>') + '</div>';
+  }
   h += '<div class="saldo-data">' + (ag ? 'Quem é responsável vê este item na própria agenda.' : 'Quem está marcado vê este registro no próprio app.') + '</div>';
   return h;
 }
@@ -22149,7 +22169,7 @@ function esRevClique(a, k){
     '.es-b{border:0;background:none;padding:6px 14px;border-radius:9px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.es-b.on{background:#0e0e10;color:#fff}' +
     '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
     '.es-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.es-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:99px;padding:4px 6px 4px 12px;font-size:var(--t2);font-weight:700}.es-vazio{padding:4px 12px;font-weight:600;color:var(--ink-soft)}' +
-    '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
+    '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-sec{font-size:var(--t1);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 2px}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
     '.es-abas{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.es-aba{border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 12px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);cursor:pointer}.es-aba.on{background:#0e0e10;color:#fff;border-color:#0e0e10}' +
     '.es-it{border-top:1px solid var(--border);padding:8px 0;align-items:flex-start}.es-aplicar{margin-top:10px;border:2px solid var(--accent,#C98500);border-radius:14px;padding:10px 12px}#overlayEsRevC>*{flex-shrink:0}';
   document.head.appendChild(st);
@@ -23513,6 +23533,7 @@ function agdFiltrosAtivos(){ return (agS.resp ? 1 : 0) + ((agS.sit || 'abertos')
     '.agc-t{font-size:var(--t4);font-weight:700;line-height:1.25;margin-top:3px;overflow-wrap:anywhere}.agc-s{font-size:var(--t2);color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere}' +
     '.agc-n{display:flex;align-items:center;gap:4px;font-size:var(--t2);font-weight:700;color:var(--tutela,#8a5a00);margin-top:3px}.agc-cp{width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer;margin-left:-2px}.agc-cp:active{background:var(--surface-2,#eee)}' +
     '.agc-tg{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.agc-tg:empty{display:none}.agc-ok{width:40px;height:40px;border-radius:50%;border:2px solid var(--border);background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;font-size:16px;font-weight:800;flex:none}.agc-ok.on{background:var(--success);border-color:var(--success);color:#fff}' +
+    '.agc-av.agc-sem{background:transparent;color:var(--accent);border:1.5px dashed var(--accent)}.agc-proc{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);margin-left:4px}.agc-proc .agc-av{min-width:18px;height:18px;font-size:8px;opacity:.8}' +
     '.agc-av{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font-size:9px;font-weight:800;padding:0 3px}' +
     /* barra de busca e filtros */
     '.ag-busca{width:100%;height:44px;padding:0 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t4);outline:none}.ag-busca:focus{border-color:var(--c-gold,#C98500)}' +

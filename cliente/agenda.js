@@ -86,9 +86,16 @@ function agItens(op){
 }
 /* ---------- responsáveis e escopo (Fase 5, etapa 5.5) ----------
    `resp` do item guarda chaves de pessoas (OAB do advogado ou "u:<id>"). Item sem responsável gravado: vale o advogado do processo (o app sugere, e a revisão em lote grava). */
+function agDaPlanilha(i){ var d = i.doc || {}; return !!(d.plan || d.planilha); }
 function agRespChaves(i){
   var d = i.doc || {};
   if (Array.isArray(d.resp) && d.resp.length) return d.resp.slice();
+  if (agDaPlanilha(i)) return [];   /* tarefa da planilha: responsável é só quem está na coluna Responsável; os advogados do processo não entram */
+  return agRespProcesso(i);
+}
+/* advogados do cadastro do processo (para consulta; na tarefa da planilha aparecem à parte, não como responsáveis) */
+function agRespProcesso(i){
+  var d = i.doc || {};
   var num = i.processo ? prNum(i.processo) : '', r = num ? prMapa().m[num] : null;
   if (r){ var ks = lgUnirAdvogados(r.links.filter(function(l){ return !l.doc.arquivado; }), r.doc).map(function(a){ return a.oab; }); if (ks.length) return ks; }
   if (!r && i.fonte === 'caso' && Array.isArray(d.advogados)) return d.advogados.map(function(a){ return a.oab; }).filter(Boolean);
@@ -111,8 +118,16 @@ function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc 
 function agEscopoLista(l){ if (!esS.eu) return l; return l.filter(agS.escopo === 'minha' ? agMinha : agEscritorioOk); }
 function agRespAvatares(i, max){
   var ks = agRespChaves(i).slice(0, max || 3), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '';
-  ks.forEach(function(k, n){ var nm = esNomeChave(k); h += '<span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff" title="' + escapeHtml(nm) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
+  ks.forEach(function(k, n){ var nm = esNomeChave(k), sem = String(k).indexOf('n:') === 0; h += '<span class="agc-av' + (sem ? ' agc-sem' : '') + '"' + (sem ? '' : ' style="background:' + cores[n % cores.length] + ';color:#fff"') + ' title="' + escapeHtml(nm + (sem ? ' (sem acesso ao app)' : '')) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
   return h;
+}
+/* tarefa da planilha: advogados do processo, pequenos e à parte (só para saber de quem é o processo) */
+function agProcAvatares(i){
+  if (!agDaPlanilha(i)) return '';
+  var resp = agRespChaves(i), ks = agRespProcesso(i).filter(function(k){ return resp.indexOf(k) < 0; }).slice(0, 3); if (!ks.length) return '';
+  var cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '<span class="agc-proc" title="Advogados do processo (só para consulta; o responsável é o da planilha)">processo';
+  ks.forEach(function(k, n){ var nm = esNomeChave(k); h += '<span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff" title="' + escapeHtml(nm) + '">' + escapeHtml(agdSigla(nm)) + '</span>'; });
+  return h + '</span>';
 }
 function agOrdem(a, b){ return (a.data + (a.hora || '00:00')).localeCompare(b.data + (b.hora || '00:00')) || (a.tipo || '').localeCompare(b.tipo || ''); }
 function agOrdemAgir(a, b){ return (agDataAgir(a) + (a.hora || '00:00')).localeCompare(agDataAgir(b) + (b.hora || '00:00')) || (a.tipo || '').localeCompare(b.tipo || '') || a.data.localeCompare(b.data); }
@@ -401,7 +416,7 @@ function agCartao(i){
   if (i.situacao === 'elaboracao') tags += '<span class="pb-tg pz">Em andamento</span>';
   if (i.situacao === 'pronta' && !i.concluido) tags += '<span class="pb-tg ok">Peça pronta</span>';
   if (/alta/i.test(d.prioridade || '')) tags += '<span class="pb-tg pz">Prioridade alta</span>';
-  if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.length)) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
+  if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.some(function(k){ return String(k).indexOf('n:') !== 0; }))) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
   if (i.tipo === 'audiencia' && i.modalidade) tags += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
   if (i.pubId) tags += '<span class="pb-tg nv">via publicação</span>';
   if (i.fonte === 'caso') tags += '<span class="pb-tg">da inicial</span>';
@@ -410,7 +425,7 @@ function agCartao(i){
   if (i.tipo === 'tarefa' && d.repete) tags += '<span class="pb-tg nv">↻ ' + escapeHtml(rpTexto(d.repete)) + '</span>';
   if (esS.eu && i.tipo !== 'tarefa' && i.fonte !== 'alvara' && !agRespChaves(i).length && !d.respNome) tags += '<span class="pb-tg">sem responsável</span>';
   if (i.concluido && !i.cancelado && d.concluidoPor) tags += '<span class="pb-tg ok">por ' + escapeHtml(String(d.concluidoPor).split(' ')[0]) + '</span>';
-  if (esS.eu) tags += agRespAvatares(i, 3);
+  if (esS.eu) tags += agRespAvatares(i, 3) + agProcAvatares(i);
   else (Array.isArray(d.responsaveis) ? d.responsaveis : []).slice(0, 3).forEach(function(n){ tags += '<span class="agc-av" title="' + escapeHtml(n) + '">' + escapeHtml(agdSigla(n)) + '</span>'; });
   var ok = agBotaoOk(i);
   return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +

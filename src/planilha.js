@@ -10,6 +10,7 @@ import { lerDoc, stmtDoc } from './acesso.js';
 import { usuariosAtivos, avisarAtividade } from './avisos.js';
 import { stmtRegistro, mudancas, tituloDe } from './auditoria.js';
 import { normNome } from './politica.js';
+import { rosterAdvogados } from './responsaveis.js';
 
 const COL = '_planilha';
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -65,13 +66,30 @@ function mapaAuto(nomes, us, existentes) {   // sugere o usuário cujo primeiro 
   return m;
 }
 const chaveParaNome = (mapa, chave) => Object.keys(mapa).find((n) => mapa[n] === chave) || '';
+/* quem é o responsável da linha da planilha: o usuário do mapa; senão o advogado (OAB) de mesmo primeiro nome, se for um só; senão só o NOME ("n:Kamyla": estagiária sem acesso ao app).
+   Os advogados do PROCESSO nunca entram aqui: na tarefa da planilha o responsável é só quem está na coluna Responsável. */
+function chaveDoNome(n, ctx) {
+  n = txt(n); if (!n) return '';
+  if (ctx.mapa[n]) return ctx.mapa[n];
+  const pn = primeiroNome(n), achados = (ctx.roster || []).filter((r) => primeiroNome(r.nome) === pn);
+  return achados.length === 1 ? achados[0].oab : 'n:' + n;
+}
+/* o nome que a planilha deve receber para uma chave de responsável */
+function nomeDaChavePlan(k, ctx) {
+  const n = chaveParaNome(ctx.mapa, k); if (n) return n;
+  if (String(k).startsWith('n:')) return String(k).slice(2);
+  const r = (ctx.roster || []).find((x) => x.oab === k); if (!r) return '';
+  const pn = primeiroNome(r.nome);
+  return (ctx.vistos || []).find((v) => normNome(v) === pn) || '';
+}
+async function criarCtx(env, cfg) { return { mapa: cfg.nomes, us: await usuariosAtivos(env), roster: await rosterAdvogados(env).catch(() => []), vistos: cfg.vistos || [] }; }
 const nomeDaChave = (us, chave) => { const u = us.find((x) => chaveDe(x) === chave || x.norm.oabs.includes(chave) || ('u:' + x.id) === chave); return u ? u.nome : ''; };
 
 /* ---------- campos ---------- */
 function camposApp(d, ctx) {
   const chaves = Array.isArray(d.resp) ? d.resp : [];
   let resp = '';
-  for (const k of chaves) { const n = chaveParaNome(ctx.mapa, k); if (n) { resp = n; break; } }
+  for (const k of chaves) { const n = nomeDaChavePlan(k, ctx); if (n) { resp = n; break; } }
   if (!resp) resp = d.respNome || '';
   let delegado = d.delegadoPor || '';
   if (!delegado && d.criadoPor) { delegado = chaveParaNome(ctx.mapa, 'u:' + d.criadoPor) || ''; if (!delegado) { const u = ctx.us.find((x) => x.id === d.criadoPor); if (u) delegado = chaveParaNome(ctx.mapa, chaveDe(u)) || String(u.nome || '').split(/\s+/)[0]; } }
@@ -96,7 +114,7 @@ function aplicarNoDoc(d, campos, linha, ctx) {
     if (f === 'titulo') d.titulo = txt(linha.titulo);
     else if (f === 'processo') d.processo = formatarProcesso(linha.processo);
     else if (f === 'resp') {
-      const n = txt(linha.resp), chave = ctx.mapa[n]; d.respNome = n;
+      const n = txt(linha.resp), chave = chaveDoNome(n, ctx); d.respNome = n;
       d.resp = chave ? [chave] : [];
     } else if (f === 'delegado') d.delegadoPor = txt(linha.delegado);
     else if (f === 'prio') d.prioridade = txt(linha.prio);
@@ -152,7 +170,7 @@ async function sincronizar(env, deps, corpo, cfg) {
   cfg.integrantes = (corpo.integrantes || []).map((x) => ({ nome: txt(x.nome), funcao: txt(x.funcao) })).filter((x) => x.nome);
   cfg.vistos = [...vistos].sort();
   cfg.nomes = mapaAuto(cfg.vistos, us, cfg.nomes);
-  const ctx = { mapa: cfg.nomes, us };
+  const ctx = { mapa: cfg.nomes, us, roster: await rosterAdvogados(env).catch(() => []), vistos: cfg.vistos };
   const itens = await itensAgenda(env), porPlan = new Map(itens.filter((x) => x.d.plan && x.d.plan.id).map((x) => [x.d.plan.id, x]));
   const resp = { ok: true, ids: [], aplicar: [], novas: [] };
   const idsNaPlanilha = new Set(linhasTodas.map((l) => txt(l.id)).filter(Boolean));
@@ -182,7 +200,9 @@ async function sincronizar(env, deps, corpo, cfg) {
       if (!d.data) d.data = '';
       salvar(idDoc, null, d, 'criou'); resp.ids.push({ linha: l.linha, id: novoPid }); ligadas++; continue;
     }
-    const { id: idDoc, d } = achado, antes = JSON.parse(JSON.stringify(d)), s = camposPlanilha(l), a = camposApp(d, ctx), base = (d.plan && d.plan.base) || s;
+    const { id: idDoc, d } = achado, antes = JSON.parse(JSON.stringify(d));
+    if (d.respNome && !(Array.isArray(d.resp) && d.resp.length)) d.resp = [chaveDoNome(d.respNome, ctx)];   // item importado antes: o responsável é o da coluna (antes ele herdava os advogados do processo)
+    const s = camposPlanilha(l), a = camposApp(d, ctx), base = (d.plan && d.plan.base) || s;
     const paraApp = [], paraPlan = []; let conflito = '';
     for (const f of COLUNAS) {
       if (s[f] === a[f]) continue;
@@ -242,7 +262,7 @@ export async function planilhaSync(request, env, deps) {
   if (!cfg.token || !m || !iguais(m[1], cfg.token)) return erro(401, 'not_granted', 'Chave inválida.');
   try {
     if (request.method === 'GET') {
-      const us = await usuariosAtivos(env); const ctx = { mapa: cfg.nomes, us };
+      const ctx = await criarCtx(env, cfg);
       return json({ ok: true, pendente: pendenciasDoApp(await itensAgenda(env), ctx) > 0 });
     }
     if (request.method !== 'POST') return erro(405, 'method', 'Método não permitido.');
@@ -259,7 +279,8 @@ export async function planilhaSync(request, env, deps) {
 export async function planilhaRotas(request, env, partes, auth) {
   const m = request.method, ehDono = !auth || !auth.usuario || auth.usuario.papel === 'proprietario';
   const cfg = await cfgLer(env);
-  if (m === 'GET' && partes[1] === 'ligada') { const mapa = {}; for (const [n, k] of Object.entries(cfg.nomes || {})) if (k) mapa[k] = n; return json({ ligada: !!cfg.token && !!cfg.ultimaConversa, mapa }); }   // qualquer pessoa logada (o editor da Agenda usa)
+  if (m === 'GET' && partes[1] === 'ligada') { const mapa = {}; for (const [n, k] of Object.entries(cfg.nomes || {})) if (k) mapa[k] = n; const semAcesso = (cfg.integrantes || []).filter((x) => /estagi/i.test(x.funcao || '') && !cfg.nomes[x.nome]).map((x) => x.nome);   // estagiárias da planilha que ainda não têm usuário: só o nome, para serem responsáveis na Agenda
+    return json({ ligada: !!cfg.token && !!cfg.ultimaConversa, mapa, semAcesso }); }   // qualquer pessoa logada (o editor da Agenda usa)
   if (!ehDono) return erro(403, 'forbidden', 'Só o proprietário pode usar isto.');
   const origem = new URL(request.url).origin;
   if (m === 'GET' && !partes[1]) {
@@ -277,10 +298,10 @@ export async function planilhaRotas(request, env, partes, auth) {
     for (const [n, chave] of Object.entries(c.mapa)) { if (!cfg.vistos.includes(n)) continue; if (chave === '') cfg.nomes[n] = ''; else if (validas.has(chave)) cfg.nomes[n] = chave; }
     await cfgGravar(env, cfg);
     /* os itens já ligados passam a ter (ou perder) o responsável do app conforme o novo mapa */
-    const itens = await itensAgenda(env), stmts = [];
+    const itens = await itensAgenda(env), stmts = [], ctxN = await criarCtx(env, cfg);
     for (const { id, d } of itens) {
       if (!d.plan || !d.respNome) continue;
-      const chave = cfg.nomes[d.respNome] || ''; const novo = chave ? [chave] : [];
+      const chave = chaveDoNome(d.respNome, ctxN); const novo = chave ? [chave] : [];
       if (JSON.stringify(d.resp || []) !== JSON.stringify(novo)) { const dd = { ...d, resp: novo }; stmts.push(stmtDoc(env, 'agenda', id, dd)); }
     }
     for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));

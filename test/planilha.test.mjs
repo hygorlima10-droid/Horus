@@ -57,6 +57,16 @@ await sync({ completo: true, integrantes: INTEGRANTES, linhas });
 dC = (await ag()).find(d => d.id === dC.id);
 check(dC.titulo === 'Olhar processos de outros estados (MG, PB, DF)' && dC.situacao === 'elaboracao' && dC.respNome === 'Luiza', 'mudança na planilha (título, status, responsável) chega ao app');
 
+// ---- responsável = só o da coluna (n:Nome para quem não tem usuário); nunca herda os advogados do processo
+check(JSON.stringify(dA.resp) === '["n:Kamyla"]' && JSON.stringify(dC.resp) === '["n:Luiza"]', 'responsável da tarefa da planilha: só o nome da coluna ("n:Kamyla", "n:Luiza"), sem copiar advogados do processo');
+check(JSON.stringify((await f('GET', '/api/planilha/ligada')).j.semAcesso) === '["Kamyla","Luiza"]', 'a Agenda sabe quais estagiárias da planilha ainda não têm usuário (Kamyla e Luiza)');
+{ // item importado antes desta regra (resp vazio com respNome): a próxima conversa corrige sozinha
+  const velho = (await ag()).find(d => d.id === dA.id); await f('PUT', '/api/db/agenda/' + dA.id, { ...velho, id: undefined, resp: [] });
+  await sync({ completo: true, integrantes: INTEGRANTES, linhas });
+  const novo = (await ag()).find(d => d.id === dA.id);
+  check(JSON.stringify(novo.resp) === '["n:Kamyla"]', 'item antigo (responsável vazio) passa a ter o responsável da coluna na próxima conversa');
+}
+
 // ---- conflito: o mesmo campo mudou nos dois lados; vale a planilha
 await f('PUT', '/api/db/agenda/' + dC.id, { ...dC, id: undefined, obs: 'obs do app' });
 linhas[2].obs = 'obs da planilha';

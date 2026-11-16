@@ -14,9 +14,9 @@ function esJson(url, metodo, corpo){
 }
 function esIniciar(){
   if (!window.__SERVIDOR) return;
-  Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; })]).then(function(r){
+  Promise.all([esJson('/api/eu'), esJson('/api/equipe').catch(function(){ return { advogados: [] }; }), esJson('/api/djen/estado').catch(function(){ return { oabs: [] }; }), esJson('/api/planilha/ligada').catch(function(){ return {}; })]).then(function(r){
     esS.eu = r[0]; esS.equipe = r[1].advogados || [];
-    esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; }));   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
+    esS.equipeAg = esS.equipe.concat((r[1].estagiarios || []).map(function(e){ return { oab: 'u:' + e.id, nome: e.nome + ' (estagiário)' }; })).concat(((r[3] && r[3].semAcesso) || []).map(function(n){ return { oab: 'n:' + n, nome: n }; }));   // estagiárias da planilha sem usuário: só o nome (chave n:Nome)   // quem pode ser responsável na Agenda: advogados (chave = OAB) e estagiários (chave = u:id)
     var E = esEsc(), dono = r[0].papel === 'proprietario';
     var oabs = (r[0].oabs || []).slice();
     if (!oabs.length && dono) (r[2].oabs || []).forEach(function(o){ if (o.principal && o.numero) oabs.push(String(o.numero).replace(/\D/g, '').replace(/^0+/, '') + '/' + String(o.uf).toUpperCase()); });
@@ -77,7 +77,7 @@ function esRespIniciar(chave, doc){
   esRespDesenhar(chave);
 }
 function esLista(chave){ return String(chave || '').indexOf('agenda') === 0 ? esS.equipeAg : esS.equipe; }
-function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('u:') === 0 ? 'Usuário' : k); }
+function esNomeChave(k){ var q = esS.equipeAg.filter(function(x){ return x.oab === k; })[0]; return q ? q.nome.replace(/ \(estagiário\)$/, '') : (k.indexOf('n:') === 0 ? k.slice(2) : (k.indexOf('u:') === 0 ? 'Usuário' : k)); }
 function esRespNome(a){
   var q = esS.equipeAg.filter(function(x){ return x.oab === a.oab; })[0] || esS.equipe.filter(function(x){ return x.oab === a.oab; })[0];
   return (q && q.nome) || a.nome || a.oab;
@@ -88,10 +88,14 @@ function esRespHtml(chave){
     return '<span class="es-chip" title="OAB ' + escapeHtml(a.oab) + '">' + escapeHtml(esRespNome(a).split(' ').slice(0, 2).join(' ')) + ' <button type="button" class="es-x" data-esr="tirar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '" aria-label="Tirar">' + ico('x', 14) + '</button></span>';
   }).join('') : '<span class="es-chip es-vazio">' + (ag ? 'ninguém escolhido' : 'sem advogado definido') + '</span>') +
     '<button type="button" class="es-lk" data-esr="abrir" data-c="' + chave + '">' + (aberto ? 'Fechar lista' : (ag ? 'Adicionar responsável' : 'Adicionar advogado')) + '</button></div>';
-  if (aberto) h += '<div class="es-lista">' + (esLista(chave).length ? esLista(chave).map(function(a){
-    var on = l.some(function(x){ return x.oab === a.oab; });
-    return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" data-esr="marcar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '"' + (on ? ' checked' : '') + '><span class="ad-t">' + escapeHtml(a.nome) + ' <span class="saldo-data">OAB ' + escapeHtml(a.oab) + '</span></span></label>';
-  }).join('') : '<div class="saldo-data">Nenhum advogado cadastrado ainda (Configurações › Usuários e Publicações).</div>') + '</div>';
+  if (aberto){
+    var itemL = function(a){
+      var on = l.some(function(x){ return x.oab === a.oab; }), pess = /^[un]:/.test(a.oab);
+      return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" data-esr="marcar" data-c="' + chave + '" data-k="' + escapeHtml(a.oab) + '"' + (on ? ' checked' : '') + '><span class="ad-t">' + escapeHtml(a.nome) + (pess ? '' : ' <span class="saldo-data">OAB ' + escapeHtml(a.oab) + '</span>') + '</span></label>';
+    }, todos = esLista(chave), adv = todos.filter(function(a){ return !/^[un]:/.test(a.oab); }), est = todos.filter(function(a){ return a.oab.indexOf('u:') === 0; }), sem = todos.filter(function(a){ return a.oab.indexOf('n:') === 0; });
+    var sec = function(t, arr){ return arr.length ? (ag && (est.length || sem.length) ? '<div class="es-sec">' + t + '</div>' : '') + arr.map(itemL).join('') : ''; };
+    h += '<div class="es-lista">' + (todos.length ? sec('Advogados', adv) + sec('Estagiários', est) + sec('Estagiárias (sem acesso ao app)', sem) : '<div class="saldo-data">Nenhum advogado cadastrado ainda (Configurações › Usuários e Publicações).</div>') + '</div>';
+  }
   h += '<div class="saldo-data">' + (ag ? 'Quem é responsável vê este item na própria agenda.' : 'Quem está marcado vê este registro no próprio app.') + '</div>';
   return h;
 }
@@ -189,7 +193,7 @@ function esRevClique(a, k){
     '.es-b{border:0;background:none;padding:6px 14px;border-radius:9px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.es-b.on{background:#0e0e10;color:#fff}' +
     '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
     '.es-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.es-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:99px;padding:4px 6px 4px 12px;font-size:var(--t2);font-weight:700}.es-vazio{padding:4px 12px;font-weight:600;color:var(--ink-soft)}' +
-    '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
+    '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-sec{font-size:var(--t1);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 2px}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
     '.es-abas{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.es-aba{border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 12px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);cursor:pointer}.es-aba.on{background:#0e0e10;color:#fff;border-color:#0e0e10}' +
     '.es-it{border-top:1px solid var(--border);padding:8px 0;align-items:flex-start}.es-aplicar{margin-top:10px;border:2px solid var(--accent,#C98500);border-radius:14px;padding:10px 12px}#overlayEsRevC>*{flex-shrink:0}';
   document.head.appendChild(st);

@@ -32,6 +32,8 @@ check(['Hygor', 'Kamyla', 'Luiza'].every(n => tp.includes(n)) && (await page.loc
 check(/Despesas do Murilo/.test(tp) && /Prazo fatal e “trabalhar até”/.test(tp), 'e mostra o que acompanha nas duas vias');
 await page.click('#overlayPlanilha [data-sg="fechar"]').catch(() => page.evaluate(() => document.getElementById('overlayPlanilha').classList.remove('show')));
 await page.evaluate(() => document.querySelectorAll('.overlay.show').forEach(o => o.classList.remove('show')));
+// o processo da tarefa está cadastrado com o Hygor como advogado: isso NÃO pode fazer dele o responsável da tarefa da planilha
+await f('POST', '/api/db/processos', { numero: '5170137-60.2026.8.09.0108', partes: 'Wancley x Eurico', cliente: 'Wancley', advogados: [{ oab: '60456/GO', nome: 'Hygor Lima Andrade' }, { oab: '49308/GO', nome: 'Murilo Falone Rocha' }] });
 // 3) o selo na Agenda
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').click()); await page.waitForTimeout(900);
@@ -42,6 +44,7 @@ check(!(await cardDe(/Planilha de cálculo/)), 'delegada a outra pessoa: NÃO ap
 await page.click('#esBarra .es-b[data-k="escritorio"]'); await page.waitForTimeout(700);
 const card = await cardDe(/Planilha de cálculo/);
 check(/Planilha/.test(card) && /delegado por Hygor/.test(card) && /aguardando cliente/.test(card) && /Kamyla \(sem acesso\)/.test(card) && !/sem responsável/.test(card), 'cartão da Agenda: selo "Planilha", "delegado por Hygor", "aguardando cliente" e "Kamyla (sem acesso)": ' + card.slice(0, 160));
+check(await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.agc')).find(x => /Planilha de cálculo/.test(x.innerText)); return !!c && !!c.querySelector('.agc-sem[title*="Kamyla"]') && !!c.querySelector('.agc-proc') && c.querySelectorAll('.agc-av:not(.agc-sem)').length === c.querySelectorAll('.agc-proc .agc-av').length; }), 'responsável = só Kamyla (bolinha tracejada, sem acesso); os advogados do processo aparecem à parte, pequenos, em "processo"');
 // 4) criar no app com "Também na planilha"
 await page.click('[data-ag="novo"]'); await page.waitForTimeout(600);
 check(await page.locator('#age_plan').isChecked(), 'ao criar, "Também na planilha" já vem ligado');
@@ -57,5 +60,10 @@ check(r2.novas.length === 1 && r2.novas[0].campos.titulo === 'Delegada pelo app'
 await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.agc')).find(x => /Planilha de cálculo/.test(x.innerText)); c.querySelector('.agc-t').click(); }); await page.waitForTimeout(500);
 await page.evaluate(() => { const b = document.querySelector('[data-agd="editar"], [data-ag="abrir"]'); if (b) b.click(); }); await page.waitForTimeout(600);
 check(/Ligado à planilha/.test(await page.evaluate(() => (document.getElementById('agEdCorpo') || { innerText: '' }).innerText)), 'ao editar um item ligado, o editor mostra "Ligado à planilha" (sem o botão)');
+// seletor de responsáveis: Kamyla e Luiza aparecem como estagiárias sem acesso, e o responsável atual é só a Kamyla
+await page.evaluate(() => { const b = document.querySelector('[data-esr="abrir"]'); if (b) b.click(); }); await page.waitForTimeout(400);
+const lista = await page.evaluate(() => (document.querySelector('.es-lista') || { innerText: '' }).innerText.replace(/\s+/g, ' '));
+check(/Estagiárias \(sem acesso ao app\)/i.test(lista) && /Kamyla/.test(lista) && /Luiza/.test(lista) && /Advogados/i.test(lista), 'o seletor de responsáveis tem o grupo "Estagiárias (sem acesso ao app)" com Kamyla e Luiza: ' + lista.slice(0, 160));
+check(await page.evaluate(() => Array.from(document.querySelectorAll('.es-chip')).map(x => x.innerText.trim()).join('|')) === 'Kamyla', 'o editor mostra só a Kamyla como responsável (não os advogados do processo)');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

@@ -105,12 +105,12 @@ export async function agendaRotas(request, env, partes) {
   }
   const us = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ?').bind(COL_USU).all(), usuarios = new Map(us.results.map((r) => [r.id, JSON.parse(r.dados)]));
   const chaveDe = (id) => { const u = usuarios.get(id); if (!u) return null; const k = (u.oabs || [])[0]; if (k) return k; nomes.set('u:' + id, u.nome || 'Usuário'); return 'u:' + id; };
-  const pessoas = new Map(), conta = (k, i) => { if (!k) return; if (!pessoas.has(k)) pessoas.set(k, { chave: k, nome: nomes.get(k) || k, dias: Array(dias).fill(0), total: 0 }); const p = pessoas.get(k); p.dias[i]++; p.total++; };
+  const pessoas = new Map(), conta = (k, i) => { if (!k) return; if (!pessoas.has(k)) pessoas.set(k, { chave: k, nome: nomes.get(k) || (String(k).startsWith('n:') ? String(k).slice(2) : k), dias: Array(dias).fill(0), total: 0 }); const p = pessoas.get(k); p.dias[i]++; p.total++; };
   for (const r of results) {
     const d = JSON.parse(r.dados); if (d.concluido === true || d.cancelado === true || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || d.data < hoje || d.data > fim) continue;
     const num = digitos(d.processo); if (num.length >= 15 && arq.has(num)) continue;
-    let resp = Array.isArray(d.resp) && d.resp.length ? d.resp : (num.length >= 15 && porProc.has(num) ? porProc.get(num) : null);
-    if (!resp) { if (d.compartilhada === true || d.processo) resp = [chaveDe(d.criadoPor)].filter(Boolean); else continue; }
+    let resp = Array.isArray(d.resp) && d.resp.length ? d.resp : (!d.plan && num.length >= 15 && porProc.has(num) ? porProc.get(num) : null);   // tarefa da planilha: só o responsável da coluna, nunca os advogados do processo
+    if (!resp) { if (d.plan) continue; if (d.compartilhada === true || d.processo) resp = [chaveDe(d.criadoPor)].filter(Boolean); else continue; }
     const i = Math.round((Date.parse(d.data) - Date.parse(hoje)) / 864e5);
     for (const k of new Set(resp)) conta(k, i);
   }
