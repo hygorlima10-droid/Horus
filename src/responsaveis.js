@@ -88,7 +88,8 @@ export async function semAdvogadoRotas(request, env, partes, auth) {
 }
 
 /* ---------- Agenda: carga por pessoa (visível para todos: só contagens, nunca o conteúdo dos itens) ----------
-   GET /api/agenda/carga?dias=7 → { inicio, dias, pessoas: [{ chave, nome, dias: [n…], total }] }
+   GET /api/agenda/carga?dias=7 → { inicio, dias, pessoas: [{ chave, nome, dias: [n…], total, atrAg, del: [n…], delSem, atrDel }] }
+   (dias/total = Agenda; del = tarefas delegadas abertas por dia, delSem = sem nenhuma data, atrAg/atrDel = já vencidas e não concluídas)
    Conta prazos, audiências e tarefas abertas dos próximos dias por responsável; item sem responsável conta para os advogados do processo;
    tarefa "só eu" (sem responsável, sem processo e não compartilhada) não entra: é privada. */
 const somaDias = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
@@ -109,17 +110,47 @@ export async function agendaRotas(request, env, partes) {
   const nomesPlan = ((await lerDoc(env, '_planilha', 'config')) || {}).nomes || {}, pn = (n) => normNome(String(n || '').split(/\s+/)[0]), alias = new Map();
   for (const [id, u] of usuarios) { if (u.papel === 'estagiario' || u.ativo === false || (u.oabs || []).length) continue; const ach = roster.filter((r) => pn(r.nome) === pn(u.nome)); if (ach.length === 1) alias.set('u:' + id, ach[0].oab); }
   const resolve = (k) => { if (String(k).startsWith('n:')) k = nomesPlan[String(k).slice(2)] || k; return alias.get(k) || k; };
-  const pessoas = new Map(), conta = (k, i) => { if (!k) return; if (!pessoas.has(k)) pessoas.set(k, { chave: k, nome: nomes.get(k) || (String(k).startsWith('n:') ? String(k).slice(2) : k), dias: Array(dias).fill(0), total: 0 }); const p = pessoas.get(k); p.dias[i]++; p.total++; };
+  const nova = (k, nome) => ({ chave: k, nome, dias: Array(dias).fill(0), total: 0, atrAg: 0, del: Array(dias).fill(0), delSem: 0, atrDel: 0 });
+  const pessoas = new Map(), pessoa = (k) => { if (!pessoas.has(k)) pessoas.set(k, nova(k, nomes.get(k) || (String(k).startsWith('n:') ? String(k).slice(2) : k))); return pessoas.get(k); };
+  const conta = (k, i) => { if (!k) return; const p = pessoa(k); p.dias[i]++; p.total++; };
   for (const r of results) {
-    const d = JSON.parse(r.dados); if (d.concluido === true || d.cancelado === true || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || d.data < hoje || d.data > fim) continue;
+    const d = JSON.parse(r.dados); if (d.concluido === true || d.cancelado === true || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || d.data > fim) continue;
+    if (d.data < hoje && d.tipo === 'audiencia') continue;   // audiência que já passou e ninguém marcou como realizada não conta como atraso
     const num = digitos(d.processo); if (num.length >= 15 && arq.has(num)) continue;
     let resp = Array.isArray(d.resp) && d.resp.length ? d.resp : (!d.plan && num.length >= 15 && porProc.has(num) ? porProc.get(num) : null);   // tarefa da planilha: só o responsável da coluna, nunca os advogados do processo
     if (!resp) { if (d.plan) continue; if (d.compartilhada === true || d.processo) resp = [chaveDe(d.criadoPor)].filter(Boolean); else continue; }
+    if (d.data < hoje) { for (const k of new Set(resp.map(resolve))) if (k) pessoa(k).atrAg++; continue; }   // já venceu e não foi concluído
     const i = Math.round((Date.parse(d.data) - Date.parse(hoje)) / 864e5);
     for (const k of new Set(resp.map(resolve))) conta(k, i);
   }
-  for (const r of roster) if (!pessoas.has(r.oab)) pessoas.set(r.oab, { chave: r.oab, nome: r.nome, dias: Array(dias).fill(0), total: 0 });
-  for (const [id, u] of usuarios) if (u.papel === 'estagiario' && u.ativo !== false && !pessoas.has('u:' + id)) pessoas.set('u:' + id, { chave: 'u:' + id, nome: u.nome || 'Usuário', dias: Array(dias).fill(0), total: 0 });
+  /* tarefas delegadas (aba Delegadas): dia da "data de trabalhar" (ou do prazo fatal); sem nenhuma data só entra no total; fatal vencido = atrasada.
+     Tarefa fixa: semanal/mensal entra no dia em que vence (se o ciclo não foi marcado como feito) e vira atrasada se o último vencimento ficou sem "feita"; a diária não conta (todo dia útil). Contas fixas do escritório (tipo 'fixa') não entram. */
+  const dl = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ?').bind('delegadas').all();
+  for (const r of dl.results) {
+    const d = JSON.parse(r.dados); if (d.tipo === 'fixa' || d.status === 'concluida' || d.status === 'protocolada' || !d.resp || typeof d.resp !== 'string') continue;
+    const k = resolve(d.resp); if (!k) continue;
+    if (d.fixa === true) {
+      const feitas = d.feitas || {}, piso = String(d.fixaDesde || d.criadoEm || '').slice(0, 10) || '0000-01-01';
+      const ocs = [];   // vencimentos de hoje-31 até o fim da janela: { c, data }
+      for (let x = somaDias(hoje, -31); x <= fim; x = somaDias(x, 1)) {
+        const dow = new Date(Date.parse(x + 'T12:00:00Z')).getUTCDay(), ult = new Date(Date.UTC(+x.slice(0, 4), +x.slice(5, 7), 0)).getUTCDate();
+        if (d.repete === 'semanal' && dow === Number(d.dow)) ocs.push({ c: x, data: x });
+        else if (d.repete === 'mensal' && +x.slice(8) === Math.min(Number(d.dia) || 1, ult)) ocs.push({ c: x.slice(0, 7), data: x });
+      }
+      const abertas = ocs.filter((o) => o.data >= piso && !feitas[o.c]);
+      const ant = abertas.filter((o) => o.data < hoje && o.data >= somaDias(hoje, d.repete === 'mensal' ? -20 : -6));
+      if (ant.length) pessoa(k).atrDel++;
+      for (const o of abertas.filter((o) => o.data >= hoje && o.data <= fim)) pessoa(k).del[Math.round((Date.parse(o.data) - Date.parse(hoje)) / 864e5)]++;
+      continue;
+    }
+    if (d.fatal && d.fatal < hoje) { pessoa(k).atrDel++; continue; }
+    const alvo = d.trabalhar ? (d.trabalhar < hoje ? hoje : d.trabalhar) : (d.fatal || '');
+    if (!alvo) { pessoa(k).delSem++; continue; }
+    if (alvo > fim) continue;
+    pessoa(k).del[Math.round((Date.parse(alvo) - Date.parse(hoje)) / 864e5)]++;
+  }
+  for (const r of roster) if (!pessoas.has(r.oab)) pessoas.set(r.oab, nova(r.oab, r.nome));
+  for (const [id, u] of usuarios) if (u.papel === 'estagiario' && u.ativo !== false && !pessoas.has('u:' + id)) pessoas.set('u:' + id, nova('u:' + id, u.nome || 'Usuário'));
   for (const p of pessoas.values()) if (p.chave.startsWith('u:')) p.nome = (usuarios.get(p.chave.slice(2)) || {}).nome || p.nome;
   return json({ inicio: hoje, dias, pessoas: [...pessoas.values()].sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR')) });
 }

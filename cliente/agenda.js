@@ -820,20 +820,31 @@ function agCarregarCarga(){
   if (agCarga2) agDesenharCarga(agCarga2);
   fetch('/api/agenda/carga?dias=7', { credentials: 'same-origin', cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){ if (!j) return; agCarga2 = j; agDesenharCarga(j); }).catch(function(){});
 }
+var agCargaModo = (function(){ try{ var m = localStorage.getItem('horus.cargaModo'); return m === 'agenda' || m === 'del' ? m : 'todos'; }catch(e){ return 'todos'; } })();
+/* os números de cada pessoa conforme a fonte escolhida: Agenda + Delegadas (padrão), só Agenda ou só Delegadas */
+function agCargaNum(p, modo){
+  var soma = function(a){ return a.reduce(function(t, n){ return t + n; }, 0); }, dl = p.del || [], delTot = soma(dl) + (p.delSem || 0);
+  var dias = p.dias.map(function(n, i){ return (modo === 'del' ? 0 : n) + (modo === 'agenda' ? 0 : (dl[i] || 0)); });
+  return { dias: dias, atr: (modo === 'del' ? 0 : (p.atrAg || 0)) + (modo === 'agenda' ? 0 : (p.atrDel || 0)), total: (modo === 'del' ? 0 : p.total) + (modo === 'agenda' ? 0 : delTot), tAg: p.total, tDel: delTot };
+}
 function agDesenharCarga(j){
   var box = qs('agCargaBox'); if (!box) return;
-  var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], cabec = '', i;
+  var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], cabec = '', i, modo = agCargaModo;
   for (i = 0; i < j.dias; i++) cabec += '<span style="flex:1;text-align:center">' + DIAS[new Date(Date.parse(j.inicio + 'T12:00:00Z') + i * 864e5).getUTCDay()] + '</span>';
-  var max = j.pessoas.reduce(function(m, p){ return Math.max(m, p.total); }, 0), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'];
+  var lista = j.pessoas.map(function(p){ return { p: p, n: agCargaNum(p, modo) }; }).sort(function(a, b){ return b.n.total - a.n.total || String(a.p.nome).localeCompare(String(b.p.nome), 'pt-BR'); });
+  var max = lista.reduce(function(m, x){ return Math.max(m, x.n.total); }, 0), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], GRADE = 'grid-template-columns:84px minmax(0,1fr) 50px 30px';
   var cel = function(n){ return '<span style="flex:1;height:22px;border-radius:6px;background:' + (n === 0 ? 'var(--surface-2)' : n === 1 ? 'rgba(201,133,0,.28)' : n === 2 ? 'rgba(201,133,0,.55)' : '#C98500') + ';color:' + (n >= 2 ? '#fff' : 'var(--ink-soft)') + ';font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">' + (n || '') + '</span>'; };
-  var h = '<div style="display:grid;grid-template-columns:96px 1fr 30px;gap:8px;font-size:11px;color:var(--ink-soft);margin-bottom:2px"><span></span><span style="display:flex;gap:4px">' + cabec + '</span><span style="text-align:right">total</span></div>';
-  h += j.pessoas.slice(0, 12).map(function(p, n){   /* todos os integrantes (advogados e estagiários), inclusive quem está com a agenda livre */
-    var top = max > 0 && p.total === max;
-    return '<div style="display:grid;grid-template-columns:96px 1fr 30px;gap:8px;align-items:center;padding:4px ' + (top ? '8px' : '0') + ';' + (top ? 'background:rgba(201,133,0,.1);border-radius:10px;margin:0 -8px' : '') + '"><span style="display:flex;gap:6px;align-items:center;font-size:var(--t2);font-weight:700;min-width:0"><span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff;flex:none">' + escapeHtml(agdSigla(p.nome)) + '</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(p.nome.split(' ')[0]) + '</span></span><span style="display:flex;gap:4px">' + p.dias.map(cel).join('') + '</span><b style="text-align:right">' + p.total + '</b></div>';
+  var seg = [['todos', 'Agenda + Delegadas'], ['agenda', 'Só Agenda'], ['del', 'Só Delegadas']];
+  var h = '<div class="ag-cg-seg" style="display:flex;gap:0;margin:0 0 8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;width:100%">' + seg.map(function(x){ return '<button type="button" data-cgm="' + x[0] + '" style="flex:1 1 auto;min-width:0;border:0;background:' + (modo === x[0] ? 'var(--surface-2)' : 'var(--surface)') + ';color:' + (modo === x[0] ? 'var(--accent)' : 'var(--ink-soft)') + ';font:inherit;font-size:var(--t2);font-weight:700;padding:7px 6px;min-height:36px;cursor:pointer">' + x[1] + '</button>'; }).join('') + '</div>';
+  h += '<div style="display:grid;' + GRADE + ';gap:6px;font-size:11px;color:var(--ink-soft);margin-bottom:2px"><span></span><span style="display:flex;gap:3px">' + cabec + '</span><span style="text-align:center;color:var(--urgente);font-weight:700;font-size:10px">atrasadas</span><span style="text-align:right">total</span></div>';
+  h += lista.slice(0, 12).map(function(x, n){   /* todos os integrantes (advogados e estagiários), inclusive quem está com a agenda livre */
+    var p = x.p, c = x.n, top = max > 0 && c.total === max;
+    return '<div style="display:grid;' + GRADE + ';gap:6px;align-items:center;padding:4px ' + (top ? '8px' : '0') + ';' + (top ? 'background:rgba(201,133,0,.1);border-radius:10px;margin:0 -8px' : '') + '"><span style="display:flex;gap:6px;align-items:center;font-size:var(--t2);font-weight:700;min-width:0"><span class="agc-av" style="background:' + cores[n % cores.length] + ';color:#fff;flex:none">' + escapeHtml(agdSigla(p.nome)) + '</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(p.nome.split(' ')[0]) + '</span></span><span style="display:flex;gap:3px">' + c.dias.map(cel).join('') + '</span><span style="text-align:center">' + (c.atr ? '<span class="ag-cg-atr" style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:22px;border-radius:11px;background:rgba(217,59,59,.14);color:var(--urgente);font-size:11.5px;font-weight:800">' + c.atr + '</span>' : '<span style="color:var(--ink-soft)">–</span>') + '</span><b style="text-align:right">' + c.total + '</b></div>';
   }).join('');
-  var topo = j.pessoas[0];
-  h += '<div class="md-foot">' + (topo && topo.total > 0 ? '<b>' + escapeHtml(topo.nome.split(' ')[0]) + '</b> é quem está mais carregado nos próximos ' + j.dias + ' dias: ' + topo.total + (topo.total === 1 ? ' item' : ' itens') + '. Prazos, audiências e tarefas em aberto; tarefa pessoal não entra.' : 'Nenhum compromisso em aberto com responsável nos próximos ' + j.dias + ' dias.') + '</div>';
+  var atrAll = lista.reduce(function(t, x){ return t + x.n.atr; }, 0), topo = lista[0], fonte = modo === 'agenda' ? 'Prazos, audiências e tarefas da Agenda em aberto' : (modo === 'del' ? 'Só tarefas delegadas em aberto (a data é a de trabalhar, ou o prazo fatal; sem data entra só no total)' : 'Prazos, audiências e tarefas da Agenda + tarefas delegadas em aberto (a data é a de trabalhar, ou o prazo fatal; sem data entra só no total)');
+  h += '<div class="md-foot">' + (topo && topo.n.total > 0 ? '<b>' + escapeHtml(topo.p.nome.split(' ')[0]) + '</b> é quem está mais carregado nos próximos ' + j.dias + ' dias: ' + topo.n.total + (topo.n.total === 1 ? ' item' : ' itens') + (modo === 'todos' ? ' (' + topo.n.tAg + ' da Agenda + ' + topo.n.tDel + (topo.n.tDel === 1 ? ' delegada)' : ' delegadas)') : '') + (topo.n.atr ? ', ' + topo.n.atr + (topo.n.atr === 1 ? ' atrasada' : ' atrasadas') : '') + '. ' + fonte + '; tarefa pessoal e contas fixas do escritório não entram. “Atrasadas” = já venceram e não foram concluídas (qualquer data passada).' : 'Nenhum compromisso em aberto com responsável nos próximos ' + j.dias + ' dias.' + (atrAll ? ' Há ' + atrAll + (atrAll === 1 ? ' item atrasado' : ' itens atrasados') + ' (coluna “atrasadas”).' : '')) + '</div>';
   box.innerHTML = h;
+  box.onclick = function(e){ var b = e.target.closest ? e.target.closest('[data-cgm]') : null; if (!b) return; agCargaModo = b.getAttribute('data-cgm'); try{ localStorage.setItem('horus.cargaModo', agCargaModo); }catch(x){} if (agCarga2) agDesenharCarga(agCarga2); };
 }
 
 /* ---------- revisão em lote: prazos e audiências sem responsável ---------- */

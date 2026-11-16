@@ -41,6 +41,28 @@ check(j.pessoas.reduce((t, x) => t + x.total, 0) === 4, 'não contam: concluído
 check(!(p('11111/GO').dias.slice(3).some((n) => n)), 'cada item cai no dia certo');
 check((await edu('GET', '/api/agenda/carga')).s === 200 && (await ana('GET', '/api/agenda/carga?dias=14')).j.dias === 14, 'estagiário também vê; dá para pedir até 14 dias');
 
+console.log('\n— carga por pessoa: tarefas delegadas e atrasadas');
+const dowDe = (iso) => new Date(Date.parse(iso + 'T12:00:00Z')).getUTCDay();
+const dg = (id, d) => dono('PUT', '/api/db/delegadas/' + id, { prioridade: 'Média', status: 'afazer', criadoEm: new Date().toISOString(), ...d });
+await dg('cg1', { titulo: 'SEGREDO-d1 atrasada', resp: '11111/GO', fatal: em(-2) });
+await dg('cg2', { titulo: 'SEGREDO-d2 trabalhar amanhã', resp: '11111/GO', trabalhar: em(1), fatal: em(6) });
+await dg('cg3', { titulo: 'SEGREDO-d3 sem data', resp: '11111/GO' });
+await dg('cg4', { titulo: 'SEGREDO-d4 concluída', resp: '11111/GO', fatal: em(-5), status: 'concluida' });
+await dg('cg5', { titulo: 'SEGREDO-d5 conta fixa', tipo: 'fixa', resp: '11111/GO', repete: 'mensal', dia: 5, criadoEm: new Date().toISOString() });
+await dg('cg6', { titulo: 'SEGREDO-d6 fixa semanal que vence em 2 dias', resp: '11111/GO', fixa: true, repete: 'semanal', dow: dowDe(em(2)), fixaDesde: em(-1), feitas: {} });
+await dg('cg7', { titulo: 'SEGREDO-d7 fixa semanal que venceu há 3 dias e não foi feita', resp: 'u:u6', fixa: true, repete: 'semanal', dow: dowDe(em(-3)), fixaDesde: em(-20), feitas: {} });
+await dg('cg8', { titulo: 'SEGREDO-d8 fixa semanal que venceu há 3 dias e foi feita', resp: '22222/GO', fixa: true, repete: 'semanal', dow: dowDe(em(-3)), fixaDesde: em(-20), feitas: { [em(-3)]: { por: 'x' } } });
+await dg('cg9', { titulo: 'SEGREDO-d9 trabalhar longe', resp: '22222/GO', trabalhar: em(20), fatal: em(25) });
+await ag('cg-a1', { tipo: 'prazo', titulo: 'SEGREDO-a1 prazo vencido', resp: ['11111/GO'], data: em(-4) });
+await ag('cg-a2', { tipo: 'audiencia', titulo: 'SEGREDO-a2 audiência que passou', resp: ['11111/GO'], data: em(-4) });
+const c2 = await bruno('GET', '/api/agenda/carga'), q = (k) => c2.j.pessoas.find((x) => x.chave === k);
+check(q('11111/GO').atrDel === 1 && q('11111/GO').del[1] === 1 && q('11111/GO').delSem === 1 && q('11111/GO').del[2] === 1, 'Ana: 1 delegada atrasada, 1 no dia da data de trabalhar (amanhã), 1 sem data (só no total) e a fixa semanal no dia em que vence; concluída e conta fixa do escritório não contam');
+check(q('11111/GO').atrAg === 1 && q('11111/GO').total === 2, 'Agenda: o prazo vencido e não concluído vira "atrasada"; a audiência que já passou não; o total da Agenda (dias/total) continua igual');
+check(q('u:u6').atrDel === 1 && q('u:u6').del[4] === 1 && q('22222/GO').atrDel === 0 && q('22222/GO').del.reduce((a, b) => a + b, 0) === 1, 'fixa vencida sem "feita" é atrasada (e volta a vencer na semana seguinte); a marcada como feita não; tarefa com data de trabalhar longe da janela não entra');
+check(!JSON.stringify(c2.j).includes('SEGREDO'), 'continua sem título nem id de nenhum item');
+for (const id of ['cg1', 'cg2', 'cg3', 'cg4', 'cg5', 'cg6', 'cg7', 'cg8', 'cg9']) await dono('DELETE', '/api/db/delegadas/' + id);
+await dono('DELETE', '/api/db/agenda/cg-a1'); await dono('DELETE', '/api/db/agenda/cg-a2');
+
 console.log('\n— equipe para os seletores');
 const eq = await ana('GET', '/api/equipe');
 check(eq.j.estagiarios.some((e) => e.id === 'u6' && e.nome === 'Edu Estagiario') && eq.j.estagiarios.length >= 3 && !JSON.stringify(eq.j).includes('@'), '/api/equipe traz também os estagiários ativos (id e nome), sem e-mails');

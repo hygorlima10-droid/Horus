@@ -45,6 +45,15 @@ await page.evaluate(() => { const b = document.querySelector('[data-ag="vista"][
 t = await page.locator('#agCargaBox').innerText();
 check(/Ana/.test(t) && /Bruno/.test(t) && /mais carregado/.test(t), 'o Resumo mostra a carga dos próximos 7 dias por pessoa (' + t.replace(/\n/g, ' ').slice(0, 90) + ')');
 
+/* o cartão soma as tarefas delegadas e mostra as atrasadas; o seletor troca a fonte */
+await page.evaluate(async () => { await fetch('/api/db/delegadas/cg-ap1', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ titulo: 'Delegada vencida', resp: '11111/GO', status: 'afazer', fatal: '2020-01-01', criadoEm: new Date().toISOString() }) }); });
+await page.click('[data-ag="vista"][data-v="lista"]'); await page.click('[data-ag="vista"][data-v="resumo"]'); await page.waitForSelector('#agCargaBox .agc-av', { timeout: 8000 }); await page.waitForTimeout(800);
+check(await page.locator('#agCargaBox [data-cgm]').count() === 3 && /atrasadas/.test(await page.locator('#agCargaBox').innerText()), 'o cartão tem o seletor Agenda + Delegadas / Só Agenda / Só Delegadas e a coluna "atrasadas"');
+await page.click('#agCargaBox [data-cgm="del"]'); t = await page.locator('#agCargaBox').innerText();
+check(await page.locator('#agCargaBox .ag-cg-atr').count() >= 1 && /(item atrasado|itens atrasados)/.test(t), 'em "Só Delegadas" a tarefa delegada vencida aparece como atrasada: ' + t.replace(/\n/g, ' ').slice(0, 260));
+await page.click('#agCargaBox [data-cgm="agenda"]'); check(await page.locator('#agCargaBox .ag-cg-atr').count() === 0, 'em "Só Agenda" a delegada não conta');
+await page.click('#agCargaBox [data-cgm="todos"]'); await page.evaluate(async () => { await fetch('/api/db/delegadas/cg-ap1', { method: 'DELETE' }); });
+
 console.log('\n— formulário: responsáveis sugeridos pelo processo, conflito e duplicidade');
 await page.click('[data-ag="novo"]'); await page.waitForSelector('#overlayAg.show #age_proc');
 await page.click('[data-age="tipo"][data-v="prazo"]');

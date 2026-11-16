@@ -28,7 +28,7 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]
 check(/Abertas/.test(await t(page, '#dgWrap')) && /Painel da equipe/.test(await t(page, '#dgWrap')) && /Concluídas/.test(await t(page, '#dgWrap')), 'a tela tem as abas Abertas, Painel da equipe e Concluídas');
 check(await page.locator('#dg_n_titulo').isVisible() && /Tarefa antiga atrasada/.test(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).map(i => i.value).join('|'))), 'a primeira linha da tabela está em branco para lançar e as tarefas abertas aparecem abaixo');
 check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Tarefa já concluída'))), 'a tarefa concluída não aparece em Abertas');
-check(/−5 úteis|−4 úteis|−3 úteis/.test(await t(page, '.dg-desk')), 'o prazo vencido mostra os dias úteis em atraso: ' + (await t(page, '.dg-desk')).match(/−\d+ úteis?/));
+check(/−\d+ ú/.test(await t(page, '.dg-desk')) && /úteis/.test(await page.locator('.dg-ta .dg-dias.atr').first().getAttribute('title')), 'o prazo vencido mostra os dias úteis em atraso ("−5 ú", com "úteis" na dica): ' + (await t(page, '.dg-desk')).match(/−\d+ ú/));
 // lançar direto na linha: processo pela setinha com busca completa o cliente
 await page.click('tr.dg-novo [data-c="processo"]'); await page.waitForTimeout(300);
 check(await page.locator('#dgDD').isVisible() && /5727644-22/.test(await t(page, '#dgDD')), 'a setinha do processo abre com busca e lista os processos cadastrados');
@@ -85,8 +85,69 @@ await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).cat
 check(await page.locator('.dg-ta [data-dg="copiar"]').count() >= 1, 'as linhas com processo têm o botão de copiar o número');
 await page.locator('.dg-ta [data-dg="copiar"]').first().click(); await page.waitForTimeout(500);
 check(/copiad/i.test(await t(page, '#toast')), 'copiar o número do processo avisa "copiado"');
-const larg = await page.evaluate(() => ({ cli: document.querySelector('.dg-ta th:first-child').getBoundingClientRect().width, tit: document.querySelector('.dg-ta tr:not(.dg-novo) input.dg-t').getBoundingClientRect().width }));
-check(larg.cli <= 135 && larg.tit >= 300, 'a coluna Cliente ficou estreita (' + Math.round(larg.cli) + ' px) e a descrição da tarefa larga (' + Math.round(larg.tit) + ' px)');
+// ---- tabela compacta: 7 colunas, cliente e processo juntos (com o botão de copiar), prazos juntos, ações em ✓ e ⋯
+const cab = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta thead th')).map(x => ({ t: x.textContent.trim(), w: Math.round(x.getBoundingClientRect().width) })));
+check(cab.length === 7 && cab.map(x => x.t).join('|') === 'Tarefa *|Cliente / processo|Responsável|Prior.|Status|Prazos|', 'a tabela tem 7 colunas: ' + cab.map(x => x.t).join(' | '));
+check(cab[1].w >= 200 && cab[1].w <= 240 && cab[0].w >= 260, 'Cliente / processo ocupa ~220 px e a Tarefa fica com o resto (' + cab[0].w + ' px)');
+const linhaCP = await page.evaluate(() => { const r = Array.from(document.querySelectorAll('.dg-ta tr[data-dgl]')).find(x => x.querySelector('[data-dg="copiar"]')); const td = r.children[1]; return { cli: !!td.querySelector('[data-c="cliente"]'), proc: !!td.querySelector('[data-c="processo"]'), copia: !!td.querySelector('[data-dg="copiar"]'), alt: Math.round(r.getBoundingClientRect().height), resp: !!r.children[2].querySelector('[data-c="resp"]') && !!r.children[2].querySelector('[data-c="delegadoPor"]'), datas: r.children[5].querySelectorAll('input[type=date]').length, acoes: Array.from(r.querySelectorAll('.dg-acao [data-dg]')).map(b => b.getAttribute('data-dg')) }; });
+check(linhaCP.cli && linhaCP.proc && linhaCP.copia && linhaCP.resp && linhaCP.datas === 2 && linhaCP.alt <= 72 && linhaCP.acoes.join(',') === 'concluir,mais', 'a linha: cliente e processo (com copiar) na mesma célula, responsável + "por", duas datas na célula Prazos, ações só ✓ e ⋯ (altura ' + linhaCP.alt + ' px)');
+check(await page.evaluate(() => getComputedStyle(document.querySelector('.dg-ta td:first-child')).position === 'sticky'), 'a coluna Tarefa fica fixa à esquerda quando há rolagem');
+// menu ⋯: ficha completa, tornar fixa e excluir (com confirmação)
+await f('POST', '/api/db/delegadas', { titulo: 'Tarefa para excluir pelo menu', resp: '60456/GO', prioridade: 'Baixa', status: 'afazer', criadoEm: new Date().toISOString() });
+await page.reload(); await page.waitForTimeout(3500); await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);
+const idEx = (await lista()).find(d => d.titulo === 'Tarefa para excluir pelo menu').id;
+await page.click('tr[data-dgl="' + idEx + '"] [data-dg="mais"]'); await page.waitForTimeout(300);
+const itensMais = await t(page, '#dgDD');
+check(/Abrir a ficha completa/.test(itensMais) && /Tornar fixa/.test(itensMais) && /Excluir/.test(itensMais), 'o ⋯ oferece ficha completa, tornar fixa e excluir: ' + itensMais);
+await page.click('#dgDD .dg-dd-i >> text=Abrir a ficha completa'); await page.waitForTimeout(500);
+check(/Tarefa para excluir pelo menu/.test(await page.locator('#dgf_titulo').inputValue()), 'a ficha completa abre pelo ⋯'); await page.click('[data-dgfa="cancelar"]'); await page.waitForTimeout(300);
+await page.click('tr[data-dgl="' + idEx + '"] [data-dg="mais"]'); await page.click('#dgDD .dg-dd-i >> text=Excluir'); await page.waitForTimeout(300);
+check(/Toque de novo para excluir/.test(await t(page, '#dgDD')) && (await lista()).some(d => d.id === idEx), 'excluir pede um segundo toque e ainda não apagou');
+await page.click('#dgDD .dg-dd-i >> text=Toque de novo'); await page.waitForTimeout(1000);
+check(!(await lista()).some(d => d.id === idEx) && !(await page.locator('tr[data-dgl="' + idEx + '"]').count()), 'o segundo toque exclui (vai para a Lixeira)');
+// busca por texto (nomes únicos por execução: o banco do teste guarda o que as execuções anteriores criaram)
+const U = 'q' + Math.random().toString(36).slice(2, 8), PROC = '00' + String(Math.floor(10000 + Math.random() * 89999)) + '-56.2025.8.09.0051';
+await f('POST', '/api/db/delegadas', { titulo: 'Certidão ' + U + ' de objeto e pé', cliente: 'Silva ' + U + ' & Cia Ltda', processo: PROC, resp: '60456/GO', prioridade: 'Alta', status: 'afazer', fatal: dia(4), obs: 'pedir ao cartório ' + U, criadoEm: new Date().toISOString() });
+await f('POST', '/api/db/delegadas', { titulo: 'Réplica ' + U + ' à contestação', cliente: 'Maria Silva ' + U, resp: '60456/GO', prioridade: 'Média', status: 'afazer', criadoEm: new Date().toISOString() });
+await page.reload(); await page.waitForTimeout(3500); await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);
+const nLinhas = () => page.locator('.dg-ta tr[data-dgl]').count(), todas0 = await nLinhas();
+await page.fill('#dg_q', 'certidao ' + U); await page.waitForTimeout(300);
+check(await nLinhas() === 1 && /^1 de \d+ tarefa /.test(await t(page, '.dg-cont')) && await page.locator('.dg-desk mark').count() >= 1, 'buscar "certidao" (sem acento) acha "Certidão" e mostra "1 de N tarefa": ' + await t(page, '.dg-cont'));
+await page.fill('#dg_q', 'silva ' + U); await page.waitForTimeout(300);
+check(await nLinhas() === 2 && /Silva/i.test(await page.locator('.dg-ta mark').first().innerText()), 'buscar "silva" acha nos clientes das duas tarefas e destaca o trecho');
+await page.fill('#dg_q', 'silva certid ' + U); await page.waitForTimeout(300);
+check(await nLinhas() === 1, 'várias palavras: precisa ter todas (em qualquer campo)');
+await page.fill('#dg_q', PROC.replace(/\D/g, '')); await page.waitForTimeout(300);
+check(await nLinhas() === 1, 'o número do processo acha sem pontos nem traços');
+await page.fill('#dg_q', 'cartorio ' + U); await page.waitForTimeout(300);
+check(await nLinhas() === 1, 'a busca também olha as observações');
+await page.fill('#dg_q', 'zzzxyz'); await page.waitForTimeout(300);
+check(await nLinhas() === 0 && /Nenhuma tarefa aberta com “zzzxyz”/.test(await t(page, '.dg-desk .dg-vazio')) && await page.locator('.dg-desk .dg-vazio [data-dg="limparbusca"]').count() === 1, 'sem resultado: mensagem com "Limpar busca"');
+await page.click('.dg-desk .dg-vazio [data-dg="limparbusca"]'); await page.waitForTimeout(300);
+check(await nLinhas() === todas0 && (await page.inputValue('#dg_q')) === '' && await page.evaluate(() => document.activeElement.id === 'dg_q'), 'limpar a busca devolve todas as tarefas e o cursor volta para o campo');
+await page.fill('#dg_q', 'Tarefa já concl'); await page.waitForTimeout(300);
+check(await nLinhas() === 0 && /procurar também nas Concluídas \(\d+\)/.test(await t(page, '.dg-desk .dg-vazio')), 'sem resultado nas abertas, oferece procurar nas Concluídas');
+await page.click('.dg-desk [data-dg="buscaconcl"]'); await page.waitForTimeout(400);
+check(/Tarefa já concluída/.test(await t(page, '#dgWrap')) && /^\d+ de \d+ conclu/.test(await t(page, '.dg-cont')), 'a busca vale também na aba Concluídas e continua: ' + await t(page, '.dg-cont'));
+await page.focus('#dg_q'); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+check((await page.inputValue('#dg_q')) === '', 'Esc limpa a busca');
+await page.click('.dg-aba >> text=Abertas'); await page.waitForTimeout(300);
+// "Minhas atrasadas" e o número no menu
+await page.evaluate(() => { const T = window.__horusTeste; T.esS.eu = { id: 'u1', papel: 'proprietario', oabs: ['60456/GO'] }; });
+await page.click('.dg-aba >> text=Painel'); await page.click('.dg-aba >> text=Abertas'); await page.waitForTimeout(400);
+const selo = (await page.locator('#menuNDelegadas').innerText()).trim();
+check(/^\d+$/.test(selo) && Number(selo) >= 1, 'o número vermelho no menu mostra as minhas tarefas atrasadas: ' + selo);
+check(await page.locator('.dg-chip-atr').count() === 1 && new RegExp('Minhas atrasadas · ' + selo).test(await t(page, '.dg-chip-atr')) && /Só atrasadas · \d+/.test(await t(page, '.dg-fil')), 'o atalho "Minhas atrasadas · N" e o total "Só atrasadas · N" aparecem nos filtros');
+await page.click('.dg-chip-atr'); await page.waitForTimeout(300);
+const soMinhas = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta tr[data-dgl]')).map(r => r.querySelector('input.dg-t').value));
+check(soMinhas.length === Number(selo) && soMinhas.includes('Tarefa antiga atrasada') && !soMinhas.some(x => x.includes(U)), 'tocar em "Minhas atrasadas" mostra só as minhas vencidas (' + soMinhas.length + ')');
+await page.click('.dg-chip-atr'); await page.waitForTimeout(300);
+check(await nLinhas() >= soMinhas.length + 1, 'tocar de novo volta a lista inteira');
+// sem rolagem para os lados em 1440 px
+const p14 = await abrir(1440, 900); await p14.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await p14.waitForTimeout(1200);
+const m14 = await p14.evaluate(() => { const w = document.querySelector('.dg-tw'); return { vis: w.clientWidth, tot: w.scrollWidth }; });
+check(m14.tot <= m14.vis + 1, 'em 1440 px a tabela cabe inteira, sem rolar para os lados (' + m14.tot + ' de ' + m14.vis + ' px)'); if (process.env.FOTOS) await p14.screenshot({ path: process.env.FOTOS + '/delegadas-1440.png' }); await p14.close();
+if (process.env.FOTOS) { await page.screenshot({ path: process.env.FOTOS + '/delegadas-1280.png' }); await page.fill('#dg_q', 'silva ' + U); await page.waitForTimeout(300); await page.screenshot({ path: process.env.FOTOS + '/delegadas-1280-busca.png' }); await page.fill('#dg_q', ''); await page.waitForTimeout(200); }
 // converter as que já dizem "Tarefa Fixa"
 await f('POST', '/api/db/delegadas', { titulo: 'Conferir pauta das audiências. Tarefa Fixa', resp: '60456/GO', prioridade: 'Média', status: 'afazer', fatal: dia(2), criadoEm: new Date().toISOString() });
 await page.reload(); await page.waitForTimeout(3500);
@@ -139,6 +200,7 @@ await page.close();
 page = await abrir(390, 844);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);
 check(!(await page.locator('.dg-desk').isVisible()) && await page.locator('.dg-mob').isVisible() && /atrasadas/i.test(await t(page, '.dg-mob')), 'no celular aparecem cartões agrupados (Atrasadas…), não a tabela');
+if (process.env.FOTOS) { await page.screenshot({ path: process.env.FOTOS + '/delegadas-390.png' }); await page.fill('#dg_q', 'silva'); await page.waitForTimeout(300); await page.screenshot({ path: process.env.FOTOS + '/delegadas-390-busca.png' }); await page.fill('#dg_q', ''); await page.waitForTimeout(200); }
 await page.click('[data-dg="fichanova"]'); await page.waitForTimeout(500);
 check(await page.locator('#dgf_titulo').isVisible() && await page.locator('#dgf_resp').isVisible() && await page.locator('#dgf_fatal').isVisible() && await page.locator('#dgf_prioridade').isVisible(), 'a ficha curta tem Tarefa, Responsável, Prazo fatal e Prioridade');
 await page.fill('#dgf_titulo', 'Pedir certidão pelo celular'); await page.click('[data-dgfa="salvar"]'); await page.waitForTimeout(1200);
