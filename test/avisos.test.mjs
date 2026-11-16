@@ -48,6 +48,12 @@ await ana('PUT', '/api/notif/config', { avisos: { indicado: false } });
 limpar(); await dono('PUT', '/api/db/agenda/av2', { tipo: 'tarefa', titulo: 'Outra', data: '2026-12-02', criadoPor: 'u1', resp: ['u:u2'] }); await esperar(300);
 check((await lidas('ana')).length === 0, 'com "Fui indicado" desligado, a advogada não recebe');
 await ana('PUT', '/api/notif/config', { avisos: { indicado: true } });
+/* tarefa delegada: o responsável é UMA chave em texto (não lista) e também recebe "Você foi indicado"; gravar por campos (?mesclar=1) devolve o documento já juntado */
+limpar(); await dono('PUT', '/api/db/delegadas/avd1', { titulo: 'Juntar procuração', resp: 'u:u2', delegadoPor: 'u:u1', status: 'afazer' }); await esperar(400);
+m = await lidas('ana'); check(m.length === 1 && m[0].titulo === 'Você foi indicado' && /Tarefa delegada · Juntar procuração/.test(m[0].corpo), 'ser colocada como responsável de uma tarefa delegada avisa: ' + (m[0] ? m[0].corpo : '(nada)'));
+limpar(); r = await dono('PUT', '/api/db/delegadas/avd1?mesclar=1', { status: 'andamento' }); await esperar(300);
+check(r.s === 200 && r.j.doc && r.j.doc.status === 'andamento' && r.j.doc.titulo === 'Juntar procuração' && r.j.doc.resp === 'u:u2' && (await lidas('ana')).length === 0, 'mudar só o andamento junta ao que está gravado (título e responsável intactos) e não repete o aviso');
+await dono('DELETE', '/api/db/delegadas/avd1');
 limpar(); await dono('PUT', '/api/db/casos/avc1', { tipo: 'inicial', cliente: 'Cliente Aviso', numeroProcesso: '0000808-80.2024.8.09.0808', advogados: [{ oab: '11111/GO', nome: 'Ana' }], criadoEm: new Date().toISOString() }); await esperar(400);
 m = await lidas('ana'); check(m.length === 1 && /Inicial · Cliente Aviso/.test(m[0].corpo), 'ser colocada como advogada de uma Inicial também avisa: ' + (m[0] ? m[0].corpo : '(nada)'));
 

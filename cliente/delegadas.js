@@ -68,9 +68,15 @@ function dgFiltradas(){
 function dgCarregar(silencioso){
   if (dgS.carregando) return Promise.resolve();
   dgS.carregando = true; if (!silencioso) dgS.erro = '';
-  return pbApi('/api/db/delegadas').then(function(r){
-    dgS.docs = (r.docs || []).map(function(x){ var d = x.data || {}; d.id = x.id; return d; }); dgS.ok = true; dgS.erro = '';
-  }).catch(function(e){ dgS.erro = e.message; dgS.ok = true; }).then(function(){ dgS.carregando = false; if (activeTab === 'delegadas') dgRender(); });
+  var todos = [], pagina = function(depois){
+    return pbApi('/api/db/delegadas?limit=500' + (depois ? '&after=' + encodeURIComponent(depois) : '')).then(function(r){
+      (r.docs || []).forEach(function(x){ var d = x.data || {}; d.id = x.id; todos.push(d); });
+      return r.mais && r.docs && r.docs.length ? pagina(r.docs[r.docs.length - 1].id) : null;
+    });
+  };
+  return pagina('').then(function(){ dgS.docs = todos; dgS.ok = true; dgS.erro = ''; dgCacheEst = {}; })
+    .catch(function(e){ if (silencioso && dgS.ok) return; dgS.erro = e.message; dgS.ok = true; })   /* falha numa atualização automática não apaga o que está na tela */
+    .then(function(){ dgS.carregando = false; if (activeTab === 'delegadas') dgRender(); });
 }
 function dgSemId(d){ var o = {}; Object.keys(d).forEach(function(k){ if (k !== 'id') o[k] = d[k]; }); return o; }
 function dgGravar(d){
@@ -80,24 +86,31 @@ function dgGravar(d){
   return pbApi('/api/db/delegadas', 'POST', corpo).then(function(j){ d.id = j.id; return d; });
 }
 function dgDoc(id){ for (var i = 0; i < dgS.docs.length; i++) if (dgS.docs[i].id === id) return dgS.docs[i]; return null; }
-/* altera campos de uma linha já gravada (e guarda quem/quando concluiu) */
-function dgSalvarCampos(id, patch, desfazer){
+/* altera só os campos mudados de uma linha já gravada: o servidor junta ao documento que está gravado AGORA (?mesclar=1), então duas pessoas
+   mexendo em campos diferentes da mesma linha não se sobrescrevem; devolve o documento já juntado. opcoes.semRender: não redesenha (ex.: ao digitar o título). */
+function dgSalvarCampos(id, patch, desfazer, opcoes){
   var d = dgDoc(id); if (!d) return Promise.resolve();
-  var antes = JSON.parse(JSON.stringify(d)), novo = Object.assign({}, d, patch);
+  opcoes = opcoes || {}; patch = Object.assign({}, patch);
+  var antes = {}; Object.keys(patch).forEach(function(k){ antes[k] = d[k] === undefined ? null : d[k]; });
   if (patch.status){
-    if (dgFeita(novo) && !dgFeita(d)){ novo.concluidoEm = agHoje(); novo.concluidoPor = dgMe(); }
-    if (!dgFeita(novo)){ delete novo.concluidoEm; delete novo.concluidoPor; }
+    if (dgFeita({ status: patch.status }) && !dgFeita(d)){ patch.concluidoEm = agHoje(); patch.concluidoPor = dgMe(); }
+    if (!dgFeita({ status: patch.status })){ patch.concluidoEm = ''; patch.concluidoPor = ''; }
+    antes.concluidoEm = d.concluidoEm === undefined ? '' : d.concluidoEm; antes.concluidoPor = d.concluidoPor === undefined ? '' : d.concluidoPor;
   }
-  return dgGravar(novo).then(function(){
-    dgS.docs = dgS.docs.map(function(x){ return x.id === id ? novo : x; }); dgRender();
-    if (desfazer) toast('Salvo.', 'Desfazer', function(){ dgGravar(antes).then(function(){ dgS.docs = dgS.docs.map(function(x){ return x.id === id ? antes : x; }); dgRender(); }); });
+  patch.atualizadoEm = new Date().toISOString();
+  var aplicar = function(doc){ dgCacheEst = {}; dgS.docs = dgS.docs.map(function(x){ return x.id === id ? doc : x; }); };
+  return pbApi('/api/db/delegadas/' + encodeURIComponent(id) + '?mesclar=1', 'PUT', patch).then(function(r){
+    var novo = r && r.doc ? Object.assign({}, r.doc, { id: id }) : Object.assign({}, d, patch);
+    aplicar(novo); if (!opcoes.semRender) dgRender();
+    if (desfazer) toast('Salvo.', 'Desfazer', function(){ pbApi('/api/db/delegadas/' + encodeURIComponent(id) + '?mesclar=1', 'PUT', Object.assign({}, antes, { atualizadoEm: new Date().toISOString() })).then(function(r2){ aplicar(r2 && r2.doc ? Object.assign({}, r2.doc, { id: id }) : Object.assign({}, dgDoc(id) || d, antes)); dgRender(); }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); }); });
+    return novo;
   }).catch(function(e){ toast('Não consegui salvar: ' + e.message); dgCarregar(); });
 }
 function dgSalvarNovo(){
   dgLerNovo(); var n = dgS.novo; if (!n || !String(n.titulo || '').trim()){ toast('Digite a tarefa.'); var t = qs('dg_n_titulo'); if (t) t.focus(); return Promise.resolve(); }
   var d = Object.assign({}, n, { titulo: String(n.titulo).trim(), criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() });
   if (!d.resp) d.resp = dgMe();
-  if (d.fixa){ d.status = 'afazer'; d.fatal = ''; d.trabalhar = ''; d.fixaDesde = agHoje(); d.feitas = {}; }
+  if (d.fixa){ d.status = 'afazer'; d.fatal = ''; d.trabalhar = ''; d.fixaDesde = agHoje(); d.feitas = {}; } else { delete d.fixa; delete d.repete; delete d.dow; delete d.dia; }
   return dgGravar(d).then(function(){
     dgS.docs.push(d); dgS.novo = dgNovoVazio(); var tl = qs('dg_n_titulo'); if (tl) tl.value = ''; dgRender();
     toast('Tarefa lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.'); var t2 = qs('dg_n_titulo'); if (t2) t2.focus();
@@ -305,8 +318,14 @@ function dgPin(t){ return '<svg width="' + (t || 14) + '" height="' + (t || 14) 
 function dgSemanaDe(iso){ return pbSoma(iso, -((pbDow(iso) + 6) % 7)); }
 function dgMesmoCiclo(f, a, b){ return f.repete === 'semanal' ? dgSemanaDe(a) === dgSemanaDe(b) : (f.repete === 'mensal' ? a.slice(0, 7) === b.slice(0, 7) : a === b); }
 /* estado da fixa agora: atrasada (alguma vez já vencida e não feita), hoje, feita (o ciclo atual está feito) ou pendente (vence adiante) */
+var dgCacheEst = {};
 function dgTFixaEstado(f){
-  var hoje = agHoje(), feitas = f.feitas || {}, occ = dgOcorrencias(f, dgFixaDe(f), pbSoma(hoje, 400)), prox = null, cur = null, i;
+  var hoje = agHoje(), chave = f.id ? f.id + '|' + (f.atualizadoEm || '') + '|' + hoje : '';
+  if (chave && dgCacheEst[chave]) return dgCacheEst[chave];
+  var r = dgTFixaEstado0(f, hoje); if (chave) dgCacheEst[chave] = r; return r;
+}
+function dgTFixaEstado0(f, hoje){
+  var feitas = f.feitas || {}, occ = dgOcorrencias(f, dgFixaDe(f), pbSoma(hoje, f.repete === 'diaria' ? 45 : (f.repete === 'mensal' ? 35 : 8))), prox = null, cur = null, i;
   for (i = 0; i < occ.length; i++){ if (!prox && !feitas[occ[i].c]) prox = occ[i]; if (!cur && dgMesmoCiclo(f, occ[i].data, hoje)) cur = occ[i]; }
   var ks = Object.keys(feitas).sort(), lf = ks.length ? Object.assign({ c: ks[ks.length - 1] }, feitas[ks[ks.length - 1]]) : null, est;
   if (prox && prox.data < hoje) est = 'atrasada';
@@ -324,7 +343,7 @@ function dgTFixaChip(d){
   var e = dgTFixaEstado(d), cls = e.est === 'atrasada' ? 'atr' : (e.est === 'hoje' ? 's3' : (e.est === 'feita' ? 's5' : 's1')), t;
   if (e.est === 'atrasada') t = 'Atrasada desde ' + fmtData(e.prox.data).slice(0, 5);
   else if (e.est === 'hoje') t = 'Vence hoje';
-  else if (e.est === 'feita') t = 'Feita' + (e.feita ? ' · ' + (dgCurto(e.feita.por) || '') + ' ' + fmtData(String(e.feita.em || '').slice(0, 10)).slice(0, 5) : '');
+  else if (e.est === 'feita') t = 'Feita' + (e.feita ? ' · ' + (dgCurto(e.feita.por) || '') + ' ' + fmtData(String(e.feita.dia || e.feita.em || '').slice(0, 10)).slice(0, 5) : '');
   else t = 'Vence ' + (e.prox ? (DG_DOW[pbDow(e.prox.data)] || '').slice(0, 3) + ' ' + fmtData(e.prox.data).slice(0, 5) : '—');
   return { cls: cls, t: t, est: e };
 }
@@ -336,7 +355,7 @@ function dgOrdemFixa(a, b){
 function dgTFixaFeita(id){
   var d = dgDoc(id); if (!d) return Promise.resolve(); var e = dgTFixaEstado(d), feitas = Object.assign({}, d.feitas || {});
   if (e.est === 'feita' && e.cur && feitas[e.cur.c]) delete feitas[e.cur.c];
-  else if (e.prox) feitas[e.prox.c] = { por: dgMe(), em: new Date().toISOString() };
+  else if (e.prox) feitas[e.prox.c] = { por: dgMe(), em: new Date().toISOString(), dia: agHoje() };
   else return Promise.resolve();
   var ks = Object.keys(feitas).sort(); while (ks.length > 40) delete feitas[ks.shift()];
   return dgSalvarCampos(id, { feitas: feitas }, true).then(function(){ try{ renderPainelAtencao(); }catch(x){} });
@@ -509,7 +528,7 @@ function dgSalvarFichaFixa(){
 function dgOpt(l, v, sel){ return '<option value="' + escapeHtml(v) + '"' + (sel ? ' selected' : '') + '>' + escapeHtml(l) + '</option>'; }
 function dgAbrirFicha(id, forcaFixa){
   var ovI = id === 'fixa-nova' || forcaFixa === true; if (id === 'fixa-nova') id = 'novo'; var ov = sgMontar('overlayDg', 'Tarefa delegada'), novo = id === 'novo' || !id, d = novo ? Object.assign({}, dgNovoVazio(), dgS.novo ? { titulo: '' } : {}) : (dgDoc(id) || null); if (!d) return;
-  dgS.ficha = novo ? 'novo' : id; ov.querySelector('h2').textContent = 'Tarefa delegada';
+  dgS.ficha = novo ? 'novo' : id; dgS.fichaBase = novo ? null : JSON.parse(JSON.stringify(d)); ov.querySelector('h2').textContent = 'Tarefa delegada';
   var pess = dgPessoas(), selP = function(campo, val){ return '<select id="dgf_' + campo + '">' + dgOpt(campo === 'resp' ? 'escolher' : '—', '', !val) + pess.map(function(p){ return dgOpt(p.nome + (p.tipo === 'est' ? ' (estagiário)' : (p.tipo === 'sem' ? ' (sem acesso)' : '')), p.k, p.k === val); }).join('') + '</select>'; };
   var fld = function(rot, html, f){ return '<div class="field"><label class="field-label" for="dgf_' + f + '">' + rot + '</label>' + html + '</div>'; };
   var h = fSec('Tarefa', fld('Tarefa *', '<textarea id="dgf_titulo" rows="2" maxlength="200" placeholder="O que precisa ser feito">' + escapeHtml(d.titulo || '') + '</textarea>', 'titulo') +
@@ -547,7 +566,11 @@ function dgSalvarFicha(){
     var d = Object.assign({}, p, { resp: p.resp || dgMe(), delegadoPor: p.delegadoPor || dgMe(), criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() });
     if (dgFeita(d)){ d.concluidoEm = agHoje(); d.concluidoPor = dgMe(); }
     dgGravar(d).then(function(){ dgS.docs.push(d); qs('overlayDg').classList.remove('show'); dgRender(); toast('Tarefa lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.'); }).catch(function(e){ if (err) err.textContent = 'Não consegui lançar: ' + e.message; });
-  } else dgSalvarCampos(dgS.ficha, p, false).then(function(){ qs('overlayDg').classList.remove('show'); });
+  } else {
+    var base0 = dgS.fichaBase || antes || {}, so = {}; Object.keys(p).forEach(function(k){ if (JSON.stringify(p[k]) !== JSON.stringify(base0[k] === undefined ? (typeof p[k] === 'boolean' ? false : '') : base0[k])) so[k] = p[k]; });   /* só o que mudou: não sobrescreve o que outra pessoa alterou enquanto a ficha estava aberta */
+    if (!Object.keys(so).length){ qs('overlayDg').classList.remove('show'); return; }
+    dgSalvarCampos(dgS.ficha, so, false).then(function(){ qs('overlayDg').classList.remove('show'); });
+  }
 }
 
 /* ---------- eventos ---------- */
@@ -579,8 +602,8 @@ function dgIniciar(){
   });
   w.addEventListener('change', function(e){
     var t = e.target; if (!t || !t.getAttribute) return;
-    if (t.getAttribute('data-dgt')) { var id = t.getAttribute('data-dgt'), d = dgDoc(id), nv = t.value.trim(); if (d && nv && nv !== d.titulo) dgSalvarCampos(id, { titulo: nv }, false); else if (d && !nv) t.value = d.titulo || ''; }
-    else if (t.getAttribute('data-dgv')){ var idv = t.getAttribute('data-dgv'), dv = dgDoc(idv); if (dv){ var nvv = dgValorNum(t.value); dgSalvarCampos(idv, { valor: nvv }, false); } }
+    if (t.getAttribute('data-dgt')) { var id = t.getAttribute('data-dgt'), d = dgDoc(id), nv = t.value.trim(); if (d && nv && nv !== d.titulo) dgSalvarCampos(id, { titulo: nv }, false, { semRender: true }); else if (d && !nv) t.value = d.titulo || ''; }
+    else if (t.getAttribute('data-dgv')){ var idv = t.getAttribute('data-dgv'), dv = dgDoc(idv); if (dv){ var nvv = dgValorNum(t.value); dgSalvarCampos(idv, { valor: nvv }, false, { semRender: true }); } }
     else if (t.getAttribute('data-dgdt')) dgAplicar(t.getAttribute('data-id'), (function(o){ o[t.getAttribute('data-dgdt')] = t.value; return o; })({}), false);
     else if (t.getAttribute('data-dgf') === 'status'){ dgS.fStatus = t.value; dgRender(); }
     else if (t.getAttribute('data-dgf') === 'prio'){ dgS.fPrio = t.value; dgRender(); }
@@ -629,7 +652,7 @@ function dgIniciar(){
   });
   /* a tabela é de todos: atualiza sozinha enquanto a tela está aberta (sem mexer se alguém está digitando) */
   if (!dgS.tick) dgS.tick = setInterval(function(){
-    if (activeTab !== 'delegadas' || dgS.dd || (qs('overlayDg') && qs('overlayDg').classList.contains('show'))) return;
+    if (document.visibilityState === 'hidden' || activeTab !== 'delegadas' || dgS.dd || (qs('overlayDg') && qs('overlayDg').classList.contains('show'))) return;
     var f = document.activeElement; if (f && f.closest && f.closest('#dgWrap') && /INPUT|TEXTAREA|SELECT/.test(f.tagName) && (f.value || f.id !== 'dg_n_titulo')) return;
     dgCarregar(true);
   }, 20000);

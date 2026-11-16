@@ -25,7 +25,8 @@ const ATOR = (auth) => ({ id: auth && auth.usuario ? auth.usuario.id : '', nome:
 /* quem está como responsável no registro (chaves "60456/GO" ou "u:<id>") */
 export function chavesDeResponsaveis(colecao, d) {
   if (!d) return [];
-  if (colecao === 'agenda' || colecao === 'delegadas') return Array.isArray(d.resp) ? d.resp.filter(Boolean) : [];
+  if (colecao === 'agenda') return Array.isArray(d.resp) ? d.resp.filter(Boolean) : [];
+  if (colecao === 'delegadas') return typeof d.resp === 'string' && d.resp ? [d.resp] : (Array.isArray(d.resp) ? d.resp.filter(Boolean) : []);   // a tarefa delegada tem um responsável só (texto)
   return oabsDoRegistro(d);
 }
 const COLS_INDICADO = new Set(['agenda', 'delegadas', 'casos', 'termosAcordo', 'alvaras', 'processos']);

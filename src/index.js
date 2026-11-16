@@ -507,7 +507,7 @@ async function api(request, env, partes, auth) {
     /* ?mesclar=1 (documentos de trabalho do proprietário, como config/obra e config/extratos): o app manda só as chaves que mudou e o servidor junta ao documento
        que está gravado agora, em vez de substituir o documento inteiro por uma cópia antiga (auditoria F-05). Na mesma chave vale a última gravação. */
     let mesclado = false;
-    if (new URL(request.url).searchParams.get('mesclar') === '1' && (colecao === 'configDono' || colecao === 'config')) {
+    if (new URL(request.url).searchParams.get('mesclar') === '1' && (colecao === 'configDono' || colecao === 'config' || colecao === 'delegadas')) {
       const atualM = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       dados = { ...(atualM ? JSON.parse(atualM.dados) : {}), ...dados }; mesclado = true;
     }
@@ -529,10 +529,10 @@ async function api(request, env, partes, auth) {
     if (!registraColecao(colecao)) { await stmtGravar(env, colecao, id, dados, ts).run(); return json({ ok: true, v: ts, ...(mesclado ? { doc: dados } : {}) }); }
     const antes = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
     const antesObj = antes ? JSON.parse(antes.dados) : null, mud = antesObj ? mudancas(antesObj, dados) : [];
-    if (antesObj && !mud.length) { await stmtGravar(env, colecao, id, dados, ts).run(); return json({ ok: true, v: ts }); }   // nada mudou de verdade (só campos de controle): grava, mas não há o que registrar
+    if (antesObj && !mud.length) { await stmtGravar(env, colecao, id, dados, ts).run(); return json({ ok: true, v: ts, ...(mesclado ? { doc: dados } : {}) }); }   // nada mudou de verdade (só campos de controle): grava, mas não há o que registrar
     await env.DB.batch([stmtGravar(env, colecao, id, dados, ts), stmtRegistro(env, antesObj ? { op: 'alterou', colecao, id, titulo: tituloDe(colecao, dados), mud, dados, ...autorDe(auth) } : { op: 'criou', colecao, id, titulo: tituloDe(colecao, dados), dados, ...autorDe(auth) })]);
     await avisarAtividade(env, enviarAviso, { colecao, id, antes: antesObj, depois: dados, acao: antesObj ? 'alterou' : 'criou', auth });
-    return json({ ok: true, v: ts });
+    return json({ ok: true, v: ts, ...(mesclado ? { doc: dados } : {}) });
   }
   if (id && metodo === 'DELETE') {
     const antes = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
