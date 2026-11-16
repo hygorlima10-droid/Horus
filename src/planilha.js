@@ -82,6 +82,14 @@ function nomeDaChavePlan(k, ctx) {
   const pn = primeiroNome(r.nome);
   return (ctx.vistos || []).find((v) => normNome(v) === pn) || '';
 }
+/* o responsável da tarefa da planilha acompanha o mapa de nomes: se "Kamyla" passou a ter usuário, a chave "n:Kamyla" vira a do usuário (e vice-versa); item antigo sem responsável gravado também. Só mexe quando a chave atual representa o MESMO nome da coluna (não desfaz o que alguém escolheu no app). */
+function religarResp(d, ctx) {
+  if (!d.plan || !txt(d.respNome)) return false;
+  const atual = Array.isArray(d.resp) ? d.resp : [], alvo = chaveDoNome(d.respNome, ctx);
+  if (atual.length > 1 || (atual.length === 1 && normNome(nomeDaChavePlan(atual[0], ctx)) !== normNome(d.respNome))) return false;
+  if (atual.length === 1 && atual[0] === alvo) return false;
+  d.resp = [alvo]; return true;
+}
 async function criarCtx(env, cfg) { return { mapa: cfg.nomes, us: await usuariosAtivos(env), roster: await rosterAdvogados(env).catch(() => []), vistos: cfg.vistos || [] }; }
 const nomeDaChave = (us, chave) => { const u = us.find((x) => chaveDe(x) === chave || x.norm.oabs.includes(chave) || ('u:' + x.id) === chave); return u ? u.nome : ''; };
 
@@ -200,8 +208,9 @@ async function sincronizar(env, deps, corpo, cfg) {
       if (!d.data) d.data = '';
       salvar(idDoc, null, d, 'criou'); resp.ids.push({ linha: l.linha, id: novoPid }); ligadas++; continue;
     }
-    const { id: idDoc, d } = achado, antes = JSON.parse(JSON.stringify(d));
-    if (d.respNome && !(Array.isArray(d.resp) && d.resp.length)) d.resp = [chaveDoNome(d.respNome, ctx)];   // item importado antes: o responsável é o da coluna (antes ele herdava os advogados do processo)
+    const { id: idDoc, d } = achado;
+    if (religarResp(d, ctx)) stmts.push(stmtDoc(env, 'agenda', idDoc, d));   // em silêncio (sem aviso nem registro): só acerta a chave do responsável
+    const antes = JSON.parse(JSON.stringify(d));
     const s = camposPlanilha(l), a = camposApp(d, ctx), base = (d.plan && d.plan.base) || s;
     const paraApp = [], paraPlan = []; let conflito = '';
     for (const f of COLUNAS) {
@@ -220,6 +229,7 @@ async function sincronizar(env, deps, corpo, cfg) {
     const c = camposPlanilha(l);
     for (const f of COLUNAS) nb[f] = paraPlan.includes(f) ? base[f] : (paraApp.includes(f) ? c[f] : (s[f] === a[f] ? s[f] : base[f]));
     d.plan.base = nb; d.plan.statusRaw = txt(l.status) || d.plan.statusRaw || ''; d.plan.ult = new Date().toISOString();
+    if (paraPlan.includes('resp') && a._resp) d.respNome = a._resp;   // o app mudou o responsável: o nome da coluna acompanha
     if (paraPlan.length) resp.aplicar.push({ id: pid, campos: valoresParaPlanilha(d, paraPlan, ctx, d.plan.statusRaw) });
     if (JSON.stringify(antes) !== JSON.stringify(d)) salvar(idDoc, antes, d, 'alterou');
   }
@@ -302,7 +312,7 @@ export async function planilhaRotas(request, env, partes, auth) {
     for (const { id, d } of itens) {
       if (!d.plan || !d.respNome) continue;
       const chave = chaveDoNome(d.respNome, ctxN); const novo = chave ? [chave] : [];
-      if (JSON.stringify(d.resp || []) !== JSON.stringify(novo)) { const dd = { ...d, resp: novo }; stmts.push(stmtDoc(env, 'agenda', id, dd)); }
+      if (JSON.stringify(d.resp || []) !== JSON.stringify(novo)) { const dd = { ...d, resp: novo }; stmts.push(stmtDoc(env, 'agenda', id, dd)); }   // (aqui vale o que o proprietário acabou de escolher na tela de nomes)
     }
     for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
     return json({ ok: true, atualizados: stmts.length });

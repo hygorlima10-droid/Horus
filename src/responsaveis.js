@@ -3,7 +3,7 @@
    - GET  /api/sem-advogado    (só o proprietário): registros (Inicial, Acordo, Alvará, Processo) sem advogado definido, com sugestão quando dá
    - POST /api/sem-advogado    (só o proprietário): { itens: [{ colecao, id }], advogados: [{ oab, nome }] } define os advogados nos itens escolhidos
    A sugestão vem de outros registros do mesmo processo ou do mesmo cliente que já têm advogado (nunca se inventa). */
-import { COL_USU } from './acesso.js';
+import { COL_USU, lerDoc } from './acesso.js';
 import { lerCfg } from './djen.js';
 import { chaveOab } from './advogados.js';
 import { stmtRegistro, tituloDe, ROTULOS } from './auditoria.js';
@@ -105,6 +105,10 @@ export async function agendaRotas(request, env, partes) {
   }
   const us = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ?').bind(COL_USU).all(), usuarios = new Map(us.results.map((r) => [r.id, JSON.parse(r.dados)]));
   const chaveDe = (id) => { const u = usuarios.get(id); if (!u) return null; const k = (u.oabs || [])[0]; if (k) return k; nomes.set('u:' + id, u.nome || 'Usuário'); return 'u:' + id; };
+  /* uma pessoa, uma linha: "n:Kamyla" (nome da planilha) vira o usuário Kamyla quando o mapa da planilha a liga; usuário sem OAB (ex.: o proprietário) vira o advogado de mesmo primeiro nome */
+  const nomesPlan = ((await lerDoc(env, '_planilha', 'config')) || {}).nomes || {}, pn = (n) => normNome(String(n || '').split(/\s+/)[0]), alias = new Map();
+  for (const [id, u] of usuarios) { if (u.papel === 'estagiario' || u.ativo === false || (u.oabs || []).length) continue; const ach = roster.filter((r) => pn(r.nome) === pn(u.nome)); if (ach.length === 1) alias.set('u:' + id, ach[0].oab); }
+  const resolve = (k) => { if (String(k).startsWith('n:')) k = nomesPlan[String(k).slice(2)] || k; return alias.get(k) || k; };
   const pessoas = new Map(), conta = (k, i) => { if (!k) return; if (!pessoas.has(k)) pessoas.set(k, { chave: k, nome: nomes.get(k) || (String(k).startsWith('n:') ? String(k).slice(2) : k), dias: Array(dias).fill(0), total: 0 }); const p = pessoas.get(k); p.dias[i]++; p.total++; };
   for (const r of results) {
     const d = JSON.parse(r.dados); if (d.concluido === true || d.cancelado === true || !/^\d{4}-\d{2}-\d{2}$/.test(d.data || '') || d.data < hoje || d.data > fim) continue;
@@ -112,7 +116,7 @@ export async function agendaRotas(request, env, partes) {
     let resp = Array.isArray(d.resp) && d.resp.length ? d.resp : (!d.plan && num.length >= 15 && porProc.has(num) ? porProc.get(num) : null);   // tarefa da planilha: só o responsável da coluna, nunca os advogados do processo
     if (!resp) { if (d.plan) continue; if (d.compartilhada === true || d.processo) resp = [chaveDe(d.criadoPor)].filter(Boolean); else continue; }
     const i = Math.round((Date.parse(d.data) - Date.parse(hoje)) / 864e5);
-    for (const k of new Set(resp)) conta(k, i);
+    for (const k of new Set(resp.map(resolve))) conta(k, i);
   }
   for (const r of roster) if (!pessoas.has(r.oab)) pessoas.set(r.oab, { chave: r.oab, nome: r.nome, dias: Array(dias).fill(0), total: 0 });
   for (const [id, u] of usuarios) if (u.papel === 'estagiario' && u.ativo !== false && !pessoas.has('u:' + id)) pessoas.set('u:' + id, { chave: 'u:' + id, nome: u.nome || 'Usuário', dias: Array(dias).fill(0), total: 0 });

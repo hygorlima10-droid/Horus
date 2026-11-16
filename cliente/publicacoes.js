@@ -671,7 +671,7 @@ function pbMontarDetalhe(){
     else if (a === 'cadastrar') pbCadastrar(pbDetId);   /* a leitura continua aberta por baixo: depois de cadastrar, dá para marcar prazo ou lida */
     else if (a === 'irproc'){ var pi = pbPub(pbDetId), vi = pi && pbVinculo(pi.processo); if (vi) prAbrir(vi.id); }
     else if (a === 'reabrirproc'){ var pr2 = pbPub(pbDetId), vr = pr2 && pbVinculo(pr2.processo); if (vr) prReabrir(vr.id).then(function(){ pbDesenharDetalhe(); }); }
-    else if (a === 'naolida'){ var pn = pbPub(pbDetId); if (pn) pbMarcar(pbMembros(pn).map(function(x){ return x.id; }), { lida: false }); d.classList.remove('show'); toast('Continua em “Não lidas”.'); }
+    else if (a === 'alternalida'){ var pn = pbPub(pbDetId); if (pn){ var vaiLer = !pbLidaG(pn); pbMarcar(pbMembros(pn).map(function(x){ return x.id; }), { lida: vaiLer }); toast(vaiLer ? 'Marcada como lida.' : 'Continua em “Não lidas”.'); pbDesenharDetalhe(); } }
     else if (a === 'copiar'){ var t = (pbTextos[pbDetId] || {}).texto || (pbPub(pbDetId) || {}).trecho || ''; try{ navigator.clipboard.writeText(t); toast('Texto copiado.'); }catch(x){ toast('Não consegui copiar.'); } }
   });
   d.addEventListener('input', function(e){ if (e.target && /^pbf_/.test(e.target.id)) pbAtualizarCalculo(); });
@@ -685,7 +685,7 @@ function pbAbrirPrazoPub(id){ pbAbrirDetalhe(id, true); }
 function pbAbrirDetalhe(id, irParaPrazo){
   var p = pbPub(id); if (!p) return;
   pbMontarDetalhe(); pbDetId = id; pbDesenharDetalhe(); qs('overlayPb').classList.add('show');
-  if (!pbLidaG(p)) pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { lida: true });
+  /* abrir o texto NÃO marca como lida: só "Marcar como lida", "Não é prazo" ou criar o prazo/audiência resolvem a publicação */
   if (!pbTextos[id]){
     pbApi('/api/djen/texto?id=' + encodeURIComponent(id)).then(function(r){ pbTextos[id] = r; }).catch(function(e){ pbTextos[id] = { ok: false, motivo: e.message }; }).then(function(){ if (pbDetId === id){ pbDesenharDetalhe(); if (irParaPrazo){ var f = qs('pbPrazoBox'); if (f && f.scrollIntoView) f.scrollIntoView(); } } });
   } else if (irParaPrazo) setTimeout(function(){ var f = qs('pbPrazoBox'); if (f && f.scrollIntoView) f.scrollIntoView(); }, 50);
@@ -701,7 +701,7 @@ function pbDesenharDetalhe(){
   else if (t.ok) h += '<div class="pb-texto">' + escapeHtml(t.texto) + '</div>';
   else h += '<div class="saldo-data">Não consegui buscar o texto completo (' + escapeHtml(t.motivo || 'erro') + '). Abaixo, o trecho guardado.</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';
   h += '<div class="pb-acts">' + (p.link ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(p.link) + '" target="_blank" rel="noopener noreferrer">Abrir original no tribunal ↗</a>' : '') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="copiar">Copiar texto</button></div>' +
-    '<div class="pb-acts">' + (!v ? '<button type="button" class="btn btn-primary pb-b" data-pbd="cadastrar">Cadastrar processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="irproc">Abrir o processo</button>' + (v.arquivado ? '<button type="button" class="btn btn-primary pb-b" data-pbd="reabrirproc">Reabrir processo</button>' : '')) + '<button type="button" class="btn btn-ghost pb-b" data-pbd="naolida">Manter como não lida</button></div></div>';
+    '<div class="pb-acts">' + (!v ? '<button type="button" class="btn btn-primary pb-b" data-pbd="cadastrar">Cadastrar processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="irproc">Abrir o processo</button>' + (v.arquivado ? '<button type="button" class="btn btn-primary pb-b" data-pbd="reabrirproc">Reabrir processo</button>' : '')) + '<button type="button" class="btn btn-ghost pb-b" data-pbd="alternalida">' + (pbLidaG(p) ? 'Marcar como não lida' : 'Marcar como lida') + '</button></div></div>';
   { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button></div></div>'; }
   h += '<div class="pb-sec pb-ia" id="pbPrazoBox">';
   if (pz){

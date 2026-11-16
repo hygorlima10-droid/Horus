@@ -41,6 +41,19 @@ check(m.length === 1 && /Protocolar certidão narrativa/.test(JSON.stringify(m[0
 const dTroca = (await caio('GET', '/api/db/agenda')).j.docs.find((d) => d.data.titulo === 'Protocolar certidão narrativa');
 check(!!dTroca && !(await ana('GET', '/api/db/agenda')).j.docs.some((d) => d.data.titulo === 'Protocolar certidão narrativa' && false), 'e o item passa a aparecer na agenda do Caio (estagiário)');
 
+// 3b) item antigo com responsável "só pelo nome" (n:Caio) e o Caio já tem usuário: a próxima conversa religa ao usuário, em silêncio (sem aviso)
+{ const antes = (await lidas('caio')).length, doc = (await dono('GET', '/api/db/agenda')).j.docs.find((d) => d.data.titulo === 'Protocolar certidão narrativa');
+  await dono('PUT', '/api/db/agenda/' + doc.id, { ...doc.data, id: undefined, resp: ['n:Caio'] });
+  await sync({ completo: true, integrantes: INT, linhas: [L({ linha: 4, id: id1, titulo: 'Tarefa antiga da Ana', resp: 'Ana', delegado: 'Hitallo', status: 'A fazer', fatal: '2026-12-10' }), L({ linha: 5, id: id2, titulo: 'Protocolar certidão narrativa', resp: 'Caio', delegado: 'Hitallo', prio: 'Alta', status: 'A fazer', fatal: '2026-12-20' })] }); await esperar(500);
+  const depois = (await dono('GET', '/api/db/agenda')).j.docs.find((d) => d.id === doc.id).data;
+  check(depois.resp.length === 1 && /^u:/.test(depois.resp[0]) && (await lidas('caio')).length === antes, 'resposta "n:Caio" é religada ao usuário Caio na conversa seguinte, sem mandar aviso'); }
+
+// 3c) carga por pessoa: "n:Caio" (nome da planilha) e o usuário Caio são a MESMA pessoa: uma linha só, com a tarefa contada nele
+{ const amanha = new Date(Date.now() - 3 * 3600e3 + 864e5).toISOString().slice(0, 10);
+  await dono('POST', '/api/db/agenda', { tipo: 'tarefa', titulo: 'Carga do Caio por nome', data: amanha, situacao: 'afazer', concluido: false, avisos: [], resp: ['n:Caio'], criadoEm: new Date().toISOString() });
+  const car = (await dono('GET', '/api/agenda/carga?dias=7')).j, nomesC = car.pessoas.map((p) => p.nome), caioU = car.pessoas.find((p) => p.chave.startsWith('u:') && /Caio/.test(p.nome));
+  check(!car.pessoas.some((p) => p.chave === 'n:Caio') && new Set(nomesC).size === nomesC.length && !!caioU && caioU.total >= 1, 'carga por pessoa: o nome da planilha ("n:Caio") e o usuário Caio viram uma linha só (' + nomesC.join(', ') + ')'); }
+
 // 4) escolher manualmente outra pessoa no mapa (Hitallo → Bruno): os itens do Hitallo passam para ele
 await dono('PUT', '/api/planilha/nomes', { mapa: { Hitallo: (est.opcoes.find((o) => /Bruno/.test(o.nome)) || {}).chave } });
 check((await dono('GET', '/api/planilha')).j.nomes.find((n) => n.planilha === 'Hitallo').usuario.nome.includes('Bruno'), 'o proprietário pode ligar um nome da planilha a outra pessoa pela tela (mapa de nomes)');

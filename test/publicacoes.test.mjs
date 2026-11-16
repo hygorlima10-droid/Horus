@@ -224,13 +224,20 @@ await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[
 check(await page.evaluate(() => document.getElementById('overlay').classList.contains('show')) && (await page.evaluate(() => document.getElementById('processoInput').value)) === '5706736-75.2025.8.09.0107', 'a outra opção abre o cadastro de Nova inicial com o número preenchido');
 await page.click('#closeModal'); await page.waitForTimeout(300);
 // dentro do texto da publicação: cadastrar o processo e manter como não lida
+await f('POST', '/api/djen/marcar', { ids: ['900005'], lida: false }); await page.reload(); await page.waitForTimeout(3200);   // parte de "não lida" (passos anteriores a marcaram)
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(700);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
 await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1500);
-check(await page.evaluate(() => !!document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.querySelector('#pbCorpo [data-pbd="naolida"]')), 'o texto da publicação tem o botão "Cadastrar processo" (processo ainda não cadastrado) e "Manter como não lida"');
-check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === true, 'abrir marca como lida');
-await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(1000);
-check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false && !(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show'))), '"Manter como não lida" desfaz e fecha, e a publicação continua em "Não lidas"');
+check(await page.evaluate(() => !!document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && /Marcar como lida/.test((document.querySelector('#pbCorpo [data-pbd="alternalida"]') || {}).innerText || '')), 'o texto da publicação tem o botão "Cadastrar processo" (processo ainda não cadastrado) e "Marcar como lida"');
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, 'abrir o texto NÃO marca como lida');
+await page.click('#pbFechar'); await page.waitForTimeout(800);
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false && await page.evaluate(() => !!document.querySelector('.pb-card[data-cid="900005"]')), 'fechar no X também não marca: a publicação continua na lista, não lida');
+await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1200);
+await page.click('#pbCorpo [data-pbd="alternalida"]'); await page.waitForTimeout(900);
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === true && await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && /Marcar como não lida/.test(document.querySelector('#pbCorpo [data-pbd="alternalida"]').innerText)), '"Marcar como lida" dentro do texto marca (sem fechar) e o botão vira "Marcar como não lida"');
+await page.click('#pbCorpo [data-pbd="alternalida"]'); await page.waitForTimeout(900);
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, '"Marcar como não lida" desfaz');
+await page.click('#pbFechar'); await page.waitForTimeout(500);
 await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1200);
 await page.click('#pbCorpo [data-pbd="cadastrar"]'); await page.waitForTimeout(500);
 const sobre = await page.evaluate(() => { const el = document.getElementById('preCorpo'), r = el.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + 20); return !!(x && x.closest('#overlayPrEsc')); });
@@ -239,8 +246,8 @@ await page.click('[data-pre="processo"]'); await page.waitForTimeout(500);
 check((await page.evaluate(() => document.getElementById('pr_numero').value)) === '5706736-75.2025.8.09.0107', 'e o cadastro já vem com o número da publicação');
 await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && !!document.querySelector('#pbCorpo [data-pbd="irproc"]') && !document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.getElementById('pbPrazoBox')), 'depois de cadastrar, a leitura continua aberta e já mostra "Abrir o processo", o prazo e as opções de lida / não lida');
-await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(800);
-check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, 'e dá para escolher depois se fica lida ou não lida');
+check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, 'cadastrar o processo também não marca como lida: dá para escolher depois se fica lida ou não lida');
+await page.click('#pbFechar'); await page.waitForTimeout(500);
 await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1200);
 await page.click('#pbFechar'); await page.waitForTimeout(300);
 // publicações idênticas (um autor em cada uma) viram um cartão só
