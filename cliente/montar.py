@@ -488,6 +488,11 @@ rep("    else if (tab === 'agenda') agRender();\n", "    else if (tab === 'agend
 rep("agenda:'Agenda',", "agenda:'Agenda', delegadas:'Delegadas',")
 rep("    else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';", "    else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';\n    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';")
 
+
+# ---------- Delegadas (etapa 2): contas fixas do escritório na Central de atenção ----------
+rep("    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){", "    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }\n    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){")
+rep("      if (x.origem === 'obra') return ob7LinhaAviso(x.a);\n", "      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n      if (x.origem === 'obra') return ob7LinhaAviso(x.a);\n")
+
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

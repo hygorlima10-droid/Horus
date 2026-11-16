@@ -32,6 +32,7 @@ function ppAbaValida(tab){ return ppTelaPermitida(tab) ? tab : 'inicio'; }
 function ppItemAtencaoOk(x){
   if (ppDono()) return true;
   var o = x.origem;
+  if (o === 'fixa') return ppPapel() !== 'advogado';   /* contas fixas do escritório: estagiários e proprietário */
   if (o === 'despesa' || o === 'relatorio' || o === 'obra' || o === 'murilo') return false;
   var dinheiro = (o === 'upcoming' && !x.ehPrazo) || o === 'promessa';
   if (dinheiro) return ppPapel() === 'advogado';
