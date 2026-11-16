@@ -11,6 +11,10 @@
 - **Plano da conta: gratuito** (informado pelo proprietário em 08/11): Time Travel de 7 dias; limites diários do D1 em vigor (5 milhões de leituras e 100 mil escritas por dia).
 - O Worker `controle-de-iniciais` e o banco `controle-juridico-teste` são do ambiente de teste abandonado; o proprietário autorizou apagar o Worker (no painel, pois o conector não apaga Workers).
 
+## Como conferir se um envio ao GitHub foi publicado (16/11/2026)
+- Pelo conector: `modified_on` do Worker `controle-juridico` deve ficar poucos segundos depois do horário do último commit (16/11: commit 14:37:36 UTC → Worker 14:37:58 UTC). Se não andar, o envio não virou deploy (webhook perdido ou build com erro): no painel, *Workers & Pages › controle-juridico › Deployments/Builds*, abrir o build do commit e usar **Retry build**.
+- No app: recarregar com **Ctrl+F5**; a tela nova só aparece depois do deploy.
+
 ## Banco de produção (contagens em 08/11/2026)
 `_pub` 259 · processos 127 · clientes 51 · despesas 27 · casos (Iniciais) 24 · receitasManuais 16 · extratos 14 · config 10 · obraMov 9 · termosAcordo 6 · alvarás 4 · saldos 2 · metas 1 · agenda 0 · pecasAprendidas 0 · `_notif` 6 (2 aparelhos inscritos no push) · `_backups` 1 (de 08/11) · `_djen` 1 · `_sistema` 3. Maior registro: 40 KB (o backup comprimido); registros comuns, menos de 3 KB. Esquema: uma tabela `docs` com índice por coleção.
 `config` tem: alertasDispensados, backup, extratos, importacaoAuto, obra, personalizacao, planejamento, processosIgnorados, relatorioMurilo, vinculoIniciais. **Só do proprietário (finanças/Construção):** extratos, obra, planejamento, relatorioMurilo, backup. **Gerais:** alertasDispensados, personalizacao, importacaoAuto, processosIgnorados, vinculoIniciais.
