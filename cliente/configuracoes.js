@@ -11,6 +11,7 @@ var CF_LINHAS = [
   { id: 'extregras', ic: 'landmark', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
   { id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
   { id: 'dias', ic: 'calendar-days', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
+  { id: 'planilha', ic: 'table', t: 'Planilha de tarefas', s: 'Controle de Petições: duas vias com a Agenda', go: function(){ plAbrir(); } },
   { id: 'usuarios', ic: 'users', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
   { id: 'seguranca', ic: 'lock', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
   { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },

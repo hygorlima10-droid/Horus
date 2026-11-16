@@ -174,7 +174,7 @@ async function sincronizar(env, deps, corpo, cfg) {
       if (pid) continue;   // a linha tem ID de um item que foi apagado no app: não recria
       const sem = semRaw(l.status); if (sem === 'feito') continue;   // histórico já concluído não entra
       const dup = itens.find((x) => x.d.plan && x.d.plan.origem === 'planilha' && !idsNaPlanilha.has(x.d.plan.id) && !x.d.plan.removida && txt(x.d.titulo) === tit && digitos(x.d.processo) === digitos(proc) && normNome(x.d.respNome) === normNome(l.resp));
-      if (dup) { resp.ids.push({ linha: l.linha, id: dup.d.plan.id }); ligadas++; continue; }   // a resposta anterior se perdeu: devolve o mesmo ID, sem criar outro item
+      if (dup) { resp.ids.push({ linha: l.linha, id: dup.d.plan.id }); vistosIds.add(dup.d.plan.id); ligadas++; continue; }   // a resposta anterior se perdeu: devolve o mesmo ID, sem criar outro item
       const novoPid = 'h-' + aleat(6), idDoc = aleat(20), proc2 = formatarProcesso(proc);
       const d = { tipo: digitos(proc).length >= 15 && dataOk(l.fatal) ? 'prazo' : 'tarefa', titulo: tit, processo: proc2, cliente: txt(l.cliente) || await clienteDoProcesso(env, proc), data: dataOk(l.fatal), hora: '', trabalhar: dataOk(l.interno), situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: [], criadoEm: new Date().toISOString() };
       const c = camposPlanilha(l); aplicarNoDoc(d, COLUNAS, l, ctx);
@@ -229,7 +229,7 @@ async function sincronizar(env, deps, corpo, cfg) {
     if (JSON.stringify(antes) !== JSON.stringify(d)) { stmts.push(stmtDoc(env, 'agenda', idDoc, d)); }
   }
   cfg.importacaoFeita = true; cfg.ultimaConversa = new Date().toISOString(); cfg.ultimaErro = ''; cfg.contagem = { ligadas, conflitos, removidas, pendentesApp: resp.aplicar.length + resp.novas.length };
-  cfg.planilha = txt(corpo.planilha) || cfg.planilha || '';
+  cfg.planilha = txt(corpo.planilha) || cfg.planilha || ''; if (/^https:\/\/docs\.google\.com\//.test(txt(corpo.url))) cfg.url = txt(corpo.url);
   stmts.push(stmtDoc(env, COL, 'config', cfg));
   for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
   for (const av of avisos) await avisarAtividade(env, deps.enviarAviso, { ...av, auth: { usuario: { id: '', nome: (av.depois.delegadoPor || 'Planilha') } } });
@@ -259,14 +259,14 @@ export async function planilhaSync(request, env, deps) {
 export async function planilhaRotas(request, env, partes, auth) {
   const m = request.method, ehDono = !auth || !auth.usuario || auth.usuario.papel === 'proprietario';
   const cfg = await cfgLer(env);
-  if (m === 'GET' && partes[1] === 'ligada') return json({ ligada: !!cfg.token && !!cfg.ultimaConversa });   // qualquer pessoa logada (o editor da Agenda usa)
+  if (m === 'GET' && partes[1] === 'ligada') { const mapa = {}; for (const [n, k] of Object.entries(cfg.nomes || {})) if (k) mapa[k] = n; return json({ ligada: !!cfg.token && !!cfg.ultimaConversa, mapa }); }   // qualquer pessoa logada (o editor da Agenda usa)
   if (!ehDono) return erro(403, 'forbidden', 'Só o proprietário pode usar isto.');
   const origem = new URL(request.url).origin;
   if (m === 'GET' && !partes[1]) {
     const us = await usuariosAtivos(env), opcoes = us.map((u) => ({ chave: chaveDe(u), nome: u.nome, papel: u.norm.papel }));
     const nomes = (cfg.vistos.length ? cfg.vistos : []).map((n) => ({ planilha: n, chave: cfg.nomes[n] || '', usuario: cfg.nomes[n] ? (opcoes.find((o) => o.chave === cfg.nomes[n]) || null) : null, funcao: ((cfg.integrantes || []).find((x) => x.nome === n) || {}).funcao || '' }));
     const itens = await itensAgenda(env);
-    return json({ ligada: !!cfg.token, conectada: !!cfg.ultimaConversa, planilha: cfg.planilha || '', ultimaConversa: cfg.ultimaConversa || '', ultimaTentativa: cfg.ultimaTentativa || '', erro: cfg.ultimaErro || '', contagem: { ...(cfg.contagem || {}), ligadas: itens.filter((x) => x.d.plan && x.d.plan.id && !x.d.plan.removida && semDoc(x.d) !== 'feito').length }, nomes, opcoes, origem });
+    return json({ ligada: !!cfg.token, conectada: !!cfg.ultimaConversa, planilha: cfg.planilha || '', url: cfg.url || '', ultimaConversa: cfg.ultimaConversa || '', ultimaTentativa: cfg.ultimaTentativa || '', erro: cfg.ultimaErro || '', contagem: { ...(cfg.contagem || {}), ligadas: itens.filter((x) => x.d.plan && x.d.plan.id && !x.d.plan.removida && semDoc(x.d) !== 'feito').length }, nomes, opcoes, origem });
   }
   if (m === 'POST' && partes[1] === 'ligar') { if (!cfg.token) { cfg.token = b64u(crypto.getRandomValues(new Uint8Array(24))); cfg.ligadoEm = new Date().toISOString(); await cfgGravar(env, cfg); } return json({ ok: true }); }
   if (m === 'POST' && partes[1] === 'novachave') { cfg.token = b64u(crypto.getRandomValues(new Uint8Array(24))); cfg.ultimaConversa = ''; await cfgGravar(env, cfg); return json({ ok: true }); }
@@ -329,7 +329,7 @@ function sincronizarHorus(op) {
       if (p.getResponseCode() !== 200 || !JSON.parse(p.getContentText()).pendente) return;
     }
     var sh = SpreadsheetApp.getActive().getSheetByName(ABA), tz = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
-    var corpo = { versao: 1, planilha: SpreadsheetApp.getActive().getName(), completo: true, integrantes: integrantes_(), linhas: lerLinhas_(sh, tz) };
+    var corpo = { versao: 1, planilha: SpreadsheetApp.getActive().getName(), url: SpreadsheetApp.getActive().getUrl(), completo: true, integrantes: integrantes_(), linhas: lerLinhas_(sh, tz) };
     var r = UrlFetchApp.fetch(HORUS_URL, { method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + HORUS_CHAVE }, payload: JSON.stringify(corpo), muteHttpExceptions: true });
     if (r.getResponseCode() !== 200) { console.error('Horus respondeu ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 200)); return; }
     props.setProperty('ultimaCompleta', String(agora));

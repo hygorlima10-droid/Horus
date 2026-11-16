@@ -140,3 +140,7 @@ label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
 #overlayBaixa .bx-saldo>summary{min-height:56px;display:flex;align-items:center;font-weight:600;font-size:14.5px;cursor:pointer}
 #overlayUsuariosC .f-sec{margin-bottom:12px}
 .overlay .modal-body select:not([style*="width"]){width:100%}
+
+/* ---------- botão de ação dentro das fichas (sem "+"): contorno, 40 px ---------- */
+.f-add{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3);font-weight:700;cursor:pointer;text-decoration:none}
+.f-add:hover{background:var(--surface-2)}

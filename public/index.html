@@ -1792,6 +1792,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18497,7 +18500,7 @@ function agRespChaves(i){
   if (!r && i.fonte === 'caso' && Array.isArray(d.advogados)) return d.advogados.map(function(a){ return a.oab; }).filter(Boolean);
   return [];
 }
-function agTemRespGravado(i){ return !!(i.doc && Array.isArray(i.doc.resp) && i.doc.resp.length); }
+function agTemRespGravado(i){ return !!(i.doc && ((Array.isArray(i.doc.resp) && i.doc.resp.length) || (i.doc.plan && i.doc.respNome))); }
 function agMinha(i){
   var eu = esS.eu; if (!eu) return true;
   var meus = esMinhasChaves(), d = i.doc || {}, rs = agRespChaves(i);
@@ -18802,13 +18805,14 @@ function agCartao(i){
   if (i.situacao === 'elaboracao') tags += '<span class="pb-tg pz">Em andamento</span>';
   if (i.situacao === 'pronta' && !i.concluido) tags += '<span class="pb-tg ok">Peça pronta</span>';
   if (/alta/i.test(d.prioridade || '')) tags += '<span class="pb-tg pz">Prioridade alta</span>';
+  if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.length)) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
   if (i.tipo === 'audiencia' && i.modalidade) tags += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
   if (i.pubId) tags += '<span class="pb-tg nv">via publicação</span>';
   if (i.fonte === 'caso') tags += '<span class="pb-tg">da inicial</span>';
   if (i.concluido && !i.cancelado && i.tipo === 'prazo' && i.protocoladoEm) tags += '<span class="pb-tg ok">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</span>';
   if (i.tipo === 'tarefa' && d.compartilhada === true) tags += '<span class="pb-tg nv">compartilhada</span>';
   if (i.tipo === 'tarefa' && d.repete) tags += '<span class="pb-tg nv">↻ ' + escapeHtml(rpTexto(d.repete)) + '</span>';
-  if (esS.eu && i.tipo !== 'tarefa' && i.fonte !== 'alvara' && !agRespChaves(i).length) tags += '<span class="pb-tg">sem responsável</span>';
+  if (esS.eu && i.tipo !== 'tarefa' && i.fonte !== 'alvara' && !agRespChaves(i).length && !d.respNome) tags += '<span class="pb-tg">sem responsável</span>';
   if (i.concluido && !i.cancelado && d.concluidoPor) tags += '<span class="pb-tg ok">por ' + escapeHtml(String(d.concluidoPor).split(' ')[0]) + '</span>';
   if (esS.eu) tags += agRespAvatares(i, 3);
   else (Array.isArray(d.responsaveis) ? d.responsaveis : []).slice(0, 3).forEach(function(n){ tags += '<span class="agc-av" title="' + escapeHtml(n) + '">' + escapeHtml(agdSigla(n)) + '</span>'; });
@@ -19093,6 +19097,7 @@ function agAbrir(key, pre){
   h += fSec('O quê', '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" id="age_tit_l" for="age_tit">Peça</label><input type="text" id="age_tit" maxlength="90" value="' + escapeHtml(V('titulo')) + '" placeholder="Ex.: Contestação"></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_proc">Processo (opcional)</label><input type="text" id="age_proc" maxlength="40" value="' + escapeHtml(V('processo')) + '" placeholder="0000000-00.0000.0.00.0000"><div class="saldo-data" id="age_dica"></div><div id="age_sug"></div></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_cli">Cliente / partes</label><input type="text" id="age_cli" maxlength="90" value="' + escapeHtml(V('cliente')) + '"></div>' + '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' + '<div class="field"><label class="field-label" for="age_local">Local</label><input type="text" id="age_local" maxlength="140" value="' + escapeHtml(V('local')) + '" placeholder="Ex.: Fórum de Morrinhos, sala 2"></div>' + '<div class="field"><label class="field-label" for="age_link">Link da sala virtual (opcional)</label><input type="text" inputmode="url" autocapitalize="off" id="age_link" maxlength="300" value="' + escapeHtml(V('link')) + '" placeholder="https://…"></div></div>') +
     fSec('Quando', '<div class="pb-dois"><div class="field"><label class="field-label" id="age_data_l" for="age_data">Prazo fatal</label><input type="date" id="age_data" value="' + escapeHtml(V('data')) + '"></div><div class="field" id="age_hora_box"><label class="field-label" for="age_hora">Hora</label><input type="time" id="age_hora" value="' + escapeHtml(V('hora')) + '"></div></div>' + '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">' + ico('calculator') + 'Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' + '<div class="saldo-data" id="age_dica2" style="margin:-4px 0 8px"></div>' + '<div class="field" id="age_trab_box"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_trab">Trabalhar na peça até (opcional)</label><input type="date" id="age_trab" value="' + escapeHtml(i ? i.trabalhar : (P ? (P.trabalhar || '') : '')) + '"><div class="saldo-data">Em branco, o app marca 2 dias úteis antes do prazo fatal.</div></div>') +
     fSec('Responsáveis', '<div class="field" id="age_vis_box"><label class="field-label" for="age_vis">Quem vê esta tarefa</label><select id="age_vis" class="filter-select" style="width:100%"><option value="so_eu">Só eu (tarefa pessoal)</option><option value="resp">Os responsáveis que eu escolher</option><option value="todos">Todo o escritório</option></select></div>' + '<div class="field" id="esResp_agenda"' + (caso ? ' style="display:none"' : '') + '></div>') +
+    (typeof plEditorHtml === 'function' ? plEditorHtml(i) : '') +
     fMais('observações · situação · avisos no celular · repetição', '<div class="field"><label class="field-label" for="age_obs">Observações (opcional)</label><textarea id="age_obs" maxlength="1200" rows="3" style="width:100%">' + escapeHtml(V('obs')) + '</textarea></div>' + '<div class="field" id="age_sit_box"><label class="field-label" for="age_sit">Situação</label><select id="age_sit" class="filter-select" style="width:100%"><option value="afazer"' + (sit === 'afazer' ? ' selected' : '') + '>A fazer</option>' + (caso ? '' : '<option value="elaboracao"' + (sit === 'elaboracao' ? ' selected' : '') + 'Em andamento</option>') + '<option value="feito"' + (sit === 'feito' ? ' selected' : '') + '>Concluído (protocolado)</option></select></div>' + '<div class="field" id="age_prot_box" style="display:none"><label class="field-label" for="age_protoc">Data do protocolo</label><input type="date" id="age_protoc" value="' + escapeHtml(V('protocoladoEm') || agHoje()) + '"></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_av">Avisar no celular</label><select id="age_av" class="filter-select" style="width:100%">' + [['padrao', '5, 2 e 1 dia antes + no dia'], ['umdia', '1 dia antes + no dia'], ['dia', 'só no dia'], ['nenhum', 'não avisar']].map(function(o){ return '<option value="' + o[0] + '"' + (agPresetAvisos(i ? i.avisos : null) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' + rpEdHtml(i, V('data'))) +
     '<div id="age_dup"></div><div class="form-error" id="age_erro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-age="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-age="salvar">Salvar na agenda</button></div>' +
     (i && !caso ? '<button type="button" class="btn-text" data-age="excluir" style="color:var(--urgente)">Excluir este item</button>' : '');
@@ -19170,6 +19175,7 @@ function agSalvarEd(){
   var base = i ? Object.assign({}, i.doc) : { criadoEm: new Date().toISOString(), pubId: '', audPubId: (agEditPre && agEditPre.audPubId) || '' }; delete base.id;
   var doc = Object.assign(base, { tipo: t, titulo: tit, processo: qs('age_proc').value.trim(), cliente: qs('age_cli').value.trim(), data: data, hora: t === 'audiencia' ? qs('age_hora').value : '', trabalhar: trab, situacao: sit, concluido: sit === 'feito', avisos: av,
     obs: qs('age_obs') ? qs('age_obs').value.trim() : (base.obs || ''), audTipo: t === 'audiencia' ? qs('age_audtipo').value : '', modalidade: t === 'audiencia' ? qs('age_mod').value : '', local: t === 'audiencia' ? qs('age_local').value.trim() : '', link: link });
+  if (!i && qs('age_plan') && qs('age_plan').checked && t !== 'audiencia') doc.planilha = true;   /* "Também na planilha": vira linha nova na aba Controle */
   if (t === 'prazo'){ if (agEditCalc && agEditCalc.venc === data) doc.calculo = agEditCalc.op; else if (i && i.doc && i.doc.calculo && i.data !== data) delete doc.calculo; }   /* o cálculo só vale enquanto a data é a que ele deu */
   if (t === 'prazo'){ if (sit === 'feito'){ doc.protocoladoEm = qs('age_protoc').value || agHoje(); if (!doc.concluidoEm) doc.concluidoEm = agHoje(); } else { doc.protocoladoEm = ''; doc.protocoloObs = ''; } }
   /* responsáveis (quem vê e quem recebe os avisos) e visibilidade da tarefa */
@@ -19187,7 +19193,7 @@ function agSalvarEd(){
     }
   }
   var p = i ? pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ doc.id = i.id; agDocs = agDocs.map(function(x){ return x.id === i.id ? doc : x; }); }) : agCriar(doc);
-  p.then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  p.then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 function agExcluirEd(b){
   var i = agItens().filter(function(x){ return x.key === agEditKey; })[0]; if (!i) return;
@@ -21534,6 +21540,7 @@ var CF_LINHAS = [
   { id: 'extregras', ic: 'landmark', t: 'Extratos: regras que você ensinou', s: 'palavras do favorecido → despesa, cobrança ou categoria', go: function(){ if (typeof excAbrirRegras === 'function') excAbrirRegras(); } },
   { id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário do iPhone', s: 'link para assinar no Calendário (só audiências)', go: function(){ clAbrir(); } },
   { id: 'dias', ic: 'calendar-days', t: 'Dias sem expediente', s: 'feriado municipal, ponto facultativo, suspensão de prazos', go: function(){ dxAbrir(); } },
+  { id: 'planilha', ic: 'table', t: 'Planilha de tarefas', s: 'Controle de Petições: duas vias com a Agenda', go: function(){ plAbrir(); } },
   { id: 'usuarios', ic: 'users', t: 'Usuários', s: 'convidar pessoas, permissões e aparelhos', go: function(){ usAbrir(); } },
   { id: 'seguranca', ic: 'lock', t: 'Segurança', s: 'sessões abertas, trocar a senha, avisos de acesso', go: function(){ sgSegAbrir(); } },
   { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
@@ -22236,6 +22243,110 @@ function fMais(sub, html){ return '<details class="f-mais"><summary><div><b>Mais
   abrirEdicaoAcordo = function(){ var r = b2.apply(this, arguments); try{ fichaMais('overlayAcordo'); }catch(e){} return r; };
   abrirNovoAlvara = function(){ var r = c1.apply(this, arguments); try{ fichaMais('overlayAlvara'); }catch(e){} return r; };
   abrirEdicaoAlvara = function(){ var r = c2.apply(this, arguments); try{ fichaMais('overlayAlvara'); }catch(e){} return r; };
+})();
+
+/* ============================================================
+   PLANILHA DE TAREFAS (prefixo pl) — Controle de Petições e Tarefas (Google Sheets) ⇄ Agenda, nos dois sentidos
+   - Configurações › Planilha de tarefas: conexão, "quem é quem" (nome da planilha → pessoa do app), o que acompanha e a instalação do script (uma vez);
+   - Agenda: selo "Planilha" nos cartões e, ao criar um item, o botão "Também na planilha" (liga a linha nova na aba Controle);
+   - o servidor (src/planilha.js) faz a conversa com o script da planilha; aqui só aparece o resultado.
+   ============================================================ */
+var plS = { ligada: false, mapa: {}, estado: null, carregando: false };
+function plApi(url, metodo, corpo){
+  return fetch(url, { method: metodo || 'GET', credentials: 'same-origin', cache: 'no-store', headers: corpo !== undefined ? { 'content-type': 'application/json' } : undefined, body: corpo !== undefined ? JSON.stringify(corpo) : undefined })
+    .then(function(r){ return (/\/script$/.test(url) ? r.text() : r.json().catch(function(){ return {}; })).then(function(j){ if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Erro ' + r.status)); return j; }); });
+}
+/* ligada ou não (todo mundo logado pergunta; o editor da Agenda usa) */
+function plCarregarLigada(){
+  if (!window.__SERVIDOR) return Promise.resolve();
+  return plApi('/api/planilha/ligada').then(function(j){ plS.ligada = !!j.ligada; plS.mapa = j.mapa || {}; }).catch(function(){});
+}
+function plQuando(iso){
+  if (!iso) return 'ainda não conversou';
+  var s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 90) return 'há ' + (s < 10 ? 'poucos segundos' : s + ' s');
+  if (s < 3600) return 'há ' + Math.round(s / 60) + ' min';
+  if (s < 86400) return 'há ' + Math.round(s / 3600) + ' h';
+  return 'em ' + fmtData(iso.slice(0, 10));
+}
+/* ---------- tela em Configurações ---------- */
+function plAbrir(){
+  var ov = sgMontar('overlayPlanilha', 'Planilha de tarefas');
+  if (!ov.getAttribute('data-pl')){
+    ov.setAttribute('data-pl', '1');
+    ov.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-pl]') : null; if (b) plClique(b.getAttribute('data-pl'), b); });
+    ov.addEventListener('change', function(e){ var t = e.target; if (t && t.getAttribute && t.getAttribute('data-plnome') !== null) plEscolher(t.getAttribute('data-plnome'), t.value); });
+  }
+  ov.classList.add('show'); qs('overlayPlanilhaC').innerHTML = '<div class="saldo-data">Carregando…</div>';
+  plAtualizar();
+}
+function plAtualizar(){
+  return plApi('/api/planilha').then(function(j){ plS.estado = j; plS.ligada = j.ligada && j.conectada; plDesenhar(); }).catch(function(e){ var c = qs('overlayPlanilhaC'); if (c) c.innerHTML = '<div class="form-error">' + escapeHtml(e.message) + '</div>'; });
+}
+function plDesenhar(){
+  var c = qs('overlayPlanilhaC'), E = plS.estado; if (!c || !E) return;
+  var h = '', ct = E.contagem || {};
+  h += fSec('Conexão', E.ligada ?
+    '<div class="pl-st"><span class="pl-dot' + (E.conectada ? '' : ' off') + '"></span><div><b>' + (E.conectada ? 'Conectada' : 'Aguardando a planilha') + '</b><small>' + escapeHtml((E.planilha || 'Controle de Petições e Tarefas') + ' · última conversa ' + plQuando(E.ultimaConversa)) + '</small></div></div>' +
+    (E.erro ? '<div class="form-error">Última falha: ' + escapeHtml(E.erro) + '</div>' : '') +
+    '<div class="pl-n"><b>' + (ct.ligadas || 0) + '</b> tarefas abertas ligadas · <b>' + (ct.conflitos || 0) + '</b> conflitos · <b>' + (ct.removidas || 0) + '</b> removidas da planilha</div>' +
+    '<div class="pl-2"><button type="button" class="f-add" data-pl="atualizar">' + ico('refresh-cw', 16) + 'Atualizar</button>' + (E.url ? '<a class="f-add" href="' + escapeHtml(E.url) + '" target="_blank" rel="noopener">Abrir a planilha</a>' : '') + '</div>'
+    : '<div class="pb-aviso">A planilha ainda não está ligada ao app. Toque em <b>Ligar</b> e siga os 3 passos abaixo (leva uns 5 minutos, uma vez só).</div><div class="pl-2"><button type="button" class="btn btn-primary" data-pl="ligar">Ligar a planilha</button></div>');
+  if (E.ligada){
+    var ops = function(sel){ return '<option value="">sem acesso (só o nome)</option>' + (E.opcoes || []).map(function(o){ return '<option value="' + escapeHtml(o.chave) + '"' + (o.chave === sel ? ' selected' : '') + '>' + escapeHtml(o.nome) + ' · ' + (o.papel === 'estagiario' ? 'estagiário' : (o.papel === 'proprietario' ? 'proprietário' : 'advogado')) + '</option>'; }).join(''); };
+    h += fSec('Quem é quem', (E.nomes && E.nomes.length ? E.nomes.map(function(n){
+      return '<div class="pl-p"><div><b>' + escapeHtml(n.planilha) + '</b><small>' + escapeHtml(n.funcao || 'na planilha') + '</small></div>' +
+        '<select class="filter-select" data-plnome="' + escapeHtml(n.planilha) + '">' + ops(n.chave) + '</select>' +
+        (n.usuario ? '<span class="pl-ok">' + ico('check', 13) + ' tem acesso</span>' : '<button type="button" class="f-add" data-pl="convite" data-nome="' + escapeHtml(n.planilha) + '" data-funcao="' + escapeHtml(n.funcao || '') + '">Criar convite</button>') + '</div>';
+    }).join('') : '<div class="saldo-data">Os nomes aparecem aqui depois da primeira conversa com a planilha.</div>') + '<div class="saldo-data">Sem usuário, a tarefa continua ligada pelo nome e aparece como “Kamyla (sem acesso)”. Quando a pessoa entra e você a escolhe aqui, tudo passa para ela.</div>');
+    h += fSec('O que acompanha nas duas vias', ['Tarefa nova (criada em qualquer lado)', 'Status e conclusão', 'Responsável e “delegado por”', 'Prioridade e observações', 'Prazo fatal e “trabalhar até” (a planilha calcula; o app mostra)'].map(function(t){ return '<div class="pl-ck">' + ico('check', 15) + t + '</div>'; }).join('') + '<div class="pl-ck off">' + ico('x', 15) + 'Despesas do Murilo (ignoradas, por enquanto)</div>');
+    h += fSec('Ligar a planilha (uma vez)', '<ol class="pl-ol"><li>Toque em <b>Copiar script</b>.</li><li>Na planilha: <b>Extensões › Apps Script</b> › apague o que houver › cole › Salvar.</li><li>Escolha a função <b>ligarAoHorus</b> › Executar › autorize.</li></ol><div class="pl-2"><button type="button" class="f-add" data-pl="script">' + ico('file-text', 16) + 'Copiar script</button><button type="button" class="f-add" data-pl="novachave">Gerar nova chave</button><button type="button" class="f-add pl-perigo" data-pl="desligar">Desligar</button></div><div class="saldo-data">O script tem uma chave secreta só sua: não compartilhe. “Gerar nova chave” invalida o script antigo (cole o novo).</div>');
+  }
+  c.innerHTML = h;
+}
+function plClique(a, b){
+  if (a === 'atualizar') plAtualizar();
+  else if (a === 'ligar') plApi('/api/planilha/ligar', 'POST', {}).then(plAtualizar).catch(function(e){ toast(e.message); });
+  else if (a === 'script') plApi('/api/planilha/script').then(function(t){ try{ navigator.clipboard.writeText(t).then(function(){ toast('Script copiado. Cole em Extensões › Apps Script.'); }, function(){ plMostrarScript(t); }); }catch(x){ plMostrarScript(t); } }).catch(function(e){ toast(e.message); });
+  else if (a === 'novachave'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para confirmar'; return; } plApi('/api/planilha/novachave', 'POST', {}).then(function(){ toast('Nova chave gerada. Copie o script de novo.'); plAtualizar(); }); }
+  else if (a === 'desligar'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para desligar'; return; } plApi('/api/planilha/desligar', 'POST', {}).then(function(){ toast('Planilha desligada. As tarefas continuam na Agenda.'); plAtualizar(); plCarregarLigada(); }); }
+  else if (a === 'convite') plConvidar(b.getAttribute('data-nome'), b.getAttribute('data-funcao'));
+}
+function plMostrarScript(t){   /* quando o aparelho não deixa copiar sozinho: mostra o texto para copiar à mão */
+  var c = qs('overlayPlanilhaC'); if (!c) return;
+  c.insertAdjacentHTML('afterbegin', '<div class="f-sec"><div class="f-sec-t">Script (selecione tudo e copie)</div><textarea readonly rows="8" style="font-family:ui-monospace,monospace;font-size:12px;width:100%">' + escapeHtml(t) + '</textarea></div>');
+}
+function plEscolher(nome, chave){
+  var mapa = {}; mapa[nome] = chave;
+  plApi('/api/planilha/nomes', 'PUT', { mapa: mapa }).then(function(r){ toast(chave ? 'Pronto: as tarefas de ' + nome + ' passam para essa pessoa.' : 'Ligação desfeita para ' + nome + '.'); try{ agCarregar(); }catch(e){} return plAtualizar(); }).then(plCarregarLigada).catch(function(e){ toast(e.message); });
+}
+function plConvidar(nome, funcao){
+  qs('overlayPlanilha').classList.remove('show'); usAbrir();
+  setTimeout(function(){ try{ usNovoForm(); usS.form.nome = nome; usS.form.papel = /estag/i.test(funcao) ? 'estagiario' : 'advogado'; usS.form.perm = usPadrao(usS.form.papel); usS.tela = 'convidar'; usDesenhar(); }catch(e){ console.error('convite', e); } }, 700);
+}
+/* ---------- Agenda: "Também na planilha" no editor ---------- */
+function plEditorHtml(i){
+  var d = i && i.doc ? i.doc : null;
+  if (d && d.plan && d.plan.id) return '<div class="pl-lig pl-fixo">' + ico('table', 18) + '<div><b>Ligado à planilha</b><small>' + (d.plan.removida ? 'a linha foi removida da planilha' : 'as mudanças aqui e na aba Controle se acompanham') + '</small></div></div>';
+  if (i || !plS.ligada) return '';
+  return '<label class="pl-lig" for="age_plan">' + ico('table', 18) + '<div><b>Também na planilha</b><small>vai para a aba Controle assim que salvar</small></div><input type="checkbox" id="age_plan" checked class="pl-sw"></label>';
+}
+/* depois de salvar, avisa se alguém escolhido não tem nome na planilha */
+function plAvisoSemNome(chaves){
+  var falta = (chaves || []).filter(function(k){ return !plS.mapa[k]; });
+  if (falta.length) setTimeout(function(){ toast('Atenção: ' + falta.map(function(k){ return esNomeChave(k); }).join(', ') + ' não está ligado(a) a um nome da planilha; a linha vai sem responsável. Veja em Configurações › Planilha de tarefas.'); }, 1800);
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.pl-st{display:flex;gap:10px;align-items:center}.pl-st small{display:block;color:var(--ink-soft);font-size:var(--t2)}.pl-dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px rgba(23,137,90,.18)}.pl-dot.off{background:var(--ink-soft);box-shadow:none}' +
+    '.pl-n{font-size:var(--t3);color:var(--ink-soft)}.pl-2{display:flex;gap:8px;flex-wrap:wrap}.pl-2 .f-add{text-decoration:none}.pl-p{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-top:1px solid var(--border)}.pl-p .pl-ok{align-self:flex-start}.pl-p small{display:block;color:var(--ink-soft);font-size:var(--t2)}.pl-p select{width:100%}' +
+    '.pl-ok{display:inline-flex;align-items:center;gap:4px;color:var(--success);font-weight:700;font-size:var(--t2)}.pl-ck{display:flex;gap:8px;align-items:flex-start;min-height:28px;font-size:var(--t3);color:var(--success)}.pl-ck.off{color:var(--ink-soft)}.pl-ol{margin:0;padding-left:20px;font-size:var(--t3);line-height:1.6}.f-add.pl-perigo{color:var(--urgente)}' +
+    '.pl-lig{display:flex;align-items:center;gap:12px;background:rgba(42,120,214,.10);border:1px solid rgba(42,120,214,.35);border-radius:16px;padding:12px 14px;color:var(--info);cursor:pointer}.pl-lig b{display:block;font-size:var(--t3)}.pl-lig small{display:block;font-size:var(--t2);color:var(--ink-soft);font-weight:400}.pl-lig>div{flex:1;min-width:0}.pl-fixo{cursor:default}' +
+    'input.pl-sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:var(--border);position:relative;flex:none;border:0;cursor:pointer;transition:background .15s}input.pl-sw:checked{background:var(--info)}input.pl-sw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}input.pl-sw:checked::after{transform:translateX(20px)}' +
+    '.pb-tg.pl{background:rgba(42,120,214,.13);color:var(--info);display:inline-flex;align-items:center;gap:4px}';
+  document.head.appendChild(st);
+  if (window.__SERVIDOR) plCarregarLigada();
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { plAbrir: plAbrir, plCarregarLigada: plCarregarLigada });
 })();
 
 /*ES-FIM*/
