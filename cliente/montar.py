@@ -112,6 +112,7 @@ es = es + '\n' + open(R + 'cliente/pendencias.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/fichas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/quadros.js', encoding='utf-8').read()
 bloco_es = '/*ES-INICIO*/\n' + es + '\n/*ES-FIM*/\n'
 if '/*ES-INICIO*/' in s:
     s = re.sub(r'/\*ES-INICIO\*/.*?/\*ES-FIM\*/\n', lambda m: bloco_es, s, flags=re.S)
@@ -180,7 +181,7 @@ def rep(old, new):
     if new in s or s.count(old) == 0: return
     assert s.count(old) == 1, (s.count(old), old[:70]); s = s.replace(old, new)
 rep('<svg><use href="#ic-delegadas"/></svg><span class="lab">Delegadas</span></button>', '<svg><use href="#ic-delegadas"/></svg><span class="lab">Delegadas</span><span class="dr-n red" id="menuNDelegadas"></span></button>')
-rep('<button type="button" class="bt-it" id="btMais"><svg><use href="#ic-menu"/></svg><span>Mais</span></button>', '<button type="button" class="bt-it" id="btMais"><svg><use href="#ic-menu"/></svg><span>Mais</span><span class="bt-n" id="btBadgeMais"></span></button>')   # número vermelho das minhas tarefas delegadas atrasadas (a aba Delegadas fica dentro do "Mais")
+rep('  <div id="bodyInicio">\n    <div class="ini-grid sem-extr">', '  <div id="bodyInicio">\n    <div id="iniSauda" class="ini-sauda"></div>\n    <div class="ini-grid sem-extr">')   # frase de boas-vindas (cliente/quadros.js)\nrep('<button type="button" class="bt-it" id="btMais"><svg><use href="#ic-menu"/></svg><span>Mais</span></button>', '<button type="button" class="bt-it" id="btMais"><svg><use href="#ic-menu"/></svg><span>Mais</span><span class="bt-n" id="btBadgeMais"></span></button>')   # número vermelho das minhas tarefas delegadas atrasadas (a aba Delegadas fica dentro do "Mais")
 rep("    alvaras.forEach(function(al){\n      var alvo = ((al.partes||'')+' '+(al.numeroProcesso||'')).toLowerCase();\n      if (alvo.indexOf(q) !== -1) resultados.push({ tipo:'alvara', id:al.id, titulo:al.partes||'Sem nome', sub:'Alvará' + (al.arquivado ? ' · arquivado' : '') });\n    });\n    return resultados;",
     "    alvaras.forEach(function(al){\n      var alvo = ((al.partes||'')+' '+(al.numeroProcesso||'')).toLowerCase();\n      if (alvo.indexOf(q) !== -1) resultados.push({ tipo:'alvara', id:al.id, titulo:al.partes||'Sem nome', sub:'Alvará' + (al.arquivado ? ' · arquivado' : '') });\n    });\n    try{ resultados = resultados.concat(paBuscarExtra(query.trim())); }catch(e){ console.error('busca', e); }\n    return resultados;")
 rep("  function irParaRelacionado(tipo, id){\n    if (tipo === 'cliente')", "  function irParaRelacionado(tipo, id){\n    if (paBuscaExtra[tipo]){ paIrExtra(tipo, id); return; }\n    if (tipo === 'cliente')")
