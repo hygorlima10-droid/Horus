@@ -8,7 +8,7 @@
    - Fica em coleções reservadas: _planilha/config (chave, estado, mapa de nomes). */
 import { lerDoc, stmtDoc } from './acesso.js';
 import { usuariosAtivos, avisarAtividade } from './avisos.js';
-import { stmtRegistro, mudancas, tituloDe } from './auditoria.js';
+import { stmtRegistro, mudancas, tituloDe, stmtLixeira } from './auditoria.js';
 import { normNome } from './politica.js';
 import { rosterAdvogados } from './responsaveis.js';
 
@@ -170,6 +170,62 @@ function pendenciasDoApp(itens, ctx) {
   return n;
 }
 
+
+/* ---------- migração para a área "Delegadas" do app (substitui a planilha do Google) ---------- */
+const STATUS_DEL = (d) => {
+  const sm = semDoc(d);
+  if (sm === 'feito') return d.protocoladoEm || normRot(d.plan && d.plan.statusRaw) === 'protocolada' ? 'protocolada' : 'concluida';
+  return { 'afazer+ag': 'aguardando', afazer: 'afazer', elaboracao: 'andamento', pronta: 'revisao' }[sm] || 'afazer';
+};
+const PRIO_DEL = (p) => (/alta/i.test(p || '') ? 'Alta' : (/baix/i.test(p || '') ? 'Baixa' : 'Média'));
+/* o que seria importado: cada item da Agenda ligado à planilha vira uma tarefa em "Delegadas" (nada é gravado aqui) */
+async function planoMigracao(env, cfg) {
+  const itens = (await itensAgenda(env)).filter((x) => x.d.plan), ctx = await criarCtx(env, cfg);
+  const { results: jaRes } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = 'delegadas'").all();
+  const jaImportadas = new Set(jaRes.map((r) => JSON.parse(r.dados).importadoDe).filter(Boolean));
+  const { results: cliRes } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = 'clientes'").all();
+  const clientes = cliRes.map((r) => ({ id: r.id, nome: normNome(JSON.parse(r.dados).nome || '') })).filter((c) => c.nome);
+  const novas = [], removerDaAgenda = [], ignoradas = [], ja = [];
+  for (const { id, d } of itens) {
+    if (d.plan.removida) { ignoradas.push(id); removerDaAgenda.push({ id, dados: d }); continue; }   // alguém apagou a linha na planilha: não é importada e sai da Agenda (Lixeira)
+    removerDaAgenda.push({ id, dados: d });
+    if (jaImportadas.has(id)) { ja.push(id); continue; }
+    const respChave = (Array.isArray(d.resp) && d.resp[0]) || (txt(d.respNome) ? chaveDoNome(d.respNome, ctx) : ''), delNome = txt(d.delegadoPor);
+    const cli = txt(d.cliente), c = clientes.find((x) => x.nome === normNome(cli));
+    const doc = {
+      tipo: 'tarefa', titulo: txt(d.titulo), cliente: cli, clienteId: c ? c.id : '', processo: txt(d.processo), resp: respChave, delegadoPor: delNome ? chaveDoNome(delNome, ctx) : '',
+      prioridade: PRIO_DEL(d.prioridade), status: STATUS_DEL(d), trabalhar: dataOk(d.trabalhar), fatal: dataOk(d.data), obs: txt(d.obs),
+      criadoPor: d.criadoPor || '', criadoEm: d.criadoEm || new Date().toISOString(), origem: 'google-sheets', importadoDe: id, linhaPlanilhaId: d.plan.id || '',
+    };
+    if (doc.status === 'concluida' || doc.status === 'protocolada') { doc.concluidoEm = dataOk(d.concluidoEm) || dataOk(d.protocoladoEm) || ''; }
+    novas.push(doc);
+  }
+  return { novas, removerDaAgenda, ignoradas, ja, ctx };
+}
+const nomeDaChaveDel = (k, ctx) => (k ? (chaveParaNome(ctx.mapa, k) || nomeDaChavePlan(k, ctx) || (ctx.us.find((u) => chaveDe(u) === k || ('u:' + u.id) === k) || {}).nome || String(k).replace(/^n:/, '')) : '');
+async function migracaoPrevia(env, cfg) {
+  const pl = await planoMigracao(env, cfg), ab = pl.novas.filter((d) => d.status !== 'concluida' && d.status !== 'protocolada'), por = {};
+  for (const d of ab) { const n = nomeDaChaveDel(d.resp, pl.ctx) || 'Sem responsável'; por[n] = (por[n] || 0) + 1; }
+  return {
+    total: pl.novas.length, abertas: ab.length, concluidas: pl.novas.length - ab.length, ignoradas: pl.ignoradas.length, jaImportadas: pl.ja.length, aTirarDaAgenda: pl.removerDaAgenda.length,
+    semResponsavel: ab.filter((d) => !d.resp).length, porPessoa: Object.entries(por).sort((a, b) => b[1] - a[1]).map(([nome, n]) => ({ nome, n })),
+    amostra: ab.slice(0, 12).map((d) => ({ titulo: d.titulo, resp: nomeDaChaveDel(d.resp, pl.ctx), status: d.status, fatal: d.fatal, prioridade: d.prioridade })),
+    migradoEm: cfg.migradoEm || '',
+  };
+}
+async function migrar(env, cfg, auth) {
+  const pl = await planoMigracao(env, cfg), por = auth && auth.usuario ? auth.usuario.nome : 'Você';
+  let importadas = 0, tiradas = 0;
+  const lotes = [];
+  for (const d of pl.novas) lotes.push([stmtDoc(env, 'delegadas', aleat(20), d), stmtRegistro(env, { op: 'criou', colecao: 'delegadas', id: d.importadoDe, titulo: tituloDe('delegadas', d), dados: d, por: 'Importação do Google Sheets' })]);
+  for (let i = 0; i < lotes.length; i += 20) { await env.DB.batch(lotes.slice(i, i + 20).flat()); importadas += lotes.slice(i, i + 20).length; }
+  const rem = pl.removerDaAgenda.map(({ id, dados }) => [stmtLixeira(env, 'agenda', id, JSON.stringify(dados)), env.DB.prepare("DELETE FROM docs WHERE colecao = 'agenda' AND id = ?").bind(id), stmtRegistro(env, { op: 'excluiu', colecao: 'agenda', id, titulo: tituloDe('agenda', dados), dados, por: 'Migração para Delegadas' })]);
+  for (let i = 0; i < rem.length; i += 15) { await env.DB.batch(rem.slice(i, i + 15).flat()); tiradas += rem.slice(i, i + 15).length; }
+  delete cfg.token; cfg.ultimaConversa = ''; cfg.migradoEm = new Date().toISOString(); cfg.migracao = { importadas: importadas + pl.ja.length, tiradasDaAgenda: tiradas, por };
+  await cfgGravar(env, cfg);
+  return { ok: true, importadas, jaImportadas: pl.ja.length, tiradasDaAgenda: tiradas, desligada: true };
+}
+
 /* ---------- a conversa com a planilha ---------- */
 async function sincronizar(env, deps, corpo, cfg) {
   const us = await usuariosAtivos(env), vistos = new Set((corpo.integrantes || []).map((x) => txt(x.nome)).filter(Boolean));
@@ -297,8 +353,10 @@ export async function planilhaRotas(request, env, partes, auth) {
     const us = await usuariosAtivos(env), opcoes = us.map((u) => ({ chave: chaveDe(u), nome: u.nome, papel: u.norm.papel }));
     const nomes = (cfg.vistos.length ? cfg.vistos : []).map((n) => ({ planilha: n, chave: cfg.nomes[n] || '', usuario: cfg.nomes[n] ? (opcoes.find((o) => o.chave === cfg.nomes[n]) || null) : null, funcao: ((cfg.integrantes || []).find((x) => x.nome === n) || {}).funcao || '' }));
     const itens = await itensAgenda(env);
-    return json({ ligada: !!cfg.token, conectada: !!cfg.ultimaConversa, planilha: cfg.planilha || '', url: cfg.url || '', ultimaConversa: cfg.ultimaConversa || '', ultimaTentativa: cfg.ultimaTentativa || '', erro: cfg.ultimaErro || '', contagem: { ...(cfg.contagem || {}), ligadas: itens.filter((x) => x.d.plan && x.d.plan.id && !x.d.plan.removida && semDoc(x.d) !== 'feito').length }, nomes, opcoes, origem });
+    return json({ ligada: !!cfg.token, conectada: !!cfg.ultimaConversa, planilha: cfg.planilha || '', url: cfg.url || '', ultimaConversa: cfg.ultimaConversa || '', ultimaTentativa: cfg.ultimaTentativa || '', erro: cfg.ultimaErro || '', migradoEm: cfg.migradoEm || '', migracao: cfg.migracao || null, contagem: { ...(cfg.contagem || {}), ligadas: itens.filter((x) => x.d.plan && x.d.plan.id && !x.d.plan.removida && semDoc(x.d) !== 'feito').length }, nomes, opcoes, origem });
   }
+  if (m === 'GET' && partes[1] === 'migracao') return json(await migracaoPrevia(env, cfg));
+  if (m === 'POST' && partes[1] === 'migrar') { const c = await request.json().catch(() => null); if (!c || c.confirmar !== true) return erro(400, 'invalid', 'Confirme a migração.'); return json(await migrar(env, cfg, auth)); }
   if (m === 'POST' && partes[1] === 'ligar') { if (!cfg.token) { cfg.token = b64u(crypto.getRandomValues(new Uint8Array(24))); cfg.ligadoEm = new Date().toISOString(); await cfgGravar(env, cfg); } return json({ ok: true }); }
   if (m === 'POST' && partes[1] === 'novachave') { cfg.token = b64u(crypto.getRandomValues(new Uint8Array(24))); cfg.ultimaConversa = ''; await cfgGravar(env, cfg); return json({ ok: true }); }
   if (m === 'POST' && partes[1] === 'desligar') { delete cfg.token; cfg.ultimaConversa = ''; await cfgGravar(env, cfg); return json({ ok: true }); }

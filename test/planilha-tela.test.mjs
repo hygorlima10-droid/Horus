@@ -68,5 +68,18 @@ check(await page.evaluate(() => Array.from(document.querySelectorAll('.es-chip')
 // responsável ligado pelo usuário (ex.: "Hygor" da planilha = u:u1): mostra o nome, nunca "Usuário"
 const nomes = await page.evaluate(() => { const T = window.__horusTeste, e0 = T.esS.eu, n0 = T.esS.nomesChave; T.esS.eu = { id: 'u1', nome: 'Hygor Lima Andrade', oabs: ['60456/GO'], papel: 'proprietario' }; const a = T.esNomeChave('u:u1'); T.esS.eu = { id: 'u2', nome: 'Outra', oabs: [] }; T.esS.nomesChave = { 'u:u1': 'Hygor' }; const b = T.esNomeChave('u:u1'); T.esS.nomesChave = {}; const c = T.esNomeChave('u:u9'); T.esS.eu = e0; T.esS.nomesChave = n0; return [a, b, c]; });
 check(nomes[0] === 'Hygor Lima Andrade' && nomes[1] === 'Hygor' && nomes[2] === 'Usuário', 'responsável ligado pelo usuário mostra o nome (o meu, ou o da planilha), e só cai em "Usuário" quando não há como saber: ' + nomes.join(' | '));
+// 6) migração para Delegadas: prévia, confirmação em dois toques e resultado
+await page.evaluate(() => document.querySelectorAll('.overlay.show').forEach(o => o.classList.remove('show')));
+await page.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await page.waitForTimeout(600);
+await page.click('[data-cf="planilha"]'); await page.waitForTimeout(800);
+check(/Mudar para o app \(Delegadas\)/i.test(await t('#overlayPlanilhaC')) && await page.locator('[data-pl="previa"]').isVisible(), 'a tela da planilha oferece "Mudar para o app (Delegadas)" com a prévia');
+await page.click('[data-pl="previa"]'); await page.waitForTimeout(800);
+check(/abertas/i.test(await t('.pl-previa')) && /Primeiras tarefas/i.test(await t('.pl-previa')) && /Delegada pelo app|Planilha de cálculo/.test(await t('.pl-previa')), 'a prévia mostra as contagens e as primeiras tarefas: ' + (await t('.pl-previa')).slice(0, 140));
+await page.click('[data-pl="migrar"]'); await page.waitForTimeout(300);
+check(/Toque de novo para confirmar/i.test(await t('[data-pl="migrar"]')) && (await f('GET', '/api/db/delegadas')).j.docs.length === 0, 'o primeiro toque só pede a confirmação (nada é importado ainda)');
+await page.click('[data-pl="migrar"]'); await page.waitForTimeout(1800);
+check(/as tarefas agora vivem em Delegadas/i.test(await t('#overlayPlanilhaC')) && (await f('GET', '/api/db/delegadas')).j.docs.length >= 1, 'o segundo toque importa, desliga o Google e mostra "Migrado para o app"');
+await page.click('[data-pl="abrirdelegadas"]'); await page.waitForTimeout(1200);
+check(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Delegada pelo app')), 'as tarefas importadas aparecem na área Delegadas (Abertas)');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

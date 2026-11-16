@@ -4,7 +4,7 @@
    - Agenda: selo "Planilha" nos cartões e, ao criar um item, o botão "Também na planilha" (liga a linha nova na aba Controle);
    - o servidor (src/planilha.js) faz a conversa com o script da planilha; aqui só aparece o resultado.
    ============================================================ */
-var plS = { ligada: false, mapa: {}, estado: null, carregando: false };
+var plS = { ligada: false, mapa: {}, estado: null, carregando: false, previa: null, migrando: false };
 function plApi(url, metodo, corpo){
   return fetch(url, { method: metodo || 'GET', credentials: 'same-origin', cache: 'no-store', headers: corpo !== undefined ? { 'content-type': 'application/json' } : undefined, body: corpo !== undefined ? JSON.stringify(corpo) : undefined })
     .then(function(r){ return (/\/script$/.test(url) ? r.text() : r.json().catch(function(){ return {}; })).then(function(j){ if (!r.ok) throw new Error((j && j.error && j.error.message) || ('Erro ' + r.status)); return j; }); });
@@ -45,6 +45,19 @@ function plDesenhar(){
     '<div class="pl-n"><b>' + (ct.ligadas || 0) + '</b> tarefas abertas ligadas · <b>' + (ct.conflitos || 0) + '</b> conflitos · <b>' + (ct.removidas || 0) + '</b> removidas da planilha</div>' +
     '<div class="pl-2"><button type="button" class="f-add" data-pl="atualizar">' + ico('refresh-cw', 16) + 'Atualizar</button>' + (E.url ? '<a class="f-add" href="' + escapeHtml(E.url) + '" target="_blank" rel="noopener">Abrir a planilha</a>' : '') + '</div>'
     : '<div class="pb-aviso">A planilha ainda não está ligada ao app. Toque em <b>Ligar</b> e siga os 3 passos abaixo (leva uns 5 minutos, uma vez só).</div><div class="pl-2"><button type="button" class="btn btn-primary" data-pl="ligar">Ligar a planilha</button></div>');
+  if (E.migradoEm){
+    var mg = E.migracao || {};
+    h += fSec('Migrado para o app', '<div class="pb-aviso" style="background:rgba(23,137,90,.1)"><b>Pronto: as tarefas agora vivem em Delegadas.</b><br>Migração feita em ' + escapeHtml(fmtData(String(E.migradoEm).slice(0, 10))) + ': ' + (mg.importadas || 0) + ' tarefas em Delegadas, ' + (mg.tiradasDaAgenda || 0) + ' tiradas da Agenda (estão na Lixeira por 30 dias). O app <b>não puxa mais</b> o Google Sheets.</div><div class="saldo-data">No Google, a planilha continua lá só para consulta. Para parar o script dela: na planilha, Extensões › Apps Script › Gatilhos (relógio) › apague os gatilhos “sincronizarHorus” e “aoEditarHorus”.</div><div class="pl-2"><button type="button" class="f-add" data-pl="abrirdelegadas">Abrir Delegadas</button></div>');
+  } else if (E.ligada){
+    var P = plS.previa;
+    h += fSec('Mudar para o app (Delegadas)', '<div class="saldo-data">Passa as tarefas que vieram da planilha para a área <b>Delegadas</b> do app, tira essas tarefas da Agenda (vão para a Lixeira por 30 dias) e <b>desliga a ligação com o Google</b>. Antes de fazer, veja a prévia.</div>' +
+      '<div class="pl-2"><button type="button" class="f-add" data-pl="previa">' + ico('eye', 16) + (P ? 'Atualizar a prévia' : 'Ver a prévia') + '</button></div>' +
+      (P ? '<div class="pl-previa"><div class="pl-n"><b>' + P.abertas + '</b> abertas · <b>' + P.concluidas + '</b> concluídas · <b>' + P.ignoradas + '</b> apagadas na planilha (não entram)' + (P.jaImportadas ? ' · ' + P.jaImportadas + ' já importadas' : '') + '</div>' +
+        (P.porPessoa && P.porPessoa.length ? '<div class="saldo-data" style="margin:4px 0">Abertas por pessoa: ' + P.porPessoa.map(function(x){ return escapeHtml(x.nome) + ' (' + x.n + ')'; }).join(' · ') + '</div>' : '') +
+        (P.semResponsavel ? '<div class="pb-aviso">' + P.semResponsavel + ' tarefa(s) abertas estão sem responsável.</div>' : '') +
+        (P.amostra && P.amostra.length ? '<div class="saldo-data" style="margin:6px 0 2px"><b>Primeiras tarefas:</b></div>' + P.amostra.map(function(x){ return '<div class="pl-amostra">' + escapeHtml(x.titulo) + '<small>' + escapeHtml([x.resp || 'sem responsável', x.prioridade, x.fatal ? 'fatal ' + fmtData(x.fatal).slice(0, 5) : ''].filter(Boolean).join(' · ')) + '</small></div>'; }).join('') : '') +
+        '<div class="pl-2" style="margin-top:10px"><button type="button" class="btn btn-primary" data-pl="migrar"' + (plS.migrando ? ' disabled' : '') + '>Importar, tirar da Agenda e desligar o Google</button></div></div>' : ''));
+  }
   if (E.ligada){
     var ops = function(sel){ return '<option value="">sem acesso (só o nome)</option>' + (E.opcoes || []).map(function(o){ return '<option value="' + escapeHtml(o.chave) + '"' + (o.chave === sel ? ' selected' : '') + '>' + escapeHtml(o.nome) + ' · ' + (o.papel === 'estagiario' ? 'estagiário' : (o.papel === 'proprietario' ? 'proprietário' : 'advogado')) + '</option>'; }).join(''); };
     h += fSec('Quem é quem', (E.nomes && E.nomes.length ? E.nomes.map(function(n){
@@ -63,6 +76,13 @@ function plClique(a, b){
   else if (a === 'script') plApi('/api/planilha/script').then(function(t){ try{ navigator.clipboard.writeText(t).then(function(){ toast('Script copiado. Cole num arquivo novo em Extensões › Apps Script.'); }, function(){ plMostrarScript(t); }); }catch(x){ plMostrarScript(t); } }).catch(function(e){ toast(e.message); });
   else if (a === 'novachave'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para confirmar'; return; } plApi('/api/planilha/novachave', 'POST', {}).then(function(){ toast('Nova chave gerada. Copie o script de novo.'); plAtualizar(); }); }
   else if (a === 'desligar'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para desligar'; return; } plApi('/api/planilha/desligar', 'POST', {}).then(function(){ toast('Planilha desligada. As tarefas continuam na Agenda.'); plAtualizar(); plCarregarLigada(); }); }
+  else if (a === 'previa') plApi('/api/planilha/migracao').then(function(j){ plS.previa = j; plDesenhar(); }).catch(function(e){ toast(e.message); });
+  else if (a === 'migrar'){
+    if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para confirmar: isto desliga o Google'; return; }
+    plS.migrando = true; b.disabled = true;
+    plApi('/api/planilha/migrar', 'POST', { confirmar: true }).then(function(r){ plS.migrando = false; plS.previa = null; toast(r.importadas + ' tarefas importadas para Delegadas; planilha do Google desligada.'); try{ agCarregar(); }catch(e){} try{ dgS.ok = false; }catch(e){} return plAtualizar(); }).catch(function(e){ plS.migrando = false; toast('Não consegui migrar: ' + e.message); plDesenhar(); });
+  }
+  else if (a === 'abrirdelegadas'){ qs('overlayPlanilha').classList.remove('show'); setActiveTab('delegadas'); }
   else if (a === 'convite') plConvidar(b.getAttribute('data-nome'), b.getAttribute('data-funcao'));
 }
 function plMostrarScript(t){   /* quando o aparelho não deixa copiar sozinho: mostra o texto para copiar à mão */
@@ -93,6 +113,7 @@ function plAvisoSemNome(chaves){
   var st = document.createElement('style');
   st.textContent = '.pl-st{display:flex;gap:10px;align-items:center}.pl-st small{display:block;color:var(--ink-soft);font-size:var(--t2)}.pl-dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px rgba(23,137,90,.18)}.pl-dot.off{background:var(--ink-soft);box-shadow:none}' +
     '.pl-n{font-size:var(--t3);color:var(--ink-soft)}.pl-2{display:flex;gap:8px;flex-wrap:wrap}.pl-2 .f-add{text-decoration:none}.pl-p{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:10px 0;border-top:1px solid var(--border)}.pl-p .pl-ok{align-self:flex-start}.pl-p small{display:block;color:var(--ink-soft);font-size:var(--t2)}.pl-p select{width:100%}' +
+    '.pl-previa{background:var(--surface-2);border-radius:12px;padding:10px 12px;margin-top:8px}.pl-amostra{padding:6px 0;border-top:1px solid var(--border);font-size:var(--t2)}.pl-amostra small{display:block;color:var(--ink-soft);font-size:var(--t1)}' +
     '.pl-ok{display:inline-flex;align-items:center;gap:4px;color:var(--success);font-weight:700;font-size:var(--t2)}.pl-ck{display:flex;gap:8px;align-items:flex-start;min-height:28px;font-size:var(--t3);color:var(--success)}.pl-ck.off{color:var(--ink-soft)}.pl-ol{margin:0;padding-left:20px;font-size:var(--t3);line-height:1.6}.f-add.pl-perigo{color:var(--urgente)}' +
     '.pl-lig{display:flex;align-items:center;gap:12px;background:rgba(42,120,214,.10);border:1px solid rgba(42,120,214,.35);border-radius:16px;padding:12px 14px;color:var(--info);cursor:pointer}.pl-lig b{display:block;font-size:var(--t3)}.pl-lig small{display:block;font-size:var(--t2);color:var(--ink-soft);font-weight:400}.pl-lig>div{flex:1;min-width:0}.pl-fixo{cursor:default}' +
     'input.pl-sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:var(--border);position:relative;flex:none;border:0;cursor:pointer;transition:background .15s}input.pl-sw:checked{background:var(--info)}input.pl-sw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}input.pl-sw:checked::after{transform:translateX(20px)}' +

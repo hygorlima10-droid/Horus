@@ -103,6 +103,27 @@ const est2 = (await f('GET', '/api/planilha')).j;
 check(est2.nomes.every(n => n.chave === '') && Array.isArray(est2.opcoes), 'sem usuários no app, os nomes ficam sem acesso (ligados só pelo nome)');
 check((await f('PUT', '/api/planilha/nomes', { mapa: { Kamyla: 'u:naoexiste' } })).j.ok === true && (await f('GET', '/api/planilha')).j.nomes.find(n => n.planilha === 'Kamyla').chave === '', 'uma pessoa que não existe é recusada no mapa');
 
+// ---- migração para Delegadas: prévia, importação (idempotente), Agenda esvaziada, Lixeira e Google desligado
+{
+  const antes = (await ag()).filter(d => d.plan);
+  const pre = (await f('GET', '/api/planilha/migracao')).j;
+  check(pre.total >= 1 && pre.abertas + pre.concluidas === pre.total && pre.aTirarDaAgenda >= pre.total && Array.isArray(pre.porPessoa) && Array.isArray(pre.amostra) && !pre.migradoEm, 'prévia da migração: conta abertas, concluídas, por pessoa e mostra as primeiras tarefas (' + pre.abertas + ' abertas, ' + pre.concluidas + ' concluídas)');
+  check((await f('GET', '/api/db/delegadas')).j.docs.length === 0 && (await ag()).filter(d => d.plan).length === antes.length, 'a prévia não grava nada');
+  check((await f('POST', '/api/planilha/migrar', {})).s === 400, 'migrar sem confirmar é recusado');
+  const mg = (await f('POST', '/api/planilha/migrar', { confirmar: true })).j;
+  const del = (await f('GET', '/api/db/delegadas')).j.docs.map(d => d.data);
+  check(mg.ok && mg.importadas === pre.total && del.length === pre.total && mg.desligada === true, 'a migração cria uma tarefa em Delegadas para cada item (' + del.length + ')');
+  const dKam = del.find(d => /cálculo/.test(d.titulo));
+  check(dKam && dKam.resp === 'n:Kamyla' && dKam.prioridade === 'Média' && ['concluida', 'protocolada'].includes(dKam.status) && dKam.fatal === '2026-11-18' && dKam.trabalhar === '2026-11-13' && /^5170137/.test(dKam.processo) && dKam.origem === 'google-sheets' && !!dKam.importadoDe, 'campos: responsável pelo nome (n:Kamyla), prioridade, status (já concluída), prazo fatal, trabalhar até, processo e origem: ' + JSON.stringify(dKam || {}).slice(0, 200));
+  const lx = JSON.stringify((await f('GET', '/api/lixeira')).j), restam = (await ag()).filter(d => d.plan).length;
+  check(restam === 0 && lx.includes('Agenda'), 'as tarefas saem da Agenda e vão para a Lixeira (restam ' + restam + ' na Agenda; lixeira: ' + lx.slice(0, 120) + ')');
+  check((await sync({ linhas: [] })).s === 401, 'o Google fica desligado (a chave não vale mais)');
+  const est = (await f('GET', '/api/planilha')).j;
+  check(!!est.migradoEm && est.migracao.importadas === pre.total && est.ligada === false, 'o estado guarda a data da migração');
+  const mg2 = (await f('POST', '/api/planilha/migrar', { confirmar: true })).j;
+  check(mg2.importadas === 0 && (await f('GET', '/api/db/delegadas')).j.docs.length === pre.total, 'rodar de novo não duplica nada');
+}
+
 // ---- desligar
 await f('POST', '/api/planilha/desligar');
 check((await sync({ linhas: [] })).s === 401 && (await f('GET', '/api/planilha/ligada')).j.ligada === false, 'ao desligar, a chave deixa de valer');
