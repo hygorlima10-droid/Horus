@@ -18,7 +18,7 @@ export const COLECOES_APP = [
   ['clientes', 'clientes', 'lista', 'clientes'], ['despesas', 'despesas', 'lista', 'despesas'], ['receitasManuais', 'receitasManuais', 'lista', 'receitas'],
   ['saldos', 'saldos', 'mapa', 'saldos'], ['metas', 'metas', 'lista', 'metas'], ['extratos', 'extratos', 'lista', 'extratos do banco'],
   ['obraMov', 'obraMov', 'lista', 'lançamentos da obra'], ['processos', 'processos', 'lista', 'processos'], ['agenda', 'agenda', 'lista', 'itens da agenda'],
-  ['pecasAprendidas', 'pecasAprendidas', 'lista', 'peças aprendidas'], ['config', 'config', 'mapa', 'configurações'], ['configDono', 'configDono', 'mapa', 'configurações do proprietário'],
+  ['pecasAprendidas', 'pecasAprendidas', 'lista', 'peças aprendidas'], ['delegadas', 'delegadas', 'lista', 'tarefas delegadas'], ['config', 'config', 'mapa', 'configurações'], ['configDono', 'configDono', 'mapa', 'configurações do proprietário'],
 ];
 const NOME_DA_COLECAO = Object.fromEntries(COLECOES_APP.map((c) => [c[1], c[3]]));
 

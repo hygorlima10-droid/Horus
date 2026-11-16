@@ -12,7 +12,7 @@ export const PERMISSOES = ['excluir', 'verTotais', 'verPublicacoes', 'verAgendas
 const LIGADAS = { estagiario: new Set(['verPublicacoes', 'verAgendas']), advogado: new Set(['verTotais']) };   // ligadas por padrão (o proprietário desliga por pessoa): estagiário vê publicações e agendas; advogado vê os totais dos seus processos
 const PARTICIPACAO = new Set(['casos', 'termosAcordo', 'alvaras', 'processos']);   // registros que têm `advogados`
 const COM_PROCESSO = new Set(['prazosPub']);                                         // registros ligados a um processo pelo número
-const LIVRES = new Set(['pecasAprendidas']);                                        // aprendizado de peças: do escritório todo
+const LIVRES = new Set(['pecasAprendidas', 'delegadas']);                                        // aprendizado de peças: do escritório todo
 const CONFIG_LIVRE = new Set(['personalizacao', 'preferencias']);                    // documentos de config que cada pessoa pode ler e gravar
 const CAMPOS_PAGTO = ['pago', 'status', 'dataRecebimento', 'recebidoEm', 'parciais'];
 
@@ -112,7 +112,7 @@ function agendaVisivel(d, u, esc) {
 }
 
 /* ---------- decisão por rota e coleção ---------- */
-const COL_JURIDICAS = new Set(['repasses', 'casos', 'termosAcordo', 'alvaras', 'clientes', 'processos', 'agenda', 'pecasAprendidas', 'prazosPub', 'diasSemExpediente']);
+const COL_JURIDICAS = new Set(['repasses', 'casos', 'termosAcordo', 'alvaras', 'clientes', 'processos', 'agenda', 'pecasAprendidas', 'delegadas', 'prazosPub', 'diasSemExpediente']);
 /* coleção inteira: o papel pode abri-la? (a filtragem registro a registro vem depois) */
 export function checarAcessoColecao(colecao, auth) {
   if (ehDono(auth)) return null;
@@ -190,6 +190,7 @@ export async function autorizarExclusao(env, colecao, id, antes, auth, esc) {
   if (colecao === 'config' || colecao === 'repasses' || colecao === 'diasSemExpediente') return NEGADO();
   esc = esc || (u.papel === 'advogado' ? await escopoDoAdvogado(env, auth) : null);
   if (antes && !podeVer(colecao, { ...antes, id: antes.id || id }, auth, esc)) return erro(404, 'not_found', 'Registro não encontrado.');
+  if (colecao === 'delegadas') return null;   // a tabela de tarefas delegadas é de toda a equipe (a Lixeira guarda 30 dias)
   if (!podeExcluir(auth)) return NEGADO('Você não tem permissão para excluir registros.');
   if (colecao === 'agenda' && antes && !agendaDaPessoa(antes, u, esc)) return NEGADO('Só quem criou, quem é responsável ou quem está no processo pode excluir esta tarefa.');
   return null;

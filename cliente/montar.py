@@ -111,6 +111,7 @@ es = open(R + 'cliente/responsaveis.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/pendencias.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/fichas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
 bloco_es = '/*ES-INICIO*/\n' + es + '\n/*ES-FIM*/\n'
 if '/*ES-INICIO*/' in s:
     s = re.sub(r'/\*ES-INICIO\*/.*?/\*ES-FIM\*/\n', lambda m: bloco_es, s, flags=re.S)
@@ -475,6 +476,18 @@ rep("""<span class="badge origem-'+c.origem+'">'+ORIGEM_LABEL[c.origem]+'</span>
 rep("""<div class="prio-tag"><span class="prio-dot p-'+c.prioridade+'"></span>'+PRIO_LABEL[c.prioridade]+'</div>'""", """<div class="prio-tag"><span class="prio-dot p-'+(c.prioridade||'normal')+'"></span>'+(PRIO_LABEL[c.prioridade]||PRIO_LABEL.normal||'')+'</div>'""")
 rep("  if (storageMode === 'db' && configRef) return Promise.resolve(configRef.doc('obra').set(dados));", "  if (storageMode === 'db' && configRef) return Promise.resolve(configRef.doc('obra').set(patch, { mesclar: true }));   /* só o que mudou: o servidor junta ao que está gravado (F-05) */")
 rep("  if (storageMode === 'db' && configRef) return Promise.resolve(configRef.doc('extratos').set(dados));", "  if (storageMode === 'db' && configRef) return Promise.resolve(configRef.doc('extratos').set(patch, { mesclar: true }));   /* só o que mudou (F-05) */")
+
+# ---------- Delegadas: a "planilha" de tarefas delegadas da equipe (cliente/delegadas.js tem a lógica) ----------
+repm('id="bodyDelegadas"', '  <div id="bodyAnalises" style="display:none;">', '  <div id="bodyDelegadas" style="display:none;">\n    <div class="ob-wrap" id="dgWrap"></div>\n  </div>\n\n  <div id="bodyAnalises" style="display:none;">')
+repm('data-tab="delegadas"', '      <button type="button" class="dr-it" data-tab="publicacoes" title="Publicações do Diário Oficial">', '      <button type="button" class="dr-it" data-tab="delegadas" title="Tarefas delegadas da equipe"><svg><use href="#ic-delegadas"/></svg><span class="lab">Delegadas</span></button>\n      <button type="button" class="dr-it" data-tab="publicacoes" title="Publicações do Diário Oficial">')
+rep('<symbol id="ic-news" ', '<symbol id="ic-delegadas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.5 1.5L7 5M3.5 12l1.5 1.5L7 11M3.5 18l1.5 1.5L7 17"/></symbol>\n<symbol id="ic-news" ')
+rep("    qs('bodyAgenda').style.display = (tab === 'agenda') ? '' : 'none';\n", "    qs('bodyAgenda').style.display = (tab === 'agenda') ? '' : 'none';\n    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';\n")
+if "tab === 'delegadas') ? 'none'" not in s:
+    s = s.replace("tab === 'publicacoes' || tab === 'agenda' || tab === 'processos'", "tab === 'publicacoes' || tab === 'agenda' || tab === 'delegadas' || tab === 'processos'")
+rep("    else if (tab === 'agenda') agRender();\n", "    else if (tab === 'agenda') agRender();\n    else if (tab === 'delegadas') dgAbrir();\n")
+rep("agenda:'Agenda',", "agenda:'Agenda', delegadas:'Delegadas',")
+rep("    else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';", "    else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';\n    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';")
+
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

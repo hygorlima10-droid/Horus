@@ -25,10 +25,10 @@ const ATOR = (auth) => ({ id: auth && auth.usuario ? auth.usuario.id : '', nome:
 /* quem está como responsável no registro (chaves "60456/GO" ou "u:<id>") */
 export function chavesDeResponsaveis(colecao, d) {
   if (!d) return [];
-  if (colecao === 'agenda') return Array.isArray(d.resp) ? d.resp.filter(Boolean) : [];
+  if (colecao === 'agenda' || colecao === 'delegadas') return Array.isArray(d.resp) ? d.resp.filter(Boolean) : [];
   return oabsDoRegistro(d);
 }
-const COLS_INDICADO = new Set(['agenda', 'casos', 'termosAcordo', 'alvaras', 'processos']);
+const COLS_INDICADO = new Set(['agenda', 'delegadas', 'casos', 'termosAcordo', 'alvaras', 'processos']);
 
 /* ---- recebimentos: o que estava recebido e deixou de estar ---- */
 function nosPagos(d) {
