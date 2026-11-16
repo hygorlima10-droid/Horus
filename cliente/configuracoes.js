@@ -17,10 +17,6 @@ var CF_LINHAS = [
   { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
   { id: 'registro', ic: 'receipt', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
 ];
-var CF_FUTURAS = [
-  { ic: 'scale', t: 'OABs e publicações', s: 'OAB de cada advogado' },
-  { ic: 'calendar-days', t: 'Agendas e regras operacionais', s: 'compartilhar e listas' },
-];
 function cfLinha(l, fut){
   var tag = l.breve ? '<span class="cf-tag">em breve</span>' : (fut ? '<span class="cf-tag">depois</span>' : '<span class="cf-seta">›</span>');
   return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + ico(l.ic, 20) + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
@@ -39,8 +35,6 @@ function cfRender(){
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +
-    '<div class="pb-sec-t" style="margin:16px 4px 6px">Reservado para as próximas fases</div>' +
-    '<div class="pb-painel pb-menu">' + CF_FUTURAS.map(function(l){ return cfLinha(l, true); }).join('') + '</div>' +
     '<div class="pb-aviso" style="margin:10px 4px">Cada linha abre a tela que já existia, só que agora por aqui.</div>';
 }
 (function(){
