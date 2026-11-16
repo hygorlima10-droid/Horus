@@ -1801,6 +1801,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -24950,7 +24954,9 @@ function mfCss(){
     '.mf-chip{display:inline-block;border-radius:99px;padding:3px 10px;font-size:var(--t1);font-weight:700;background:var(--surface-2);color:var(--ink-soft)}.mf-chip.ok{background:rgba(23,137,90,.12);color:#17895A}.mf-chip.aviso{background:rgba(217,59,59,.12);color:#D93B3B}.mf-chipl{margin:2px 0 8px}' +
     '.mf-duas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px;align-items:start}@media(max-width:999px){.mf-duas{grid-template-columns:minmax(0,1fr)}}' +
     '.mf-cal{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:var(--t2);border-top:1px solid var(--border)}.mf-cal b{font-variant-numeric:tabular-nums;white-space:nowrap}.mf-cal.tot{border-top:2px solid var(--accent);font-weight:800;margin-top:2px}.mf-cal.tot b{font-size:var(--t4)}' +
-    '.md-kpis.mf-kp6{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:700px){.md-kpis.mf-kp6{grid-template-columns:repeat(2,minmax(0,1fr))}}';
+    '.md-kpis.mf-kp6{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:700px){.md-kpis.mf-kp6{grid-template-columns:repeat(2,minmax(0,1fr))}}' +
+    '.mf-pad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.mf-pad-b{min-height:54px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:8px 6px}.mf-pad-b b{font-size:var(--t3,15px)}.mf-pad-b span{font-size:var(--t1);color:var(--ink-soft)}.mf-pad-b.on{border-color:var(--accent);background:rgba(201,133,0,.10)}.mf-pad-b.on b{color:var(--accent)}.mf-pad-b:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}' +
+    '.mf-pad-d{margin-top:8px;background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:var(--t2);line-height:1.5;color:var(--ink)}#mfcOutro[hidden],#mfcOutroLink[hidden]{display:none!important}';
   document.head.appendChild(st);
 }
 function mfBarra(atual){ return mdBarraHtml(MF_ABAS, atual, function(k){ return 'data-mf-aba="' + k + '"'; }); }
@@ -25217,7 +25223,12 @@ function mfIdxCarregar(forcar){
   return fetch('/api/indices' + (forcar ? '?atualizar=1' : ''), { credentials: 'same-origin' }).then(function(r){ if (!r.ok) throw new Error('http'); return r.json(); })
     .then(function(d){ mfIdx = d; mfIdxEstado = (d && d.sinapi && d.sinapi.length) ? '' : 'erro'; })
     .catch(function(){ mfIdxEstado = mfIdx ? '' : 'erro'; })
-    .then(function(){ try{ if (typeof activeTab !== 'undefined' && activeTab === 'obra' && mfS.obra === 'calc' && !(document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-mfc-in'))) renderObra(); if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){} });
+    .then(function(){
+      var redesenha = function(){ try{ if (typeof activeTab !== 'undefined' && activeTab === 'obra' && mfS.obra === 'calc' && !(document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('data-mfc-in'))) renderObra(); if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){} };
+      redesenha();
+      var espera = mfSalvandoAte - Date.now();   /* se uma gravação acabou de segurar o redesenho, refaz logo depois dela (senão a tela ficaria com os valores antigos) */
+      if (espera > 0) setTimeout(redesenha, espera + 80);
+    });
 }
 /* o IBGE publica o SINAPI em torno do dia 15 do mês seguinte; mais de 2 meses sem novidade é sinal de que a busca parou */
 function mfAtrasado(){ var l = mfSinapi(), u = l[l.length - 1]; if (!u) return null; var lim = deslocarMes(todayISO().slice(0, 7), -3); return u.mes < lim ? { ultimo: u.mes } : null; }
@@ -25249,7 +25260,7 @@ function mfCalcHtml(){
   var campo = function(rot, id, valor, un, dica){ return '<div class="field"><label class="field-label" for="' + id + '">' + rot + '</label><div style="display:flex;gap:8px;align-items:center"><input type="text" inputmode="decimal" id="' + id + '" data-mfc-in="1" value="' + escapeHtml(valor) + '" style="flex:1"><span class="saldo-data" style="margin:0;white-space:nowrap">' + un + '</span></div>' + (dica ? '<div class="saldo-data" style="margin:2px 2px 0">' + dica + '</div>' : '') + '</div>'; };
   h += '<div class="md-card"><div class="md-h"><span class="md-k">Seus dados</span></div>' +
     campo('Área construída', 'mfc_area', f2(cc.area), 'm²') +
-    campo('Padrão do acabamento (fator)', 'mfc_fator', f2(cc.fator), '× o valor oficial', 'O SINAPI representa uma casa de padrão popular = 1,00. Para acabamento melhor, aumente (ex.: 1,15).') +
+    mfPadHtml(cc, ult, campo) +
     campo('Terreno, fundação especial, muro, piscina…', 'mfc_outros', f2(cc.outros), 'R$', 'o custo do m² não inclui') +
     campo('Margem de segurança', 'mfc_margem', f2(cc.margem), '% sobre a obra', 'imprevistos de obra; você escolhe') + '</div>';
   var t = mfCalcTotal(cc, ult), mat = Number(ult.mat) / Number(ult.total);
@@ -25257,6 +25268,34 @@ function mfCalcHtml(){
   h += mdCard('Os preços estão subindo?', mfEvolucao(l, cc));
   h += '<div class="saldo-data" style="margin:6px 4px">É uma <b>referência</b> para acompanhar a alta dos preços, não um orçamento de engenharia. Fontes: IBGE/Caixa (SINAPI, custo médio do m² em Goiás) e FGV (INCC, via Banco Central). <a href="https://sidra.ibge.gov.br/home/sinapi/brasil" target="_blank" rel="noopener">Ver no IBGE</a></div>';
   return h;
+}
+/* padrão do acabamento: Baixo / Médio / Alto no lugar de digitar um fator. Proporções do CUB (mesmo projeto em 3 padrões):
+   SP out/2026 R-1: 2.199,84 · 2.697,79 · 3.265,97 → 1,00 · 1,23 · 1,48; GO ago/2026 normal→alto 2.794,68 → 3.430,05 = 1,23. O SINAPI já é "padrão popular" (= Baixo = 1,00). */
+var MF_PADROES = [
+  { f: 1, nome: 'Baixo', txt: 'popular: piso cerâmico, pintura simples, esquadrias e louças básicas, 1 banheiro.' },
+  { f: 1.25, nome: 'Médio', txt: 'porcelanato, forro de gesso, pintura acrílica, bancadas de granito, louças e metais intermediários, suíte.' },
+  { f: 1.5, nome: 'Alto', txt: 'porcelanato grande ou mármore, gesso trabalhado e iluminação embutida, marcenaria planejada, vidros, louças e metais de grife, área gourmet.' }
+];
+function mfPadDe(f){ for (var i = 0; i < MF_PADROES.length; i++) if (Math.abs(MF_PADROES[i].f - f) < 0.0001) return MF_PADROES[i]; return null; }
+function mfFtxt(f){ return String(Math.round(f * 1000) / 1000).replace('.', ','); }
+function mfPadDescHtml(f, ult){
+  var p = mfPadDe(f), m2 = ult ? Number(ult.total) || 0 : 0;
+  return (p ? '<b>' + p.nome + ':</b> ' + p.txt : '<b>Outro fator:</b> você escolheu o seu número (' + mfFtxt(f) + ').') + (m2 > 0 ? '<br>Custo do m² já com o padrão: <b>' + fmtMoeda(r2(m2 * f)) + '</b> (' + fmtMoeda(m2) + ' × ' + mfFtxt(f) + ').' : '');
+}
+function mfPadHtml(cc, ult, campo){
+  var p = mfPadDe(cc.fator), h = '<div class="field"><label class="field-label">Padrão do acabamento</label><div class="mf-pad" id="mfcPad" role="group" aria-label="Padrão do acabamento">';
+  MF_PADROES.forEach(function(x){ h += '<button type="button" class="mf-pad-b' + (p === x ? ' on' : '') + '" data-mfc-pad="' + x.f + '" aria-pressed="' + (p === x ? 'true' : 'false') + '"><b>' + x.nome + '</b><span>× ' + mfFtxt(x.f) + '</span></button>'; });
+  h += '</div><div class="mf-pad-d" id="mfcPadD">' + mfPadDescHtml(cc.fator, ult) + '</div>' +
+    '<div class="saldo-data" style="margin:6px 2px 0" id="mfcOutroLink"' + (p ? '' : ' hidden') + '>Quer um número seu? <button type="button" class="btn-text" data-mfc="outro">Usar outro fator</button></div>' +
+    '<div id="mfcOutro"' + (p ? ' hidden' : '') + '>' + campo('Outro fator', 'mfc_fator', String(cc.fator).replace('.', ','), '× o valor oficial', 'O SINAPI = padrão popular = 1,00. Use o seu número, se preferir.') + '</div></div>';
+  return h;
+}
+/* mantém os botões e o texto em dia com o número do campo (ao clicar em um padrão ou digitar outro fator) */
+function mfPadSync(){
+  var inp = qs('mfc_fator'), box = qs('mfcPad'); if (!inp || !box) return;
+  var f = mfNum(inp.value); f = f > 0 ? f : 1; var p = mfPadDe(f), l = mfSinapi(), ult = l[l.length - 1];
+  Array.prototype.forEach.call(box.querySelectorAll('[data-mfc-pad]'), function(b){ var on = !!p && Math.abs(Number(b.getAttribute('data-mfc-pad')) - p.f) < 0.0001; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+  var d = qs('mfcPadD'); if (d) d.innerHTML = mfPadDescHtml(f, ult);
 }
 /* "sua estimativa um ano atrás × hoje" (atualiza ao digitar) */
 function mfCmpHtml(l, cc){
@@ -25291,7 +25330,7 @@ function mfLeCampos(){
 /* atualiza só a estimativa enquanto digita (sem redesenhar a tela) */
 function mfCalcAoVivo(){
   var l = mfSinapi(), ult = l[l.length - 1], el = qs('mfcEst'); if (!ult || !el) return;
-  var cc = mfLeCampos();
+  mfPadSync(); var cc = mfLeCampos();
   el.innerHTML = '<div class="md-h"><span class="md-k">Estimativa de hoje · ' + mfMesCurto(ult.mes) + '</span></div>' + mfEstHtml(cc, mfCalcTotal(cc, ult), ult, Number(ult.mat) / Number(ult.total));
   var cmp = qs('mfcCmp'); if (cmp) cmp.innerHTML = mfCmpHtml(l, cc);
 }
@@ -25299,12 +25338,15 @@ function mfCalcSalvar(){ mfSalvandoAte = Date.now() + 1500; return Promise.resol
 document.addEventListener('click', function(ev){
   var b = ev.target.closest ? ev.target.closest('[data-mfc]') : null;
   if (b && b.getAttribute('data-mfc') === 'recarregar'){ mfIdxEstado = ''; mfIdxCarregar(true); }
+  if (b && b.getAttribute('data-mfc') === 'outro'){ var o = qs('mfcOutro'), lk = qs('mfcOutroLink'); if (o) o.hidden = false; if (lk) lk.hidden = true; var fi = qs('mfc_fator'); if (fi) fi.focus(); }
+  var pb = ev.target.closest ? ev.target.closest('[data-mfc-pad]') : null;
+  if (pb){ var inp = qs('mfc_fator'); if (inp){ inp.value = String(pb.getAttribute('data-mfc-pad')).replace('.', ','); var o2 = qs('mfcOutro'), lk2 = qs('mfcOutroLink'); if (o2) o2.hidden = true; if (lk2) lk2.hidden = false; mfCalcAoVivo(); mfCalcSalvar(); } }
 });
 document.addEventListener('input', function(ev){ if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-mfc-in')) mfCalcAoVivo(); });
 document.addEventListener('change', function(ev){ if (ev.target && ev.target.getAttribute && ev.target.getAttribute('data-mfc-in')) mfCalcSalvar(); });   /* sem redesenhar: a estimativa já foi atualizada ao digitar e redesenhar tiraria o cursor do campo seguinte */
 /* só o proprietário usa a calculadora: busca os valores oficiais ao abrir o app (o servidor atualiza se estiverem velhos) */
 (function(){ ppDonoP().then(function(d){ if (d) mfIdxCarregar(); }); })();
-(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { mfCalcTotal: mfCalcTotal, mfAtrasado: mfAtrasado, mfIdxCarregar: mfIdxCarregar, mfDefinir: function(d){ mfIdx = d; mfIdxEstado = ''; try{ renderPainelAtencao(); }catch(e){} } }); })();
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { mfCalcTotal: mfCalcTotal, mfAtrasado: mfAtrasado,  mfIdxCarregar: mfIdxCarregar, mfDefinir: function(d){ mfIdx = d; mfIdxEstado = ''; try{ renderPainelAtencao(); }catch(e){} } }); })();
 
 
 /* ============================================================

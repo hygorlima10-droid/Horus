@@ -44,7 +44,7 @@ check(/Valores oficiais já carregados/.test(t) && /Último mês/.test(t) && /n�
 check(await page.evaluate(() => !document.querySelector('[data-mfc="atualizar"],#mfRefMes,[data-mfc-padrao]')), 'não existe mais formulário de valores de referência nem escolha de CUB');
 check(!/Estimativa de hoje.*R\$\s*\d/.test(t) || /Informe a área/.test(t), 'sem a área, a estimativa pede a área');
 // seus dados: 100 m² × 2.130 × 1,10 = 234.300 + 20.000 = 254.300 + 10% = 25.430 → 279.730
-await page.fill('#mfc_area', '100'); await page.dispatchEvent('#mfc_area', 'input'); await page.fill('#mfc_fator', '1,10'); await page.dispatchEvent('#mfc_fator', 'input'); await page.fill('#mfc_outros', '20000'); await page.dispatchEvent('#mfc_outros', 'input'); await page.waitForTimeout(300);
+await page.fill('#mfc_area', '100'); await page.dispatchEvent('#mfc_area', 'input'); await page.click('[data-mfc="outro"]'); await page.fill('#mfc_fator', '1,10'); await page.dispatchEvent('#mfc_fator', 'input'); await page.fill('#mfc_outros', '20000'); await page.dispatchEvent('#mfc_outros', 'input'); await page.waitForTimeout(300);
 t = await painel();
 check(/R\$\s*234\.300,00/.test(t) && /R\$\s*20\.000,00/.test(t) && /R\$\s*25\.430,00/.test(t) && /Total estimado R\$\s*279\.730,00/.test(t), 'estimativa ao vivo: 100 m² × R$ 2.130 × 1,10 + R$ 20.000 + margem de 10% = R$ 279.730,00');
 check(/Materiais 55(,0)?% · mão de obra 45(,0)?%/.test(t), 'proporção materiais × mão de obra vem do último mês do SINAPI (55% / 45%)');
@@ -53,6 +53,21 @@ t = await painel();
 check(/Total estimado R\$\s*279\.730,00/.test(t) && await page.inputValue('#mfc_area') === '100' && /^1,1/.test(await page.inputValue('#mfc_fator')), 'ao sair do campo, a escolha é guardada e a tela continua igual');
 const o = (await (await api('GET', 'config')).json()).docs.find(x => x.id === 'obra').data;
 check(o.calc && o.calc.area === 100 && o.calc.fator === 1.1 && o.calc.outros === 20000 && o.calc.margem === 10 && o.nome === 'Casa' && o.financiamento.banco === 'Caixa' && !o.refs, 'área, fator, outros custos e margem ficam no config da obra, sem perder o resto do documento');
+// padrão do acabamento: Baixo / Médio / Alto no lugar do número (proporções do CUB: 1,00 · 1,25 · 1,50)
+check(await page.evaluate(() => !document.querySelector('.mf-pad-b.on')) && await page.isVisible('#mfc_fator') && /Outro fator/.test(await painel()), 'fator próprio (1,10): nenhum botão marcado e o campo "Outro fator" fica visível');
+const padrao = async (f) => { await page.click('[data-mfc-pad="' + f + '"]'); await page.waitForTimeout(1300); return painel(); };
+t = await padrao('1.25');
+check(await page.evaluate(() => /Médio/.test(document.querySelector('.mf-pad-b.on').innerText)) && /Médio:/.test(t) && /porcelanato/.test(t) && !(await page.isVisible('#mfc_fator')) && /Total estimado R\$\s*314\.875,00/.test(t), 'Médio (× 1,25): botão marcado, descrição do padrão, campo escondido e total R$ 314.875,00');
+if (process.env.FOTOS) { await page.evaluate(() => document.getElementById('mfcPad').scrollIntoView({ block: 'start' })); await page.screenshot({ path: process.env.FOTOS + '/acabamento-medio.png' }); }
+t = await padrao('1.5');
+check(await page.evaluate(() => /Alto/.test(document.querySelector('.mf-pad-b.on').innerText)) && /Total estimado R\$\s*373\.450,00/.test(t) && /Custo do m² já com o padrão: R\$\s*3\.195,00/.test(t), 'Alto (× 1,50): total R$ 373.450,00 e o custo do m² já com o padrão (R$ 3.195,00)');
+t = await padrao('1');
+check(await page.evaluate(() => /Baixo/.test(document.querySelector('.mf-pad-b.on').innerText)) && /Total estimado R\$\s*256\.300,00/.test(t), 'Baixo (× 1,00): total R$ 256.300,00');
+const o2 = (await (await api('GET', 'config')).json()).docs.find(x => x.id === 'obra').data;
+check(o2.calc.fator === 1 && o2.calc.area === 100 && o2.calc.outros === 20000, 'a escolha do padrão fica guardada (fator 1) sem perder área e outros custos');
+await page.click('[data-mfc="outro"]'); await page.fill('#mfc_fator', '1,4'); await page.dispatchEvent('#mfc_fator', 'input'); await page.waitForTimeout(300);
+check(await page.evaluate(() => !document.querySelector('.mf-pad-b.on')) && /Outro fator/.test(await painel()), 'digitar outro número (1,4) desmarca os três botões');
+await page.fill('#mfc_fator', '1,10'); await page.dispatchEvent('#mfc_fator', 'input'); await page.dispatchEvent('#mfc_fator', 'change'); await page.waitForTimeout(1200); t = await painel();   // volta ao 1,10 para as verificações seguintes
 // evolução: total 2.130 contra 1 ano atrás (13 meses de dados → índice N-13 = 2.010) = +5,97%; mês: 2.120 → 2.130 = +0,47%
 const v12 = num(t, /Em 12 meses ([+−-][\d,]+)%/), vm = num(t, /No último mês ([+−-][\d,]+)%/);
 check(v12 !== null && Math.abs(v12 - (2130 / 2010 - 1) * 100) < 0.06, 'evolução em 12 meses do custo do m²: ' + v12 + '% (esperado ≈ 5,97%)');
@@ -75,7 +90,7 @@ check(/atualização automática parece parada/i.test(t) && /Atualizar agora/.te
 await page.waitForTimeout(400);
 const aviso = await page.evaluate(() => document.getElementById('atencaoLista') ? document.getElementById('atencaoLista').innerText : '');
 check(/valores de referência sem atualizar/i.test(aviso), 'a Central de atenção avisa que os valores de referência não estão atualizando');
-await page.click('[data-mfc="recarregar"]'); await page.waitForFunction(() => !/parece parada/.test((document.querySelector('.md-painel[data-mf="obra-calc"]') || {}).innerText || ''), null, { timeout: 8000 }).catch(() => { }); t = await painel();
+await Promise.all([page.waitForResponse(r => /api\/indices\?atualizar=1/.test(r.url())), page.click('[data-mfc="recarregar"]')]); await page.waitForTimeout(2200); t = await painel();   // espera a resposta do servidor e a tela se redesenhar
 check(!/parece parada/.test(t) && /Valores oficiais já carregados/.test(t), '"Atualizar agora" busca de novo e o aviso some');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); fonte.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);
