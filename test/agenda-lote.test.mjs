@@ -62,6 +62,8 @@ await sel('Lote T1'); await sel('Lote P1'); await barra('resp'); await page.wait
 await page.evaluate(() => { document.querySelector('#ltC [data-ltr="11111/GO"]').click(); document.querySelector('[data-ltf="resp-ok"]').click(); }); await espera();
 t1 = await por('Lote T1'); p1 = await por('Lote P1');
 check(JSON.stringify(t1.resp) === '["11111/GO"]' && JSON.stringify(p1.resp) === '["11111/GO"]', 'Responsável: acrescenta a pessoa nos 2 itens');
+// a tarefa agora é de outra pessoa: sai da "Minha agenda" (que é por responsável) e é acompanhada no Escritório
+await page.click('#esBarra .es-b[data-k="escritorio"]'); await page.waitForTimeout(600);
 await sel('Lote T1'); await sel('Lote P1'); await barra('resp'); await page.waitForTimeout(400);
 await page.evaluate(() => { document.querySelector('#ltC [data-ltr="22222/GO"]').click(); document.querySelector('#ltRespModo [data-ltm="subst"]').click(); document.querySelector('[data-ltf="resp-ok"]').click(); }); await espera();
 t1 = await por('Lote T1'); check(JSON.stringify(t1.resp) === '["22222/GO"]', 'Substituir troca o responsável');

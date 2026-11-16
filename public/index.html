@@ -1798,6 +1798,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18508,13 +18509,15 @@ function agMinha(i){
   var eu = esS.eu; if (!eu) return true;
   var meus = esMinhasChaves(), d = i.doc || {}, rs = agRespChaves(i);
   if (rs.some(function(k){ return meus.indexOf(k) >= 0; })) return true;
+  /* a agenda "minha" é por RESPONSÁVEL, não por quem delegou: se a tarefa tem responsável e não sou eu (nem que eu a tenha criado/delegado), ela fica na agenda do Escritório e na da pessoa */
+  if (rs.length || agTemRespGravado(i)) return false;
   if (d.criadoPor && d.criadoPor === eu.id) return true;
   if (!d.criadoPor && eu.papel === 'proprietario' && !rs.length) return true;   // item antigo sem responsável: fica com o proprietário até a revisão
   if (!d.criadoPor && eu.papel === 'proprietario' && i.tipo === 'tarefa') return true;
   return false;
 }
 /* "Escritório": prazos e audiências de todos; tarefas só se compartilhadas, com responsáveis ou minhas (a tarefa pessoal de outra pessoa não aparece) */
-function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc || {}; return d.compartilhada === true || agRespChaves(i).length > 0 || agMinha(i); }
+function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc || {}; return d.compartilhada === true || agRespChaves(i).length > 0 || agTemRespGravado(i) || agMinha(i); }
 function agEscopoLista(l){ if (!esS.eu) return l; return l.filter(agS.escopo === 'minha' ? agMinha : agEscritorioOk); }
 function agRespAvatares(i, max){
   var ks = agRespChaves(i).slice(0, max || 3), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '';

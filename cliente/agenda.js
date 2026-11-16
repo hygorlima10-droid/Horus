@@ -99,13 +99,15 @@ function agMinha(i){
   var eu = esS.eu; if (!eu) return true;
   var meus = esMinhasChaves(), d = i.doc || {}, rs = agRespChaves(i);
   if (rs.some(function(k){ return meus.indexOf(k) >= 0; })) return true;
+  /* a agenda "minha" é por RESPONSÁVEL, não por quem delegou: se a tarefa tem responsável e não sou eu (nem que eu a tenha criado/delegado), ela fica na agenda do Escritório e na da pessoa */
+  if (rs.length || agTemRespGravado(i)) return false;
   if (d.criadoPor && d.criadoPor === eu.id) return true;
   if (!d.criadoPor && eu.papel === 'proprietario' && !rs.length) return true;   // item antigo sem responsável: fica com o proprietário até a revisão
   if (!d.criadoPor && eu.papel === 'proprietario' && i.tipo === 'tarefa') return true;
   return false;
 }
 /* "Escritório": prazos e audiências de todos; tarefas só se compartilhadas, com responsáveis ou minhas (a tarefa pessoal de outra pessoa não aparece) */
-function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc || {}; return d.compartilhada === true || agRespChaves(i).length > 0 || agMinha(i); }
+function agEscritorioOk(i){ if (i.tipo !== 'tarefa') return true; var d = i.doc || {}; return d.compartilhada === true || agRespChaves(i).length > 0 || agTemRespGravado(i) || agMinha(i); }
 function agEscopoLista(l){ if (!esS.eu) return l; return l.filter(agS.escopo === 'minha' ? agMinha : agEscritorioOk); }
 function agRespAvatares(i, max){
   var ks = agRespChaves(i).slice(0, max || 3), cores = ['#C98500', '#2A78D6', '#17895A', '#8B5CF6', '#D93B3B'], h = '';

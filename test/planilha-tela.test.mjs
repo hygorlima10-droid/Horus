@@ -36,7 +36,11 @@ await page.evaluate(() => document.querySelectorAll('.overlay.show').forEach(o =
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').click()); await page.waitForTimeout(900);
 await page.evaluate(() => { const b = Array.from(document.querySelectorAll('.md-abas button')).filter(x => x.offsetParent).find(x => /Lista/.test(x.innerText)); if (b) b.click(); }); await page.waitForTimeout(600);
-const card = await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.agc')).find(x => /Planilha de cálculo/.test(x.innerText)); return c ? c.innerText.replace(/\s+/g, ' ') : ''; });
+const cardDe = (re) => page.evaluate((src) => { const r = new RegExp(src); const c = Array.from(document.querySelectorAll('.agc')).find(x => r.test(x.innerText)); return c ? c.innerText.replace(/\s+/g, ' ') : ''; }, re.source);
+// a agenda "Minha" é por RESPONSÁVEL: tarefa que delego a outra pessoa (Kamyla, sem usuário) não aparece nela, só no Escritório
+check(!(await cardDe(/Planilha de cálculo/)), 'delegada a outra pessoa: NÃO aparece em "Minha agenda"');
+await page.click('#esBarra .es-b[data-k="escritorio"]'); await page.waitForTimeout(700);
+const card = await cardDe(/Planilha de cálculo/);
 check(/Planilha/.test(card) && /delegado por Hygor/.test(card) && /aguardando cliente/.test(card) && /Kamyla \(sem acesso\)/.test(card) && !/sem responsável/.test(card), 'cartão da Agenda: selo "Planilha", "delegado por Hygor", "aguardando cliente" e "Kamyla (sem acesso)": ' + card.slice(0, 160));
 // 4) criar no app com "Também na planilha"
 await page.click('[data-ag="novo"]'); await page.waitForTimeout(600);
