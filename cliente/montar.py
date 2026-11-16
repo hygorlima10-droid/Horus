@@ -493,6 +493,10 @@ rep("    else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, 
 rep("    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){", "    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }\n    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){")
 rep("      if (x.origem === 'obra') return ob7LinhaAviso(x.a);\n", "      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n      if (x.origem === 'obra') return ob7LinhaAviso(x.a);\n")
 
+
+rep("    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){", "    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }\n    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){")
+rep("      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n", "      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n      if (x.origem === 'tfixa') return dgTFixaCentralChip(x.it);\n")
+
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

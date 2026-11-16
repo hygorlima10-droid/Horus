@@ -59,6 +59,51 @@ await page.click('[data-dg="reabrir"][data-id="' + n1.id + '"]'); await page.wai
 check((await lista()).find(d => d.id === n1.id).status === 'afazer', 'Reabrir devolve a tarefa para as abertas');
 await page.click('.dg-aba >> text=Painel da equipe'); await page.waitForTimeout(400);
 check(/atrasadas/i.test(await t(page, '#dgWrap')) && /total/i.test(await t(page, '#dgWrap')), 'o Painel da equipe conta por pessoa e status');
+// ---- tarefas fixas (alfinete): nas primeiras linhas da mesma tabela, repetem sozinhas, atrasam se não forem feitas
+await page.click('.dg-aba >> text=Abertas'); await page.waitForTimeout(400);
+await page.fill('#dg_n_titulo', 'Olhar processos de outros estados'); await page.click('tr.dg-novo [data-dg="novafixa"]'); await page.waitForTimeout(300);
+check(/toda semana/.test(await t(page, 'tr.dg-novo')) && /repete sozinha/.test(await t(page, 'tr.dg-novo')), 'o alfinete na linha em branco mostra a repetição (toda semana) e troca o prazo por "repete sozinha"');
+await page.click('tr.dg-novo [data-c="dow"]'); await page.click('#dgDD .dg-dd-i >> text=quarta'); await page.waitForTimeout(300);
+await page.focus('#dg_n_titulo'); await page.keyboard.press('Enter'); await page.waitForTimeout(1200);
+const fxT = (await lista()).find(d => d.titulo === 'Olhar processos de outros estados');
+check(!!fxT && fxT.fixa === true && fxT.repete === 'semanal' && fxT.dow === 3 && fxT.status === 'afazer' && !fxT.fatal && !!fxT.fixaDesde, 'Enter grava a fixa: semanal, quarta-feira, sem prazo fatal, com a data de início');
+const ordem = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta tbody tr[data-dgl]')).map(r => r.classList.contains('dg-fx')));
+check(ordem.length >= 2 && ordem[0] === true && ordem.indexOf(false) > ordem.lastIndexOf(true), 'a fixa fica nas primeiras linhas (antes das tarefas comuns), na mesma tabela, com o alfinete');
+check(await page.evaluate(() => !!document.querySelector('.dg-ta tr.dg-fx .dg-pin svg')) && /Vence|Atrasada|Feita/.test(await t(page, '.dg-ta tr.dg-fx')), 'a linha da fixa tem o símbolo e a situação do ciclo');
+// estados do ciclo (datas puras)
+const est = await page.evaluate(() => { const T = window.__horusTeste, hoje = new Date(Date.now() - 3 * 3600e3), iso = d => d.toISOString().slice(0, 10), h = iso(hoje), ontem = iso(new Date(+hoje - 864e5)), dw = d => new Date(d + 'T12:00:00Z').getUTCDay(), base = { fixaDesde: '2026-01-01', feitas: {} };
+  return { atras: T.dgTFixaEstado({ ...base, repete: 'semanal', dow: dw(ontem) }).est, hoje: T.dgTFixaEstado({ ...base, repete: 'semanal', dow: dw(h) }).est, feita: T.dgTFixaEstado({ ...base, repete: 'semanal', dow: dw(h), feitas: { [h]: { por: 'x', em: h } } }).est, mhoje: T.dgTFixaEstado({ ...base, repete: 'mensal', dia: Number(h.slice(8, 10)) }).est, mfeita: T.dgTFixaEstado({ ...base, repete: 'mensal', dia: Number(h.slice(8, 10)), feitas: { [h.slice(0, 7)]: { por: 'x', em: h } } }).est, nova: T.dgTFixaEstado({ repete: 'semanal', dow: dw(ontem), fixaDesde: h, feitas: {} }).est }; });
+check(est.atras === 'atrasada' && est.hoje === 'hoje' && est.feita === 'feita' && est.mhoje === 'hoje' && est.mfeita === 'feita' && est.nova !== 'atrasada', 'ciclo: não feita vira atrasada, vence hoje, feita no ciclo, mensal, e a fixa nova não cobra o que passou antes de existir: ' + JSON.stringify(est));
+// feita neste ciclo (um toque) e desfazer
+await page.click(`tr[data-dgl="${fxT.id}"] .dg-stbtn`); await page.waitForTimeout(1000);
+const fxF = (await lista()).find(d => d.id === fxT.id);
+check(Object.keys(fxF.feitas || {}).length === 1 && fxF.status === 'afazer' && (await lista()).some(d => d.id === fxT.id), 'um toque marca o ciclo como feito (quem e quando) e a fixa continua na lista, não vai para Concluídas');
+await page.click(`tr[data-dgl="${fxT.id}"] .dg-stbtn`); await page.waitForTimeout(900);
+check(Object.keys((await lista()).find(d => d.id === fxT.id).feitas || {}).length === 0, 'tocar de novo desfaz');
+// copiar o processo e coluna Cliente mais estreita, com ênfase na descrição
+await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => { });
+check(await page.locator('.dg-ta [data-dg="copiar"]').count() >= 1, 'as linhas com processo têm o botão de copiar o número');
+await page.locator('.dg-ta [data-dg="copiar"]').first().click(); await page.waitForTimeout(500);
+check(/copiad/i.test(await t(page, '#toast')), 'copiar o número do processo avisa "copiado"');
+const larg = await page.evaluate(() => ({ cli: document.querySelector('.dg-ta th:first-child').getBoundingClientRect().width, tit: document.querySelector('.dg-ta tr:not(.dg-novo) input.dg-t').getBoundingClientRect().width }));
+check(larg.cli <= 135 && larg.tit >= 300, 'a coluna Cliente ficou estreita (' + Math.round(larg.cli) + ' px) e a descrição da tarefa larga (' + Math.round(larg.tit) + ' px)');
+// converter as que já dizem "Tarefa Fixa"
+await f('POST', '/api/db/delegadas', { titulo: 'Conferir pauta das audiências. Tarefa Fixa', resp: '60456/GO', prioridade: 'Média', status: 'afazer', fatal: dia(2), criadoEm: new Date().toISOString() });
+await page.reload(); await page.waitForTimeout(3500);
+await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);
+check(/dizem|diz “Tarefa Fixa”|Tarefa Fixa/i.test(await t(page, '.dg-conv-av')), 'aparece o aviso para converter as tarefas que dizem "Tarefa Fixa"');
+await page.click('[data-dg="convlista"]'); await page.waitForTimeout(500);
+check(/Conferir pauta das audiências/.test(await t(page, '#overlayDgConvC')) && /era “Conferir pauta das audiências. Tarefa Fixa”/.test(await t(page, '#overlayDgConvC')), 'a lista de conversão mostra o nome sem a palavra e como era antes');
+await page.click('[data-dgcv="converter"]'); await page.waitForTimeout(1500);
+const cv = (await lista()).find(d => /Conferir pauta/.test(d.titulo));
+check(cv.fixa === true && cv.repete === 'semanal' && cv.titulo === 'Conferir pauta das audiências' && !cv.fatal, 'converter vira fixa semanal, tira a palavra "Tarefa Fixa" do nome e limpa o prazo');
+// Central de atenção: fixa que vence hoje, para o responsável
+const dowHoje = await page.evaluate(() => new Date(Date.now() - 3 * 3600e3).getUTCDay());
+await f('POST', '/api/db/delegadas', { titulo: 'Fixa que vence hoje', resp: '60456/GO', prioridade: 'Média', status: 'afazer', fixa: true, repete: 'semanal', dow: dowHoje, dia: 1, fixaDesde: '2026-01-01', feitas: {}, criadoEm: new Date().toISOString() });
+await page.reload(); await page.waitForTimeout(3500);
+const cen = await page.evaluate(async () => { const T = window.__horusTeste; await new Promise(r => setTimeout(r, 1500)); const e0 = T.esS.eu; T.esS.eu = { id: 'u1', papel: 'proprietario', oabs: ['60456/GO'] }; const a = T.dgTFixasAtencao().map(x => x.titulo); const id = T.dgS.docs.find(d => d.titulo === 'Fixa que vence hoje').id; await T.dgTFixaFeita(id); const b = T.dgTFixasAtencao().map(x => x.titulo); T.esS.eu = e0; return { a, b }; });
+check(cen.a.includes('Fixa que vence hoje') && !cen.b.includes('Fixa que vence hoje'), 'a fixa que vence hoje aparece na Central de atenção do responsável e sai quando é marcada como feita: ' + JSON.stringify(cen));
+await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);   // a página foi recarregada
 // ---- Fixas (contas do escritório): linha em branco, vencimentos e Central de atenção
 await page.click('.dg-aba >> text=Fixas'); await page.waitForTimeout(500);
 check(await page.locator('#dg_f_titulo').isVisible() && /só lembrete/i.test(await t(page, '#dgWrap')), 'a aba Fixas tem a linha em branco e explica que é só lembrete');
