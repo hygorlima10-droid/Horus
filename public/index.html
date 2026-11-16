@@ -1796,6 +1796,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -17697,7 +17699,7 @@ function pbMontarTela(){
     else if (a === 'painel'){ pbS.fAberto = !pbS.fAberto; pbRender(); }
     else if (a === 'menu'){ pbS.mAberto = !pbS.mAberto; pbRender(); }
     else if (a === 'limpar'){ pbS.f = { q: '', de: '', ate: '', oab: 'todas', adv: '', trib: '' }; pbS.mais = 1; pbRender(); }
-    else if (a === 'abrir') pbAbrirDetalhe(id);
+    else if (a === 'abrir'){ var sel = window.getSelection ? String(window.getSelection()) : ''; if (!sel) pbAbrirDetalhe(id); }   // tocar no cartão abre o texto (se não for um arrastar para copiar)
     else if (a === 'lida'){ var pl = pbPub(id); if (pl) pbMarcar(pbMembros(pl).map(function(x){ return x.id; }), { lida: !pbLidaG(pl) }); }
     else if (a === 'todas-lidas'){ pbS.mAberto = false; var ids = []; pbListaFiltrada().filter(function(p){ return !pbLidaG(p); }).forEach(function(p){ pbMembros(p).forEach(function(x){ ids.push(x.id); }); }); if (ids.length) pbMarcar(ids, { lida: true }); }
     else if (a === 'cadastrar') pbCadastrar(id);
@@ -18183,9 +18185,9 @@ function pbCartao(p){
   var menu = '';
   if (pbS.cm === p.id){
     var mi = function(a, t){ return '<button type="button" class="pb-cmi" data-pb="' + a + '" data-id="' + id + '">' + t + '</button>'; };
-    menu = '<div class="pb-cm">' + mi('abrir', 'Ver texto') + mi('lida', lida ? 'Marcar como não lida' : 'Marcar como lida') + (!pz && !semPz ? mi('naoe', 'Não é prazo') : '') + (v ? mi('ir', 'Abrir processo') : mi('cadastrar', 'Cadastrar processo')) + (v && v.arquivado ? mi('reabrir-proc', 'Reabrir processo') : '') + '</div>';
+    menu = '<div class="pb-cm">' + mi('lida', lida ? 'Marcar como não lida' : 'Marcar como lida') + (!pz && !semPz ? mi('naoe', 'Não é prazo') : '') + (v ? mi('ir', 'Abrir processo') : mi('cadastrar', 'Cadastrar processo')) + (v && v.arquivado ? mi('reabrir-proc', 'Reabrir processo') : '') + '</div>';
   }
-  return '<div class="pb-card ' + cls + (lida ? ' lida' : '') + '" data-cid="' + id + '"><div class="pb-l1"><span>' + (lida ? '' : '<i class="pb-dot"></i>') + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span><span class="pb-tipo ' + cls + '">' + escapeHtml(p.tipo || 'Publicação') + '</span></div>' +
+  return '<div class="pb-card ' + cls + (lida ? ' lida' : '') + '" data-cid="' + id + '" data-pb="abrir" data-id="' + id + '"><div class="pb-l1"><span>' + (lida ? '' : '<i class="pb-dot"></i>') + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span><span class="pb-tipo ' + cls + '">' + escapeHtml(p.tipo || 'Publicação') + '</span></div>' +
     '<div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || p.processo || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div>' + (mem.length > 1 ? pbDestHtml(p) : '') +
     (p.trecho ? '<div class="pb-trecho">' + escapeHtml(p.trecho) + '</div>' : '') + '<div class="pb-tags">' + tags + '</div><div class="pb-acts pb-um">' + btn + '</div>' + menu + '</div>';
 }
@@ -18376,7 +18378,7 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
     '.pb-seg-lin{display:flex;gap:8px;align-items:center}.pb-seg-lin .segmented{flex:1;min-width:0;flex-wrap:nowrap}.pb-seg-lin .seg-btn{flex:1;justify-content:center;white-space:nowrap;padding-left:6px;padding-right:6px}.pb-funil{position:relative;width:46px;height:46px;padding:0;justify-content:center;flex:none}.pb-funil.ativo{border-color:var(--accent);color:var(--accent)}.pb-n{position:absolute;top:-6px;right:-6px;background:var(--urgente);color:#fff;font-style:normal;font-size:var(--t1);font-weight:700;min-width:18px;height:18px;border-radius:99px;display:grid;place-items:center;padding:0 5px}' +
     '.pb-painel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}.pb-resfiltro{padding:0 4px}' +
     '.pb-dia{font-size:var(--t2);font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;margin:6px 4px 0}.pb-todas{text-align:right}' +
-    '.pb-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px 12px 17px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))}' +
+    '.pb-card{cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px 12px 17px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))}' +
     '.pb-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pb-bar,#C4C4CB)}.pb-card.dec{--pb-bar:var(--urgente)}.pb-card.ato{--pb-bar:var(--tutela)}.pb-card.lida{opacity:.62}' +
     '.pb-l1{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--t2);color:var(--ink-soft);font-weight:600}.pb-l1>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.pb-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--info);margin-right:6px}' +
@@ -22295,14 +22297,14 @@ function plDesenhar(){
         (n.usuario ? '<span class="pl-ok">' + ico('check', 13) + ' tem acesso</span>' : '<button type="button" class="f-add" data-pl="convite" data-nome="' + escapeHtml(n.planilha) + '" data-funcao="' + escapeHtml(n.funcao || '') + '">Criar convite</button>') + '</div>';
     }).join('') : '<div class="saldo-data">Os nomes aparecem aqui depois da primeira conversa com a planilha.</div>') + '<div class="saldo-data">Sem usuário, a tarefa continua ligada pelo nome e aparece como “Kamyla (sem acesso)”. Quando a pessoa entra e você a escolhe aqui, tudo passa para ela.</div>');
     h += fSec('O que acompanha nas duas vias', ['Tarefa nova (criada em qualquer lado)', 'Status e conclusão', 'Responsável e “delegado por”', 'Prioridade e observações', 'Prazo fatal e “trabalhar até” (a planilha calcula; o app mostra)'].map(function(t){ return '<div class="pl-ck">' + ico('check', 15) + t + '</div>'; }).join('') + '<div class="pl-ck off">' + ico('x', 15) + 'Despesas do Murilo (ignoradas, por enquanto)</div>');
-    h += fSec('Ligar a planilha (uma vez)', '<ol class="pl-ol"><li>Toque em <b>Copiar script</b>.</li><li>Na planilha: <b>Extensões › Apps Script</b> › apague o que houver › cole › Salvar.</li><li>Escolha a função <b>ligarAoHorus</b> › Executar › autorize.</li></ol><div class="pl-2"><button type="button" class="f-add" data-pl="script">' + ico('file-text', 16) + 'Copiar script</button><button type="button" class="f-add" data-pl="novachave">Gerar nova chave</button><button type="button" class="f-add pl-perigo" data-pl="desligar">Desligar</button></div><div class="saldo-data">O script tem uma chave secreta só sua: não compartilhe. “Gerar nova chave” invalida o script antigo (cole o novo).</div>');
+    h += fSec('Ligar a planilha (uma vez)', '<ol class="pl-ol"><li>Toque em <b>Copiar script</b>.</li><li>Na planilha: <b>Extensões › Apps Script</b>. Toque em <b>+ › Script</b> para criar um <b>arquivo novo</b> (chame de “Horus”), cole nele e salve. <b>Não apague nem mexa no que já existe</b> (Arquivar, despesas).</li><li>Escolha a função <b>ligarAoHorus</b> › Executar › autorize.</li></ol><div class="pl-2"><button type="button" class="f-add" data-pl="script">' + ico('file-text', 16) + 'Copiar script</button><button type="button" class="f-add" data-pl="novachave">Gerar nova chave</button><button type="button" class="f-add pl-perigo" data-pl="desligar">Desligar</button></div><div class="saldo-data">O script tem uma chave secreta só sua: não compartilhe. “Gerar nova chave” invalida o script antigo (cole o novo).</div>');
   }
   c.innerHTML = h;
 }
 function plClique(a, b){
   if (a === 'atualizar') plAtualizar();
   else if (a === 'ligar') plApi('/api/planilha/ligar', 'POST', {}).then(plAtualizar).catch(function(e){ toast(e.message); });
-  else if (a === 'script') plApi('/api/planilha/script').then(function(t){ try{ navigator.clipboard.writeText(t).then(function(){ toast('Script copiado. Cole em Extensões › Apps Script.'); }, function(){ plMostrarScript(t); }); }catch(x){ plMostrarScript(t); } }).catch(function(e){ toast(e.message); });
+  else if (a === 'script') plApi('/api/planilha/script').then(function(t){ try{ navigator.clipboard.writeText(t).then(function(){ toast('Script copiado. Cole num arquivo novo em Extensões › Apps Script.'); }, function(){ plMostrarScript(t); }); }catch(x){ plMostrarScript(t); } }).catch(function(e){ toast(e.message); });
   else if (a === 'novachave'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para confirmar'; return; } plApi('/api/planilha/novachave', 'POST', {}).then(function(){ toast('Nova chave gerada. Copie o script de novo.'); plAtualizar(); }); }
   else if (a === 'desligar'){ if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para desligar'; return; } plApi('/api/planilha/desligar', 'POST', {}).then(function(){ toast('Planilha desligada. As tarefas continuam na Agenda.'); plAtualizar(); plCarregarLigada(); }); }
   else if (a === 'convite') plConvidar(b.getAttribute('data-nome'), b.getAttribute('data-funcao'));

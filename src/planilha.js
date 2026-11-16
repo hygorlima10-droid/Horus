@@ -297,18 +297,19 @@ export async function planilhaRotas(request, env, partes, auth) {
 export function scriptTexto(origem, token) {
   return `/* Horus · ligação da planilha "Controle de Petições e Tarefas" com o app (duas vias).
    Gerado pelo próprio app. NÃO compartilhe este texto: ele contém a chave secreta da ligação.
-   Como usar: cole tudo em Extensões › Apps Script, salve, escolha a função "ligarAoHorus" e clique em Executar (autorize quando pedir). */
+   Como usar: em Extensões › Apps Script crie um ARQUIVO NOVO (+ › Script), chamado "Horus", e cole tudo nele (não mexa nos outros arquivos);
+   salve, escolha a função "ligarAoHorus" e clique em Executar (autorize quando pedir). Todos os nomes aqui começam com "horus"/"HORUS" para não colidir com scripts que já existam. */
 var HORUS_URL = '${origem}/api/planilha-sync';
 var HORUS_CHAVE = '${token}';
-var ABA = 'Controle', PRIMEIRA = 4, COLUNAS = 17;   // A..Q (P = ID Horus, Q = Atualizado em)
+var HORUS_ABA = 'Controle', HORUS_PRIMEIRA = 4, HORUS_COLUNAS = 17;   // A..Q (P = ID Horus, Q = Atualizado em)
 
 function ligarAoHorus() {
-  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(ABA);
-  if (!sh) { SpreadsheetApp.getUi().alert('Não achei a aba "' + ABA + '".'); return; }
+  var ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(HORUS_ABA);
+  if (!sh) { SpreadsheetApp.getUi().alert('Não achei a aba "' + HORUS_ABA + '".'); return; }
   sh.getRange('O3').copyTo(sh.getRange('P3:Q3'), SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
   sh.getRange('P3').setValue('ID Horus'); sh.getRange('Q3').setValue('Atualizado em');
   sh.setColumnWidth(16, 90); sh.setColumnWidth(17, 120);
-  var pr = sh.getRange(PRIMEIRA, 16, sh.getMaxRows() - PRIMEIRA + 1, 2).protect().setDescription('Colunas do Horus: não digitar');
+  var pr = sh.getRange(HORUS_PRIMEIRA, 16, sh.getMaxRows() - HORUS_PRIMEIRA + 1, 2).protect().setDescription('Colunas do Horus: não digitar');
   pr.setWarningOnly(true);
   ScriptApp.getProjectTriggers().forEach(function (t) { var f = t.getHandlerFunction(); if (f === 'sincronizarHorus' || f === 'aoEditarHorus') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('sincronizarHorus').timeBased().everyMinutes(1).create();
@@ -317,61 +318,61 @@ function ligarAoHorus() {
   SpreadsheetApp.getUi().alert('Ligado ao Horus. A planilha e o app agora conversam sozinhos (pode fechar esta janela).');
 }
 
-function aoEditarHorus(e) { if (e && e.range && e.range.getSheet().getName() === ABA) sincronizarHorus({ forcar: true }); }
+function aoEditarHorus(e) { if (e && e.range && e.range.getSheet().getName() === HORUS_ABA) sincronizarHorus({ forcar: true }); }
 
 function sincronizarHorus(op) {
   op = op || {};
   var lock = LockService.getScriptLock(); if (!lock.tryLock(25000)) return;
   try {
-    var props = PropertiesService.getScriptProperties(), agora = Date.now(), ult = Number(props.getProperty('ultimaCompleta') || 0);
+    var props = PropertiesService.getScriptProperties(), agora = Date.now(), ult = Number(props.getProperty('horusUltimaCompleta') || 0);
     if (!op.forcar && agora - ult < 5 * 60000) {   // a cada minuto só pergunta se há algo do app; a leitura completa é de 5 em 5 minutos ou ao editar
       var p = UrlFetchApp.fetch(HORUS_URL, { method: 'get', headers: { Authorization: 'Bearer ' + HORUS_CHAVE }, muteHttpExceptions: true });
       if (p.getResponseCode() !== 200 || !JSON.parse(p.getContentText()).pendente) return;
     }
-    var sh = SpreadsheetApp.getActive().getSheetByName(ABA), tz = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
-    var corpo = { versao: 1, planilha: SpreadsheetApp.getActive().getName(), url: SpreadsheetApp.getActive().getUrl(), completo: true, integrantes: integrantes_(), linhas: lerLinhas_(sh, tz) };
+    var sh = SpreadsheetApp.getActive().getSheetByName(HORUS_ABA), tz = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
+    var corpo = { versao: 1, planilha: SpreadsheetApp.getActive().getName(), url: SpreadsheetApp.getActive().getUrl(), completo: true, integrantes: horusIntegrantes_(), linhas: horusLerLinhas_(sh, tz) };
     var r = UrlFetchApp.fetch(HORUS_URL, { method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + HORUS_CHAVE }, payload: JSON.stringify(corpo), muteHttpExceptions: true });
     if (r.getResponseCode() !== 200) { console.error('Horus respondeu ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 200)); return; }
-    props.setProperty('ultimaCompleta', String(agora));
+    props.setProperty('horusUltimaCompleta', String(agora));
     var resp = JSON.parse(r.getContentText()), carimbo = Utilities.formatDate(new Date(), tz, 'dd/MM HH:mm');
     (resp.ids || []).forEach(function (x) { sh.getRange(x.linha, 16, 1, 2).setValues([[x.id, carimbo]]); });
-    var mapa = mapaIds_(sh);
-    (resp.aplicar || []).forEach(function (x) { var linha = mapa[x.id]; if (linha) escrever_(sh, linha, x.campos, carimbo); });
-    (resp.novas || []).forEach(function (x) { if (mapa[x.id]) return; var linha = proximaLinha_(sh); sh.getRange(linha, 16, 1, 2).setValues([[x.id, carimbo]]); escrever_(sh, linha, x.campos, carimbo); mapa[x.id] = linha; });
+    var mapa = horusMapaIds_(sh);
+    (resp.aplicar || []).forEach(function (x) { var linha = mapa[x.id]; if (linha) horusEscrever_(sh, linha, x.campos, carimbo); });
+    (resp.novas || []).forEach(function (x) { if (mapa[x.id]) return; var linha = horusProximaLinha_(sh); sh.getRange(linha, 16, 1, 2).setValues([[x.id, carimbo]]); horusEscrever_(sh, linha, x.campos, carimbo); mapa[x.id] = linha; });
   } catch (err) { console.error('Horus: ' + err); } finally { lock.releaseLock(); }
 }
 
-function integrantes_() {
+function horusIntegrantes_() {
   var sh = SpreadsheetApp.getActive().getSheetByName('Listas'); if (!sh) return [];
   return sh.getRange('A2:B9').getValues().filter(function (l) { return l[0] && l[0] !== 'Todos' && String(l[0]).indexOf('Como editar') < 0; }).map(function (l) { return { nome: String(l[0]).trim(), funcao: String(l[1] || '').trim() }; });
 }
-function data_(v, tz) {
+function horusData_(v, tz) {
   if (!v) return '';
   if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, tz, 'yyyy-MM-dd');
   var m = /^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/.exec(String(v).trim()); return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : '';
 }
-function ultimaLinha_(sh) {
-  var v = sh.getRange(PRIMEIRA, 3, sh.getMaxRows() - PRIMEIRA + 1, 1).getValues(), u = PRIMEIRA - 1;
-  for (var i = v.length - 1; i >= 0; i--) if (String(v[i][0]).trim() !== '') { u = PRIMEIRA + i; break; }
+function horusUltimaLinha_(sh) {
+  var v = sh.getRange(HORUS_PRIMEIRA, 3, sh.getMaxRows() - HORUS_PRIMEIRA + 1, 1).getValues(), u = HORUS_PRIMEIRA - 1;
+  for (var i = v.length - 1; i >= 0; i--) if (String(v[i][0]).trim() !== '') { u = HORUS_PRIMEIRA + i; break; }
   return u;
 }
-function proximaLinha_(sh) { return ultimaLinha_(sh) + 1; }
-function lerLinhas_(sh, tz) {
-  var ult = ultimaLinha_(sh); if (ult < PRIMEIRA) return [];
-  var rg = sh.getRange(PRIMEIRA, 1, ult - PRIMEIRA + 1, COLUNAS), v = rg.getValues(), f = sh.getRange(PRIMEIRA, 11, ult - PRIMEIRA + 1, 1).getFormulas(), out = [];
+function horusProximaLinha_(sh) { return horusUltimaLinha_(sh) + 1; }
+function horusLerLinhas_(sh, tz) {
+  var ult = horusUltimaLinha_(sh); if (ult < HORUS_PRIMEIRA) return [];
+  var rg = sh.getRange(HORUS_PRIMEIRA, 1, ult - HORUS_PRIMEIRA + 1, HORUS_COLUNAS), v = rg.getValues(), f = sh.getRange(HORUS_PRIMEIRA, 11, ult - HORUS_PRIMEIRA + 1, 1).getFormulas(), out = [];
   for (var i = 0; i < v.length; i++) {
     var l = v[i];
-    out.push({ linha: PRIMEIRA + i, cliente: String(l[0]), processo: String(l[1]), titulo: String(l[2]), resp: String(l[3]).trim(), delegado: String(l[4]).trim(), prio: String(l[5]).trim(), status: String(l[6]).trim(),
-      fatal: data_(l[11], tz), interno: data_(l[12], tz), fixa: String(f[i][0] || '').charAt(0) === '=', obs: String(l[14]), id: String(l[15]).trim() });
+    out.push({ linha: HORUS_PRIMEIRA + i, cliente: String(l[0]), processo: String(l[1]), titulo: String(l[2]), resp: String(l[3]).trim(), delegado: String(l[4]).trim(), prio: String(l[5]).trim(), status: String(l[6]).trim(),
+      fatal: horusData_(l[11], tz), interno: horusData_(l[12], tz), fixa: String(f[i][0] || '').charAt(0) === '=', obs: String(l[14]), id: String(l[15]).trim() });
   }
   return out;
 }
-function mapaIds_(sh) {
-  var ult = ultimaLinha_(sh), m = {}; if (ult < PRIMEIRA) return m;
-  sh.getRange(PRIMEIRA, 16, ult - PRIMEIRA + 1, 1).getValues().forEach(function (l, i) { var id = String(l[0]).trim(); if (id) m[id] = PRIMEIRA + i; });
+function horusMapaIds_(sh) {
+  var ult = horusUltimaLinha_(sh), m = {}; if (ult < HORUS_PRIMEIRA) return m;
+  sh.getRange(HORUS_PRIMEIRA, 16, ult - HORUS_PRIMEIRA + 1, 1).getValues().forEach(function (l, i) { var id = String(l[0]).trim(); if (id) m[id] = HORUS_PRIMEIRA + i; });
   return m;
 }
-function escrever_(sh, linha, c, carimbo) {
+function horusEscrever_(sh, linha, c, carimbo) {
   if (c.processo !== undefined) sh.getRange(linha, 2).setValue(c.processo);
   if (c.titulo !== undefined) sh.getRange(linha, 3).setValue(c.titulo);
   if (c.resp !== undefined) sh.getRange(linha, 4).setValue(c.resp);

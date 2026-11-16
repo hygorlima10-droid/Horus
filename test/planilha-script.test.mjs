@@ -28,7 +28,9 @@ const http = (url, o) => { const a = ['-s', '-X', (o.method || 'get').toUpperCas
 const G = { SpreadsheetApp: { getActive: () => ss, getUi: () => ({ alert() { } }), CopyPasteType: { PASTE_FORMAT: 1 } }, UrlFetchApp: { fetch: http },
   Utilities: { formatDate: (d, tz, fmt) => (fmt === 'yyyy-MM-dd' ? d.toISOString().slice(0, 10) : 'ts-' + Date.now()) }, LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() { } }) },
   PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) }, ScriptApp: { newTrigger: () => ({ timeBased() { return this; }, everyMinutes() { return this; }, forSpreadsheet() { return this; }, onEdit() { return this; }, create() { } }), getProjectTriggers: () => [], deleteTrigger() { } }, console };
-const S = new Function(...Object.keys(G), script + '\nreturn { sincronizarHorus: sincronizarHorus, ligarAoHorus: ligarAoHorus };')(...Object.values(G));
+// o script que a planilha já tinha (Arquivar, despesas) declara nomes parecidos, no mesmo projeto: não pode haver colisão (erro real: "Identifier 'PRIMEIRA' has already been declared")
+const JA_EXISTENTE = "const PRIMEIRA = 2; const ABA = 'Arquivo'; const COLUNAS = 3; let ultimaCompleta = 0; function data_() {} function integrantes_() {} function escrever_() {} function ultimaLinha_() {} function proximaLinha_() {} function lerLinhas_() {} function mapaIds_() {}\n";
+const S = new Function(...Object.keys(G), JA_EXISTENTE + script + '\nreturn { sincronizarHorus: sincronizarHorus, ligarAoHorus: ligarAoHorus };')(...Object.values(G));
 const linha = (n, o) => { const v = { 2: o.proc || '', 3: o.tit || '', 4: o.resp || '', 5: o.delegado || '', 6: o.prio || '', 7: o.status || '', 12: o.fatal ? D(o.fatal) : '', 13: o.interno ? D(o.interno) : '', 15: o.obs || '' }; for (const [c, x] of Object.entries(v)) cel[n][c] = x; };
 const ag = async () => (await f('GET', '/api/db/agenda')).j.docs.map(d => ({ id: d.id, ...d.data }));
 
@@ -67,7 +69,7 @@ S.sincronizarHorus({ forcar: true });
 const dF = (await ag()).find(d => /outros estados/.test(d.titulo));
 check(dF.situacao === 'elaboracao' && /MG, PB, DF/.test(dF.titulo), 'editar status e título na planilha chega ao app');
 // 5) a pergunta leve do minuto a minuto não lê a planilha quando nada mudou
-props.ultimaCompleta = String(Date.now());
+props.horusUltimaCompleta = String(Date.now());
 const antes = JSON.stringify(cel[4]); S.sincronizarHorus({});
 check(JSON.stringify(cel[4]) === antes, 'sem nada pendente e dentro dos 5 minutos, o script só pergunta e volta (não mexe na planilha)');
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

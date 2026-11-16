@@ -27,7 +27,7 @@ await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await pag
 const t = async s => page.evaluate(s => (document.querySelector(s) || {}).innerText || '', s);
 const v = async id => page.evaluate(i => (document.getElementById(i) || {}).value, id);
 const cartao = n => page.evaluate(x => { const c = Array.from(document.querySelectorAll('.pb-card')).find(e => e.innerText.includes(x)); return c ? c.innerText : ''; }, n);
-const abrir = async n => { await page.evaluate(x => { const c = Array.from(document.querySelectorAll('.pb-card')).find(e => e.innerText.includes(x)); (c.querySelector('[data-pb="abrir"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="abrir"]'))).click(); }, n); await page.waitForTimeout(800); };
+const abrir = async n => { await page.evaluate(x => { const c = Array.from(document.querySelectorAll('.pb-card')).find(e => e.innerText.includes(x)); c.querySelector('.pb-cli').click(); }, n); await page.waitForTimeout(800); };
 const aprend = async () => (await docs('pecasAprendidas')).filter(e => e.tipo === 'peca');
 await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes"]').click()); await page.waitForTimeout(1500);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);

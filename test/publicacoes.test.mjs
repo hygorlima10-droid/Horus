@@ -103,7 +103,7 @@ const cardDe = async id => page.evaluate(id => { const b = document.querySelecto
 const ta = await cardDe('900001'), tb = await cardDe('900002'), tc = await cardDe('900003');
 check(/inicial cadastrada/i.test(ta) && /via OAB Hygor/.test(ta) && /via OAB Murilo/.test(ta) && /Maquele Viana Pacheco/.test(ta), 'processo cadastrado mostra o cliente e as duas OABs de origem');
 check(/processo novo/i.test(tb) && /(sugerido: 15 dias|.{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
-{ await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Ver texto', 'Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)), 'o ⋯ do cartão guarda: Ver texto, Marcar como lida, Não é prazo, Cadastrar processo (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
+{ await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)) && !mn.includes('Ver texto'), 'o ⋯ do cartão guarda: Marcar como lida, Não é prazo, Cadastrar processo (sem "Ver texto": o texto abre tocando no cartão) (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
 check(await page.evaluate(() => { const b = document.querySelector('[data-pb="rapido"]'); return !!b && /pb-verde/.test(b.className) && getComputedStyle(b).backgroundColor === getComputedStyle(document.documentElement).getPropertyValue('--success') || (!!b && /pb-verde/.test(b.className)); }), 'o botão de confirmar do cartão é verde (classe pb-verde), não preto');
 check(/Ata/i.test(tc) && !/prazo/i.test(tc) && /STJ/.test(tc) && /TRANSPORTADORA NUNES/.test(tc), 'ata do STJ: sem botão de prazo, com as partes');
 // filtros
@@ -197,7 +197,7 @@ check(/Prazos processuais/.test(await t('#inicioPrazos')), 'o Início tem o cart
 await f('POST', '/api/db/agenda', { tipo: 'prazo', titulo: 'Juntar documentos', processo: '5593217-64.2021.8.09.0107', cliente: 'Cooperativa Mista', data: new Date(Date.now() + 86400000).toISOString().slice(0, 10), situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], criadoEm: agora });
 await page.reload(); await page.waitForTimeout(3200);
 const card = await t('#inicioPrazos');
-check(/Juntar documentos/.test(card) && /Cooperativa Mista/.test(card) && /Amanhã/.test(card), 'prazo de amanhã aparece no cartão do Início: ' + card.replace(/\n/g, ' ').slice(0, 100));
+check(/Juntar documentos/.test(card) && /Cooperativa Mista/.test(card) && /Amanhã|1 dia útil/.test(card), 'prazo de amanhã aparece no cartão do Início: ' + card.replace(/\n/g, ' ').slice(0, 100));
 check(!/Juntar documentos/.test(await t('#atencaoLista')), 'e continua fora da Central de atenção');
 const resumo = await page.evaluate(() => window.__horusTeste.ntResumo());
 check(resumo.prazos.some(i => /Juntar documentos/.test(i.l) && i.t === 'prazo' && JSON.stringify(i.a) === '[5,2,1,0]') && !resumo.prazos.some(i => /Recolher o sistema/.test(i.l)) && !resumo.itens.some(i => i.t === 'prazo'), 'os prazos dos próximos 10 dias vão numa lista própria para a notificação (e não misturam com o dinheiro)');
@@ -226,12 +226,12 @@ await page.click('#closeModal'); await page.waitForTimeout(300);
 // dentro do texto da publicação: cadastrar o processo e manter como não lida
 await page.evaluate(() => document.querySelector('[data-tab="publicacoes"]').click()); await page.waitForTimeout(700);
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(400);
-await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1500);
+await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1500);
 check(await page.evaluate(() => !!document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.querySelector('#pbCorpo [data-pbd="naolida"]')), 'o texto da publicação tem o botão "Cadastrar processo" (processo ainda não cadastrado) e "Manter como não lida"');
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === true, 'abrir marca como lida');
 await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(1000);
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false && !(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show'))), '"Manter como não lida" desfaz e fecha, e a publicação continua em "Não lidas"');
-await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
+await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1200);
 await page.click('#pbCorpo [data-pbd="cadastrar"]'); await page.waitForTimeout(500);
 const sobre = await page.evaluate(() => { const el = document.getElementById('preCorpo'), r = el.getBoundingClientRect(), x = document.elementFromPoint(r.left + r.width / 2, r.top + 20); return !!(x && x.closest('#overlayPrEsc')); });
 check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && document.getElementById('overlayPrEsc').classList.contains('show')) && sobre && /Processo já em andamento/.test(await t('#preCorpo')), '"Cadastrar processo" no texto abre a escolha POR CIMA e a leitura continua aberta por baixo');
@@ -241,7 +241,7 @@ await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1200);
 check(await page.evaluate(() => document.getElementById('overlayPb').classList.contains('show') && !!document.querySelector('#pbCorpo [data-pbd="irproc"]') && !document.querySelector('#pbCorpo [data-pbd="cadastrar"]') && !!document.getElementById('pbPrazoBox')), 'depois de cadastrar, a leitura continua aberta e já mostra "Abrir o processo", o prazo e as opções de lida / não lida');
 await page.click('#pbCorpo [data-pbd="naolida"]'); await page.waitForTimeout(800);
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, 'e dá para escolher depois se fica lida ou não lida');
-await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="abrir"][data-id="900005"]'); await page.waitForTimeout(1200);
+await page.click('.pb-card[data-cid="900005"] .pb-cli'); await page.waitForTimeout(1200);
 await page.click('#pbFechar'); await page.waitForTimeout(300);
 // publicações idênticas (um autor em cada uma) viram um cartão só
 const NG = '5700000-10.2026.8.09.0107', numG = NG.replace(/\D/g, '');
@@ -263,7 +263,7 @@ await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-
 const lg = (await f('GET', '/api/djen/lista')).j.pubs.filter(p => p.processo === numG);
 check(lg.filter(p => p.lida).map(p => p.id).sort().join() === '900101,900102,900103' && lg.find(p => p.id === '900104').lida === false, 'um toque em "Marcar como lida" marca as 3 de uma vez (e só elas)');
 check(await heroNum() === antes - 1 && String(await page.evaluate(() => document.getElementById('menuNPub').textContent)) === String(await heroNum()), 'o contador de não lidas conta o grupo como 1 (de ' + antes + ' para ' + (antes - 1) + ')');
-await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); (c.querySelector('[data-pb="abrir"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="abrir"]'))).click(); }); await page.waitForTimeout(1500);
+await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); c.querySelector('.pb-cli').click(); }); await page.waitForTimeout(1500);
 check(/3 publicações idênticas reunidas/i.test(await t('#pbCorpo')) && /AUTOR DOIS/.test(await t('#pbCorpo')), 'o detalhe mostra os destinatários reunidos');
 await page.click('#pbFechar'); await page.waitForTimeout(300);
 await page.evaluate(() => { const c = Array.from(document.querySelectorAll('.pb-card')).find(c => /idênticas reunidas/.test(c.innerText)); (c.querySelector('[data-pb="lida"]') || (c.querySelector('[data-pb="cm"]').click(), document.querySelector('.pb-card[data-cid="' + c.dataset.cid + '"] [data-pb="lida"]'))).click(); }); await page.waitForTimeout(1000);
