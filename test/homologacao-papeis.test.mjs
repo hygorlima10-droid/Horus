@@ -27,6 +27,8 @@ await dono('PUT', '/api/db/repasses/hprp1', { docTipo: 'caso', docId: 'hp1', cha
 
 const br = await chromium.launch(), achados = [];
 const VPS = [{ nome: 'computador', w: 1280, h: 900 }, { nome: 'celular', w: 390, h: 844 }];
+/* a advogada tem as próprias Finanças (cofre dela): fica de fora só o que é do proprietário (Construção, Murilo, backup, "Hygor (PJ)") */
+const VAZA_ADV = /Hygor \(PJ\)|Relatório (do|p\/) Murilo|Nenhum backup|Fazer backup|Backup e restauração|Exportar lista|Construção da casa/;
 const VAZA = /Saldo da PJ|Saldo da PF|Patrimônio|Hygor \(PJ\)|Pessoa física|Divisão do mês|Orçamento|Extratos do banco|Relatório (do|p\/) Murilo|Nenhum backup|Fazer backup|Backup e restauração|Exportar lista/;
 const TELAS = [['inicio', 'inicio'], ['iniciais', 'peticoes'], ['acordos', 'acordos'], ['alvaras', 'alvaras'], ['agenda', 'agenda'], ['processos', 'processos'], ['publicacoes', 'publicacoes'], ['clientes', 'clientes'], ['arquivados', 'arquivados'], ['conta', 'configuracoes']];
 for (const q of (globalThis.__PAPEIS || ['ana', 'caio'])) for (const vp of VPS) {
@@ -47,7 +49,7 @@ for (const q of (globalThis.__PAPEIS || ['ana', 'caio'])) for (const vp of VPS) 
     const tag = q + ' · ' + vp.nome + ' · ' + rot;
     if (o.ruim.length) achados.push(tag + ': texto estranho → ' + o.ruim.join(' | '));
     if (o.lado) achados.push(tag + ': rola para o lado (' + o.lado + ')');
-    if (q !== 'dono') { const m = VAZA.exec(o.txt); if (m) achados.push(tag + ': aparece "' + m[0] + '" (é do proprietário)'); }
+    if (q !== 'dono') { const m = (q === 'ana' ? VAZA_ADV : VAZA).exec(o.txt); if (m) achados.push(tag + ': aparece "' + m[0] + '" (é do proprietário)'); }
     if (q === 'caio' && o.btnPagar) achados.push(tag + ': ' + o.btnPagar + ' botão(ões) de pagamento/cobrança visível(is) para o estagiário');
     if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT + 'hp-' + q + '-' + vp.nome + '-' + rot.replace(/[^a-z0-9]+/gi, '_') + '.png', fullPage: true });
   };

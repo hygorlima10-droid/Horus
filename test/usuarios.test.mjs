@@ -38,7 +38,7 @@ const lg = await enviar('/login', { email: 'fulano@teste.local', senha: 'senha-b
 check(lg.s === 303 && lg.ck.startsWith('sessao='), 'entra com o e-mail e a senha que ela criou');
 const fu = quem(lg.ck), eu = await fu('GET', '/api/eu');
 check(eu.j.papel === 'advogado' && eu.j.oabs.join() === '33333/GO,44444/SP' && eu.j.permissoes.verTotais === true && eu.j.permissoes.excluir === false, 'papel, OABs e permissões (totais ligado, excluir desligado por padrão para advogado)');
-check((await fu('GET', '/api/db/despesas')).s === 403 && (await fu('GET', '/api/usuarios')).s === 403, 'e continua sem finanças nem lista de usuários');
+check((await fu('GET', '/api/db/obraMov')).s === 403 && (await fu('GET', '/api/usuarios')).s === 403, 'e continua sem a Construção nem a lista de usuários');
 check((await dono('PUT', '/api/usuarios/' + novo.id, { permissoes: { excluir: true, verTotais: false } })).s === 200 && (await fu('GET', '/api/eu')).j.permissoes.excluir === true && (await fu('GET', '/api/eu')).j.permissoes.verTotais === false, 'o proprietário muda as permissões e vale na hora');
 check((await dono('PUT', '/api/usuarios/' + novo.id, { oabs: [] })).s === 400, 'não deixa advogado sem OAB');
 check((await dono('PUT', '/api/usuarios/' + novo.id, { oabs: ['33333/GO', '55555/RJ'] })).s === 200 && (await fu('GET', '/api/eu')).j.oabs.length === 2, 'acrescenta OAB (sem limite)');

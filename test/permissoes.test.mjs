@@ -12,10 +12,13 @@ check((await ana('GET', '/api/eu')).j.papel === 'advogado' && (await ana('GET', 
 check((await caio('GET', '/api/eu')).j.permissoes.excluir === false && (await dani('GET', '/api/eu')).j.permissoes.excluir === true && (await dono('GET', '/api/eu')).j.permissoes.excluir === true, 'permissão de excluir: desligada por padrão, ligada para a Dani e para o proprietário');
 
 console.log('\n— áreas só do proprietário (advogado e estagiário recebem 403)');
+/* a advogada tem as finanças dela num cofre próprio (testado em cofre-advogado); para ela continuam fechados a Construção, o backup, a lixeira, o registro e as ferramentas do proprietário */
 for (const [nome, u] of [['advogada', ana], ['estagiário', caio]]) {
   let tudo = true; const lista = [];
-  for (const p of ['/api/db/despesas', '/api/db/receitasManuais', '/api/db/saldos', '/api/db/metas', '/api/db/extratos', '/api/db/obraMov', '/api/db/configDono', '/api/db/config/planejamento', '/api/db/config/importacaoAuto', '/api/backup', '/api/backups', '/api/lixeira', '/api/auditoria', '/api/seguranca', '/api/ler', '/api/recebidos', '/api/datajud/x', '/api/notif/x', '/api/restaurar']) { const r = await u('GET', p); if (r.s !== 403 && r.s !== 404 && r.s !== 405) { tudo = false; lista.push(p + '=' + r.s); } }
+  const fin = nome === 'advogada' ? [] : ['/api/db/despesas', '/api/db/receitasManuais', '/api/db/saldos', '/api/db/metas', '/api/db/extratos', '/api/db/configDono', '/api/db/config/planejamento', '/api/db/config/importacaoAuto'];
+  for (const p of [...fin, '/api/db/obraMov', '/api/backup', '/api/backups', '/api/lixeira', '/api/auditoria', '/api/seguranca', '/api/ler', '/api/recebidos', '/api/datajud/x', '/api/notif/x', '/api/restaurar']) { const r = await u('GET', p); if (r.s !== 403 && r.s !== 404 && r.s !== 405) { tudo = false; lista.push(p + '=' + r.s); } }
   check(tudo, nome + ' não abre finanças, configurações, backup, lixeira, registro de ações nem Diário/DataJud' + (lista.length ? ' → ' + lista.join(' ') : ''));
+  if (nome === 'advogada') { check((await u('PUT', '/api/db/obraMov/zz', { x: 1 })).s === 403 && (await u('POST', '/api/lote', { ops: [{ acao: 'gravar', colecao: 'obraMov', id: 'zz', dados: { v: 1 } }] })).s === 403, nome + ' não grava a Construção (nem pelo lote)'); continue; }
   check((await u('POST', '/api/db/despesas', { descricao: 'x', valor: 1 })).s === 403 && (await u('PUT', '/api/db/configDono/planejamento', { x: 2 })).s === 403 && (await u('PUT', '/api/db/config/planejamento', { x: 2 })).s === 403 && (await u('PUT', '/api/db/config/importacaoAuto', { ativo: false })).s === 403, nome + ' não grava finanças nem configurações');
   check((await u('POST', '/api/lote', { ops: [{ acao: 'gravar', colecao: 'despesas', id: 'zz', dados: { v: 1 } }] })).s === 403, nome + ' não grava finanças pelo lote');
 }

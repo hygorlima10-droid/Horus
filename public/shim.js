@@ -14,7 +14,8 @@
     h.toggle('so-central', so); h.toggle('papel-advogado', EU.papel === 'advogado'); h.toggle('papel-estagiario', EU.papel === 'estagiario');
     h.toggle('sem-totais', so && !EU.permissoes.verTotais);
   }).catch(function () { }).then(function () { EU.pronto = true; try { window.dispatchEvent(new CustomEvent('horus-eu')); } catch (e) { } });
-  function semAcesso(nome) { return !!DONO[nome] && EU.papel !== 'proprietario'; }
+  /* advogado: as finanças dele (despesas, receitas, saldos, metas, extratos, configurações) existem — o servidor as guarda num cofre só dele; só a Construção continua do proprietário */
+  function semAcesso(nome) { return !!DONO[nome] && EU.papel !== 'proprietario' && !(EU.papel === 'advogado' && nome !== 'obraMov'); }
   function req(metodo, caminho, corpo) {
     return fetch(caminho, { method: metodo, headers: corpo !== undefined ? { 'content-type': 'application/json' } : undefined, body: corpo !== undefined ? JSON.stringify(corpo) : undefined, credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) {

@@ -21,21 +21,25 @@ async function abrir(quem, largura = 1280) {
   await page.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { } });
   await page.goto(B + '/'); await page.waitForFunction(() => window.__horusEu && window.__horusEu.pronto && window.__horusTeste && window.__horusTeste.ppItemAtencaoOk && document.getElementById('mainTabs'), null, { timeout: 60000 }); await page.waitForTimeout(3000); return page;
 }
+const SO_DONO = ['Construção', 'Relatório do Murilo', 'Backup e restauração', 'Exportar lista', 'Hygor (PJ)'];   // o que a advogada também não vê
 const VAZA = ['Visão geral', 'Divisão do mês', 'Hygor (PJ)', 'Pessoa física', 'Patrimônio', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Recebi R$', 'Fechamento do mês', 'Relatório do Murilo', 'Backup e restauração', 'Exportar lista'];
 const visiveis = (p) => p.evaluate(() => [...document.querySelectorAll('#drawer .dr-it, #drawer .dr-grp')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim()));
 for (const q of ['ana', 'caio']) {
   console.log('\n— ' + (q === 'ana' ? 'advogada (Ana)' : 'estagiário (Caio)'));
   const p = await abrir(q), v = await visiveis(p);
-  check(!['Financeiro', ...VAZA].some((x) => v.some((t) => t.includes(x))), 'o menu não mostra Financeiro nem nada do proprietário: ' + v.join(' | '));
+  if (q === 'ana') {
+    const falta = ['Financeiro', 'Visão geral', 'Divisão do mês', 'Ana (PJ)', 'Pessoa física', 'Patrimônio', 'Orçamento', 'Análises', 'Extratos do banco', 'Recebi R$', 'Fechamento do mês'].filter((x) => !v.some((t) => t.includes(x)));
+    check(!falta.length && !SO_DONO.some((x) => v.some((t) => t.includes(x))), 'o menu da advogada tem as Finanças (com "Ana (PJ)"), sem Construção, Murilo, backup nem "Hygor (PJ)"' + (falta.length ? ' · faltam: ' + falta.join(', ') : '') + ' · ' + v.join(' | '));
+  } else check(!['Financeiro', ...VAZA].some((x) => v.some((t) => t.includes(x))), 'o menu não mostra Financeiro nem nada do proprietário: ' + v.join(' | '));
   check(v.some((t) => t.includes('Minha conta')), 'Configurações vira "Minha conta"');
   check(v.some((t) => t.includes('Cobrança')) === (q === 'ana'), q === 'ana' ? 'a advogada tem "Cobrança de clientes"' : 'o estagiário não tem "Cobrança de clientes"');
   check(!(await p.locator('#avisoSistema').isVisible()), 'sem aviso de backup/limites do sistema');
-  for (const t of ['financeiro', 'analises', 'extratos', 'obra']) {
+  for (const t of (q === 'ana' ? ['obra'] : ['financeiro', 'analises', 'extratos', 'obra'])) {
     await p.evaluate((t) => { const b = document.createElement('button'); b.setAttribute('data-tab', t); b.className = 'dr-it'; document.getElementById('mainTabs').appendChild(b); b.click(); b.remove(); }, t); await p.waitForTimeout(250);
     check((await p.locator('#tituloTela').innerText()) === 'Início', 'a tela "' + t + '" não abre (volta ao Início)');
   }
   const ok = await p.evaluate(() => { const f = window.__horusTeste.ppItemAtencaoOk; return ['despesa', 'relatorio', 'obra', 'murilo'].map((o) => f({ origem: o })).concat([f({ origem: 'upcoming', ehPrazo: true }), f({ origem: 'upcoming', ehPrazo: false }), f({ origem: 'promessa' }), f({ origem: 'parado' })]); });
-  check(ok.slice(0, 4).every((x) => !x) && ok[4] && ok[7] && ok[5] === (q === 'ana') && ok[6] === (q === 'ana'), 'Central de atenção: sem relatório do Murilo, despesas, obra; prazos sim; parcelas e promessas só para a advogada: ' + ok.join(','));
+  check(ok.slice(1, 4).every((x) => !x) && ok[0] === (q === 'ana') && ok[4] && ok[7] && ok[5] === (q === 'ana') && ok[6] === (q === 'ana'), 'Central de atenção: sem relatório do Murilo, despesas, obra; prazos sim; parcelas e promessas só para a advogada: ' + ok.join(','));
   check(p.recusados.length === 0, 'nenhum pedido recusado pelo servidor' + (p.recusados.length ? ': ' + [...new Set(p.recusados)].join(' | ') : ''));
   check(p.erros.length === 0, 'sem erros de JavaScript' + (p.erros.length ? ': ' + p.erros.join(' | ') : ''));
   const totais = await p.evaluate(() => document.documentElement.classList.contains('sem-totais'));
@@ -59,7 +63,7 @@ for (const q of ['ana', 'caio']) {
 console.log('\n— barra de baixo no celular');
 for (const q of ['ana', 'dono']) {
   const p = await abrir(q, 390), b = await p.evaluate(() => [...document.querySelectorAll('#btbar .bt-it')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim()));
-  check(q === 'ana' ? (b.includes('Agenda') && !b.includes('Finanças')) : (b.includes('Finanças') && !b.includes('Agenda')), (q === 'ana' ? 'advogada' : 'proprietário') + ': ' + b.join(' · '));
+  check(b.includes('Finanças') && !b.includes('Agenda'), (q === 'ana' ? 'advogada' : 'proprietário') + ': ' + b.join(' · '));
   await p.context().close();
 }
 console.log('\n— proprietário não muda');

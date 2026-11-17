@@ -20,3 +20,14 @@ export function checarColecao(colecao, auth) {
   return null;
 }
 export const ehProprietario = (auth) => !auth || !auth.usuario || auth.usuario.papel === 'proprietario';
+
+/* ---------- cofre financeiro de cada advogado ----------
+   As coleções financeiras do proprietário (despesas, receitas, saldos, metas, extratos e os documentos de configuração financeira) continuam onde sempre estiveram.
+   O advogado usa as mesmas rotas, mas o servidor troca o nome para uma área só dele (`despesas@<id>`): ele só enxerga o que é dele, ninguém lê o cofre do outro
+   (nem o proprietário pelo app) e o cofre fica de fora do backup, da lixeira e do registro de ações do proprietário. Construção (obraMov) continua só do proprietário;
+   estagiários não têm cofre. */
+export const PESSOAL = new Set(['despesas', 'receitasManuais', 'saldos', 'metas', 'extratos', 'configDono']);
+export const ehAdvogadoAuth = (auth) => !!(auth && auth.usuario && auth.usuario.papel === 'advogado');
+export const ehCofre = (colecao) => String(colecao).includes('@');
+export const baseDoCofre = (colecao) => String(colecao).split('@')[0];
+export const doCofre = (colecao, auth) => (ehAdvogadoAuth(auth) && PESSOAL.has(colecao) ? colecao + '@' + auth.usuario.id : colecao);

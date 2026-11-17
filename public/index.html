@@ -1866,6 +1866,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4959,6 +4963,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}
     itens.sort(function(a,b){
       if (a.ordem !== b.ordem) return a.ordem - b.ordem;
@@ -6811,7 +6823,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   function renderColunaFinanceiro(coluna){
     var container = qs(coluna === 'pf' ? 'colunaFinanceiroPf' : 'colunaFinanceiroPj');
     if (!container) return;
-    var titulo = coluna === 'pf' ? 'Pessoa física' : 'Hygor (PJ)';
+    var titulo = coluna === 'pf' ? 'Pessoa física' : ppNomePj();
     var saldo = getSaldo(coluna);
     var resultado = computeResultadoMes(coluna);
     var projecao = coluna === 'pj' ? computeProjecaoReceitaPj() : null;
@@ -8910,7 +8922,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
   function abrirModalSaldo(coluna){
     editingSaldoColuna = coluna;
-    qs('modalSaldoTitle').textContent = 'Atualizar saldo — ' + (coluna === 'pf' ? 'Pessoa física' : 'Hygor (PJ)');
+    qs('modalSaldoTitle').textContent = 'Atualizar saldo — ' + (coluna === 'pf' ? 'Pessoa física' : ppNomePj());
     qs('saldoValorInput').value = discreto ? '' : (getSaldo(coluna).saldoAtual || '');
     qs('saldoDica').style.display = coluna === 'pj' ? '' : 'none';
     qs('saldoDica').textContent = 'Informe só o dinheiro disponível na conta corrente, sem o valor aplicado no CDB da reserva (a reserva é controlada à parte no app).';
@@ -8947,7 +8959,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   function abrirHistoricoSaldo(coluna){
     historicoSaldoColunaAtual = coluna;
     confirmExcluirHistoricoData = null;
-    qs('modalHistoricoSaldoTitle').textContent = 'Histórico do saldo — ' + (coluna === 'pf' ? 'Pessoa física' : 'Hygor (PJ)');
+    qs('modalHistoricoSaldoTitle').textContent = 'Histórico do saldo — ' + (coluna === 'pf' ? 'Pessoa física' : ppNomePj());
     renderHistoricoSaldo();
     qs('overlayHistoricoSaldo').classList.add('show');
   }
@@ -10219,6 +10231,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10360,6 +10380,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10367,8 +10395,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
-  var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', pj:'Hygor (PJ)', pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
   function ehTelaLarga(){ return !!(window.matchMedia && window.matchMedia('(min-width: 1000px)').matches); }
@@ -10381,6 +10409,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -15784,6 +15820,7 @@ function aplicarRepasse(out){
     u.fator = r ? repFator(doc, repBaseDoc(u.docTipo, doc)) : 1;
     u.repasse = !!r && u.fator < 1;
     u.parceiro = r ? String(r.parceiro || '').trim() : '';
+    if (!r && doc && ppPapel() === 'advogado' && ppFracaoMinha(doc) === null){ u.fator = 0; u.semDivisao = true; }   /* advogado: processo com vários advogados e sem divisão definida não entra nas finanças dele (não dá para saber a parte) */
     rcAjustarUnidade(u, doc);   /* pagamento já feito: vale a divisão e a conta daquele momento */
   });
   return out;
@@ -24532,7 +24569,7 @@ setTimeout(function(){ window.__horusTeste = Object.assign(window.__horusTeste |
    ============================================================ */
 var rcS = { div: {}, lista: [], carregado: false, sync: false, timer: null, perguntando: null, base: {} };
 var RC_TIPO = { casos: 'caso', termosAcordo: 'acordo', alvaras: 'alvara' }, RC_FORM = { casos: 'Caso', termosAcordo: 'Acordo', alvaras: 'Alvara' };
-function rcSouDono(){ return !esS.eu || esS.eu.papel === 'proprietario'; }
+function rcSouDono(){ return !esS.eu || esS.eu.papel === 'proprietario' || esS.eu.papel === 'advogado'; }   /* quem tem finanças próprias (proprietário e advogado): a parte dele entra na PJ dele */
 function rcPapel(){ return esS.eu ? esS.eu.papel : 'proprietario'; }
 function rcDonoChaves(){ return rcSouDono() ? esMinhasChaves() : []; }
 function rcMinhaChave(){ var k = esMinhasChaves(); return k[0] || 'dono'; }
@@ -24797,7 +24834,10 @@ function ppVerTotais(){ if (ppDono()) return true; var e = window.__horusEu; ret
 /* registrar ou desfazer recebimento: o estagiário não (o servidor também recusa); some o botão e os quadradinhos de "pago" ficam só para ver */
 function ppPodeReceber(){ return ppPapel() !== 'estagiario'; }
 function ppPodeCobrar(){ var p = ppPapel(); return p === 'proprietario' || p === 'advogado'; }
-function ppTelaPermitida(tab){ return ppDono() || !PP_TELAS_DONO[tab]; }
+/* o advogado tem Finanças, Análises e Extratos (no cofre dele); só a Construção é do proprietário */
+function ppTelaPermitida(tab){ return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
+/* nome da PJ no menu e nos textos: o da pessoa logada (o proprietário continua "Hygor") */
+function ppNomePj(){ var e = window.__horusEu, n = e && e.papel !== 'proprietario' && e.nome ? String(e.nome).trim().split(/\s+/)[0] : 'Hygor'; return n + ' (PJ)'; }
 /* a aba de quem pediu: devolve uma aba que a pessoa pode abrir (usada ao trocar de aba) */
 /* espera o servidor dizer quem é a pessoa; resolve true só para o proprietário (quem não é nunca pede o que é do proprietário) */
 function ppDonoP(){
@@ -24811,7 +24851,8 @@ function ppItemAtencaoOk(x){
   if (ppDono()) return true;
   var o = x.origem;
   if (o === 'fixa') return ppPapel() !== 'advogado';   /* contas fixas do escritório: estagiários e proprietário */
-  if (o === 'despesa' || o === 'relatorio' || o === 'obra' || o === 'murilo') return false;
+  if (o === 'despesa') return ppPapel() === 'advogado';   /* o advogado tem as próprias despesas */
+  if (o === 'relatorio' || o === 'obra' || o === 'murilo') return false;
   var dinheiro = (o === 'upcoming' && !x.ehPrazo) || o === 'promessa';
   if (dinheiro) return ppPapel() === 'advogado';
   return true;
@@ -24851,14 +24892,17 @@ function ppPor(n){
 }
 (function(){
   var st = document.createElement('style');
-  var fin = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="obra"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#abrirRelMuriloBtn', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos', '#bodyObra', '#inicioAbrirDivisao', '#inicioAbrirExtratos', '#relModoSeg'];
-  st.textContent = fin.map(function(s){ return '.so-central ' + s; }).join(',') + '{display:none!important}' +
+  /* some para todos que não são o proprietário (advogado inclusive): Construção, Relatório do Murilo, backup, leitura por IA (foto/PDF) e o aviso do sistema */
+  var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
+  /* e só o estagiário perde o resto das Finanças (o advogado usa o cofre dele) */
+  var finEst = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos'];
+  st.textContent = finTodos.map(function(s){ return '.so-central ' + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
     '.papel-estagiario [data-baixa-doc],.papel-estagiario [data-pf="baixa"],.papel-estagiario [data-arq-act="baixa"],.papel-estagiario [data-acordo-status],.papel-estagiario [data-alvara-status],.papel-estagiario [data-receita-receber]{display:none!important}' +
     '.papel-estagiario input[data-avista],.papel-estagiario input[data-parcela],.papel-estagiario input[data-acordo-parcela],.papel-estagiario input[data-exavista],.papel-estagiario input[data-exparcela]{pointer-events:none;opacity:.55}' +
     '.papel-estagiario #abrirCobrancaMenuBtn,.papel-estagiario #abrirCobrancaProprioBtn,.papel-estagiario [data-cli-cobrar],.papel-estagiario [data-pf="cobrar"]{display:none!important}' +
     '.sem-totais .ini-hero,.sem-totais .ini-kpi,.sem-totais #rsPainel,.sem-totais .rs-wrap,.sem-totais #stats{display:none!important}' +
     '#inicioAcoes{display:flex;flex-wrap:wrap;gap:8px;max-width:none}#inicioAcoes .acao{flex:0 0 auto;min-width:104px;padding:9px 16px}' +
-    '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.so-central .bt-so{display:flex!important}';
+    '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
   /* quando o servidor responde quem é a pessoa: sai de uma tela que não é dela e ajusta os rótulos */
   function aplicar(){
@@ -24869,6 +24913,7 @@ function ppPor(n){
     try{ if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){}
     try{ if (typeof MD_DEF !== 'undefined' && MD_DEF[activeTab]) mdRedesenhar(activeTab); }catch(e){}
     if (ppPapel() === 'estagiario'){ try{ var ft = document.getElementById('filtroClienteTipo'); if (ft) Array.prototype.slice.call(ft.options).forEach(function(o){ if (o.value === 'receber' || o.value === 'atraso') ft.removeChild(o); }); }catch(e){} }
+    try{ var nPj = ppNomePj(); document.querySelectorAll('[data-fin="pj"],.seg-btn[data-value="pj"]').forEach(function(el){ var l = el.querySelector('.lab') || el; if (l.textContent.trim() === 'Hygor (PJ)') l.textContent = nPj; if (el.title === 'Hygor (PJ)') el.title = nPj; }); }catch(e){}
     try{ var bg = document.getElementById('buscaGlobalInput'); if (bg) bg.placeholder = 'Buscar em tudo: clientes, processos, publicações…'; }catch(e){}
     try{ var m = document.getElementById('relModoSeg'); if (m && typeof relModo !== 'undefined') relModo = 'proprio'; }catch(e){}
   }

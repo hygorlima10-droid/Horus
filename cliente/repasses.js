@@ -10,7 +10,7 @@
    ============================================================ */
 var rcS = { div: {}, lista: [], carregado: false, sync: false, timer: null, perguntando: null, base: {} };
 var RC_TIPO = { casos: 'caso', termosAcordo: 'acordo', alvaras: 'alvara' }, RC_FORM = { casos: 'Caso', termosAcordo: 'Acordo', alvaras: 'Alvara' };
-function rcSouDono(){ return !esS.eu || esS.eu.papel === 'proprietario'; }
+function rcSouDono(){ return !esS.eu || esS.eu.papel === 'proprietario' || esS.eu.papel === 'advogado'; }   /* quem tem finanças próprias (proprietário e advogado): a parte dele entra na PJ dele */
 function rcPapel(){ return esS.eu ? esS.eu.papel : 'proprietario'; }
 function rcDonoChaves(){ return rcSouDono() ? esMinhasChaves() : []; }
 function rcMinhaChave(){ var k = esMinhasChaves(); return k[0] || 'dono'; }

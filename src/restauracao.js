@@ -102,7 +102,7 @@ const carimbo = () => new Date().toISOString().replace(/\D/g, '').slice(0, 17); 
 const gravar = (env, colecao, id, dados) => env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?) ON CONFLICT(colecao,id) DO UPDATE SET dados=excluded.dados, atualizado=excluded.atualizado').bind(colecao, id, JSON.stringify(dados), Date.now());
 /* cópia de segurança de tudo (menos as áreas reservadas do sistema), guardada no banco em partes comprimidas; ficam as últimas GUARDAR_COPIAS */
 export async function copiaDeSeguranca(env, motivo) {
-  const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' ORDER BY colecao, id").all();
+  const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' AND colecao NOT LIKE '%@%' ORDER BY colecao, id").all();
   const docs = results.map((r) => ({ colecao: r.colecao, id: r.id, dados: JSON.parse(r.dados) }));
   const b64 = await gzipB64(JSON.stringify({ versao: 1, exportadoEm: new Date().toISOString(), docs }));
   const id = carimbo(), total = Math.ceil(b64.length / PARTE_B64) || 1, em = new Date().toISOString();
@@ -139,7 +139,7 @@ async function trocar(env, docs, colecoes, tudo) {
     if (n.n !== docs.size) throw new Error('A gravação na área de espera ficou incompleta (' + n.n + ' de ' + docs.size + ').');
   } catch (e) { await env.DB.prepare('DELETE FROM docs WHERE colecao = ?').bind(COL_ESPERA).run().catch(() => {}); throw e; }
   const nomes = [...colecoes];
-  const apaga = tudo ? env.DB.prepare("DELETE FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\'") : env.DB.prepare('DELETE FROM docs WHERE colecao IN (' + nomes.map(() => '?').join(',') + ')').bind(...nomes);
+  const apaga = tudo ? env.DB.prepare("DELETE FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' AND colecao NOT LIKE '%@%'") : env.DB.prepare('DELETE FROM docs WHERE colecao IN (' + nomes.map(() => '?').join(',') + ')').bind(...nomes);
   await env.DB.batch([   // uma única operação: se qualquer parte falhar, nada muda
     apaga,
     env.DB.prepare("INSERT INTO docs (colecao,id,dados,atualizado) SELECT substr(id,1,instr(id,'|')-1), substr(id,instr(id,'|')+1), dados, ? FROM docs WHERE colecao = ?").bind(agora, COL_ESPERA),

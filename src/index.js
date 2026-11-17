@@ -6,7 +6,7 @@ import { gerarChavesVapid, enviarPush } from './push.js';
 import { djenRotas, lerDjen, relerSePreciso, pubsParaAvisar, pubsDaPessoa, marcarAvisadas } from './djen.js';
 import { datajudRotas } from './datajud.js';
 import { loteRotas } from './lote.js';
-import { checarColecao, resolverColecao, ehProprietario } from './colecoes.js';
+import { checarColecao, resolverColecao, ehProprietario, doCofre, ehCofre, baseDoCofre, ehAdvogadoAuth, PESSOAL } from './colecoes.js';
 import { checarRotaDjen, checarAcessoColecao, linhasVisiveis, autorizarGravacao, autorizarExclusao, normalizarUsuario, ehDono, carimbarAutor, escopoDoAdvogado } from './politica.js';
 import { garantirMigracoes } from './migracao.js';
 import { restauracaoRotas } from './restauracao.js';
@@ -177,7 +177,7 @@ async function gunzipTexto(b64) {
   return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 }
 export async function fazerBackup(env) {
-  const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' ORDER BY colecao, id").all();
+  const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' AND colecao NOT LIKE '%@%' ORDER BY colecao, id").all();
   const docs = results.map((r) => ({ colecao: r.colecao, id: r.id, dados: JSON.parse(r.dados) }));
   const b64 = await gzipB64(JSON.stringify({ versao: 1, exportadoEm: new Date().toISOString(), docs }));
   const dia = new Date().toISOString().slice(0, 10);
@@ -449,21 +449,24 @@ async function api(request, env, partes, auth) {
   // partes: ['db', colecao, id?]  |  ['backup']
   const metodo = request.method;
   if (partes[0] === 'backup' && metodo === 'GET') {
-    const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' ORDER BY colecao, id").all();
+    const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao NOT LIKE '\\_%' ESCAPE '\\' AND colecao NOT LIKE '%@%' ORDER BY colecao, id").all();
     return json({ versao: 1, exportadoEm: new Date().toISOString(), docs: results.map((r) => ({ colecao: r.colecao, id: r.id, dados: JSON.parse(r.dados) })) });
   }
   if (partes[0] !== 'db' || !partes[1] || !NOME.test(partes[1])) return erro(404, 'not_found', 'Não encontrado.');
   const id = partes[2];
   if (id !== undefined && !NOME.test(id)) return erro(400, 'invalid', 'Identificador inválido.');
-  const colecao = resolverColecao(partes[1], id);   // config/<documento do proprietário> vai para configDono (compatível com o app já aberto)
-  const recusa = checarColecao(colecao, auth) || checarAcessoColecao(colecao, auth); if (recusa) return recusa;
+  const pedida = resolverColecao(partes[1], id);   // config/<documento do proprietário> vai para configDono (compatível com o app já aberto)
+  const colecao = doCofre(pedida, auth);   // advogado: as finanças dele ficam no cofre próprio (despesas@<id>)
+  const recusa = ehCofre(colecao) ? null : (checarColecao(colecao, auth) || checarAcessoColecao(colecao, auth)); if (recusa) return recusa;
   if (colecao === 'config' && !ehDono(auth) && id && metodo !== 'GET') { const rc = await autorizarGravacao(env, colecao, id, null, {}, auth); if (rc) return rc; }
   else if (colecao === 'config' && !ehDono(auth) && !id && metodo !== 'GET') return erro(403, 'forbidden', 'Só o proprietário pode gravar isto.');
 
   if (!id && metodo === 'GET') {
     const sp = new URL(request.url).searchParams;
     if (!ehDono(auth)) {   // quem não é proprietário recebe só o que a política libera (a lista inteira é filtrada aqui, na leitura)
-      const vis = await linhasVisiveis(env, colecao, auth), tt = vis.reduce((m, r) => Math.max(m, r.atualizado || 0), 0);
+      let vis = await linhasVisiveis(env, colecao, auth);
+      if (colecao === 'config' && ehAdvogadoAuth(auth)) { const meus = await env.DB.prepare('SELECT id, dados, atualizado FROM docs WHERE colecao = ? ORDER BY id').bind(doCofre('configDono', auth)).all(); vis = [...vis, ...meus.results].sort((a, b) => (a.id < b.id ? -1 : 1)); }   // os documentos financeiros dele vêm na lista de config, como acontece com o proprietário
+      const tt = vis.reduce((m, r) => Math.max(m, r.atualizado || 0), 0);
       if (sp.get('resumo') === '1') return json({ n: vis.length, t: tt });
       const lim2 = Math.min(Math.max(parseInt(sp.get('limit') || '1000', 10) || 1000, 1), MAX_LISTA), dep2 = sp.get('after') || '', resto = vis.filter((r) => r.id > dep2), pag = resto.slice(0, lim2);
       return json({ docs: pag.map((r) => ({ id: r.id, data: JSON.parse(r.dados), v: r.atualizado })), mais: resto.length > lim2, n: vis.length, t: tt });
@@ -507,7 +510,7 @@ async function api(request, env, partes, auth) {
     /* ?mesclar=1 (documentos de trabalho do proprietário, como config/obra e config/extratos): o app manda só as chaves que mudou e o servidor junta ao documento
        que está gravado agora, em vez de substituir o documento inteiro por uma cópia antiga (auditoria F-05). Na mesma chave vale a última gravação. */
     let mesclado = false;
-    if (new URL(request.url).searchParams.get('mesclar') === '1' && (colecao === 'configDono' || colecao === 'config' || colecao === 'delegadas')) {
+    if (new URL(request.url).searchParams.get('mesclar') === '1' && (baseDoCofre(colecao) === 'configDono' || colecao === 'config' || colecao === 'delegadas')) {
       const atualM = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       dados = { ...(atualM ? JSON.parse(atualM.dados) : {}), ...dados }; mesclado = true;
     }
@@ -521,7 +524,7 @@ async function api(request, env, partes, auth) {
     /* conflito de edição: o app manda `base` = a versão (carimbo de tempo) que ele tinha lido. Se o registro mudou no servidor depois disso e o conteúdo é diferente,
        não grava e devolve 409 com a versão do servidor; o app pergunta ao usuário (usar a do outro aparelho ou manter a minha → repete com forcar=1). */
     const base = parseInt(new URL(request.url).searchParams.get('base') || '', 10), forcar = new URL(request.url).searchParams.get('forcar') === '1';
-    if (CONFLITO.has(colecao) && base > 0 && !forcar) {
+    if (CONFLITO.has(baseDoCofre(colecao)) && base > 0 && !forcar) {
       const atual = await env.DB.prepare('SELECT dados, atualizado FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       if (atual && atual.atualizado > base && atual.dados !== JSON.stringify(dados)) return json({ error: { code: 'conflict', message: 'Este registro foi alterado em outro aparelho.' }, atual: { id, data: JSON.parse(atual.dados), v: atual.atualizado } }, 409);
     }
@@ -577,7 +580,7 @@ const ROTAS = {
   ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['proprietario', (r, e, p) => recebidos(r, e, p)], anexos: ['proprietario', (r, e, p) => anexos(r, e, p)],
   notif: ['sessao', (r, e, p, a) => notif(r, e, p, a)], djen: ['sessao', (r, e, p, au) => checarRotaDjen(p, r.method, au) || djenRotas(r, e, p, au)], datajud: ['sessao', (r, e, p) => datajudRotas(r, e, p)],   // para os demais papéis só quando tiverem filtro próprio (etapa 5.3)
   db: ['sessao', (r, e, p, au) => api(r, e, p, au)],
-  lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
+  lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
   backup: ['proprietario', (r, e, p, au) => api(r, e, p, au)], backups: ['proprietario', (r, e, p) => backups(r, e, p)], restaurar: ['proprietario', (r, e, p) => restauracaoRotas(r, e, p)],
   lixeira: ['proprietario', (r, e, p) => lixeiraRotas(r, e, p)], historico: ['sessao', async (r, e, p, a) => historicoRotas(r, e, p, a, a && a.usuario && a.usuario.papel === 'advogado' ? await escopoDoAdvogado(e, a) : null)], auditoria: ['proprietario', (r, e, p) => auditoriaRotas(r, e, p)],
   seguranca: ['sessao', (r, e, p, a) => segurancaRotas(r, e, p, a)], usuarios: ['proprietario', (r, e, p, a) => usuariosRotas(r, e, p, a)],

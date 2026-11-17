@@ -19,7 +19,10 @@ function ppVerTotais(){ if (ppDono()) return true; var e = window.__horusEu; ret
 /* registrar ou desfazer recebimento: o estagiário não (o servidor também recusa); some o botão e os quadradinhos de "pago" ficam só para ver */
 function ppPodeReceber(){ return ppPapel() !== 'estagiario'; }
 function ppPodeCobrar(){ var p = ppPapel(); return p === 'proprietario' || p === 'advogado'; }
-function ppTelaPermitida(tab){ return ppDono() || !PP_TELAS_DONO[tab]; }
+/* o advogado tem Finanças, Análises e Extratos (no cofre dele); só a Construção é do proprietário */
+function ppTelaPermitida(tab){ return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
+/* nome da PJ no menu e nos textos: o da pessoa logada (o proprietário continua "Hygor") */
+function ppNomePj(){ var e = window.__horusEu, n = e && e.papel !== 'proprietario' && e.nome ? String(e.nome).trim().split(/\s+/)[0] : 'Hygor'; return n + ' (PJ)'; }
 /* a aba de quem pediu: devolve uma aba que a pessoa pode abrir (usada ao trocar de aba) */
 /* espera o servidor dizer quem é a pessoa; resolve true só para o proprietário (quem não é nunca pede o que é do proprietário) */
 function ppDonoP(){
@@ -33,7 +36,8 @@ function ppItemAtencaoOk(x){
   if (ppDono()) return true;
   var o = x.origem;
   if (o === 'fixa') return ppPapel() !== 'advogado';   /* contas fixas do escritório: estagiários e proprietário */
-  if (o === 'despesa' || o === 'relatorio' || o === 'obra' || o === 'murilo') return false;
+  if (o === 'despesa') return ppPapel() === 'advogado';   /* o advogado tem as próprias despesas */
+  if (o === 'relatorio' || o === 'obra' || o === 'murilo') return false;
   var dinheiro = (o === 'upcoming' && !x.ehPrazo) || o === 'promessa';
   if (dinheiro) return ppPapel() === 'advogado';
   return true;
@@ -73,14 +77,17 @@ function ppPor(n){
 }
 (function(){
   var st = document.createElement('style');
-  var fin = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="obra"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#abrirRelMuriloBtn', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos', '#bodyObra', '#inicioAbrirDivisao', '#inicioAbrirExtratos', '#relModoSeg'];
-  st.textContent = fin.map(function(s){ return '.so-central ' + s; }).join(',') + '{display:none!important}' +
+  /* some para todos que não são o proprietário (advogado inclusive): Construção, Relatório do Murilo, backup, leitura por IA (foto/PDF) e o aviso do sistema */
+  var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
+  /* e só o estagiário perde o resto das Finanças (o advogado usa o cofre dele) */
+  var finEst = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos'];
+  st.textContent = finTodos.map(function(s){ return '.so-central ' + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
     '.papel-estagiario [data-baixa-doc],.papel-estagiario [data-pf="baixa"],.papel-estagiario [data-arq-act="baixa"],.papel-estagiario [data-acordo-status],.papel-estagiario [data-alvara-status],.papel-estagiario [data-receita-receber]{display:none!important}' +
     '.papel-estagiario input[data-avista],.papel-estagiario input[data-parcela],.papel-estagiario input[data-acordo-parcela],.papel-estagiario input[data-exavista],.papel-estagiario input[data-exparcela]{pointer-events:none;opacity:.55}' +
     '.papel-estagiario #abrirCobrancaMenuBtn,.papel-estagiario #abrirCobrancaProprioBtn,.papel-estagiario [data-cli-cobrar],.papel-estagiario [data-pf="cobrar"]{display:none!important}' +
     '.sem-totais .ini-hero,.sem-totais .ini-kpi,.sem-totais #rsPainel,.sem-totais .rs-wrap,.sem-totais #stats{display:none!important}' +
     '#inicioAcoes{display:flex;flex-wrap:wrap;gap:8px;max-width:none}#inicioAcoes .acao{flex:0 0 auto;min-width:104px;padding:9px 16px}' +
-    '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.so-central .bt-so{display:flex!important}';
+    '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
   /* quando o servidor responde quem é a pessoa: sai de uma tela que não é dela e ajusta os rótulos */
   function aplicar(){
@@ -91,6 +98,7 @@ function ppPor(n){
     try{ if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){}
     try{ if (typeof MD_DEF !== 'undefined' && MD_DEF[activeTab]) mdRedesenhar(activeTab); }catch(e){}
     if (ppPapel() === 'estagiario'){ try{ var ft = document.getElementById('filtroClienteTipo'); if (ft) Array.prototype.slice.call(ft.options).forEach(function(o){ if (o.value === 'receber' || o.value === 'atraso') ft.removeChild(o); }); }catch(e){} }
+    try{ var nPj = ppNomePj(); document.querySelectorAll('[data-fin="pj"],.seg-btn[data-value="pj"]').forEach(function(el){ var l = el.querySelector('.lab') || el; if (l.textContent.trim() === 'Hygor (PJ)') l.textContent = nPj; if (el.title === 'Hygor (PJ)') el.title = nPj; }); }catch(e){}
     try{ var bg = document.getElementById('buscaGlobalInput'); if (bg) bg.placeholder = 'Buscar em tudo: clientes, processos, publicações…'; }catch(e){}
     try{ var m = document.getElementById('relModoSeg'); if (m && typeof relModo !== 'undefined') relModo = 'proprio'; }catch(e){}
   }

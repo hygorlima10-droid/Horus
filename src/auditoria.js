@@ -51,7 +51,7 @@ export function stmtRegistro(env, ev) {
   return env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?)').bind(COL_AUD, agoraId() + '-' + aleat(), JSON.stringify(dados), Date.now());
 }
 export const registrar = (env, ev) => stmtRegistro(env, ev).run().catch((e) => console.error('registro de ações', e));
-export const registraColecao = (colecao) => !SEM_REGISTRO.has(colecao);
+export const registraColecao = (colecao) => !SEM_REGISTRO.has(colecao) && !String(colecao).includes('@');   // o cofre pessoal de um advogado não entra no registro do proprietário
 
 /* comando que copia o registro apagado para a lixeira */
 export function stmtLixeira(env, colecao, id, dadosTexto) {
@@ -59,7 +59,7 @@ export function stmtLixeira(env, colecao, id, dadosTexto) {
   const reg = { colecao, id, dados: d, rotulo: ROTULOS[colecao] || colecao, titulo: tituloDe(colecao, d), em: new Date(agora).toISOString(), expira: new Date(agora + DIAS_LIXEIRA * 864e5).toISOString(), por: 'Você' };
   return env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?)').bind(COL_LIX, `${colecao}|${id}|${agoraId()}`, JSON.stringify(reg), agora);
 }
-export const vaiParaLixeira = (colecao) => !SEM_LIXEIRA.has(colecao);
+export const vaiParaLixeira = (colecao) => !SEM_LIXEIRA.has(colecao) && !String(colecao).includes('@');
 
 /* limpeza diária: a lixeira some depois de 30 dias; o registro de ações guarda 1 ano */
 export async function limparSeguranca(env) {

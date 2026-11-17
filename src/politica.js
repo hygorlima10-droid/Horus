@@ -137,7 +137,7 @@ export const mexeEmPagamento = (antes, depois) => nosDePagamento(antes) !== nosD
 /* linhas { id, dados (texto), atualizado } da coleção já filtradas para quem pede; o proprietário recebe tudo */
 export async function linhasVisiveis(env, colecao, auth) {
   const { results } = await env.DB.prepare('SELECT id, dados, atualizado FROM docs WHERE colecao = ? ORDER BY id').bind(colecao).all();
-  if (ehDono(auth)) return results;
+  if (ehDono(auth) || String(colecao).includes('@')) return results;   // o cofre pessoal já vem só da própria pessoa
   if (colecao === 'config') return results.filter((r) => CONFIG_LIVRE.has(r.id));
   const u = usu(auth), esc = u.papel === 'advogado' ? await escopoDoAdvogado(env, auth) : null;
   return results.filter((r) => { const d = JSON.parse(r.dados); if (colecao === 'clientes') d.id = r.id; return podeVer(colecao, d, auth, esc); });
@@ -161,6 +161,7 @@ const agendaDaPessoa = (antes, u, esc) => antes.criadoPor === u.id || ehResponsa
 const agendaAlteravel = (antes, depois, u, esc) => agendaDaPessoa(antes, u, esc) || (antes.compartilhada === true && !!depois && semConclusao(antes) === semConclusao(depois));
 export async function autorizarGravacao(env, colecao, id, antes, depois, auth, esc) {
   if (ehDono(auth)) { carimbarAutor(colecao, antes, depois, auth); return null; }
+  if (String(colecao).includes('@')) return null;   // cofre financeiro pessoal: a rota já o entrega só ao dono dele
   const u = usu(auth);
   if (colecao === 'config') return checarDocConfig(id, auth);
   if (colecao === 'diasSemExpediente') return NEGADO('Só o proprietário cadastra dias sem expediente.');
@@ -185,7 +186,7 @@ export async function autorizarGravacao(env, colecao, id, antes, depois, auth, e
   return null;
 }
 export async function autorizarExclusao(env, colecao, id, antes, auth, esc) {
-  if (ehDono(auth)) return null;
+  if (ehDono(auth) || String(colecao).includes('@')) return null;   // no cofre pessoal cada um apaga o que é seu
   const u = usu(auth);
   if (colecao === 'config' || colecao === 'repasses' || colecao === 'diasSemExpediente') return NEGADO();
   esc = esc || (u.papel === 'advogado' ? await escopoDoAdvogado(env, auth) : null);
