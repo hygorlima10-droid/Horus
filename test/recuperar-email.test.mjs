@@ -14,6 +14,7 @@ const caixa = [];
 const srv = http.createServer((req, res) => {
   let corpo = ''; req.on('data', (d) => { corpo += d; }); req.on('end', () => {
     if (req.headers['api-key'] !== 'chave-teste-brevo') { res.writeHead(401); res.end('{}'); return; }
+    if (/falha@exemplo/.test(corpo)) { res.writeHead(403, { 'content-type': 'application/json' }); res.end('{"code":"permission_denied","message":"Sender is not valid or authorized IP"}'); return; }
     try { caixa.push(JSON.parse(corpo)); } catch (e) { /* ignora */ }
     res.writeHead(201, { 'content-type': 'application/json' }); res.end('{"messageId":"x"}');
   });
@@ -72,6 +73,14 @@ check(r.status === 303 && (await api('/api/db/casos', cDono)).status === 401 && 
 r = await api('/api/auditoria?limite=50', cDono2); let aud = ''; try { aud = JSON.stringify(await r.json()); } catch (e) { /* sem acesso à rota */ }
 if (aud) check(/Senha redefinida pelo código enviado ao e-mail/.test(aud) && /Código de recuperação enviado/.test(aud), 'o registro de ações guarda o envio do código e a redefinição');
 
+// ---- falha do provedor: aparece no registro de ações com o motivo, e a tela fala em "tente de novo" ----
+r = await api('/api/usuarios', cDono2, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nome: 'Pessoa Falha', email: 'falha@exemplo.com', papel: 'estagiario' }) }); const cv2 = await r.json();
+await enviar(new URL(cv2.link).pathname, { senha: S1, senha2: S1 });
+const antesF = caixa.length;
+r = await enviar('/recuperar', { email: 'falha@exemplo.com' }, { ip: '4.4.4.9' }); t = await r.text();
+check(r.status === 502 && t.includes('Não consegui enviar o e-mail agora') && caixa.length === antesF, 'quando o Brevo recusa: a tela diz para tentar de novo, sem criar código pendente');
+r = await api('/api/auditoria?limite=50', cDono2); aud = ''; try { aud = JSON.stringify(await r.json()); } catch (e) { /* sem acesso */ }
+if (aud) check(/Brevo recusou o envio do código de recuperação \(HTTP 403: Sender is not valid or authorized IP\)/.test(aud), 'o registro de ações guarda o motivo da recusa do Brevo (para o proprietário diagnosticar)');
 // ---- limite de pedidos por aparelho ----
 for (let i = 0; i < 5; i++) await enviar('/recuperar', { email: 'x' + i + '@exemplo.com' }, { ip: '6.6.6.6' });
 r = await enviar('/recuperar', { email: NATH }, { ip: '6.6.6.6' }); check(r.status === 429, 'pedidos demais do mesmo aparelho: bloqueia por 15 minutos');

@@ -112,8 +112,10 @@ export async function enviarCodigoEmail(env, para, nome, codigo) {
   try {
     const r = await fetch(env.EMAIL_API_URL || 'https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ sender: { name: env.EMAIL_NOME || 'Horus', email: env.EMAIL_REMETENTE }, to: [{ email: para, name: String(nome || para).slice(0, 80) }], subject: 'Seu código do Horus: ' + codigo, textContent: texto, htmlContent: html }) });
-    return r.ok;
-  } catch (e) { return false; }
+    if (r.ok) return { ok: true };
+    let msg = ''; try { const j = await r.json(); msg = String(j.message || j.code || '').slice(0, 180); } catch (e) { /* sem corpo */ }
+    return { ok: false, status: r.status, motivo: msg };
+  } catch (e) { return { ok: false, status: 0, motivo: 'sem conexão com o Brevo' }; }
 }
 async function recuperarPedirCodigo(request, env, f) {
   const email = String(f.email || '').trim().toLowerCase(), chaveT = chaveIp('tent-recem-', request), t = await lerTent(env, chaveT);
@@ -127,9 +129,10 @@ async function recuperarPedirCodigo(request, env, f) {
     if (!antes || Date.now() - antes.enviadoEm >= CODIGO_INTERVALO_MS) {   // um código por minuto, por e-mail
       const codigo = novoCodigo(), agora = Date.now();
       await stmtDoc(env, COL_REC, id, { usuario: u.id, email, hash: await hashCodigo(env, email, codigo), expira: agora + CODIGO_MINUTOS * 60e3, tent: 0, enviadoEm: agora }).run();
-      if (!(await enviarCodigoEmail(env, email, u.nome, codigo))) {
+      const envio = await enviarCodigoEmail(env, email, u.nome, codigo);
+      if (!envio.ok) {
         await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_REC, id).run();
-        await stmtRegistro(env, { op: 'falhou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Não consegui enviar o código de recuperação por e-mail (confira a chave do Brevo e o remetente)' }).run();
+        await stmtRegistro(env, { op: 'falhou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Brevo recusou o envio do código de recuperação (HTTP ' + envio.status + (envio.motivo ? ': ' + envio.motivo : '') + ')' }).run();
         return htmlResp(FORMULARIO_RECUPERAR_EMAIL('Não consegui enviar o e-mail agora. Tente de novo em alguns minutos.', email), 502);
       }
       await stmtRegistro(env, { op: 'criou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Código de recuperação enviado para ' + u.nome + ' · ' + ipParcial(ipDe(request)) }).run();
