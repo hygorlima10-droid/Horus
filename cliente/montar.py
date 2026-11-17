@@ -500,6 +500,13 @@ rep("      if (x.origem === 'obra') return ob7LinhaAviso(x.a);\n", "      if (x.
 rep("    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){", "    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }\n    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){")
 rep("      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n", "      if (x.origem === 'fixa') return dgFixaChip(x.it, x.atrasado);\n      if (x.origem === 'tfixa') return dgTFixaCentralChip(x.it);\n")
 
+# Ícones (<symbol>): as regras que inserem ic-agenda, ic-sync e ic-delegadas antes de outro símbolo se atrapalham entre si e a cada montagem repetiam o símbolo (ids repetidos na página).
+# Aqui fica só a primeira ocorrência de cada id, então rodar de novo nunca multiplica.
+_vistos = set()
+def _unico(m):
+    if m.group(1) in _vistos: return ''
+    _vistos.add(m.group(1)); return m.group(0)
+s = re.sub(r'<symbol id="([^"]+)"[^>]*>.*?</symbol>\n?', _unico, s, flags=re.S)
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

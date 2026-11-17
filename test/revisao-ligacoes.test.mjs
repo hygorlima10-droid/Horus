@@ -65,5 +65,14 @@ t = await C();
 check(t.includes('Cliente no inicial') && t.includes('Cliente Dois') && t.includes('Cliente Um'), 'mostra o cliente de cada lado');
 await page.click('[data-lgr="ajusta-proc"]'); await page.waitForTimeout(1200);
 check((await docs('processos')).find((d) => d.numero === NA).clienteIds.join() === 'cl2' && (await C()).includes('Nenhuma divergência'), '"Usar o do ato no processo" acerta o processo e a divergência some');
+
+console.log('\n— lista longa: as linhas não se sobrepõem');
+const LONGO = 'Fulano de Tal e Beltrano da Silva, Cicrana Souza Lima e Empresa Comercial de Materiais Elétricos Ltda x Banco Grande Nacional S/A e outros';
+for (let i = 0; i < 40; i++) await proc('56' + String(100000 + i).slice(1) + '-1' + (i % 10) + '.2026.8.09.0107', { partes: LONGO + ' ' + i, clienteIds: [] });
+await page.reload(); await page.waitForTimeout(3500); await page.click('[data-tab="processos"]'); await page.waitForTimeout(1000);
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(500); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300);
+await page.click('#overlayPendC [data-pdl="lg"]'); await page.waitForSelector('#overlayLgRev.show'); await page.click('[data-lgr="aba"][data-k="semcli"]'); await page.waitForSelector('#overlayLgRevC .es-it'); await page.waitForTimeout(400); await shot('rev-longa');
+const lin = await page.evaluate(() => { const c = document.querySelector('#overlayLgRevC'), its = Array.from(c.querySelectorAll('.es-it')).map(e => e.getBoundingClientRect()); let sobre = 0; for (let i = 1; i < its.length; i++) if (its[i].top < its[i - 1].bottom - 1) sobre++; const filhos = Array.from(c.querySelectorAll('.es-it')).filter(e => e.scrollHeight > e.clientHeight + 1).length; return { n: its.length, sobre, filhos, rola: c.scrollHeight > c.clientHeight }; });
+check(lin.n >= 40 && lin.rola && lin.sobre === 0 && lin.filhos === 0, 'com ' + lin.n + ' processos a ficha rola e nenhuma linha fica por cima da outra (' + lin.sobre + ' sobreposições)');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);
