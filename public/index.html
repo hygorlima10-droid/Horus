@@ -859,7 +859,7 @@
   .rel-sel-row .t small{display:block;color:var(--ink-soft);}
   .rel-sel-row .v{flex:none;font-weight:600;white-space:nowrap;}
   .rel-sel-row.off{opacity:.45;}
-  .rm-texto{width:100%;min-height:280px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:var(--t3);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--ink);resize:vertical;}
+  .rm-texto{width:100%;min-height:280px;font-family:var(--font-sans);font-size:var(--t4);line-height:1.5;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--ink);resize:vertical;}
   .rm-status{font-size:var(--t3);color:var(--ink-soft);margin-top:8px;}
   .rm-status button{background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;padding:0;font-size:var(--t3);}
   .rm-foot{flex-wrap:wrap;}
@@ -1546,6 +1546,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 <symbol id="ic-quadro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></symbol>
 <symbol id="ic-proc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
 <symbol id="ic-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+
+
 
 
 
@@ -4850,6 +4852,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10154,6 +10160,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10269,6 +10279,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10276,7 +10290,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', pj:'Hygor (PJ)', pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10290,6 +10304,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -12551,11 +12569,55 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     return (it.docTipo === 'alvara' ? 'previsão ' : 'venc. ') + fmtData(it.data);
   }
   var REL_TIPO_TXT = { inicial:'Petição inicial', extrajudicial:'Procedimento extrajudicial', processo:'Honorários de processo', acordo:'Termo de acordo', alvara:'Alvará' };
-  function relLinhaItem(it){
-    var l = ['• *' + it.cliente + '* — ' + (REL_TIPO_TXT[it.grupo] || '') + (it.acao && it.docTipo === 'caso' ? ' (' + it.acao + ')' : '')];
-    if (it.processo) l.push('   Proc. ' + it.processo);
-    l.push('   ' + it.label + ' · ' + relDataTxt(it) + (it.data && it.data < todayISO() ? ' ⚠️ *vencido*' : '') + ' — ' + relValorTxt(it));
-    return l.join('\n');
+  /* ---------- texto da mensagem (WhatsApp): enxuto, sem repetir data nem total ---------- */
+  var REL_GRUPOS_TXT = [['inicial', 'Petições iniciais'], ['extrajudicial', 'Procedimentos extrajudiciais'], ['processo', 'Honorários de processo'], ['acordo', 'Termos de acordo'], ['alvara', 'Alvarás']];
+  var REL_TIPO_CURTO = { inicial: 'inicial', extrajudicial: 'extrajudicial', processo: 'processo', acordo: 'acordo', alvara: 'alvará' };
+  /* dia/mês; com o ano só quando não é o ano de hoje */
+  function relDM(iso){
+    if (!iso) return '';
+    var p = String(iso).slice(0, 10).split('-');
+    return p[2] + '/' + p[1] + (p[0] !== todayISO().slice(0, 4) ? '/' + p[0] : '');
+  }
+  function relDiasTxt(n){ return n === 1 ? '1 dia' : n + ' dias'; }
+  /* valor sem asteriscos: "R$ 800,00" ou "falta R$ 300,00 (já pagos R$ 500,00 de R$ 800,00)" */
+  function relValorPlano(it){
+    return it.jaPago > 0 ? 'falta ' + fmtMoeda(it.restante) + ' (já pagos ' + fmtMoeda(it.jaPago) + ' de ' + fmtMoeda(it.valor) + ')' : fmtMoeda(it.restante);
+  }
+  /* "Ação de cobrança, Proc. 123": o que identifica o processo (sem repetir o tipo do documento) */
+  function relRefProcesso(it){
+    var r = [];
+    if (it.acao && it.docTipo === 'caso') r.push(it.acao);
+    if (it.processo) r.push('Proc. ' + it.processo);
+    return r.join(', ');
+  }
+  /* Murilo: sem vencimento nem atraso (trabalhamos juntos, não há dia certo de pagamento); só a previsão do alvará, que é informação do processo */
+  function relPrevisaoAlvara(it){
+    if (it.docTipo !== 'alvara') return '';
+    return it.data ? 'previsão ' + relDM(it.data) : 'sem previsão de levantamento';
+  }
+  function relListaMurilo(t, lista){
+    var vistos = {};
+    REL_GRUPOS_TXT.forEach(function(g){
+      var its = lista.filter(function(i){ return i.grupo === g[0]; });
+      its.forEach(function(i){ vistos[i.chave] = 1; });
+      relBlocoGrupoMurilo(t, g[1], its);
+    });
+    relBlocoGrupoMurilo(t, 'Outros', lista.filter(function(i){ return !vistos[i.chave]; }));
+  }
+  function relBlocoGrupoMurilo(t, titulo, its){
+    if (!its.length) return;
+    t.push('*' + titulo + '*');
+    its.forEach(function(it){
+      var ref = relRefProcesso(it), prev = relPrevisaoAlvara(it);
+      t.push('• ' + it.cliente + (ref ? ' — ' + ref : ''));
+      t.push('   ' + it.label + (prev ? ' · ' + prev : '') + ' — ' + relValorPlano(it));
+    });
+    t.push('');
+  }
+  /* uma linha por item, para as seções informativas (mês seguinte e sem previsão) */
+  function relLinhaCurtaMurilo(it){
+    var prev = relPrevisaoAlvara(it), ref = it.processo ? 'Proc. ' + it.processo : '';
+    return '• ' + it.cliente + ' (' + (REL_TIPO_CURTO[it.grupo] || 'honorários') + ')' + ' — ' + it.label + (prev ? ' · ' + prev : '') + (ref ? ' · ' + ref : '') + ' — ' + fmtMoeda(it.restante);
   }
   // Total que o Murilo me repassa: tudo o que está listado e selecionado (exigível + mês seguinte + sem previsão/adiante)
   function relTotalGeral(d, cfg){
@@ -12563,65 +12625,54 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   }
   function gerarTextoMurilo(d, cfg){
     var t = [];
-    var fim = fimDoMes(d.mes);
-    t.push('*PRESTAÇÃO DE CONTAS — HONORÁRIOS*');
-    t.push('Referência: ' + mesLabel(d.mes) + ' · gerado em ' + fmtData(todayISO()));
-    t.push('');
+    var fim = fimDoMes(d.mes), mesTxt = mesLabel(d.mes).toLowerCase();
     var temProx = !!(cfg.incluirProximo && d.prox.length), temOutros = !!(cfg.incluirOutros !== false && d.outros && d.outros.length);
-    var extras = temProx || temOutros;
-    t.push('Murilo, segue o que tenho a receber de honorários' + (extras ? '' : ' até ' + fmtData(fim)) + '.');
+    t.push('*Prestação de contas — honorários*');
+    t.push('Murilo, segue o que tenho a receber.');
+    t.push('Referência: ' + mesTxt + ' · gerado em ' + fmtData(todayISO()));
     t.push('');
-    t.push('*1) VALORES A ME PAGAR' + (extras ? ' (vencidos e até ' + fmtData(fim) + ')' : '') + '*');
+    t.push('*1) A receber até ' + fmtData(fim) + (d.itens.length ? ' — ' + fmtMoeda(d.tot.exigivel) : '') + '*');
     if (!d.itens.length){
       t.push(d.qtdOrig > 0 ? 'Nenhum honorário selecionado para esta prestação de contas.' : 'Não há honorários pendentes de pagamento até essa data.');
+      t.push('');
     } else {
-      d.itens.forEach(function(it){ t.push(relLinhaItem(it)); });
-      t.push('');
-      t.push('━━━━━━━━━━━━━━');
-      if (d.tot.vencido > 0){
-        t.push('Atrasado de meses anteriores: ' + fmtMoeda(d.tot.vencido));
-        t.push('Vence em ' + mesLabel(d.mes) + ': ' + fmtMoeda(d.tot.mes));
-      }
-      t.push('*' + (extras ? 'SUBTOTAL' : 'TOTAL A ME PASSAR') + ': ' + fmtMoeda(d.tot.exigivel) + '*');
+      relListaMurilo(t, d.itens);
     }
-    var n = 2;
+    var n = 2, secoesTotal = [1];
     if (cfg.incluirRecebidos){
-      t.push('');
-      t.push('*' + n + ') JÁ RECEBIDO EM ' + mesLabel(d.mes).toUpperCase() + '*');
+      t.push('*' + n + ') Já recebido em ' + mesTxt + (d.recebidos.length ? ' — ' + fmtMoeda(d.tot.recebido) : '') + '*');
       n++;
       if (!d.recebidos.length) t.push(d.recOrig > 0 ? 'Nenhum recebimento selecionado.' : 'Nenhum recebimento registrado no mês.');
-      d.recebidos.forEach(function(it){ t.push('• ' + fmtData(it.recData) + ' — ' + it.cliente + ' (' + (REL_TIPO_TXT[it.grupo] || '') + ', ' + it.label.charAt(0).toLowerCase() + it.label.slice(1) + '): ' + fmtMoeda(it.recValor)); });
-      if (d.recebidos.length){ t.push('━━━━━━━━━━━━━━'); t.push('*TOTAL JÁ RECEBIDO: ' + fmtMoeda(d.tot.recebido) + '*'); }
-    }
-    if (cfg.incluirProximo && d.prox.length){
-      var pm = deslocarMes(d.mes, 1);
+      d.recebidos.forEach(function(it){ t.push('• ' + fmtData(it.recData).slice(0, 5) + ' — ' + it.cliente + ' (' + (REL_TIPO_CURTO[it.grupo] || 'honorários') + ', ' + it.label.charAt(0).toLowerCase() + it.label.slice(1) + ') — ' + fmtMoeda(it.recValor)); });
       t.push('');
-      t.push('*' + n + ') A VENCER EM ' + mesLabel(pm).toUpperCase() + '*');
-      n++;
-      d.prox.forEach(function(it){ t.push('• ' + it.cliente + ' — ' + (REL_TIPO_TXT[it.grupo] || '') + ' · ' + it.label + ' · ' + relDataTxt(it) + ' — ' + fmtMoeda(it.restante)); });
-      t.push('━━━━━━━━━━━━━━');
-      t.push('*SUBTOTAL: ' + fmtMoeda(d.tot.prox) + '*');
     }
-    if (cfg.incluirOutros && d.outros && d.outros.length){
+    if (temProx){
+      t.push('*' + n + ') Previsto para ' + mesLabel(deslocarMes(d.mes, 1)).toLowerCase() + ' — ' + fmtMoeda(d.tot.prox) + '*');
+      secoesTotal.push(n); n++;
+      d.prox.forEach(function(it){ t.push(relLinhaCurtaMurilo(it)); });
       t.push('');
-      t.push('*' + n + ') SEM PREVISÃO OU A VENCER MAIS ADIANTE*');
-      n++;
-      d.outros.forEach(function(it){ t.push('• ' + it.cliente + ' — ' + (REL_TIPO_TXT[it.grupo] || '') + (it.processo ? ' · Proc. ' + it.processo : '') + ' · ' + it.label + ' · ' + relDataTxt(it) + ' — ' + fmtMoeda(it.restante)); });
-      t.push('━━━━━━━━━━━━━━');
-      t.push('*SUBTOTAL: ' + fmtMoeda(d.tot.outros) + '*');
     }
-    if (extras){
+    if (temOutros){
+      t.push('*' + n + ') Sem previsão ou mais adiante — ' + fmtMoeda(d.tot.outros) + '*');
+      secoesTotal.push(n); n++;
+      d.outros.forEach(function(it){ t.push(relLinhaCurtaMurilo(it)); });
       t.push('');
-      t.push('══════════════');
-      if (d.itens.length) t.push('Vencidos e até ' + fmtData(fim) + ': ' + fmtMoeda(d.tot.exigivel));
-      if (temProx && d.prox.length) t.push('A vencer em ' + mesLabel(deslocarMes(d.mes, 1)) + ': ' + fmtMoeda(d.tot.prox));
-      if (temOutros) t.push('Sem previsão / mais adiante: ' + fmtMoeda(d.tot.outros));
-      t.push('*TOTAL GERAL A ME PASSAR: ' + fmtMoeda(relTotalGeral(d, cfg)) + '*');
     }
-    if (cfg.pix){ t.push(''); t.push('Chave PIX para pagamento: ' + cfg.pix); }
-    t.push('');
+    if (secoesTotal.length > 1){
+      t.push('*Total geral a me passar: ' + fmtMoeda(relTotalGeral(d, cfg)) + '* (itens ' + secoesTotal.slice(0, -1).join(', ') + ' e ' + secoesTotal[secoesTotal.length - 1] + ')');
+      t.push('');
+    }
+    if (cfg.pix){ t.push('Chave PIX para pagamento: ' + cfg.pix); t.push(''); }
     t.push('Qualquer divergência, me avise que confiro. Obrigado!');
     return t.join('\n');
+  }
+  /* cliente: "venceu em 10/10, há 38 dias" / "vence em 20/12" / "vence hoje" */
+  function relVencimentoCliente(it){
+    if (!it.data) return it.docTipo === 'alvara' ? 'sem previsão de levantamento' : 'sem vencimento definido';
+    var hoje = todayISO(), dias = diasEntreISO(it.data, hoje);
+    if (it.docTipo === 'alvara') return 'previsão ' + relDM(it.data);
+    if (dias > 0) return 'venceu em ' + relDM(it.data) + ', há ' + relDiasTxt(dias);
+    return dias === 0 ? 'vence hoje' : 'vence em ' + relDM(it.data);
   }
   function gerarTextoProprio(d, cfg, cliente){
     var t = [];
@@ -12629,25 +12680,25 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var tom = relTomEfetivo(d);
     var pn = primeiroNome(cliente);
     var cli = clienteDaChave(relCliente);
-    t.push(tom === 'firme' ? (pn ? 'Prezado(a) ' + pn + ', bom dia.' : 'Prezado(a), bom dia.') : (pn ? 'Olá, ' + pn + '! Tudo bem?' : 'Olá! Tudo bem?'));
+    var saud = (typeof qdPeriodo === 'function') ? qdPeriodo(new Date().getHours())[0] : 'Olá';
+    t.push(tom === 'firme' ? 'Prezado(a)' + (pn ? ' ' + pn : '') + ', ' + saud.toLowerCase() + '.' : saud + (pn ? ', ' + pn : '') + '! Tudo bem?');
     t.push('');
     if (!d.itens.length && d.qtdOrig > 0){
       t.push('Nenhum honorário selecionado para esta cobrança.');
     } else if (!d.itens.length){
       t.push('Conforme conferi aqui, não há honorários pendentes de pagamento' + (cliente ? ' em seu nome' : '') + ' até ' + fmtData(fim) + '. Obrigado!');
     } else {
-      var intro = tom === 'firme' ? 'Constam em aberto, até o momento, os seguintes honorários advocatícios vencidos'
-        : (tom === 'atraso' ? 'Conferindo aqui, identifiquei honorários advocatícios com vencimento já passado'
-          : 'Passando para lembrar dos honorários advocatícios pendentes');
-      t.push(intro + (cliente ? ' de ' + cliente : '') + ':');
+      t.push(tom === 'firme' ? 'Constam em aberto, até o momento, os seguintes honorários advocatícios vencidos:'
+        : (tom === 'atraso' ? 'Conferindo aqui, há honorários com vencimento já passado:'
+          : 'Passando para lembrar dos honorários pendentes:'));
       t.push('');
       d.itens.forEach(function(it){
-        var ref = (it.acao && it.docTipo === 'caso' ? it.acao : '') + (it.processo ? (it.acao && it.docTipo === 'caso' ? ' — ' : '') + 'Proc. ' + it.processo : '');
-        t.push('• ' + it.label + (ref ? ' (' + ref + ')' : '') + ' — ' + relDataTxt(it) + (it.data && it.data < todayISO() ? ' (em atraso)' : ''));
-        t.push('   Valor: ' + (it.jaPago > 0 ? 'falta ' + fmtMoeda(it.restante) + ' (de ' + fmtMoeda(it.valor) + ', já pagos ' + fmtMoeda(it.jaPago) + ')' : fmtMoeda(it.restante)));
+        var ref = relRefProcesso(it);
+        t.push('• ' + it.label + (ref ? ' (' + ref + ')' : '') + ' — ' + relVencimentoCliente(it) + ' — ' + relValorPlano(it));
       });
       t.push('');
-      t.push('*Total pendente até ' + fmtData(fim) + ': ' + fmtMoeda(d.tot.exigivel) + '*');
+      var todosVencidos = d.itens.every(function(it){ return it.data && it.data < todayISO(); });
+      t.push('*' + (todosVencidos ? 'Total em aberto' : 'Total até ' + fmtData(fim)) + ': ' + fmtMoeda(d.tot.exigivel) + '*');
       if (tom !== 'amigavel' && cli){
         var pv = promessasAbertas(cli).filter(function(p){ return p.data && p.data <= todayISO(); })[0];
         if (pv){ t.push(''); t.push('Conforme combinado, o pagamento estava previsto para ' + fmtData(pv.data) + '.'); }
@@ -12655,17 +12706,19 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     }
     if (cfg.incluirProximo && d.prox.length){
       t.push('');
-      t.push('Para o mês seguinte (' + mesLabel(deslocarMes(d.mes, 1)) + '), fica previsto:');
-      d.prox.forEach(function(it){ t.push('• ' + it.label + ' — ' + relDataTxt(it) + ' — ' + fmtMoeda(it.restante)); });
+      t.push('Previsto para ' + mesLabel(deslocarMes(d.mes, 1)).toLowerCase() + ':');
+      d.prox.forEach(function(it){ t.push('• ' + it.label + ' — ' + (it.docTipo === 'alvara' ? 'previsão ' : '') + relDM(it.data) + ' — ' + fmtMoeda(it.restante)); });
     }
-    if (cfg.pix){ t.push(''); t.push('Chave PIX para pagamento: ' + cfg.pix); }
-    t.push('');
-    if (!d.itens.length || tom === 'amigavel'){
-      t.push('Se já tiver feito o pagamento, por favor me envie o comprovante para eu dar baixa aqui. Obrigado!');
-    } else if (tom === 'atraso'){
-      t.push('Poderia me informar quando consegue regularizar? Se já tiver pago, me envie o comprovante para eu dar baixa aqui. Obrigado!');
-    } else {
-      t.push('Peço a gentileza de regularizar em até 5 dias. Se já tiver pago, envie o comprovante para baixa; se houver alguma dificuldade, me avise para conversarmos sobre uma forma de acerto.');
+    if (cfg.pix){ t.push(''); t.push('Chave PIX: ' + cfg.pix); }
+    if (d.itens.length){
+      t.push('');
+      if (tom === 'amigavel'){
+        t.push('Se já pagou, é só me enviar o comprovante para eu dar baixa. Obrigado!');
+      } else if (tom === 'atraso'){
+        t.push('Consegue me dizer quando poderá regularizar? Se já pagou, é só enviar o comprovante para eu dar baixa. Obrigado!');
+      } else {
+        t.push('Peço a gentileza de regularizar em até 5 dias. Havendo alguma dificuldade, me avise para combinarmos uma forma de acerto. Se já pagou, envie o comprovante para eu dar baixa.');
+      }
     }
     return t.join('\n');
   }
@@ -12769,9 +12822,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       (ehM
         ? '<div class="rm-tot total"><div class="l">Total geral a receber do Murilo' + ((d.parcial || relSelecionouAlgumExcluido(dc, d)) ? ' (selecionado)' : '') + '</div><div class="v">' + fmtMoeda(relTotalGeral(d, cfg)) + '</div></div>'
         : '<div class="rm-tot total"><div class="l">' + (d.parcial ? 'Total selecionado até ' : 'Total a receber até ') + fmtData(fimDoMes(relMes)) + '</div><div class="v">' + fmtMoeda(d.tot.exigivel) + '</div></div>') +
-      (ehM ? '<div class="rm-tot"><div class="l">Exigível até ' + fmtData(fimDoMes(relMes)) + '</div><div class="v">' + fmtMoeda(d.tot.exigivel) + '</div></div>' : '') +
-      '<div class="rm-tot vencido"><div class="l">Atrasado (meses anteriores)</div><div class="v">' + fmtMoeda(d.tot.vencido) + '</div></div>' +
-      '<div class="rm-tot"><div class="l">Vence em ' + escapeHtml(mesLabel(relMes)) + '</div><div class="v">' + fmtMoeda(d.tot.mes) + '</div></div>' +
+      (ehM ? '<div class="rm-tot"><div class="l">A receber até ' + fmtData(fimDoMes(relMes)) + '</div><div class="v">' + fmtMoeda(d.tot.exigivel) + '</div></div>' : '') +
+      (ehM ? '' : '<div class="rm-tot vencido"><div class="l">Atrasado (meses anteriores)</div><div class="v">' + fmtMoeda(d.tot.vencido) + '</div></div>' +
+      '<div class="rm-tot"><div class="l">Vence em ' + escapeHtml(mesLabel(relMes)) + '</div><div class="v">' + fmtMoeda(d.tot.mes) + '</div></div>') +
       '<div class="rm-tot"><div class="l">Mês seguinte</div><div class="v">' + fmtMoeda(d.tot.prox) + '</div></div>' +
       (ehM && d.outros.length ? '<div class="rm-tot"><div class="l">Sem previsão / mais adiante</div><div class="v">' + fmtMoeda(d.tot.outros) + '</div></div>' : '') +
       (ehM ? '<div class="rm-tot"><div class="l">Já recebido no mês</div><div class="v">' + fmtMoeda(d.tot.recebido) + '</div></div>' : '');
@@ -12796,7 +12849,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         total++;
         var off = !!relExcl[x.k]; if (!off) marcados++;
         var it = x.it;
-        var det = [REL_TIPO_TXT[it.grupo] || '', it.label, x.rec ? fmtData(it.recData) : relDataTxt(it)].filter(Boolean).join(' · ');
+        var det = [REL_TIPO_TXT[it.grupo] || '', it.label, x.rec ? fmtData(it.recData) : (relModo === 'murilo' ? relPrevisaoAlvara(it) : relDataTxt(it))].filter(Boolean).join(' · ');
         return '<label class="rel-sel-row' + (off ? ' off' : '') + '"><input type="checkbox" data-rel-sel="' + escapeHtml(x.k) + '"' + (off ? '' : ' checked') + '>' +
           '<span class="t"><b>' + escapeHtml(it.cliente) + '</b><small>' + escapeHtml(det) + '</small></span><span class="v">' + escapeHtml(fmtMoeda(x.v)) + '</span></label>';
       }).join('');
