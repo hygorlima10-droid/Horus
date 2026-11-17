@@ -47,6 +47,7 @@ check(/Zenaide/.test(await v('age_cli')) && (await v('age_proc')).replace(/\D/g,
 await page.fill('#age_local', 'Sala virtual do TJGO'); await page.click('[data-age="salvar"]'); await page.waitForTimeout(1200);
 const aud = (await ag()).filter(d => d.tipo === 'audiencia')[0];
 check(aud && aud.data === DATA_AUD && aud.hora === '14:30' && aud.audTipo === 'Conciliação' && aud.modalidade === 'online' && aud.local === 'Sala virtual do TJGO' && /meet\.google/.test(aud.link) && aud.audPubId === '910001', 'a audiência é gravada com tipo, modalidade, local, link e a publicação de origem');
+await page.evaluate(() => { const b = document.querySelector('[data-pb="filtro"][data-v="todas"]'); if (b) b.click(); }); await page.waitForTimeout(500);   // criar a audiência trata a publicação: ela vira lida e sai de "Não lidas"
 check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.pb-card')).some(c => /Zenaide/.test(c.innerText) && !!c.querySelector('[data-pb="aud"]')))) && /na Agenda/.test(await t('#pbListaBox')), 'depois de criada, a publicação mostra “na Agenda” e some o botão (não duplica)');
 check(!(await f('GET', '/api/db/agenda')).j.docs.some(d => d.data.pubId === '910001'), 'a audiência não vira “prazo confirmado” da publicação');
 
