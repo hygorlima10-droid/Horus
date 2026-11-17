@@ -114,6 +114,15 @@ await page.evaluate(() => { window.__copiado = ''; Object.defineProperty(navigat
   await page.evaluate(() => document.querySelector('#overlayPb .pb-cab .pb-cp').click()); await page.waitForTimeout(300);
   check(await page.evaluate(() => window.__copiado) === '5368644-67.2026.8.09.0107', 'copiar dentro da ficha copia o mesmo número');
   await page.evaluate(() => document.getElementById('overlayPb').classList.remove('show')); await page.waitForTimeout(200); }
+// atalho "marcar como lida" no cartão: um toque, mesmo tamanho do ⋯, com Desfazer
+{ const tam = await page.evaluate(() => { const b = document.querySelector('.pb-card[data-id="900002"] .pb-lido'), m = document.querySelector('.pb-card[data-id="900002"] [data-pb="cm"]'); if (!b || !m) return null; const x = b.getBoundingClientRect(), y = m.getBoundingClientRect(); return { w: x.width, h: x.height, w2: y.width, h2: y.height, ant: b.nextElementSibling === m }; });
+  check(tam && Math.abs(tam.w - tam.w2) < 1 && Math.abs(tam.h - tam.h2) < 1 && tam.ant, 'o cartão tem o botão ✓ do mesmo tamanho do ⋯, logo antes dele');
+  const lidaDe = async id => (await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === id).lida;
+  const antes = await lidaDe('900002');
+  await page.evaluate(() => document.querySelector('.pb-card[data-id="900002"] .pb-lido').click()); await page.waitForTimeout(900);
+  check(antes === false && await lidaDe('900002') === true && /Marcada como lida/.test(await t('#toast')), 'um toque no ✓ marca como lida e mostra o aviso');
+  await page.evaluate(() => document.querySelector('#toast button').click()); await page.waitForTimeout(900);
+  check(await lidaDe('900002') === false, '"Desfazer" volta a publicação para não lida'); }
 check(/processo novo/i.test(tb) && /(sugerido: 15 dias|.{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
 { await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)) && !mn.includes('Ver texto'), 'o ⋯ do cartão guarda: Marcar como lida, Não é prazo, Cadastrar processo (sem "Ver texto": o texto abre tocando no cartão) (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
 check(await page.evaluate(() => { const b = document.querySelector('[data-pb="rapido"]'); return !!b && /pb-verde/.test(b.className) && getComputedStyle(b).backgroundColor === getComputedStyle(document.documentElement).getPropertyValue('--success') || (!!b && /pb-verde/.test(b.className)); }), 'o botão de confirmar do cartão é verde (classe pb-verde), não preto');

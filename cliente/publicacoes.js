@@ -145,6 +145,9 @@ function pbMontarTela(){
     else if (a === 'limpar'){ pbS.f = { q: '', de: '', ate: '', oab: 'todas', adv: '', trib: '' }; pbS.mais = 1; pbRender(); }
     else if (a === 'abrir'){ var sel = window.getSelection ? String(window.getSelection()) : ''; if (!sel) pbAbrirDetalhe(id); }   // tocar no cartão abre o texto (se não for um arrastar para copiar)
     else if (a === 'lida'){ var pl = pbPub(id); if (pl) pbMarcar(pbMembros(pl).map(function(x){ return x.id; }), { lida: !pbLidaG(pl) }); }
+    else if (a === 'lido'){   /* atalho no cartão: um toque marca (ou desmarca) como lida, com Desfazer */
+      var pq = pbPub(id); if (pq){ var idsq = pbMembros(pq).map(function(x){ return x.id; }), vai = !pbLidaG(pq); pbMarcar(idsq, { lida: vai }); toast(vai ? 'Marcada como lida.' : 'Voltou para “Não lidas”.', 'Desfazer', function(){ pbMarcar(idsq, { lida: !vai }); }); }
+    }
     else if (a === 'todas-lidas'){ pbS.mAberto = false; var ids = []; pbListaFiltrada().filter(function(p){ return !pbLidaG(p); }).forEach(function(p){ pbMembros(p).forEach(function(x){ ids.push(x.id); }); }); if (ids.length) pbMarcar(ids, { lida: true }); }
     else if (a === 'cadastrar') pbCadastrar(id);
     else if (a === 'reabrir-proc'){ var pp = pbPub(id), vv = pp && pbVinculo(pp.processo); if (vv) prReabrir(vv.id).then(function(){ pbRender(); }); }
@@ -620,6 +623,8 @@ function pbCopiarNumero(t){
 }
 /* na fase de captura: copiar não abre a publicação nem dispara nada do cartão */
 document.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-pbcp]') : null; if (!b) return; e.stopPropagation(); e.preventDefault(); pbCopiarNumero(b.getAttribute('data-pbcp')); }, true);
+var PB_ICO_LIDA = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+var PB_ICO_DESFAZ = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
@@ -635,6 +640,7 @@ function pbCartao(p){
   if (aud && !audOk) btn += '<button type="button" class="btn pb-b pb-ouro" data-pb="aud" data-id="' + id + '">Criar audiência · ' + escapeHtml(fmtData(aud.data).slice(0, 5)) + '</button>';
   if (pad) btn += '<button type="button" class="btn pb-b pb-verde" data-pb="rapido" data-id="' + id + '">Confirmar prazo · vence ' + escapeHtml(fmtData(pad.r.venc).slice(0, 5)) + '</button>';
   else if (!pz && !semPz && cls !== 'out') btn += '<button type="button" class="btn btn-ghost pb-b" data-pb="prazo" data-id="' + id + '">Criar prazo</button>';
+  btn += '<button type="button" class="btn btn-ghost pb-b pb-mais pb-lido" data-pb="lido" data-id="' + id + '" aria-label="' + (lida ? 'Marcar como não lida' : 'Marcar como lida') + '" title="' + (lida ? 'Marcar como não lida' : 'Marcar como lida') + '">' + (lida ? PB_ICO_DESFAZ : PB_ICO_LIDA) + '</button>';
   btn += '<button type="button" class="btn btn-ghost pb-b pb-mais" data-pb="cm" data-id="' + id + '" aria-label="Mais ações" aria-expanded="' + (pbS.cm === p.id ? 'true' : 'false') + '" title="Mais ações">⋯</button>';
   var menu = '';
   if (pbS.cm === p.id){
