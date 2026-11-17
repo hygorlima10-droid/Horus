@@ -17,7 +17,6 @@ export async function loteRotas(request, env, partes, auth, { stmtGravar, NOME, 
   const vistos = new Set();
   for (const o of ops) {
     if (o && typeof o === 'object' && typeof o.colecao === 'string' && typeof o.id === 'string') {
-      if (!NOME.test(o.colecao)) return erro(400, 'invalid', 'Operação inválida.');
       o.colecao = resolverColecao(o.colecao, o.id);
       const proprio = ehAdvogadoAuth(auth) && PESSOAL.has(o.colecao);   // finanças do advogado: vão para o cofre dele, sem a checagem do proprietário
       if (!proprio) { const recusa = checarColecao(o.colecao, auth); if (recusa) return recusa; }
