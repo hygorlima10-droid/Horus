@@ -826,7 +826,7 @@ function agSalvarEd(){
     }
   }
   var p = i ? pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ doc.id = i.id; agDocs = agDocs.map(function(x){ return x.id === i.id ? doc : x; }); }) : agCriar(doc);
-  p.then(function(){ return agSincInscricao(doc); }).then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  p.then(function(){ return agSincInscricao(doc); }).then(function(){ if (!i && doc.audPubId && typeof pbTratarDeAgenda === 'function'){ try{ pbTratarDeAgenda(doc.audPubId, doc.tipo); }catch(e){ console.error('publicação tratada', e); } } qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 /* sessão de julgamento com sustentação oral: o prazo para pedir a inscrição vira uma tarefa na Agenda (avisos 2 dias, 1 dia e no dia) */
 function agSincInscricao(doc){
@@ -849,7 +849,7 @@ function agExcluirEd(b){
   var i = agItens().filter(function(x){ return x.key === agEditKey; })[0]; if (!i) return;
   if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para excluir'; return; }
   var filhos = agDocs.filter(function(x){ return x.sessaoDe === i.id; }).map(function(x){ return x.id; });
-  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ return Promise.all(filhos.map(function(fid){ return pbApi('/api/db/agenda/' + encodeURIComponent(fid), 'DELETE'); })); }).then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id && x.sessaoDe !== i.id; }); qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
+  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ return Promise.all(filhos.map(function(fid){ return pbApi('/api/db/agenda/' + encodeURIComponent(fid), 'DELETE'); })); }).then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id && x.sessaoDe !== i.id; }); var pubDoItem = i.doc && (i.doc.pubId || i.doc.audPubId); if (pubDoItem && typeof pbDestratarDeAgenda === 'function'){ try{ pbDestratarDeAgenda(pubDoItem); }catch(e){ console.error('publicação tratada', e); } } qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
 }
 
 /* ---------- carga por pessoa (Resumo): todos veem, só contagens ---------- */

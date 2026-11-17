@@ -194,6 +194,8 @@ const pz = (await f('GET', '/api/db/agenda')).j.docs;
 check(pz.length === 1 && pz[0].data.pubId === '900002' && pz[0].data.titulo === 'Recolher o sistema (PrevJUD)' && pz[0].data.tipo === 'prazo' && pz[0].data.data.length === 10 && pz[0].data.concluido === false && pz[0].data.contagem === 'uteis', 'o prazo confirmado fica gravado (' + (pz[0] && pz[0].data.data) + ')');
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(300);
 check(/prazo \d\d\/\d\d\/\d{4}/.test(await cardDe('900002')), 'o cartão passa a mostrar o prazo confirmado (e sai de "não lidas" porque já foi aberto)');
+{ const p2 = (await f('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '900002');
+  check(p2.lida === true && p2.tratadas.length === 1 && p2.tratadas[0].como === 'prazo' && p2.tratadas[0].meu === true, 'criar o prazo grava que a publicação foi tratada (os colegas a veem como lida) e a lida é de quem tratou'); }
 // confirmação em um passo: vara criminal → regra do CPP (dias corridos); confirma sem abrir nada e depois desfaz
 await page.click('[data-pb="rapido"][data-id="900005"]'); await page.waitForTimeout(500);
 { const tx = await page.evaluate(() => document.getElementById('overlayPbRap').innerText);

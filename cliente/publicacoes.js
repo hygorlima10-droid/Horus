@@ -415,6 +415,7 @@ function pbListaFiltrada(){
   var vis = pbGrupos(pbVisiveis().filter(pbPassaFiltros));
   if (pbS.filtro === 'naolidas') vis = vis.filter(function(p){ return !pbLidaG(p); });
   else if (pbS.filtro === 'meus') vis = vis.filter(function(p){ return !!pbVinculo(p.processo); });
+  else if (pbS.filtro === 'tratadas') vis = vis.filter(pbTratadaRecente);
   return vis;
 }
 function pbRender(){
@@ -429,7 +430,8 @@ function pbRender(){
   /* sub-abas padrão (Fase 2): Resumo, Não lidas, Meus processos e Todas; a última usada fica lembrada */
   if (!pbS.mdOk){ pbS.mdOk = 1; var s0 = mdInicial('publicacoes', ['naolidas', 'meus', 'todas']); if (s0 === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = s0; } }
   var res = pbS.sub === 'resumo';
-  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos'], ['todas', 'Todas']], res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
+  var nTrat = vis.filter(pbTratadaRecente).length;
+  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos']].concat(nTrat || pbS.filtro === 'tratadas' ? [['tratadas', 'Tratadas por colegas', nTrat || '']] : []).concat([['todas', 'Todas']]), res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
   var n = pbFiltrosAtivos();
   if (res){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
@@ -540,7 +542,7 @@ function pbGravarPrazo(p, o){
   var lidaAntes = pbLidaG(p), ids = pbMembros(p).map(function(x){ return x.id; });
   return agCriar({ tipo: 'prazo', titulo: o.desc, processo: p.numero || p.processo, cliente: pbNomeParte(p, v), data: venc, hora: '', trabalhar: trab, situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: o.resp, pubId: p.id, calculo: o.manual ? undefined : r.op, dias: o.dias * mult, diasBase: o.dias, dobro: mult > 1 ? o.dobro : '', contagem: o.tipo, disp: p.data, inicio: r.ini, manual: !!o.manual, tribunal: p.tribunal || '',
     peca: psel ? psel.peca : '', pecaId: psel ? psel.rid : '', pecaBase: psel ? psel.base : '', pecaOrigem: psel && psel.peca === o.desc ? (psel.rid === 'catalogo' ? 'escolhida' : 'sugerida') : (psel ? 'ajustada' : 'manual'), natureza: pcz ? pcz.natureza : '', criadoEm: new Date().toISOString() }).then(function(doc){
-    pbMarcar(ids, { lida: true, semPrazo: false });
+    pbMarcar(ids, { lida: true, semPrazo: false, tratada: true, como: 'prazo' });   /* criou o prazo: os colegas veem como lida (preparada, se for estagiária) */
     try{ pbRegistrarEscolha(p, pcz, psel, o.desc, o.dias, o.tipo); }catch(e){ console.error('aprendizado', e); }
     return { doc: doc, venc: venc, ids: ids, lidaAntes: lidaAntes };
   });
@@ -549,7 +551,7 @@ function pbDesfazerPrazo(res){
   if (!res || !res.doc || !res.doc.id) return;
   pbApi('/api/db/agenda/' + encodeURIComponent(res.doc.id), 'DELETE').then(function(){
     agDocs = agDocs.filter(function(x){ return x.id !== res.doc.id; }); agDepois();
-    pbMarcar(res.ids, { lida: !!res.lidaAntes, semPrazo: false }); toast('Prazo desfeito.');
+    pbMarcar(res.ids, { lida: !!res.lidaAntes, semPrazo: false, tratada: false }); toast('Prazo desfeito.');
   }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
 }
 function pbNaoE(id){
@@ -625,11 +627,31 @@ function pbCopiarNumero(t){
 document.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-pbcp]') : null; if (!b) return; e.stopPropagation(); e.preventDefault(); pbCopiarNumero(b.getAttribute('data-pbcp')); }, true);
 var PB_ICO_LIDA = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 var PB_ICO_DESFAZ = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+/* o que os colegas fizeram com esta publicação (junta os membros de um grupo de publicações idênticas) */
+function pbDeColegas(p){
+  var trat = [], leu = [], vN = {}, vL = {};
+  pbMembros(p).forEach(function(m){
+    (m.tratadas || []).forEach(function(t){ if (!t.meu && !vN[t.nome + t.papel]){ vN[t.nome + t.papel] = 1; trat.push(t); } });
+    (m.leuPor || []).forEach(function(x){ if (!vL[x.nome]){ vL[x.nome] = 1; leu.push(x); } });
+  });
+  return { tratadas: trat, leuPor: leu };
+}
+function pbTratadaRecente(p){ return pbDeColegas(p).tratadas.some(function(t){ return t.em && (Date.now() - Date.parse(t.em)) < 7 * 864e5; }); }
+/* Agenda: audiência ou tarefa criada a partir de uma publicação também conta como tratar; apagar o item desfaz */
+function pbTratarDeAgenda(pubId, tipo){ var p = pbPub(pubId); if (p) pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: true, como: tipo === 'audiencia' ? 'audiencia' : 'tarefa' }); }
+function pbDestratarDeAgenda(pubId){
+  var p = pbPub(pubId); if (!p) return;
+  if (agDocs.some(function(x){ return x.pubId === pubId || x.audPubId === pubId; })) return;   // ainda há prazo, audiência ou tarefa ligados a ela
+  pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: false });
+}
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
   tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">' + ico('check', 12) + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
   if (!v){ var prov = cliProvaveis(pbDestinatarios(p)); if (prov.length) tags += '<span class="pb-tg ok">provável cliente: ' + escapeHtml(prov.slice(0, 2).map(function(c){ return c.nome; }).join(', ')) + '</span>'; }
+  { var dc = pbDeColegas(p);
+    dc.tratadas.forEach(function(t){ tags += '<span class="pb-tg ' + (t.papel === 'estagiario' ? 'nv' : 'ok') + '">' + ico(t.papel === 'estagiario' ? 'user-round' : 'check', 12) + (t.papel === 'estagiario' ? 'preparada por ' : 'tratada por ') + escapeHtml(t.nome) + '</span>'; });
+    if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; }); }
   if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
   else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">' + ico('sparkles', 12) + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
   else if (p.sug && !semPz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
@@ -656,9 +678,14 @@ function pbDestHtml(p){
   return '<div class="saldo-data" style="margin-bottom:6px">Para: ' + escapeHtml(ns.slice(0, 5).join(', ')) + (ns.length > 5 ? ' e mais ' + (ns.length - 5) : '') + '</div>';
 }
 function pbMarcar(ids, campos){
-  ids.forEach(function(id){ var p = pbPub(id); if (p){ if (typeof campos.lida === 'boolean') p.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') p.semPrazo = campos.semPrazo; } });
+  var eu = (window.__horusEu && window.__horusEu.nome) || '';
+  ids.forEach(function(id){ var p = pbPub(id); if (p){
+    if (typeof campos.lida === 'boolean') p.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') p.semPrazo = campos.semPrazo;
+    if (campos.tratada === true){ p.tratadas = (p.tratadas || []).filter(function(t){ return !t.meu; }).concat([{ nome: String(eu).split(' ')[0], papel: ppPapel(), em: new Date().toISOString(), como: campos.como || 'prazo', meu: true }]); p.lida = true; }
+    else if (campos.tratada === false) p.tratadas = (p.tratadas || []).filter(function(t){ return !t.meu; });
+  } });
   pbAtualizarBadge(); if (activeTab === 'publicacoes') pbRender();
-  var corpo = { ids: ids }; if (typeof campos.lida === 'boolean') corpo.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') corpo.semPrazo = campos.semPrazo;
+  var corpo = { ids: ids }; if (typeof campos.lida === 'boolean') corpo.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') corpo.semPrazo = campos.semPrazo; if (typeof campos.tratada === 'boolean'){ corpo.tratada = campos.tratada; if (campos.como) corpo.como = campos.como; }
   return pbApi('/api/djen/marcar', 'POST', corpo).catch(function(e){ toast('Não consegui salvar: ' + e.message); });
 }
 function pbIrVinculo(id){ var p = pbPub(id), v = p && pbVinculo(p.processo); if (v) prAbrir(v.id); }

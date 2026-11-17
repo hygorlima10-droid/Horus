@@ -330,24 +330,44 @@ async function djenTeste(request) {
   return json({ ok: true, executado_em: new Date().toISOString(), oab: oab + '/' + uf, tres_dias_tam5: await medir(base(3)), tres_dias_tam100: await medir(grande), trinta_dias: await medir(base(30)), detalhe_de_uma_tentativa: await cru(), servidor_consulta_de: await ondeRoda() });
 }
 /* ---------- quem vê quais publicações ----------
-   Cada pessoa vê as publicações das próprias OABs (o proprietário também, com a opção ?escopo=meus; sem ela, vê todas); o estagiário vê todas
-   (se a permissão estiver ligada). O "lida" de quem não é proprietário é guardado por pessoa (lidaPor), para uma publicação de dois advogados
-   não sumir da lista de um quando o outro lê. */
+   Cada pessoa vê as publicações das próprias OABs e as dos processos em que está cadastrada (o proprietário também, com a opção ?escopo=meus;
+   sem ela, vê todas); o estagiário vê todas (se a permissão estiver ligada).
+   Leitura e "não é prazo" são de cada pessoa (lidaPor / semPrazoPor); só o "tratar" é compartilhado: quem cria prazo, audiência ou tarefa a
+   partir da publicação deixa uma marca em `tratadas` ({ uid, nome, papel, em, como }).
+   - tratada por advogado ou proprietário: vira lida, sozinha, para os outros advogados, para o proprietário e para os estagiários;
+   - tratada por estagiário: vira lida só para os outros estagiários; para advogados e proprietário continua não lida ("preparada por…");
+   - só marcar como lida nunca some para os outros: eles continuam vendo "fulano leu, sem prazo" e decidem se criam prazo. */
 const chavesDaPub = (d, porId) => {
   const s = new Set();
   for (const id of d.oabs || []) { const k = porId.get(id); if (k) s.add(k); }
   for (const a of d.advs || []) { const [n, uf] = String(a && a.o || '').split('/'), k = chaveOab(n, uf); if (k.length > 3) s.add(k); }
   return s;
 };
+const digitosPub = (x) => String(x == null ? '' : x).replace(/\D/g, '');
+const primeiroNome = (n) => String(n || '').trim().split(/\s+/)[0] || '';
+const papelDe = (auth) => (ehDono(auth) ? 'proprietario' : normalizarUsuario(auth && auth.usuario).papel);
+const uidDe = (auth) => (auth && auth.usuario && auth.usuario.id) || 'dono';
+const nomeDe = (auth) => (auth && auth.usuario && auth.usuario.nome) || 'Proprietário';
+/* a publicação, do ponto de vista de uma pessoa (uid + papel): leitura efetiva, "não é prazo" e quem mexeu */
+export function estadoDaPessoa(d, uid, papel) {
+  const lp = d.lidaPor || {}, trat = Array.isArray(d.tratadas) ? d.tratadas : [];
+  const autoPara = papel === 'estagiario' ? trat.length > 0 : trat.some((t) => t.papel !== 'estagiario');
+  const explicita = Object.prototype.hasOwnProperty.call(lp, uid) ? !!lp[uid] : (papel === 'proprietario' && d.lida === true ? true : undefined);
+  const lida = explicita !== undefined ? explicita : autoPara;
+  const sp = d.semPrazoPor || {}, semPrazo = Object.prototype.hasOwnProperty.call(sp, uid) ? !!sp[uid] : !!d.semPrazo;   // "não é prazo" antigo (de todos) continua valendo até a pessoa decidir
+  const nomes = d.lidaNomes || {}, tratadores = new Set(trat.map((t) => t.uid));
+  const leuPor = Object.keys(lp).filter((k) => k !== uid && lp[k] === true && !tratadores.has(k)).map((k) => ({ nome: primeiroNome(nomes[k]), semPrazo: sp[k] === true })).filter((x) => x.nome).slice(0, 4);
+  return { lida, semPrazo, lidaAuto: lida && explicita === undefined, tratadas: trat.map((t) => ({ nome: primeiroNome(t.nome), papel: t.papel, em: t.em, como: t.como, meu: t.uid === uid })), leuPor };
+}
 async function visaoDePubs(env, auth, cfg, escopo) {
-  const dono = ehDono(auth), u = normalizarUsuario(auth && auth.usuario), porId = new Map(cfg.oabs.map((o) => [o.id, chaveOab(o.numero, o.uf)]));
+  const dono = ehDono(auth), u = normalizarUsuario(auth && auth.usuario), porId = new Map(cfg.oabs.map((o) => [o.id, chaveOab(o.numero, o.uf)])), papel = papelDe(auth), uid = uidDe(auth);
   let todas = dono || u.papel === 'estagiario', meus = new Set(u.oabs);
   if (dono && escopo === 'meus') { todas = false; if (!meus.size) for (const o of cfg.oabs) if (o.principal) meus.add(chaveOab(o.numero, o.uf)); }   // proprietário sem OAB indicada: a principal
-  const pessoal = !dono, uid = u.id;
+  const doProcesso = !todas && papel === 'advogado' ? (await escopoDoAdvogado(env, auth)).processos : new Set();   // processos em que o advogado está cadastrado (Iniciais, Acordos, Alvarás, Processos)
   return {
-    todas, meus, pessoal, uid, porId,
-    ve: (d) => todas || [...chavesDaPub(d, porId)].some((k) => meus.has(k)),
-    como: (d) => (pessoal ? { ...d, lida: !!(d.lidaPor && d.lidaPor[uid]) } : d),
+    todas, meus, uid, papel, porId,
+    ve: (d) => todas || [...chavesDaPub(d, porId)].some((k) => meus.has(k)) || doProcesso.has(digitosPub(d.processo || d.numero)),
+    como: (d) => { const e = estadoDaPessoa(d, uid, papel), { lidaPor, lidaNomes, semPrazoPor, tratadas, ...resto } = d; return { ...resto, lida: e.lida, semPrazo: e.semPrazo, lidaAuto: e.lidaAuto, tratadas: e.tratadas, leuPor: e.leuPor }; },
   };
 }
 export async function djenRotas(request, env, partes, auth) {
@@ -355,15 +375,16 @@ export async function djenRotas(request, env, partes, auth) {
   const acao = partes[1], m = request.method, u = new URL(request.url);
   if (acao === 'teste' && m === 'GET') return djenTeste(request);
   if (acao === 'estado' && m === 'GET') {
-    const cfg = await lerCfg(env);
-    if (!ehDono(auth)) {   // advogado/estagiário: contagens só do que a pessoa vê; advogado só vê as próprias OABs na lista
-      const v = await visaoDePubs(env, auth, cfg, ''), { results } = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ?').bind(COL_PUB).all();
-      const vis = results.map((r) => JSON.parse(r.dados)).filter(v.ve), meus = v.todas ? cfg.oabs : cfg.oabs.filter((o) => v.meus.has(chaveOab(o.numero, o.uf)));
-      return json({ oabs: meus.map((o) => ({ id: o.id, nome: o.nome, numero: o.numero, uf: o.uf, ativo: o.ativo, escopo: o.escopo, avisar: false, principal: false })), ultimaLeitura: cfg.ultimaLeitura || null, total: vis.length, naoLidas: vis.filter((d) => !(d.lidaPor && d.lidaPor[v.uid])).length, aAvisar: 0, hora: '10:00', importarAuto: !(env && env.IMPORTAR_AUTO === '0') });
+    const cfg = await lerCfg(env), dono = ehDono(auth);
+    const v = await visaoDePubs(env, auth, cfg, ''), { results } = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ?').bind(COL_PUB).all();
+    const vis = results.map((r) => JSON.parse(r.dados)).filter(v.ve);
+    const naoLidas = vis.filter((d) => !estadoDaPessoa(d, v.uid, v.papel).lida).length;
+    if (!dono) {   // advogado/estagiário: contagens só do que a pessoa vê; advogado só vê as próprias OABs na lista
+      const meus = v.todas ? cfg.oabs : cfg.oabs.filter((o) => v.meus.has(chaveOab(o.numero, o.uf)));
+      return json({ oabs: meus.map((o) => ({ id: o.id, nome: o.nome, numero: o.numero, uf: o.uf, ativo: o.ativo, escopo: o.escopo, avisar: false, principal: false })), ultimaLeitura: cfg.ultimaLeitura || null, total: vis.length, naoLidas, aAvisar: 0, hora: '10:00', importarAuto: !(env && env.IMPORTAR_AUTO === '0') });
     }
-    const t = await env.DB.prepare("SELECT COUNT(*) AS n, SUM(CASE WHEN json_extract(dados, '$.lida') = 0 THEN 1 ELSE 0 END) AS nl FROM docs WHERE colecao = ?").bind(COL_PUB).first();
     const av = await env.DB.prepare("SELECT COUNT(*) AS n FROM docs WHERE colecao = ? AND json_extract(dados, '$.notificada') = 0").bind(COL_PUB).first();
-    return json({ oabs: cfg.oabs, ultimaLeitura: cfg.ultimaLeitura || null, total: t.n || 0, naoLidas: t.nl || 0, aAvisar: av.n || 0, hora: '10:00', importarAuto: !(env && env.IMPORTAR_AUTO === '0') });
+    return json({ oabs: cfg.oabs, ultimaLeitura: cfg.ultimaLeitura || null, total: vis.length, naoLidas, aAvisar: av.n || 0, hora: '10:00', importarAuto: !(env && env.IMPORTAR_AUTO === '0') });
   }
   if (acao === 'importar' && m === 'POST') {
     /* uma página das publicações de uma OAB num período, já agrupada por processo; o app pede página por página e junta (cada pedido é uma consulta ao DJEN) */
@@ -383,7 +404,6 @@ export async function djenRotas(request, env, partes, auth) {
     const dias = Math.min(Math.max(parseInt(u.searchParams.get('dias') || '60', 10) || 60, 1), MAX_DIAS_LISTA);
     const escopo = u.searchParams.get('escopo') === 'meus' ? 'meus' : '';
     const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.data') >= ? ORDER BY json_extract(dados, '$.data') DESC, id DESC LIMIT " + (ehDono(auth) && !escopo ? 1500 : 8000)).bind(COL_PUB, somarDiasISO(hojeBR(), -dias)).all();
-    if (ehDono(auth) && !escopo) return json({ pubs: results.map((r) => JSON.parse(r.dados)) });
     const v = await visaoDePubs(env, auth, await lerCfg(env), escopo);
     return json({ pubs: results.map((r) => JSON.parse(r.dados)).filter(v.ve).slice(0, 1500).map(v.como) });
   }
@@ -412,13 +432,22 @@ export async function djenRotas(request, env, partes, auth) {
   if (acao === 'marcar' && m === 'POST') {
     const b = await request.json().catch(() => null);
     if (!b || !Array.isArray(b.ids) || b.ids.length > 300) return erro(400, 'invalid', 'Pedido inválido.');
-    const ids = b.ids.map(String).filter((id) => /^\d{1,20}$/.test(id)), cmds = [], dono = ehDono(auth), v = dono ? null : await visaoDePubs(env, auth, await lerCfg(env), ''), podeSemPrazo = dono || normalizarUsuario(auth.usuario).papel === 'advogado';
+    const ids = b.ids.map(String).filter((id) => /^\d{1,20}$/.test(id)), cmds = [], dono = ehDono(auth), v = await visaoDePubs(env, auth, await lerCfg(env), ''), podeSemPrazo = dono || v.papel === 'advogado';
+    const quem = { uid: v.uid, nome: nomeDe(auth), papel: v.papel }, agora = new Date().toISOString();
     for (const lote of em100(ids)) {
       const { results } = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ? AND id IN (' + lote.map(() => '?').join(',') + ')').bind(COL_PUB, ...lote).all();
       for (const r of results) {
-        const d = JSON.parse(r.dados); if (v && !v.ve(d)) continue;   // só o que a pessoa vê
-        if (typeof b.lida === 'boolean') { if (dono) d.lida = b.lida; else { d.lidaPor = { ...(d.lidaPor || {}), [v.uid]: b.lida }; } }   // quem não é proprietário marca só para si
-        if (typeof b.semPrazo === 'boolean' && podeSemPrazo) d.semPrazo = b.semPrazo;
+        const d = JSON.parse(r.dados); if (!v.ve(d)) continue;   // só o que a pessoa vê
+        const marcarLida = (valor) => { d.lidaPor = { ...(d.lidaPor || {}), [quem.uid]: valor }; d.lidaNomes = { ...(d.lidaNomes || {}), [quem.uid]: quem.nome }; if (v.papel === 'proprietario') d.lida = valor; };   // a leitura é de cada pessoa
+        if (typeof b.lida === 'boolean') marcarLida(b.lida);
+        else if (b.lida === null && d.lidaPor) { const { [quem.uid]: _x, ...resto } = d.lidaPor; d.lidaPor = resto; if (v.papel === 'proprietario') d.lida = false; }   // volta ao automático (lida só se alguém tratou)
+        if (typeof b.semPrazo === 'boolean' && podeSemPrazo) d.semPrazoPor = { ...(d.semPrazoPor || {}), [quem.uid]: b.semPrazo };
+        else if (b.semPrazo === null && d.semPrazoPor) { const { [quem.uid]: _y, ...resto } = d.semPrazoPor; d.semPrazoPor = resto; }   // "não é prazo" vale só para quem marcou
+        if (b.tratada === true) {   // criou prazo, audiência ou tarefa a partir da publicação: os colegas veem como lida (regra no topo deste bloco)
+          const como = ['prazo', 'audiencia', 'tarefa'].includes(b.como) ? b.como : 'prazo';
+          d.tratadas = [...(Array.isArray(d.tratadas) ? d.tratadas : []).filter((t) => t.uid !== quem.uid), { ...quem, em: agora, como }].slice(-6);
+          marcarLida(true);
+        } else if (b.tratada === false && Array.isArray(d.tratadas)) d.tratadas = d.tratadas.filter((t) => t.uid !== quem.uid);
         cmds.push(gravar(env, COL_PUB, r.id, d));
       }
     }

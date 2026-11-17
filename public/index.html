@@ -1865,6 +1865,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4862,6 +4863,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10214,6 +10217,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10353,6 +10358,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10360,7 +10367,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', pj:'Hygor (PJ)', pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10374,6 +10381,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -18526,6 +18535,7 @@ function pbListaFiltrada(){
   var vis = pbGrupos(pbVisiveis().filter(pbPassaFiltros));
   if (pbS.filtro === 'naolidas') vis = vis.filter(function(p){ return !pbLidaG(p); });
   else if (pbS.filtro === 'meus') vis = vis.filter(function(p){ return !!pbVinculo(p.processo); });
+  else if (pbS.filtro === 'tratadas') vis = vis.filter(pbTratadaRecente);
   return vis;
 }
 function pbRender(){
@@ -18540,7 +18550,8 @@ function pbRender(){
   /* sub-abas padrão (Fase 2): Resumo, Não lidas, Meus processos e Todas; a última usada fica lembrada */
   if (!pbS.mdOk){ pbS.mdOk = 1; var s0 = mdInicial('publicacoes', ['naolidas', 'meus', 'todas']); if (s0 === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = s0; } }
   var res = pbS.sub === 'resumo';
-  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos'], ['todas', 'Todas']], res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
+  var nTrat = vis.filter(pbTratadaRecente).length;
+  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos']].concat(nTrat || pbS.filtro === 'tratadas' ? [['tratadas', 'Tratadas por colegas', nTrat || '']] : []).concat([['todas', 'Todas']]), res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
   var n = pbFiltrosAtivos();
   if (res){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
@@ -18651,7 +18662,7 @@ function pbGravarPrazo(p, o){
   var lidaAntes = pbLidaG(p), ids = pbMembros(p).map(function(x){ return x.id; });
   return agCriar({ tipo: 'prazo', titulo: o.desc, processo: p.numero || p.processo, cliente: pbNomeParte(p, v), data: venc, hora: '', trabalhar: trab, situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: o.resp, pubId: p.id, calculo: o.manual ? undefined : r.op, dias: o.dias * mult, diasBase: o.dias, dobro: mult > 1 ? o.dobro : '', contagem: o.tipo, disp: p.data, inicio: r.ini, manual: !!o.manual, tribunal: p.tribunal || '',
     peca: psel ? psel.peca : '', pecaId: psel ? psel.rid : '', pecaBase: psel ? psel.base : '', pecaOrigem: psel && psel.peca === o.desc ? (psel.rid === 'catalogo' ? 'escolhida' : 'sugerida') : (psel ? 'ajustada' : 'manual'), natureza: pcz ? pcz.natureza : '', criadoEm: new Date().toISOString() }).then(function(doc){
-    pbMarcar(ids, { lida: true, semPrazo: false });
+    pbMarcar(ids, { lida: true, semPrazo: false, tratada: true, como: 'prazo' });   /* criou o prazo: os colegas veem como lida (preparada, se for estagiária) */
     try{ pbRegistrarEscolha(p, pcz, psel, o.desc, o.dias, o.tipo); }catch(e){ console.error('aprendizado', e); }
     return { doc: doc, venc: venc, ids: ids, lidaAntes: lidaAntes };
   });
@@ -18660,7 +18671,7 @@ function pbDesfazerPrazo(res){
   if (!res || !res.doc || !res.doc.id) return;
   pbApi('/api/db/agenda/' + encodeURIComponent(res.doc.id), 'DELETE').then(function(){
     agDocs = agDocs.filter(function(x){ return x.id !== res.doc.id; }); agDepois();
-    pbMarcar(res.ids, { lida: !!res.lidaAntes, semPrazo: false }); toast('Prazo desfeito.');
+    pbMarcar(res.ids, { lida: !!res.lidaAntes, semPrazo: false, tratada: false }); toast('Prazo desfeito.');
   }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
 }
 function pbNaoE(id){
@@ -18736,11 +18747,31 @@ function pbCopiarNumero(t){
 document.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-pbcp]') : null; if (!b) return; e.stopPropagation(); e.preventDefault(); pbCopiarNumero(b.getAttribute('data-pbcp')); }, true);
 var PB_ICO_LIDA = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 var PB_ICO_DESFAZ = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+/* o que os colegas fizeram com esta publicação (junta os membros de um grupo de publicações idênticas) */
+function pbDeColegas(p){
+  var trat = [], leu = [], vN = {}, vL = {};
+  pbMembros(p).forEach(function(m){
+    (m.tratadas || []).forEach(function(t){ if (!t.meu && !vN[t.nome + t.papel]){ vN[t.nome + t.papel] = 1; trat.push(t); } });
+    (m.leuPor || []).forEach(function(x){ if (!vL[x.nome]){ vL[x.nome] = 1; leu.push(x); } });
+  });
+  return { tratadas: trat, leuPor: leu };
+}
+function pbTratadaRecente(p){ return pbDeColegas(p).tratadas.some(function(t){ return t.em && (Date.now() - Date.parse(t.em)) < 7 * 864e5; }); }
+/* Agenda: audiência ou tarefa criada a partir de uma publicação também conta como tratar; apagar o item desfaz */
+function pbTratarDeAgenda(pubId, tipo){ var p = pbPub(pubId); if (p) pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: true, como: tipo === 'audiencia' ? 'audiencia' : 'tarefa' }); }
+function pbDestratarDeAgenda(pubId){
+  var p = pbPub(pubId); if (!p) return;
+  if (agDocs.some(function(x){ return x.pubId === pubId || x.audPubId === pubId; })) return;   // ainda há prazo, audiência ou tarefa ligados a ela
+  pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: false });
+}
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
   tags += v ? '<button type="button" class="pb-tg ok" data-pb="ir" data-id="' + escapeHtml(p.id) + '">' + ico('check', 12) + escapeHtml(v.cadastro) + (v.arquivado ? ' (arquivado)' : '') + '</button>' : '<span class="pb-tg nv">Processo novo</span>';
   if (!v){ var prov = cliProvaveis(pbDestinatarios(p)); if (prov.length) tags += '<span class="pb-tg ok">provável cliente: ' + escapeHtml(prov.slice(0, 2).map(function(c){ return c.nome; }).join(', ')) + '</span>'; }
+  { var dc = pbDeColegas(p);
+    dc.tratadas.forEach(function(t){ tags += '<span class="pb-tg ' + (t.papel === 'estagiario' ? 'nv' : 'ok') + '">' + ico(t.papel === 'estagiario' ? 'user-round' : 'check', 12) + (t.papel === 'estagiario' ? 'preparada por ' : 'tratada por ') + escapeHtml(t.nome) + '</span>'; });
+    if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; }); }
   if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
   else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">' + ico('sparkles', 12) + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
   else if (p.sug && !semPz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';
@@ -18767,9 +18798,14 @@ function pbDestHtml(p){
   return '<div class="saldo-data" style="margin-bottom:6px">Para: ' + escapeHtml(ns.slice(0, 5).join(', ')) + (ns.length > 5 ? ' e mais ' + (ns.length - 5) : '') + '</div>';
 }
 function pbMarcar(ids, campos){
-  ids.forEach(function(id){ var p = pbPub(id); if (p){ if (typeof campos.lida === 'boolean') p.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') p.semPrazo = campos.semPrazo; } });
+  var eu = (window.__horusEu && window.__horusEu.nome) || '';
+  ids.forEach(function(id){ var p = pbPub(id); if (p){
+    if (typeof campos.lida === 'boolean') p.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') p.semPrazo = campos.semPrazo;
+    if (campos.tratada === true){ p.tratadas = (p.tratadas || []).filter(function(t){ return !t.meu; }).concat([{ nome: String(eu).split(' ')[0], papel: ppPapel(), em: new Date().toISOString(), como: campos.como || 'prazo', meu: true }]); p.lida = true; }
+    else if (campos.tratada === false) p.tratadas = (p.tratadas || []).filter(function(t){ return !t.meu; });
+  } });
   pbAtualizarBadge(); if (activeTab === 'publicacoes') pbRender();
-  var corpo = { ids: ids }; if (typeof campos.lida === 'boolean') corpo.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') corpo.semPrazo = campos.semPrazo;
+  var corpo = { ids: ids }; if (typeof campos.lida === 'boolean') corpo.lida = campos.lida; if (typeof campos.semPrazo === 'boolean') corpo.semPrazo = campos.semPrazo; if (typeof campos.tratada === 'boolean'){ corpo.tratada = campos.tratada; if (campos.como) corpo.como = campos.como; }
   return pbApi('/api/djen/marcar', 'POST', corpo).catch(function(e){ toast('Não consegui salvar: ' + e.message); });
 }
 function pbIrVinculo(id){ var p = pbPub(id), v = p && pbVinculo(p.processo); if (v) prAbrir(v.id); }
@@ -19806,7 +19842,7 @@ function agSalvarEd(){
     }
   }
   var p = i ? pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ doc.id = i.id; agDocs = agDocs.map(function(x){ return x.id === i.id ? doc : x; }); }) : agCriar(doc);
-  p.then(function(){ return agSincInscricao(doc); }).then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  p.then(function(){ return agSincInscricao(doc); }).then(function(){ if (!i && doc.audPubId && typeof pbTratarDeAgenda === 'function'){ try{ pbTratarDeAgenda(doc.audPubId, doc.tipo); }catch(e){ console.error('publicação tratada', e); } } qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 /* sessão de julgamento com sustentação oral: o prazo para pedir a inscrição vira uma tarefa na Agenda (avisos 2 dias, 1 dia e no dia) */
 function agSincInscricao(doc){
@@ -19829,7 +19865,7 @@ function agExcluirEd(b){
   var i = agItens().filter(function(x){ return x.key === agEditKey; })[0]; if (!i) return;
   if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para excluir'; return; }
   var filhos = agDocs.filter(function(x){ return x.sessaoDe === i.id; }).map(function(x){ return x.id; });
-  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ return Promise.all(filhos.map(function(fid){ return pbApi('/api/db/agenda/' + encodeURIComponent(fid), 'DELETE'); })); }).then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id && x.sessaoDe !== i.id; }); qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
+  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ return Promise.all(filhos.map(function(fid){ return pbApi('/api/db/agenda/' + encodeURIComponent(fid), 'DELETE'); })); }).then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id && x.sessaoDe !== i.id; }); var pubDoItem = i.doc && (i.doc.pubId || i.doc.audPubId); if (pubDoItem && typeof pbDestratarDeAgenda === 'function'){ try{ pbDestratarDeAgenda(pubDoItem); }catch(e){ console.error('publicação tratada', e); } } qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
 }
 
 /* ---------- carga por pessoa (Resumo): todos veem, só contagens ---------- */
