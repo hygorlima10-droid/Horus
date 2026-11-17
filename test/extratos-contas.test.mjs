@@ -56,7 +56,7 @@ check(/^Exata/.test(n1) && /combina com Maria Souza/.test(n1), 'PIX da Maria Sou
 check(/^Exata/.test(n2) && /regra que você ensinou: "Aluguel do escritório"/.test(n2), 'PIX para a imobiliária (regra que você ensinou → despesa Aluguel do escritório): Exata → ' + n2);
 check(/^Exata/.test(n3) && /regra que você ensinou: José R Silva/.test(n3), 'TED do José R Silva (regra → cobrança do cliente): Exata → ' + n3);
 check(/^Parecida/.test(n5) && /confirme/.test(n5), 'compra no cartão Uniclass (despesa de nome parecido, valor diferente): Parecida (confirme) → ' + n5);
-check(/^Parecida/.test(n6) && /categoria sugerida/.test(n6) && /Mercado/.test(n6), 'supermercado no PF: Parecida (categoria sugerida pelo texto: Mercado) → ' + n6);
+check(/^Parecida/.test(n6) && /categoria sugerida/.test(n6) && /Supermercado/.test(n6), 'supermercado no PF: Parecida (categoria sugerida pelo texto: Supermercado) → ' + n6);
 check(/^Sem correspondência/.test(n4) && /decidir/.test(n4), 'PIX de quem não aparece em nada: Sem correspondência (decidir) → ' + n4);
 check(/Exata 3/.test(t) && /Parecida 2/.test(t) && /Sem correspondência 1/.test(t) && /O app só sugere/.test(t), 'resumo dos 3 níveis no alto da conferência (3 exatas, 2 parecidas, 1 sem correspondência) e a frase "O app só sugere"');
 check(await page.evaluate(() => !!document.querySelector('#extCorpo .ext-arq-top .exc-logo img')), 'a conferência mostra o logo do banco no cabeçalho de cada extrato');
