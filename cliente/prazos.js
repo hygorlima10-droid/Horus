@@ -196,7 +196,7 @@ var PZ_DATA_ROT = { dje: 'Disponibilização no DJe', ciencia: 'Data da ciência
 function pzRegimeSalvo(){ try{ var r = localStorage.getItem('horus.pzRegime'); return PZ_REGIMES[r] ? r : 'cpc'; }catch(e){ return 'cpc'; } }
 function pzMontar(){
   if (qs('overlayPz')) return;
-  var d = document.createElement('div'); d.className = 'overlay'; d.id = 'overlayPz';
+  var d = document.createElement('div'); d.className = 'overlay'; d.id = 'overlayPz'; d.style.zIndex = '210';   /* a calculadora abre POR CIMA da ficha que a chamou (Agenda, Delegadas…); com o z-index padrão ela ficava atrás quando a outra ficha era mais nova */
   d.innerHTML = '<div class="modal"><div class="modal-head"><h2>Calculadora de prazos</h2><button class="icon-btn" id="pzX" type="button" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="modal-body" id="pzC"></div></div>';
   document.body.appendChild(d);
   d.addEventListener('click', function(e){

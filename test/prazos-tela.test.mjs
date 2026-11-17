@@ -65,6 +65,7 @@ await page.evaluate(() => document.querySelector('[data-ag="vista"][data-v="list
 await page.evaluate(() => Array.from(document.querySelectorAll('#agCorpo .agc')).find(e => /Prazo manual para calcular/.test(e.innerText)).querySelector('[data-ag="abrir"]').click()); await page.waitForTimeout(600);
 check(await page.evaluate(() => document.getElementById('age_calc_box').style.display !== 'none'), 'no editor do prazo há "Calcular a partir da intimação"');
 await page.evaluate(() => document.querySelector('#overlayAg [data-age="calc"]').click()); await page.waitForTimeout(500);
+check(await page.evaluate(() => { const m = document.querySelector('#overlayPz .modal').getBoundingClientRect(), e = document.elementFromPoint(m.left + m.width / 2, m.top + 60); return !!e && !!e.closest('#overlayPz'); }), 'a calculadora abre POR CIMA da ficha do editor (o clique no meio dela cai na calculadora, não na ficha de trás)');
 await set('pz_regime', 'cpc', 'change'); await set('pz_data', '2026-11-12'); await set('pz_dias', '10');
 check(await page.evaluate(() => /Usar esta data/.test(document.getElementById('pzRes').innerText) && !/Criar prazo na Agenda/.test(document.getElementById('pzRes').innerText)), 'vindo do editor, o botão é "Usar esta data"');
 await page.evaluate(() => document.querySelector('[data-pz="usar"]').click()); await page.waitForTimeout(500);
