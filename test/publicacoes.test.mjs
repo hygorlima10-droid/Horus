@@ -102,6 +102,18 @@ check(!/Fulano/i.test(await t('#pbWrap')), 'publicação do Murilo sem processo 
 const cardDe = async id => page.evaluate(id => { const b = document.querySelector('.pb-b[data-id="' + id + '"]'); return b ? b.closest('.pb-card').innerText : ''; }, id);
 const ta = await cardDe('900001'), tb = await cardDe('900002'), tc = await cardDe('900003');
 check(/inicial cadastrada/i.test(ta) && /via OAB Hygor/.test(ta) && /via OAB Murilo/.test(ta) && /Maquele Viana Pacheco/.test(ta), 'processo cadastrado mostra o cliente e as duas OABs de origem');
+// copiar o número do processo: cartão recolhido e ficha da publicação (36 px, no padrão do tribunal, sem abrir a publicação)
+await page.evaluate(() => { window.__copiado = ''; Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copiado = t; return Promise.resolve(); } }, configurable: true }); });
+{ const cp = await page.evaluate(() => { const b = document.querySelector('.pb-card[data-id="900001"] .pb-proc .pb-cp'); const r = b ? b.getBoundingClientRect() : { width: 0, height: 0 }; return { tem: !!b, w: r.width, h: r.height }; });
+  check(cp.tem && cp.w >= 36 && cp.h >= 36, 'o cartão recolhido tem o ícone de copiar o número (36 px)');
+  await page.evaluate(() => document.querySelector('.pb-card[data-id="900001"] .pb-cp').click()); await page.waitForTimeout(300);
+  check(await page.evaluate(() => window.__copiado) === '5368644-67.2026.8.09.0107' && await page.evaluate(() => !document.getElementById('overlayPb') || !document.getElementById('overlayPb').classList.contains('show')), 'tocar no ícone copia o número no padrão do tribunal e não abre a publicação');
+  if (process.env.FOTOS) await page.locator('.pb-card[data-id="900001"]').screenshot({ path: process.env.FOTOS + '/pub-copiar-cartao.png' });
+  await page.evaluate(() => { window.__copiado = ''; document.querySelector('.pb-card[data-id="900001"]').click(); }); await page.waitForTimeout(500);
+  check(await page.evaluate(() => !!document.querySelector('#overlayPb .pb-cab .pb-cp')), 'a ficha da publicação também tem o ícone de copiar');
+  await page.evaluate(() => document.querySelector('#overlayPb .pb-cab .pb-cp').click()); await page.waitForTimeout(300);
+  check(await page.evaluate(() => window.__copiado) === '5368644-67.2026.8.09.0107', 'copiar dentro da ficha copia o mesmo número');
+  await page.evaluate(() => document.getElementById('overlayPb').classList.remove('show')); await page.waitForTimeout(200); }
 check(/processo novo/i.test(tb) && /(sugerido: 15 dias|.{3,60}15 dias)/.test(tb) && /Confirmar prazo · vence \d\d\/\d\d/.test(tb) && !/Cadastrar processo/.test(tb), 'processo não cadastrado: "processo novo", prazo sugerido e botão verde "Confirmar prazo · vence dd/mm" (o resto fica no ⋯)');
 { await page.click('[data-pb="cm"][data-id="900002"]'); const mn = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-cm .pb-cmi')).map(b => b.innerText.trim())); check(['Marcar como lida', 'Não é prazo', 'Cadastrar processo'].every(x => mn.includes(x)) && !mn.includes('Ver texto'), 'o ⋯ do cartão guarda: Marcar como lida, Não é prazo, Cadastrar processo (sem "Ver texto": o texto abre tocando no cartão) (' + mn.join(', ') + ')'); await page.click('[data-pb="cm"][data-id="900002"]'); }
 check(await page.evaluate(() => { const b = document.querySelector('[data-pb="rapido"]'); return !!b && /pb-verde/.test(b.className) && getComputedStyle(b).backgroundColor === getComputedStyle(document.documentElement).getPropertyValue('--success') || (!!b && /pb-verde/.test(b.className)); }), 'o botão de confirmar do cartão é verde (classe pb-verde), não preto');

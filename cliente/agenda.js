@@ -9,8 +9,9 @@ var agS = { vista: 'semana', quadro: 'urgencia', filtro: 'tudo', ref: '', mes: '
 try{ if (localStorage.getItem('horus.agendaEscopo') === 'escritorio') agS.escopo = 'escritorio'; }catch(e){}
 var AG_PADRAO = [5, 2, 1, 0];
 var AG_TIPOS = { prazo: 'Prazo', audiencia: 'Audiência', tarefa: 'Tarefa' };
-var AG_MODAL = { presencial: 'Presencial', online: 'Online', hibrida: 'Híbrida' };
-var AG_AUDS = ['Conciliação', 'Mediação', 'Instrução e julgamento', 'Justificação', 'Saneamento', 'Custódia', 'Admonitória', 'Outra'];
+var AG_MODAL = { presencial: 'Presencial', online: 'Online', hibrida: 'Híbrida', plenario: 'Plenário virtual (sem sessão ao vivo)' };
+var AG_SESSAO = 'Sessão de julgamento (sustentação oral)';
+var AG_AUDS = ['Conciliação', 'Mediação', 'Instrução e julgamento', 'Justificação', 'Saneamento', 'Custódia', 'Admonitória', AG_SESSAO, 'Outra'];
 var agEditPre = null, agEditCalc = null;   /* agEditCalc: parâmetros do cálculo de prazo usado no editor */
 var AG_SITUACAO = { afazer: 'A fazer', elaboracao: 'Em andamento', pronta: 'Peça pronta', feito: 'Concluído', cancelado: 'Cancelado' };
 var AG_DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], AG_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -418,6 +419,7 @@ function agCartao(i){
   if (/alta/i.test(d.prioridade || '')) tags += '<span class="pb-tg pz">Prioridade alta</span>';
   if (d.plan && d.plan.id){ tags += '<span class="pb-tg pl">' + ico('table', 12) + 'Planilha</span>'; if (d.delegadoPor) tags += '<span class="pb-tg">delegado por ' + escapeHtml(d.delegadoPor) + '</span>'; if (d.aguardando) tags += '<span class="pb-tg pz">aguardando cliente</span>'; if (d.plan.removida) tags += '<span class="pb-tg">removida da planilha</span>'; if (d.plan.conflito) tags += '<span class="pb-tg pz">atualizado pela planilha</span>'; if (d.respNome && !(Array.isArray(d.resp) && d.resp.some(function(k){ return String(k).indexOf('n:') !== 0; }))) tags += '<span class="pb-tg">' + escapeHtml(d.respNome) + ' (sem acesso)</span>'; }
   if (i.tipo === 'audiencia' && i.modalidade) tags += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
+  if (i.tipo === 'audiencia' && d.sessao && d.sessao.sustentar) tags += '<span class="pb-tg nv">Sustentação oral</span>';
   if (i.pubId) tags += '<span class="pb-tg nv">via publicação</span>';
   if (i.fonte === 'caso') tags += '<span class="pb-tg">da inicial</span>';
   if (i.concluido && !i.cancelado && i.tipo === 'prazo' && i.protocoladoEm) tags += '<span class="pb-tg ok">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</span>';
@@ -431,6 +433,7 @@ function agCartao(i){
   return ltEnvolver(i, '<div class="agc ' + cls + '" data-ag="det" data-k="' + k + '"><div style="min-width:0"><div class="agc-top"><span>' + escapeHtml(aberto ? 'Prazo' : agTipoLinha(i)) + '</span><span class="est est-' + c.c + '">' + escapeHtml(c.t) + '</span></div><div class="agc-t">' + escapeHtml(i.titulo) + '</div>' +
     (i.cliente ? '<div class="agc-s">' + escapeHtml(i.cliente) + '</div>' : '') +
     (i.tipo === 'audiencia' && i.local ? '<div class="agc-s">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') +
+    (i.tipo === 'audiencia' && d.sessao && (d.sessao.orgao || (d.sessao.sustentar && d.sessao.inscAte)) ? '<div class="agc-s">' + escapeHtml([d.sessao.orgao, d.sessao.sustentar && d.sessao.inscAte ? (d.sessao.inscFeita ? 'inscrição feita' : 'inscrição até ' + fmtData(d.sessao.inscAte).slice(0, 5) + (d.sessao.inscHora ? ' ' + d.sessao.inscHora : '')) : ''].filter(Boolean).join(' · ')) + '</div>' : '') +
     (i.processo ? '<div class="agc-n"><span>' + escapeHtml(i.processo) + '</span><button type="button" class="agc-cp" data-ag="copiar" data-n="' + escapeHtml(i.processo) + '" aria-label="Copiar o número do processo" title="Copiar o número">' + AGD_COPIA + '</button></div>' : '') +
     (aberto ? agDatasPrazo(i) : '') + '<div class="agc-tg">' + tags + '</div>' + agAcoesCartao(i) + '</div>' + ok + '</div>');
 }
@@ -443,7 +446,7 @@ function agMiniSub(i){
     if (i.situacao === 'pronta') p.push('<b class="agm-ok">peça pronta ' + ico('check', 13) + (i.prontaPor ? ' por ' + escapeHtml(String(i.prontaPor).split(' ')[0]) : '') + '</b>');
     else if (agTemTrab(i)) p.push('trabalhar até ' + (i.trabalhar < hoje ? '<b class="agm-at">' + escapeHtml(agAbrevDia(i.trabalhar)) + '</b>' : escapeHtml(agAbrevDia(i.trabalhar))));
     p.push(i.data === hoje ? 'prazo fatal hoje' : 'fatal ' + escapeHtml(agAbrevDia(i.data)));
-  } else if (i.tipo === 'audiencia'){ if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push(ico('map-pin', 13) + escapeHtml(i.local)); }
+  } else if (i.tipo === 'audiencia'){ var ss = (i.doc && i.doc.sessao) || null; if (ss && ss.orgao) p.push(escapeHtml(ss.orgao)); if (ss && ss.sustentar && ss.inscAte) p.push(ss.inscFeita ? 'inscrição feita ' + ico('check', 13) : 'inscrição até ' + escapeHtml(fmtData(ss.inscAte).slice(0, 5) + (ss.inscHora ? ' ' + ss.inscHora : ''))); if (i.modalidade) p.push(escapeHtml(AG_MODAL[i.modalidade] || i.modalidade).toLowerCase()); if (i.local) p.push(ico('map-pin', 13) + escapeHtml(i.local)); }
   else if (i.tipo === 'tarefa') p.push('tarefa');
   return p.join(' · ');
 }
@@ -670,7 +673,7 @@ function agMontarEd(){
     else if (a === 'excluir') agExcluirEd(b);
     else if (a === 'cancelar') qs('overlayAg').classList.remove('show');
   });
-  d.addEventListener('change', function(e){ if (e.target && e.target.id === 'age_sit') agAjustarCampos(); });
+  d.addEventListener('change', function(e){ if (e.target && (e.target.id === 'age_sit' || e.target.id === 'age_audtipo' || e.target.id === 'age_ses_sust')) agAjustarCampos(); });
   d.addEventListener('input', function(e){
     setTimeout(agDicasConflito, 0);
     if (e.target && (e.target.id === 'age_sit' || e.target.id === 'age_vis')) agAjustarCampos();
@@ -691,6 +694,9 @@ function agAjustarCampos(){
   var vis = qs('age_vis'), box = qs('age_vis_box'), er = qs('esResp_agenda');
   if (box){ box.style.display = t === 'tarefa' && !(agEditKey && agItens().filter(function(x){ return x.key === agEditKey; })[0].fonte === 'caso') ? '' : 'none'; if (er && !(agEditKey && agItens().filter(function(x){ return x.key === agEditKey; })[0].fonte === 'caso')) er.style.display = (t !== 'tarefa' || (vis && vis.value !== 'so_eu')) ? '' : 'none'; }
   qs('age_aud_box').style.display = t === 'audiencia' ? '' : 'none';
+  var sesOn = t === 'audiencia' && qs('age_audtipo') && qs('age_audtipo').value === AG_SESSAO;
+  if (qs('age_ses_box')){ qs('age_ses_box').style.display = sesOn ? '' : 'none'; qs('age_ses_insc').style.display = (sesOn && qs('age_ses_sust').checked) ? '' : 'none'; }
+  if (sesOn) qs('age_data_l').textContent = 'Data da sessão';
   qs('age_prot_box').style.display = (t === 'prazo' && qs('age_sit').value === 'feito') ? '' : 'none';
   qs('age_data').closest('.pb-dois').style.gridTemplateColumns = t === 'audiencia' ? '1fr 1fr' : '1fr';
   try{ rpEdAtualizar(); }catch(e){}
@@ -703,9 +709,17 @@ function agAbrir(key, pre){
   var V = function(k){ return i ? (i[k] || '') : (P ? (P[k] || '') : ''); };
   agEditKey = key || null; agEditTipo = i ? i.tipo : (P && P.tipo ? P.tipo : 'prazo');
   var caso = i && i.fonte === 'caso', sit = i ? i.situacao : 'afazer';
+  var SES = (i && i.doc && i.doc.sessao) || (P && P.sessao) || {};
   var h = '<div class="segmented" id="age_seg"' + (i ? ' style="display:none"' : '') + '>' + ['prazo', 'audiencia', 'tarefa'].map(function(t){ return '<button type="button" class="seg-btn' + (agEditTipo === t ? ' active' : '') + '" data-age="tipo" data-v="' + t + '">' + AG_TIPOS[t] + '</button>'; }).join('') + '</div>';
   if (caso) h += '<div class="parcela-sum">Este prazo é da inicial <b>' + escapeHtml(i.cliente) + '</b>. Aqui você muda a data e a situação; o texto se edita na própria ação.</div>';
-  h += fSec('O quê', '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" id="age_tit_l" for="age_tit">Peça</label><input type="text" id="age_tit" maxlength="90" value="' + escapeHtml(V('titulo')) + '" placeholder="Ex.: Contestação"></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_proc">Processo (opcional)</label><input type="text" id="age_proc" maxlength="40" value="' + escapeHtml(V('processo')) + '" placeholder="0000000-00.0000.0.00.0000"><div class="saldo-data" id="age_dica"></div><div id="age_sug"></div></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_cli">Cliente / partes</label><input type="text" id="age_cli" maxlength="90" value="' + escapeHtml(V('cliente')) + '"></div>' + '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' + '<div class="field"><label class="field-label" for="age_local">Local</label><input type="text" id="age_local" maxlength="140" value="' + escapeHtml(V('local')) + '" placeholder="Ex.: Fórum de Morrinhos, sala 2"></div>' + '<div class="field"><label class="field-label" for="age_link">Link da sala virtual (opcional)</label><input type="text" inputmode="url" autocapitalize="off" id="age_link" maxlength="300" value="' + escapeHtml(V('link')) + '" placeholder="https://…"></div></div>') +
+  h += fSec('O quê', '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" id="age_tit_l" for="age_tit">Peça</label><input type="text" id="age_tit" maxlength="90" value="' + escapeHtml(V('titulo')) + '" placeholder="Ex.: Contestação"></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_proc">Processo (opcional)</label><input type="text" id="age_proc" maxlength="40" value="' + escapeHtml(V('processo')) + '" placeholder="0000000-00.0000.0.00.0000"><div class="saldo-data" id="age_dica"></div><div id="age_sug"></div></div>' + '<div class="field"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_cli">Cliente / partes</label><input type="text" id="age_cli" maxlength="90" value="' + escapeHtml(V('cliente')) + '"></div>' + '<div id="age_aud_box"><div class="pb-dois"><div class="field"><label class="field-label" for="age_audtipo">Tipo da audiência</label><select id="age_audtipo" class="filter-select" style="width:100%"><option value="">Não informado</option>' + AG_AUDS.map(function(t){ return '<option' + (V('audTipo') === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div><div class="field"><label class="field-label" for="age_mod">Modalidade</label><select id="age_mod" class="filter-select" style="width:100%"><option value="">Não informada</option>' + Object.keys(AG_MODAL).map(function(k){ return '<option value="' + k + '"' + (V('modalidade') === k ? ' selected' : '') + '>' + AG_MODAL[k] + '</option>'; }).join('') + '</select></div></div>' + '<div class="field"><label class="field-label" for="age_local">Local</label><input type="text" id="age_local" maxlength="140" value="' + escapeHtml(V('local')) + '" placeholder="Ex.: Fórum de Morrinhos, sala 2"></div>' + '<div class="field"><label class="field-label" for="age_link">Link da sala virtual (opcional)</label><input type="text" inputmode="url" autocapitalize="off" id="age_link" maxlength="300" value="' + escapeHtml(V('link')) + '" placeholder="https://…"></div>' +
+    '<div id="age_ses_box" class="pb-sec" style="display:none"><div class="pb-sec-t">Sessão de julgamento</div>' +
+    '<div class="field"><label class="field-label" for="age_ses_org">Órgão julgador</label><input type="text" id="age_ses_org" maxlength="120" value="' + escapeHtml(SES.orgao || '') + '" placeholder="Ex.: 2ª Turma Cível — TJGO"></div>' +
+    '<div class="field"><label class="field-label" for="age_ses_rel">Relator(a)</label><input type="text" id="age_ses_rel" maxlength="90" value="' + escapeHtml(SES.relator || '') + '" placeholder="Ex.: Des. Fulana de Tal"></div>' +
+    '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" id="age_ses_sust"' + (SES.sustentar ? ' checked' : '') + '><span class="ad-t">Vou fazer sustentação oral</span></label>' +
+    '<div id="age_ses_insc"><div class="pb-dois"><div class="field"><label class="field-label" for="age_ses_ate">Pedir inscrição até</label><input type="date" id="age_ses_ate" value="' + escapeHtml(SES.inscAte || '') + '"></div><div class="field"><label class="field-label" for="age_ses_hora">Hora limite</label><input type="time" id="age_ses_hora" value="' + escapeHtml(SES.inscHora || '') + '"></div></div>' +
+    '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" id="age_ses_feita"' + (SES.inscFeita ? ' checked' : '') + '><span class="ad-t">Inscrição já feita</span></label>' +
+    '<div class="saldo-data">Com a data preenchida, o app cria na Agenda a tarefa “Pedir inscrição para sustentação oral” e avisa 2 dias, 1 dia e no dia. Ao marcar “Inscrição já feita”, a tarefa é concluída.</div></div></div></div>') +
     fSec('Quando', '<div class="pb-dois"><div class="field"><label class="field-label" id="age_data_l" for="age_data">Prazo fatal</label><input type="date" id="age_data" value="' + escapeHtml(V('data')) + '"></div><div class="field" id="age_hora_box"><label class="field-label" for="age_hora">Hora</label><input type="time" id="age_hora" value="' + escapeHtml(V('hora')) + '"></div></div>' + '<div id="age_calc_box" style="margin:-4px 0 8px"><button type="button" class="btn-text" data-age="calc">' + ico('calculator') + 'Calcular a partir da intimação ›</button> <span class="saldo-data" id="age_calc_info"></span></div>' + '<div class="saldo-data" id="age_dica2" style="margin:-4px 0 8px"></div>' + '<div class="field" id="age_trab_box"' + (caso ? ' style="display:none"' : '') + '><label class="field-label" for="age_trab">Trabalhar na peça até (opcional)</label><input type="date" id="age_trab" value="' + escapeHtml(i ? i.trabalhar : (P ? (P.trabalhar || '') : '')) + '"><div class="saldo-data">Em branco, o app marca 2 dias úteis antes do prazo fatal.</div></div>') +
     fSec('Responsáveis', '<div class="field" id="age_vis_box"><label class="field-label" for="age_vis">Quem vê esta tarefa</label><select id="age_vis" class="filter-select" style="width:100%"><option value="so_eu">Só eu (tarefa pessoal)</option><option value="resp">Os responsáveis que eu escolher</option><option value="todos">Todo o escritório</option></select></div>' + '<div class="field" id="esResp_agenda"' + (caso ? ' style="display:none"' : '') + '></div>') +
     (typeof plEditorHtml === 'function' ? plEditorHtml(i) : '') +
@@ -713,7 +727,7 @@ function agAbrir(key, pre){
     '<div id="age_dup"></div><div class="form-error" id="age_erro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-age="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-age="salvar">Salvar na agenda</button></div>' +
     (i && !caso ? '<button type="button" class="btn-text" data-age="excluir" style="color:var(--urgente)">Excluir este item</button>' : '');
   qs('agEdCorpo').innerHTML = h; try{ fichaMaisEm(qs('agEdCorpo')); }catch(e){} qs('agEdTit').textContent = i ? (caso ? 'Prazo da inicial' : 'Editar item') : 'Novo item da agenda';
-  adAbrirData(qs('age_data')); adAbrirData(qs('age_trab')); adAbrirData(qs('age_protoc'));
+  adAbrirData(qs('age_data')); adAbrirData(qs('age_trab')); adAbrirData(qs('age_protoc')); try{ adAbrirData(qs('age_ses_ate')); }catch(e){}
   agEdInicializar(i, caso);
   agAjustarCampos(); try{ rpEdIniciar(); }catch(e){ console.error('repetir', e); } if (i && !caso) qs('age_proc').dispatchEvent(new Event('input', { bubbles: true }));
   agDicasConflito();
@@ -784,9 +798,16 @@ function agSalvarEd(){
   var av = { padrao: AG_PADRAO.slice(), umdia: [1, 0], dia: [0], nenhum: [] }[qs('age_av').value] || AG_PADRAO.slice();
   var link = t === 'audiencia' ? qs('age_link').value.trim() : '';
   if (link && !/^https?:\/\/\S+$/i.test(link)){ err.textContent = 'O link da sala virtual deve começar com https://'; return; }
+  var ses = null;
+  if (t === 'audiencia' && qs('age_audtipo').value === AG_SESSAO){
+    var sust = qs('age_ses_sust').checked, ate = sust ? qs('age_ses_ate').value : '';
+    if (ate && ate > data){ err.textContent = 'O prazo para pedir a inscrição precisa ser até a data da sessão.'; return; }
+    ses = { orgao: qs('age_ses_org').value.trim(), relator: qs('age_ses_rel').value.trim(), sustentar: sust, inscAte: ate, inscHora: ate ? qs('age_ses_hora').value : '', inscFeita: !!(ate && qs('age_ses_feita').checked) };
+  }
   var base = i ? Object.assign({}, i.doc) : { criadoEm: new Date().toISOString(), pubId: '', audPubId: (agEditPre && agEditPre.audPubId) || '' }; delete base.id;
   var doc = Object.assign(base, { tipo: t, titulo: tit, processo: qs('age_proc').value.trim(), cliente: qs('age_cli').value.trim(), data: data, hora: t === 'audiencia' ? qs('age_hora').value : '', trabalhar: trab, situacao: sit, concluido: sit === 'feito', avisos: av,
     obs: qs('age_obs') ? qs('age_obs').value.trim() : (base.obs || ''), audTipo: t === 'audiencia' ? qs('age_audtipo').value : '', modalidade: t === 'audiencia' ? qs('age_mod').value : '', local: t === 'audiencia' ? qs('age_local').value.trim() : '', link: link });
+  if (ses) doc.sessao = ses; else delete doc.sessao;
   if (!i && qs('age_plan') && qs('age_plan').checked && t !== 'audiencia') doc.planilha = true;   /* "Também na planilha": vira linha nova na aba Controle */
   if (t === 'prazo'){ if (agEditCalc && agEditCalc.venc === data) doc.calculo = agEditCalc.op; else if (i && i.doc && i.doc.calculo && i.data !== data) delete doc.calculo; }   /* o cálculo só vale enquanto a data é a que ele deu */
   if (t === 'prazo'){ if (sit === 'feito'){ doc.protocoladoEm = qs('age_protoc').value || agHoje(); if (!doc.concluidoEm) doc.concluidoEm = agHoje(); } else { doc.protocoladoEm = ''; doc.protocoloObs = ''; } }
@@ -805,12 +826,30 @@ function agSalvarEd(){
     }
   }
   var p = i ? pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'PUT', doc).then(function(){ doc.id = i.id; agDocs = agDocs.map(function(x){ return x.id === i.id ? doc : x; }); }) : agCriar(doc);
-  p.then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  p.then(function(){ return agSincInscricao(doc); }).then(function(){ qs('overlayAg').classList.remove('show'); toast('Salvo na agenda.'); agDepois(); if (doc.planilha && typeof plAvisoSemNome === 'function') plAvisoSemNome(doc.resp); }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+}
+/* sessão de julgamento com sustentação oral: o prazo para pedir a inscrição vira uma tarefa na Agenda (avisos 2 dias, 1 dia e no dia) */
+function agSincInscricao(doc){
+  var s = doc.sessao, ant = doc.id ? agDocs.filter(function(x){ return x.sessaoDe === doc.id; })[0] : null;
+  var quer = !!(doc.tipo === 'audiencia' && s && s.sustentar && s.inscAte);
+  if (!quer){
+    if (!ant) return Promise.resolve();
+    return pbApi('/api/db/agenda/' + encodeURIComponent(ant.id), 'DELETE').then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== ant.id; }); });
+  }
+  var resp = (doc.resp && doc.resp.length) ? doc.resp.slice() : (function(){ try{ return agSugerirResp(doc.processo); }catch(e){ return []; } })();
+  var nd = Object.assign({ criadoEm: new Date().toISOString(), pubId: '', audPubId: '' }, ant || {}, { tipo: 'tarefa', titulo: 'Pedir inscrição para sustentação oral' + (doc.cliente ? ' — ' + doc.cliente : ''), processo: doc.processo || '', cliente: doc.cliente || '',
+    data: s.inscAte, hora: s.inscHora || '', trabalhar: '', avisos: [2, 1, 0], resp: resp, compartilhada: false, sessaoDe: doc.id,
+    obs: 'Sessão de julgamento em ' + fmtData(doc.data) + (doc.hora ? ' às ' + doc.hora : '') + (s.orgao ? ' · ' + s.orgao : '') + (s.relator ? ' · relator(a): ' + s.relator : '') });
+  if (s.inscFeita){ nd.situacao = 'feito'; nd.concluido = true; nd.concluidoEm = nd.concluidoEm || agHoje(); }
+  else { nd.situacao = 'afazer'; nd.concluido = false; nd.concluidoEm = ''; }
+  if (ant){ delete nd.id; return pbApi('/api/db/agenda/' + encodeURIComponent(ant.id), 'PUT', nd).then(function(){ nd.id = ant.id; agDocs = agDocs.map(function(x){ return x.id === ant.id ? nd : x; }); }); }
+  return agCriar(nd);
 }
 function agExcluirEd(b){
   var i = agItens().filter(function(x){ return x.key === agEditKey; })[0]; if (!i) return;
   if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Toque de novo para excluir'; return; }
-  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id; }); qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
+  var filhos = agDocs.filter(function(x){ return x.sessaoDe === i.id; }).map(function(x){ return x.id; });
+  pbApi('/api/db/agenda/' + encodeURIComponent(i.id), 'DELETE').then(function(){ return Promise.all(filhos.map(function(fid){ return pbApi('/api/db/agenda/' + encodeURIComponent(fid), 'DELETE'); })); }).then(function(){ agDocs = agDocs.filter(function(x){ return x.id !== i.id && x.sessaoDe !== i.id; }); qs('overlayAg').classList.remove('show'); toast('Item excluído.'); agDepois(); }).catch(function(e){ qs('age_erro').textContent = e.message; });
 }
 
 /* ---------- carga por pessoa (Resumo): todos veem, só contagens ---------- */

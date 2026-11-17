@@ -610,6 +610,16 @@ function pbRapConfirmar(b){
     pbAvancar(p.id);
   }).catch(function(e){ b.disabled = false; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
 }
+/* copiar o número do processo (padrão CNJ) para colar no sistema do tribunal */
+function pbNumCopia(p){ var n = p.numero || p.processo || '', a = null; try{ a = cnjAnalisar(n); }catch(e){} return a && a.completo ? a.formatado : n; }
+function pbBtnCopiar(p){ var n = pbNumCopia(p); return n ? '<button type="button" class="pb-cp" data-pbcp="' + escapeHtml(n) + '" aria-label="Copiar o número do processo" title="Copiar o número do processo">' + AGD_COPIA + '</button>' : ''; }
+function pbCopiarNumero(t){
+  function ok(){ toast('Número copiado.'); }
+  function manual(){ try{ var x = document.createElement('textarea'); x.value = t; x.setAttribute('readonly', ''); x.style.cssText = 'position:fixed;opacity:0;top:0'; document.body.appendChild(x); x.select(); document.execCommand('copy'); document.body.removeChild(x); ok(); }catch(e){ toast('Não consegui copiar.'); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, manual); else manual();
+}
+/* na fase de captura: copiar não abre a publicação nem dispara nada do cartão */
+document.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-pbcp]') : null; if (!b) return; e.stopPropagation(); e.preventDefault(); pbCopiarNumero(b.getAttribute('data-pbcp')); }, true);
 function pbCartao(p){
   var v = pbVinculo(p.processo), pz = pbPrazoGrupo(p), cls = pbClasseTipo(p.tipo), tags = '', mem = pbMembros(p), lida = pbLidaG(p), semPz = pbSemPrazoG(p);
   if (mem.length > 1) tags += '<span class="pb-tg nv">' + mem.length + ' publicações idênticas reunidas</span>';
@@ -632,7 +642,7 @@ function pbCartao(p){
     menu = '<div class="pb-cm">' + mi('lida', lida ? 'Marcar como não lida' : 'Marcar como lida') + (!pz && !semPz ? mi('naoe', 'Não é prazo') : '') + (v ? mi('ir', 'Abrir processo') : mi('cadastrar', 'Cadastrar processo')) + (v && v.arquivado ? mi('reabrir-proc', 'Reabrir processo') : '') + '</div>';
   }
   return '<div class="pb-card ' + cls + (lida ? ' lida' : '') + '" data-cid="' + id + '" data-pb="abrir" data-id="' + id + '"><div class="pb-l1"><span>' + (lida ? '' : '<i class="pb-dot"></i>') + escapeHtml((p.tribunal ? p.tribunal + ' · ' : '') + (p.orgao || '')) + '</span><span class="pb-tipo ' + cls + '">' + escapeHtml(p.tipo || 'Publicação') + '</span></div>' +
-    '<div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || p.processo || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div>' + (mem.length > 1 ? pbDestHtml(p) : '') +
+    '<div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc pb-proc-cp"><span>' + escapeHtml(p.numero || p.processo || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</span>' + pbBtnCopiar(p) + '</div>' + (mem.length > 1 ? pbDestHtml(p) : '') +
     (p.trecho ? '<div class="pb-trecho">' + escapeHtml(p.trecho) + '</div>' : '') + '<div class="pb-tags">' + tags + '</div><div class="pb-acts pb-um">' + btn + '</div>' + menu + '</div>';
 }
 function pbDestHtml(p){
@@ -694,7 +704,7 @@ function pbDesenharDetalhe(){
   var p = pbPub(pbDetId), c = qs('pbCorpo'); if (!p || !c) return;
   var v = pbVinculo(p.processo), t = pbTextos[p.id], pz = pbPrazoGrupo(p), sug = (t && t.ok && t.sug) || p.sug, mem = pbMembros(p);
   var pc = pz ? null : pbPecasDe(p), stp = pbPeca[p.id] || {}, pcSel = pz ? null : (pc ? pbPecaSel(p) : (stp.cat || null)), usaPc = !!(pcSel && pcSel.dias);
-  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc">' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">' + ico('check', 12) + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
+  var h = '<div class="pb-cab"><div class="pb-l1"><span>' + escapeHtml(fmtData(p.data) + ' · ' + (p.tribunal || '') + ' · ' + (p.orgao || '')) + '</span></div><div class="pb-cli">' + escapeHtml(pbNomeParte(p, v)) + '</div><div class="pb-proc pb-proc-cp"><span>' + escapeHtml(p.numero || '') + (p.classe ? ' · ' + escapeHtml(pbClasse(p.classe)) : '') + '</span>' + pbBtnCopiar(p) + '</div><div class="pb-tags"><span class="pb-tipo ' + pbClasseTipo(p.tipo) + '">' + escapeHtml(p.tipo || 'Publicação') + '</span>' + (v ? '<span class="pb-tg ok">' + ico('check', 12) + escapeHtml(v.cadastro) + ': ' + escapeHtml(v.cliente) + '</span>' : '<span class="pb-tg nv">Processo novo</span>') + '</div></div>';
   if (mem.length > 1) h += '<div class="pb-sec"><div class="pb-sec-t">' + mem.length + ' publicações idênticas reunidas</div><div class="saldo-data">Mesmo processo, dia e texto; só muda o destinatário ou a OAB que a encontrou. Elas são marcadas como lidas juntas.</div><div class="txt">' + escapeHtml(pbDestinatarios(p).join(', ')) + '</div></div>';
   h += '<div class="pb-sec"><div class="pb-sec-t">Texto da publicação</div>';
   if (!t) h += '<div class="saldo-data">Buscando o texto completo no Diário Oficial…</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';

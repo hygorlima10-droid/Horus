@@ -300,11 +300,12 @@ function prMontarFicha(){
     var a = b.getAttribute('data-prf'), v = b.getAttribute('data-v');
     if (a === 'cli-rm'){ prEd.ids = prEd.ids.filter(function(x){ return x !== v; }); prChips(); }
     else if (a === 'rev-sug'){ if (prEd.ids.indexOf(v) < 0) prEd.ids.push(v); prChips(); toast('Cliente escolhido. Toque em Salvar para tirar da revisão.'); }
-    else if (a === 'cli-add'){ if (prEd.ids.indexOf(v) < 0) prEd.ids.push(v); qs('pr_cli').value = ''; prSug(); prChips(); }
+    else if (a === 'cli-add'){ if (prEd.ids.indexOf(v) < 0) prEd.ids.push(v); qs('pr_cli').value = ''; var veioDaLista = !!prEd.todos; prEd.todos = false; prSug(); if (veioDaLista) qs('pr_sug').style.display = 'none'; prChips(); }
+    else if (a === 'cli-todos'){ prEd.todos = !prEd.todos; prSug(); if (prEd.todos && qs('pr_clisq')) qs('pr_clisq').focus(); }
     else if (a === 'sug-add'){ var nm = prEd.pre.nomes[Number(b.getAttribute('data-i'))]; if (prEd.ids.indexOf(v) < 0) prEd.ids.push(v); prAprenderApelido(v, nm); prChips(); toast('Vinculado. Da próxima vez “' + cliTitulo(nm).slice(0, 40) + '” já é reconhecido.'); }
     else if (a === 'sug-new'){ var nm2 = prEd.pre.nomes[Number(b.getAttribute('data-i'))]; abrirClienteEdit({ nome: cliTitulo(nm2), pagador: 'cliente', aoSalvar: function(c){ if (prEd.ids.indexOf(c.id) < 0) prEd.ids.push(c.id); prChips(); } }); }
     else if (a === 'cli-new'){
-      var nome = qs('pr_cli').value.trim(); qs('pr_cli').value = ''; prSug();
+      var nome = b.getAttribute('data-nome') || qs('pr_cli').value.trim(); qs('pr_cli').value = ''; prEd.todos = false; prSug();
       abrirClienteEdit({ nome: nome, pagador: 'cliente', aoSalvar: function(c){ if (prEd.ids.indexOf(c.id) < 0) prEd.ids.push(c.id); prChips(); } });
     }
     else if (a === 'tl-tudo'){ prS.tlTudo = true; prDesenhar(); }
@@ -335,7 +336,7 @@ function prMontarFicha(){
     else if (a === 'pubs-todas'){ d.classList.remove('show'); pbS.f = { q: v, de: '', ate: '', oab: 'todas', adv: '', trib: '' }; pbS.filtro = 'todas'; pbS.sub = 'lista'; pbS.mdOk = 1; pbS.fAberto = true; setActiveTab('publicacoes'); }
     else if (a === 'cliente'){ d.classList.remove('show'); abrirPerfilCliente(v); }
   });
-  d.addEventListener('input', function(e){ if (e.target && e.target.id === 'pr_cli') prSug(); if (e.target && e.target.id === 'pr_numero') prInfoNumero(); if (e.target && e.target.id === 'pr_vincq'){ prEd.vincQ = e.target.value; prRefazVincLista(); } });
+  d.addEventListener('input', function(e){ if (e.target && e.target.id === 'pr_cli'){ prEd.todos = false; prSug(); } if (e.target && e.target.id === 'pr_clisq') prSugLista(); if (e.target && e.target.id === 'pr_numero') prInfoNumero(); if (e.target && e.target.id === 'pr_vincq'){ prEd.vincQ = e.target.value; prRefazVincLista(); } });
   d.addEventListener('focusin', function(e){ if (e.target && e.target.id === 'pr_cli') prSug(); });
   d.addEventListener('focusout', function(e){ if (e.target && e.target.id === 'pr_numero' && prEd && prEd.novo){ prBuscarDados(); prBuscarDatajud(); } });
 }
@@ -416,11 +417,29 @@ function prChips(){
 }
 function prSug(){
   var inp = qs('pr_cli'), sug = qs('pr_sug'); if (!inp || !sug) return;
+  var seta = qs('prCorpo') ? qs('prCorpo').querySelector('.cli-seta') : null; if (seta){ seta.setAttribute('aria-expanded', prEd.todos ? 'true' : 'false'); seta.classList.toggle('on', !!prEd.todos); }
+  if (prEd.todos){   /* a seta abre a lista de todos os clientes, com busca */
+    if (!qs('pr_clisq')) sug.innerHTML = '<div class="cli-sq"><input type="search" id="pr_clisq" placeholder="Buscar pelo nome…" autocomplete="off"></div><div id="pr_sugl"></div>';
+    sug.classList.add('todos'); sug.style.display = ''; prSugLista(); return;
+  }
+  sug.classList.remove('todos');
   var q = inp.value.trim(), nq = normNome(q);
   var lista = clientes.filter(function(c){ return !c.arquivado && prEd.ids.indexOf(c.id) < 0 && (!nq || normNome(c.nome).indexOf(nq) >= 0); }).sort(function(a, b){ return a.nome.localeCompare(b.nome, 'pt-BR'); }).slice(0, 6);
   var h = lista.map(function(c){ return '<div class="cli-sug-item" data-prf="cli-add" data-v="' + escapeHtml(c.id) + '"><b>' + escapeHtml(c.nome) + '</b></div>'; }).join('');
   if (q && !clientes.some(function(c){ return normNome(c.nome) === nq; })) h += '<div class="cli-sug-item novo" data-prf="cli-new" data-v="1">Cadastrar “' + escapeHtml(q) + '”</div>';
   sug.innerHTML = h; sug.style.display = h ? '' : 'none';
+}
+/* lista completa (seta ▾): todos os clientes ainda não vinculados, em ordem alfabética, filtrados pelo que foi digitado na busca */
+function prSugLista(){
+  var campo = qs('pr_clisq'), box = qs('pr_sugl'); if (!box) return;
+  var texto = campo ? campo.value.trim() : '', q = normNome(texto), toks = q.split(' ').filter(Boolean);
+  var disp = clientes.filter(function(c){ return !c.arquivado && prEd.ids.indexOf(c.id) < 0; });
+  var lista = disp.filter(function(c){ var n = normNome(c.nome); return toks.every(function(t){ return n.indexOf(t) >= 0; }); }).sort(function(a, b){ return a.nome.localeCompare(b.nome, 'pt-BR'); });
+  var h = lista.map(function(c){ return '<div class="cli-sug-item" data-prf="cli-add" data-v="' + escapeHtml(c.id) + '"><b>' + escapeHtml(c.nome) + '</b>' + (c.telefone ? '<span>' + escapeHtml(c.telefone) + '</span>' : '') + '</div>'; }).join('');
+  if (!lista.length) h = '<div class="cli-sug-vazio">Nenhum cliente encontrado' + (texto ? ' com “' + escapeHtml(texto) + '”' : '') + '.</div>';
+  else h += '<div class="cli-sug-vazio">' + lista.length + (lista.length === 1 ? ' cliente' : ' clientes') + (texto ? ' com “' + escapeHtml(texto) + '”' : '') + '</div>';
+  if (texto && !clientes.some(function(c){ return normNome(c.nome) === q; })) h += '<div class="cli-sug-item novo" data-prf="cli-new" data-v="1" data-nome="' + escapeHtml(texto) + '">Cadastrar “' + escapeHtml(texto) + '”</div>';
+  box.innerHTML = h;
 }
 /* ---------- próxima providência: texto (+ data opcional, que vira tarefa na Agenda) ---------- */
 function prProximaInfo(r){
@@ -547,7 +566,7 @@ function prDesenhar(){
     '<div class="field"><label class="field-label" for="pr_ajuiz">Data de ajuizamento (opcional)</label><input type="date" id="pr_ajuiz" value="' + escapeHtml(novo ? '' : (doc ? (doc.ajuizamento || '') : '')) + '"></div>' +
     '<div class="field"><label class="field-label" for="pr_valor">Valor da causa (opcional)</label><input type="text" id="pr_valor" inputmode="decimal" maxlength="20" value="' + escapeHtml(novo ? (pre.valorCausa ? prFmtValor(pre.valorCausa) : '') : (doc && doc.valorCausa ? prFmtValor(doc.valorCausa) : '')) + '" placeholder="Ex.: 40.000,00"></div>';
   var hDad = h; h = '';
-  h += '<div class="field"><label class="field-label">Clientes vinculados</label><div class="cli-picker"><div class="cli-chips" id="pr_chips"></div><input type="text" id="pr_cli" class="cli-pick-input" placeholder="Buscar ou cadastrar cliente…" autocomplete="off"><div class="cli-sug" id="pr_sug" style="display:none;"></div></div></div>' + (novo && pre.nomes && pre.nomes.length ? '<div id="pr_partesPub"></div>' : '');
+  h += '<div class="field"><label class="field-label">Clientes vinculados</label><div class="cli-picker"><div class="cli-chips" id="pr_chips"></div><div class="cli-linha"><input type="text" id="pr_cli" class="cli-pick-input" placeholder="Buscar ou cadastrar cliente…" autocomplete="off"><button type="button" class="cli-seta" data-prf="cli-todos" aria-label="Ver todos os clientes" aria-expanded="false" title="Ver todos os clientes">' + ico('chevron-down', 18) + '</button></div><div class="cli-sug" id="pr_sug" style="display:none;"></div></div></div>' + (novo && pre.nomes && pre.nomes.length ? '<div id="pr_partesPub"></div>' : '');
   var hCli = h; h = hI;
   var hHon = '';
   if (!novo){ var hh0 = h; h = '';
@@ -618,7 +637,7 @@ function prCabHtml(r, pm, arq, doc){
   var kpi = function(t, v, sub, cls){ return '<div class="pr-kpi"><span>' + t + '</span><b' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; };
   var c0 = pz ? agChip(pz) : null;
   return '<div class="pr-cab"><div class="pr-cab-t">' + escapeHtml(prTitulo(r)) + (arq ? ' <span class="pb-tg">arquivado</span>' : '') + '</div>' +
-    '<div class="pr-cab-n"><span>' + escapeHtml(r.numero) + '</span><button type="button" class="btn-text" data-prf="copiar" data-v="' + escapeHtml(r.numero) + '">copiar</button></div>' +
+    '<div class="pr-cab-n"><span>' + escapeHtml(r.numero) + '</span><button type="button" class="pb-cp" data-prf="copiar" data-v="' + escapeHtml(r.numero) + '" aria-label="Copiar o número do processo" title="Copiar o número">' + AGD_COPIA + '</button></div>' +
     (orgao ? '<div class="saldo-data">' + escapeHtml(orgao) + '</div>' : '') +
     '<div class="saldo-data">' + (cli ? 'Cliente: ' + cli : 'Sem cliente vinculado') + (advs.length ? ' · Advogados: ' + escapeHtml(advs.join(', ')) : '') + '</div></div>' +
     '<div class="pr-kpis">' + kpi('Próximo prazo', pz ? escapeHtml(fmtData(pz.data).slice(0, 5)) : 'Nenhum', c0 ? escapeHtml(c0.t.toLowerCase()) : '', pz && (pz.data < todayISO() || agUteis(pz.data) <= 3) ? 'urg' : '') + kpi('A receber', rec > 0.004 ? escapeHtml(fmtMoeda(rec)) : '—', '', '') + kpi('Última publicação', up ? escapeHtml(fmtData(up).slice(0, 5)) : '—', '', '') + '</div>';
@@ -1022,3 +1041,19 @@ function prVincEscolher(id, seguir){
 })();
 
 (function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { prAbrir: prAbrir }); })();
+
+/* ---------- estilo: seta ▾ dos clientes e botão de copiar o número ---------- */
+(function(){
+  if (document.getElementById('prCss2')) return;
+  var st = document.createElement('style'); st.id = 'prCss2';
+  st.textContent = '.cli-picker .cli-linha{display:flex;align-items:center;gap:6px}.cli-picker .cli-linha input.cli-pick-input{flex:1;min-width:0;width:auto}' +
+    '.cli-seta{width:36px;height:36px;flex:none;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}.cli-seta svg{transition:transform .15s}.cli-seta.on svg{transform:rotate(180deg)}' +
+    '.cli-sug.todos{max-height:min(320px,48vh)}.cli-sq{position:sticky;top:0;z-index:1;padding:8px;background:var(--surface);border-bottom:1px solid var(--border)}' +
+    '.cli-sq input{width:100%;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px;font-size:var(--t4);font-family:inherit}' +
+    '.cli-sug-vazio{padding:9px 12px;font-size:var(--t2);color:var(--ink-soft);text-align:center}.cli-sug-item.novo{color:var(--accent);font-weight:700}' +
+    '.pb-cp{width:36px;height:36px;flex:none;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);display:inline-grid;place-items:center;cursor:pointer;padding:0}.pb-cp:active{background:var(--surface-2)}' +
+    '.pb-proc-cp{display:flex;align-items:center;justify-content:space-between;gap:8px}.pb-proc-cp>span{min-width:0;overflow-wrap:anywhere}' +
+    '.pr-cab-n{display:flex;align-items:center;gap:8px}' +
+    '#age_ses_hora{width:100%;padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--ink);font-family:inherit}';
+  document.head.appendChild(st);
+})();

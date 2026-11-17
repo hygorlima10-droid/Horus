@@ -78,7 +78,7 @@ function agiJaExiste(it){
 }
 
 /* ---------- reconhecer cliente e processo ---------- */
-function agiAudTipo(t){ var n = normNome(t); return /concilia/.test(n) ? 'Conciliação' : /media/.test(n) ? 'Mediação' : /instru/.test(n) ? 'Instrução e julgamento' : /justifica/.test(n) ? 'Justificação' : /saneamento/.test(n) ? 'Saneamento' : /custodia/.test(n) ? 'Custódia' : /admonit/.test(n) ? 'Admonitória' : 'Outra'; }
+function agiAudTipo(t){ var n = normNome(t); return /sessao de julgamento|sustentacao oral/.test(n) ? AG_SESSAO : /concilia/.test(n) ? 'Conciliação' : /media/.test(n) ? 'Mediação' : /instru/.test(n) ? 'Instrução e julgamento' : /justifica/.test(n) ? 'Justificação' : /saneamento/.test(n) ? 'Saneamento' : /custodia/.test(n) ? 'Custódia' : /admonit/.test(n) ? 'Admonitória' : 'Outra'; }
 function agiNomeDoProcesso(it){ return prNum(it.processo); }
 function agiPreparar(){
   var nomes = {};

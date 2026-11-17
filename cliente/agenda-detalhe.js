@@ -77,6 +77,7 @@ function agdDesenhar(){
   if (d.subtipo) chips += '<span class="pb-tg">' + escapeHtml(d.subtipo) + '</span>';
   if (i.tipo === 'audiencia' && i.hora) chips += '<span class="pb-tg">' + ico('clock', 12) + escapeHtml(i.hora) + '</span>';
   if (i.tipo === 'audiencia' && i.modalidade) chips += '<span class="pb-tg">' + escapeHtml(AG_MODAL[i.modalidade] || i.modalidade) + '</span>';
+  if (i.tipo === 'audiencia' && d.sessao && d.sessao.sustentar) chips += '<span class="pb-tg nv">Sustentação oral</span>';
   if (/alta/i.test(d.prioridade || '')) chips += '<span class="pb-tg pz">Prioridade alta</span>';
   if (i.fonte === 'caso') chips += '<span class="pb-tg">da inicial</span>';
   h += '<div class="agd-chips">' + chips + '</div>';
@@ -119,6 +120,13 @@ function agdDesenhar(){
   /* audiência */
   if (i.tipo === 'audiencia' && (i.local || i.link)){
     h += agdBloco('Onde', (i.local ? '<div>' + escapeHtml(i.local) + '</div>' : '') + (/^https?:\/\//i.test(i.link || '') ? '<div class="agd-acoes"><a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala virtual ↗</a></div>' : ''));
+  }
+  if (i.tipo === 'audiencia' && d.sessao && (d.sessao.orgao || d.sessao.relator || d.sessao.sustentar)){
+    var ss = d.sessao, lin = [];
+    if (ss.orgao) lin.push('<div><b>' + escapeHtml(ss.orgao) + '</b></div>');
+    if (ss.relator) lin.push('<div class="agd-sub">Relator(a): ' + escapeHtml(ss.relator) + '</div>');
+    if (ss.sustentar) lin.push('<div class="agd-sub">Sustentação oral: ' + (ss.inscAte ? (ss.inscFeita ? 'inscrição feita ✓' : 'pedir a inscrição até <b>' + escapeHtml(fmtData(ss.inscAte) + (ss.inscHora ? ' às ' + ss.inscHora : '')) + '</b>') : 'sem prazo de inscrição informado') + '</div>');
+    h += agdBloco('Sessão de julgamento', lin.join(''));
   }
   if (i.tipo === 'prazo' && d.calculo && !i.concluido) h += agdBloco('Como o prazo foi contado', '<div class="agd-sub" style="margin:0">' + escapeHtml(pzTextoCalculo(d.calculo)) + '</div><div class="agd-sub">Se um dia sem expediente for cadastrado em Configurações, a data é recalculada sozinha.</div>');
   if (i.tipo === 'prazo' && i.trabalhar && i.trabalhar < i.data && !i.concluido) h += agdBloco('Trabalhar na peça até', '<div>' + escapeHtml(fmtData(i.trabalhar)) + '</div>');
