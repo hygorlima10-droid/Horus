@@ -239,7 +239,13 @@ function dgCelCliProc(d, id){ return '<td>' + dgCelSel('cliente', id, d.cliente 
 /* responsável em cima e "por <quem delegou>" embaixo */
 function dgCelRespPor(d, id){ return '<td>' + dgCelSel('resp', id, dgRotResp(d.resp), !d.resp, 'dg-m') + dgCelSel('delegadoPor', id, d.delegadoPor ? '<span class="dg-por-l">por</span> ' + dgHl(dgCurto(d.delegadoPor)) : 'delegado por…', !d.delegadoPor, 'dg-m dg-por') + '</td>'; }
 var DG_ST_CURTO = { aguardando: 'Aguardando' };
-function dgDiasChip(dias){ return dias.t ? '<span class="dg-dias ' + dias.c + '" title="' + escapeHtml(dias.t) + '">' + escapeHtml(dias.t.replace(/ úteis?$/, ' ú')) + '</span>' : ''; }
+/* dias úteis que faltam (ou de atraso) num cartão colorido só com o número: vermelho = atrasada ou vence hoje, amarelo = 1 a 3 dias, verde = 4 ou mais */
+function dgDiasChip(dias){
+  if (!dias.t) return '';
+  var m = /^(−?\d+)/.exec(dias.t), n = m ? m[1] : 'hoje', num = m ? Number(n.replace('−', '-')) : 0;
+  var dica = !m ? 'Vence hoje' : (num < 0 ? (-num) + (num === -1 ? ' dia útil' : ' dias úteis') + ' de atraso' : num + (num === 1 ? ' dia útil' : ' dias úteis') + ' para o prazo');
+  return '<span class="dg-nd ' + (dias.c === 'atr' ? 'v' : (dias.c === 'brv' ? 'a' : 'g')) + '" title="' + escapeHtml(dica) + '">' + escapeHtml(n) + '</span>';
+}
 function dgBtnAcao(a, id, ic, titulo, cls){ return '<button type="button" class="dg-mini' + (cls ? ' ' + cls : '') + '" data-dg="' + a + '" data-id="' + id + '" title="' + titulo + '" aria-label="' + titulo + '">' + ic + '</button>'; }
 function dgMais(id){ return dgBtnAcao('mais', id, '⋯', 'Mais ações: ficha completa, tornar fixa, excluir'); }
 function dgLinhaNova(){
@@ -284,7 +290,7 @@ function dgCartao(d){
   var dias = dgDias(d), st = dgStatusDe(d.status);
   return '<div class="dg-card ' + (dias.c === 'atr' ? 'atr' : '') + '" data-dgl="' + escapeHtml(d.id) + '"><div class="dg-card-t" data-dg="ficha" data-id="' + escapeHtml(d.id) + '"><b>' + dgHl(d.titulo || '') + '</b>' +
     ((d.cliente || d.processo) ? '<small>' + [d.cliente, d.processo].filter(Boolean).map(dgHl).join(' · ') + '</small>' : '') + '</div>' + (d.processo ? '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="copiar" data-n="' + escapeHtml(d.processo) + '">' + (typeof AGD_COPIA === 'string' ? AGD_COPIA : '') + ' Copiar o número</button></div>' : '') +
-    '<div class="dg-card-l"><span class="dg-st ' + st[2] + '">' + escapeHtml(st[1]) + '</span><b class="dg-pr ' + dgPrioCls(d.prioridade) + '">' + escapeHtml(d.prioridade || 'Média') + '</b>' + (d.fatal ? '<span class="mut">fatal ' + escapeHtml(fmtData(d.fatal).slice(0, 5)) + '</span>' : '') + (dias.t ? '<span class="dg-dias ' + dias.c + '">' + dias.t + '</span>' : '') + '</div>' +
+    '<div class="dg-card-l"><span class="dg-st ' + st[2] + '">' + escapeHtml(st[1]) + '</span><b class="dg-pr ' + dgPrioCls(d.prioridade) + '">' + escapeHtml(d.prioridade || 'Média') + '</b>' + (d.fatal ? '<span class="mut">fatal ' + escapeHtml(fmtData(d.fatal).slice(0, 5)) + '</span>' : '') + dgDiasChip(dias) + '</div>' +
     '<div class="dg-card-l">' + dgAv(d.resp) + '<span>' + escapeHtml(dgCurto(d.resp) || 'sem responsável') + '</span>' + (d.delegadoPor ? '<span class="mut">· delegado por ' + escapeHtml(dgCurto(d.delegadoPor)) + '</span>' : '') + '</div>' +
     '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="status" data-id="' + escapeHtml(d.id) + '">' + escapeHtml(st[1]) + ' ▾</button><button type="button" class="dg-bt" data-dg="ficha" data-id="' + escapeHtml(d.id) + '">Editar</button><button type="button" class="dg-bt ok" data-dg="concluir" data-id="' + escapeHtml(d.id) + '">' + ico('check', 14) + ' Concluir</button></div></div>';
 }
@@ -743,9 +749,10 @@ function dgCss(){
     '.dg-ta td{padding:4px 6px;overflow:hidden}.dg-ta .dg-in{min-width:0}.dg-ta th:first-child,.dg-ta td:first-child{position:sticky;left:0;z-index:2;background-color:var(--surface)}.dg-ta th:first-child{background-color:var(--surface-2)}.dg-ta td:first-child{box-shadow:6px 0 8px -7px rgba(0,0,0,.28)}' +
     '.dg-ta .dg-novo td,.dg-ta .dg-fx td{background:var(--surface) linear-gradient(rgba(201,133,0,.07),rgba(201,133,0,.07))}.dg-ta .dg-novo td{border-bottom:2px solid var(--accent)}' +
     '.dg-sl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.dg-m{min-height:26px;padding:2px 6px;border-color:transparent;font-size:12.5px;gap:4px;background:transparent}.dg-m:hover,.dg-m:focus-visible{border-color:var(--accent);background:var(--surface)}.dg-m i{display:none;opacity:.55}.dg-m:hover i,.dg-m:focus-visible i{display:inline}.dg-por{font-size:11.5px;color:var(--ink-soft)}.dg-por .dg-por-l{opacity:.8}.dg-m.vazio{font-size:11.5px}' +
-    '.dg-cp2{display:flex;align-items:center;gap:2px}.dg-cp2 .dg-sel{flex:1;min-width:0}.dg-mini.cpy{min-width:26px;min-height:26px;width:26px;padding:0;flex:none}' +
+    '.dg-cp2{display:flex;align-items:center;gap:2px}.dg-cp2 .dg-sel{flex:1;min-width:0;padding:2px 3px;font-size:12px}.dg-mini.cpy{min-width:26px;min-height:26px;width:26px;padding:0;flex:none}' +
     '.dg-pz{display:flex;flex-direction:column;gap:2px}.dg-pz label{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}.dg-pz label>span:first-child{width:30px;flex:none}.dg-ta .dg-dm{width:112px;min-width:0;min-height:26px;padding:2px 4px;font-size:12px}.dg-pz .dg-dias{font-size:11px;margin:0;text-transform:none}' +
     '.dg-ta .dg-st{white-space:normal;line-height:1.2;text-align:left}.dg-ta .dg-stbtn{padding:3px 8px}.dg-ta .dg-pess{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.dg-ta .dg-acao{white-space:nowrap;text-align:right}' +
+    '.dg-nd{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 7px;border-radius:7px;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;flex:none;text-transform:none}.dg-nd.v{background:#D93B3B;color:#fff}.dg-nd.a{background:#F2B01E;color:#3B2A00}.dg-nd.g{background:#17895A;color:#fff}' +
     '@media(pointer:coarse){.dg-m,.dg-ta .dg-dm,.dg-mini.cpy{min-height:36px}.dg-mini.cpy{min-width:36px;width:36px}}' +
     /* busca */
     '.dg-busca{flex:1 1 260px;max-width:460px;min-width:220px;display:flex;align-items:center;gap:8px;min-height:40px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);padding:0 8px 0 11px;color:var(--ink-soft)}.dg-busca:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(201,133,0,.14)}.dg-busca input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:var(--t3,14px);color:var(--ink);min-height:36px}' +
