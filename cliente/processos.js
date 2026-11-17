@@ -658,10 +658,15 @@ function prSalvar(){
     });
   }
   if (vincId && prNum(vincAnt) !== n) p = p.then(function(){ var cv = casos.filter(function(x){ return x.id === vincId; })[0]; return cv ? persistPatchDoc('caso', cv, { numeroProcesso: numero }) : null; });
+  /* o cliente escolhido aqui vale também para a Inicial, o Acordo e o Alvará deste número que estavam sem cliente: é neles que ficam os honorários
+     (Clientes, Cobrança e perfil do cliente leem dali). Quem já tem cliente não é mexido; a divergência continua na Revisão de ligações. */
+  var idsFinal = idsValidos(campos.clienteIds), atosSem = idsFinal.length && ex ? ex.links.filter(function(l){ return !idsValidos(l.doc.clienteIds).length; }) : [];
+  if (atosSem.length) p = p.then(function(){ return Promise.all(atosSem.map(function(l){ return persistPatchDoc(l.tipo, l.doc, { clienteIds: idsFinal.slice() }); })); });
+  var rotAtos = atosSem.map(function(l){ return PR_LBL[l.tipo] || ''; }).filter(function(x, i, a){ return x && a.indexOf(x) === i; });
   p.then(function(){
     qs('overlayPr').classList.remove('show');
     if (vincId) toast('Processo cadastrado e ligado à Inicial.', 'Desfazer', function(){ var cv = casos.filter(function(x){ return x.id === vincId; })[0]; if (cv) persistPatchDoc('caso', cv, { numeroProcesso: vincAnt }).then(function(){ prDepois(); }); });
-    else toast(novo ? 'Processo cadastrado.' : 'Salvo.');
+    else toast((novo ? 'Processo cadastrado.' : 'Salvo.') + (rotAtos.length ? ' Cliente vinculado também a: ' + rotAtos.join(', ') + '.' : ''));
     if (pedirAuto){ try{ prAprenderApelido(pedirAuto.cli, pedirAuto.nome); }catch(e){} setTimeout(function(){ impPerguntarAuto(pedirAuto.cli, pedirAuto.nome); }, 250); }
     prDepois(); if (querHon){ prEd = { num: n, novo: false, ids: [] }; setTimeout(function(){ prNovoHonorario('caso'); }, 80); } }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
