@@ -25,40 +25,40 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="financeiro"
 check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#headFinanceiro button')).map(b => b.innerText.replace(/\s+/g, ' ').trim()); return l.join('|'); }) === 'Visão geral|Divisão do mês|PJ|PF|Patrimônio|Orçamento|Análises', 'sub-abas de Finanças: ... Patrimônio | Orçamento | Análises');
 // 2) alerta na Visão geral
 let vg = await page.evaluate(() => document.getElementById('finResumo').innerText);
-check(/Orçamento: Sistemas estourou/.test(vg) && /Orçamento: Impostos chegou no limite/.test(vg) && /Passaram de 80% do limite: Estrutura/.test(vg), '"Precisa de atenção" na Visão geral avisa: Sistemas estourou, Impostos no limite, Estrutura passou de 80%');
+check(/Orçamento: Sistemas e software jurídico estourou/.test(vg) && /Orçamento: Impostos e taxas \(DAS, ISS\) chegou no limite/.test(vg) && /Passaram de 80% do limite: Estrutura do escritório/.test(vg), '"Precisa de atenção" na Visão geral avisa: Sistemas estourou, Impostos no limite, Estrutura passou de 80%');
 await page.click('[data-mf-aba="orcamento"]'); await page.waitForTimeout(800);
 let t = await txt();
 // 3) números
 check(/ORÇADO NO MÊS[\s\S]*R\$\s*9\.000,00[\s\S]*4 categorias com limite/i.test(t), 'orçado no mês: R$ 9.000 em 4 categorias (3.000 + 1.500 + 2.000 + 2.500; o limite de Estrutura veio do mês anterior)');
 check(/GASTO ATÉ AGORA[\s\S]*R\$\s*8\.020,00[\s\S]*89%/i.test(t), 'gasto até agora: R$ 8.020 (2.480 + 1.500 + 1.150 + 2.890), 89% do orçado; os R$ 900 ainda a vencer não contam');
-check(/ESTOURADAS\s*\n?\s*2/i.test(t) && /Sistemas e Impostos|Impostos e Sistemas/.test(t), 'estouradas: 2 (Sistemas e Impostos)');
+check(/ESTOURADAS\s*\n?\s*2/i.test(t) && /Sistemas e software jurídico e Impostos e taxas|Impostos e taxas \(DAS, ISS\) e Sistemas e software jurídico/.test(t), 'estouradas: 2 (Sistemas e Impostos)');
 check(/PASSARAM DE 80%\s*\n?\s*1/i.test(t), 'passaram de 80%: 1 (Estrutura)');
 check(/Estourou em R\$\s*390,00/.test(t) && /Limite atingido/.test(t) && /Já passou de 80%: restam R\$\s*520,00/.test(t), 'mensagens: "Estourou em R$ 390", "Limite atingido" e "Já passou de 80%: restam R$ 520"');
 check(/Com o que ainda vai vencer/.test(t) === false, 'Estrutura (passou de 80%) mostra só a mensagem de 80%, sem o aviso do que vai vencer');
 // 4) cores/ordem: pior primeiro
 const ordem = await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row .orc-nm')).map(e => e.innerText));
-check(ordem.slice(0, 4).join('|') === 'Sistemas|Impostos|Estrutura|Pessoal', 'linhas com limite em ordem do mais perto/acima do limite: ' + ordem.join(', '));
-check(/Dia a dia · Alimentação/.test(t) && /sem limite/.test(t) && /definir/.test(t), 'categoria sem limite (Dia a dia · Alimentação) aparece com "definir ›"');
+check(ordem.slice(0, 4).join('|') === 'Sistemas e software jurídico|Impostos e taxas (DAS, ISS)|Estrutura do escritório (aluguel, condomínio)|Pessoal e encargos', 'linhas com limite em ordem do mais perto/acima do limite: ' + ordem.join(', '));
+check(/Restaurantes e bares/.test(t) && /sem limite/.test(t) && /definir/.test(t), 'categoria sem limite (Restaurantes e bares) aparece com "definir ›"');
 // 5) abrir uma linha mostra os lançamentos
-await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Sistemas/.test(d.innerText)).querySelector('summary').click()); await page.waitForTimeout(300);
-check(/Cartão de crédito/.test(await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Sistemas/.test(d.innerText)).innerText)), 'tocar numa linha abre os lançamentos da categoria');
+await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Sistemas e software/.test(d.innerText)).querySelector('summary').click()); await page.waitForTimeout(300);
+check(/Cartão de crédito/.test(await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Sistemas e software/.test(d.innerText)).innerText)), 'tocar numa linha abre os lançamentos da categoria');
 // 6) definir limite para a categoria sem limite: vale no mês e nos seguintes
-await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Dia a dia · Alimentação/.test(d.innerText)).querySelector('summary').click()); await page.waitForTimeout(300);
-await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Dia a dia · Alimentação/.test(x.innerText)); d.querySelector('.orc-ed input').value = '500'; d.querySelector('[data-orc-salvar]').click(); }); await page.waitForTimeout(1200);
+await page.evaluate(() => Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(d => /Restaurantes e bares/.test(d.innerText)).querySelector('summary').click()); await page.waitForTimeout(300);
+await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Restaurantes e bares/.test(x.innerText)); d.querySelector('.orc-ed input').value = '500'; d.querySelector('[data-orc-salvar]').click(); }); await page.waitForTimeout(1200);
 t = await txt();
-check(/Alimentação/.test(t) && /de R\$\s*500/.test(t) && /Já passou de 80%: restam R\$\s*80,00/.test(t), 'definir limite de R$ 500 em Alimentação: 420 de 500 (84%), restam R$ 80');
+check(/Restaurantes e bares/.test(t) && /de R\$\s*500/.test(t) && /Já passou de 80%: restam R\$\s*80,00/.test(t), 'definir limite de R$ 500 em Restaurantes e bares: 420 de 500 (84%), restam R$ 80 (Restaurantes e bares, antes "Alimentação")');
 const lista = await (await api('GET', 'config')).json(); const orc = ((lista.docs || []).find(d => d.id === 'orcamento') || {}).data;
-check(orc && orc.limites['Dia a dia · Alimentação'] && orc.limites['Dia a dia · Alimentação'][m0] === 500, 'o limite ficou guardado em config/orcamento a partir deste mês');
+check(orc && orc.limites['Restaurantes e bares'] && orc.limites['Restaurantes e bares'][m0] === 500, 'o limite ficou guardado em config/orcamento a partir deste mês');
 // 6b) editar um limite que já existe: o campo vem preenchido (2.500) e dá para salvar outro valor
-await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Sistemas/.test(x.innerText)); d.open = true; const i = d.querySelector('.orc-ed input'); i.value = '3.000,00'; d.querySelector('[data-orc-salvar]').click(); }); await page.waitForTimeout(1200);
-check(/de R\$\s*3\.000/.test(await txt()) && /Sistemas[\s\S]{0,80}96%/.test(await txt()), 'editar um limite existente (2.500 → 3.000,00): Sistemas passa a 96% e deixa de estar estourada');
+await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Sistemas e software/.test(x.innerText)); d.open = true; const i = d.querySelector('.orc-ed input'); i.value = '3.000,00'; d.querySelector('[data-orc-salvar]').click(); }); await page.waitForTimeout(1200);
+check(/de R\$\s*3\.000/.test(await txt()) && /Sistemas e software[\s\S]{0,80}96%/.test(await txt()), 'editar um limite existente (2.500 → 3.000,00): Sistemas passa a 96% e deixa de estar estourada');
 // 7) tirar o limite
-await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Dia a dia · Alimentação/.test(x.innerText)); d.open = true; d.querySelector('[data-orc-sem]').click(); }); await page.waitForTimeout(1000);
+await page.evaluate(() => { const d = Array.from(document.querySelectorAll('#finOrcamento .orc-row')).find(x => /Restaurantes e bares/.test(x.innerText)); d.open = true; d.querySelector('[data-orc-sem]').click(); }); await page.waitForTimeout(1000);
 check(!/de R\$\s*500/.test(await txt()), 'tirar o limite devolve a categoria para "sem limite"');
 // 8) categoria × mês
 check(await page.evaluate(() => !!document.querySelector('#finOrcamento select[data-orc-cat]') && !!document.querySelector('#finOrcamento svg.an-svg')) && /Categoria × mês/.test(await txt()), 'tem o gráfico Categoria × mês com seletor de categoria');
-await page.selectOption('#finOrcamento select[data-orc-cat]', 'Impostos'); await page.waitForTimeout(500);
-check(await page.evaluate(() => document.querySelector('#finOrcamento select[data-orc-cat]').value) === 'Impostos', 'trocar a categoria do gráfico funciona');
+await page.selectOption('#finOrcamento select[data-orc-cat]', 'Impostos e taxas (DAS, ISS)'); await page.waitForTimeout(500);
+check(await page.evaluate(() => document.querySelector('#finOrcamento select[data-orc-cat]').value) === 'Impostos e taxas (DAS, ISS)', 'trocar a categoria do gráfico funciona');
 check(/O orçamento nunca altera lançamentos/.test(await txt()), 'o "Como funciona" diz que o orçamento nunca altera lançamentos');
 // 9) nada foi alterado nos lançamentos
 const dsp = (await (await api('GET', 'despesas')).json()).docs.length;

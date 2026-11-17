@@ -11,7 +11,14 @@
 var orcS = { cat: null };
 /* número digitado em português (aceita 2.500,00, 2500,5 e 2500.5) */
 function orcNum(t){ var x = String(t == null ? '' : t).replace(/[^\d,.]/g, ''); if (!x) return 0; if (x.indexOf(',') >= 0) x = x.replace(/\./g, '').replace(',', '.'); var n = parseFloat(x); return isFinite(n) ? n : 0; }
-function orcDados(){ var o = config.orcamento; return (o && o.limites && typeof o.limites === 'object') ? o.limites : {}; }
+function orcDados(){
+  var o = config.orcamento, raw = (o && o.limites && typeof o.limites === 'object') ? o.limites : {};
+  if (typeof catRotNovo !== 'function') return raw;
+  /* limites guardados com o nome antigo ("Dia a dia · Mercado") passam para o nome da lista única; se os dois existirem, vale o novo */
+  var ks = Object.keys(raw), out = {};
+  ks.filter(function(k){ return catRotNovo(k) !== k; }).concat(ks.filter(function(k){ return catRotNovo(k) === k; })).forEach(function(k){ var nk = catRotNovo(k); out[nk] = Object.assign(out[nk] || {}, raw[k]); });
+  return out;
+}
 function orcLimite(cat, m){
   var h = orcDados()[cat]; if (!h) return null;
   var ks = Object.keys(h).filter(function(k){ return k <= m; }).sort(); if (!ks.length) return null;
@@ -37,7 +44,7 @@ function orcColeta(m){
     });
   });
   var dd = anDiaADiaMes(m).cats;
-  Object.keys(dd).forEach(function(c){ if (dd[c] > 0.004) out['Dia a dia · ' + c] = { gasto: dd[c], aPagar: 0 }; });
+  Object.keys(dd).forEach(function(c){ if (dd[c] > 0.004){ var x = out[c] = out[c] || { gasto: 0, aPagar: 0 }; x.gasto += dd[c]; } });   /* mesma categoria das despesas lançadas */
   return out;
 }
 function orcLinhas(m){

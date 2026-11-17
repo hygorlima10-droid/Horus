@@ -26,21 +26,21 @@ await aba('analises'); await page.evaluate(() => document.querySelector('[data-a
 let t = await txt('#anWrap');
 check(await page.evaluate(() => document.querySelectorAll('#anWrap .ct-row .ct-ic svg').length) >= 4, 'cada categoria tem ícone colorido');
 check(!/Outras \(\d+\)/.test(t), 'não existe mais o item "Outras (n)"');
-check(/Dia a dia · Mercado/.test(t) && /Dia a dia · Alimentação/.test(t) && /Sistemas/.test(t) && /Outros/.test(t), 'todas as categorias aparecem na mesma lista');
+check(/Supermercado/.test(t) && /Restaurantes e bares/.test(t) && /Sistemas e software jurídico/.test(t) && /Outros/.test(t) && !/Dia a dia ·/.test(t), 'todas as categorias aparecem na mesma lista');
 check(await page.evaluate(() => !!document.querySelector('#anWrap .ct-donut circle')), 'a rosca aparece com os segmentos');
 const cor = rot => page.evaluate(r => { const d = document.querySelector('[data-ct-chave="' + r + '"] .ct-ic'); return d ? d.style.backgroundColor : ''; }, rot);
-check((await cor('Dia a dia · Mercado')) !== (await cor('Dia a dia · Alimentação')) && (await cor('Sistemas')) !== (await cor('Outros')), 'categorias diferentes têm cores diferentes');
-await page.evaluate(() => document.querySelector('[data-ct-chave="Dia a dia · Mercado"] summary').click()); await page.waitForTimeout(300);
-t = await txt('[data-ct-chave="Dia a dia · Mercado"]');
-check(/Atacadão/.test(t) && /Hortifruti/.test(t) && /R\$\s*200,00/.test(t) && /extratos confirmados antes desta versão/.test(t), 'o "Dia a dia · Mercado" mostra os lançamentos e avisa do mês antigo sem detalhe');
+check((await cor('Supermercado')) !== (await cor('Sistemas e software jurídico')) && (await cor('Supermercado')) === (await cor('Restaurantes e bares')) && (await cor('Sistemas e software jurídico')) !== (await cor('Outros')), 'a cor vem da família: famílias diferentes têm cores diferentes, categorias da mesma família repetem a cor');
+await page.evaluate(() => document.querySelector('[data-ct-chave="Supermercado"] summary').click()); await page.waitForTimeout(300);
+t = await txt('[data-ct-chave="Supermercado"]');
+check(/Atacadão/.test(t) && /Hortifruti/.test(t) && /R\$\s*200,00/.test(t) && /extratos confirmados antes desta versão/.test(t), 'o "Supermercado" mostra os lançamentos e avisa do mês antigo sem detalhe');
 await page.evaluate(() => document.querySelector('[data-ct-chave="Outros"] summary').click()); await page.waitForTimeout(300);
 check(/Cabelo Giovanna/.test(await txt('[data-ct-chave="Outros"]')) && /Posto Ipiranga/.test(await txt('[data-ct-chave="Outros"]')), '"Outros" mostra as despesas com nome');
-// editar despesa: Cabelo -> Pessoal, novo nome
+// editar despesa (PF): Outros -> Cabeleireiro e barbearia (a lista da PF não oferece categorias só do escritório, como 'Pessoal e encargos'), novo nome
 await page.click('[data-ct-chave="Outros"] [data-ct-edit^="desp|d1"]'); await page.waitForTimeout(300);
-check(await page.evaluate(() => document.getElementById('overlayCtEd').classList.contains('show') && /não muda/.test(document.getElementById('ctEdInfo').innerText)), 'abre a folha de edição dizendo que o valor não muda');
-await page.selectOption('#ctEdCat', 'pessoal'); await page.fill('#ctEdNome', 'Cabelo (Giovanna)'); await page.click('#ctEdSalvar'); await page.waitForTimeout(1200);
-const d1 = await get('despesas', 'd1'); check(d1.categoria === 'pessoal' && d1.nome === 'Cabelo (Giovanna)' && d1.valor === 340, 'despesa salva com nova categoria e nome, mesmo valor');
-check(/Pessoal/.test(await txt('#anWrap')), 'a categoria nova aparece na análise');
+check(await page.evaluate(() => document.getElementById('overlayCtEd').classList.contains('show') && !Array.from(document.querySelectorAll('#ctEdCat option')).some(o => o.value === 'pessoal') && /não muda/.test(document.getElementById('ctEdInfo').innerText)), 'abre a folha de edição dizendo que o valor não muda');
+await page.selectOption('#ctEdCat', 'barbearia'); await page.fill('#ctEdNome', 'Cabelo (Giovanna)'); await page.click('#ctEdSalvar'); await page.waitForTimeout(1200);
+const d1 = await get('despesas', 'd1'); check(d1.categoria === 'barbearia' && d1.nome === 'Cabelo (Giovanna)' && d1.valor === 340, 'despesa salva com nova categoria e nome, mesmo valor');
+check(/Cabeleireiro e barbearia/.test(await txt('#anWrap')), 'a categoria nova aparece na análise');
 // Extratos: Já lançados
 await aba('extratos');
 check(await page.evaluate(() => !!document.querySelector('#extJa .ct-jadet')), 'aparece o bloco "Já lançados" na aba Extratos');
@@ -53,7 +53,7 @@ await page.fill('#ctJaBusca', 'padaria'); await page.waitForTimeout(200);
 check(/Padaria/.test(await txt('#ctJaLista')) && !/Atacadão/.test(await txt('#ctJaLista')), 'a busca filtra por nome');
 // editar linha do dia a dia: Padaria -> Mercado, renomear
 await page.click('#extJa [data-ct-edit^="dd|l3"]'); await page.waitForTimeout(300);
-await page.selectOption('#ctEdCat', 'Mercado'); await page.fill('#ctEdNome', 'Padaria (compra do mês)'); await page.click('#ctEdSalvar'); await page.waitForTimeout(1200);
+await page.selectOption('#ctEdCat', 'Supermercado'); await page.fill('#ctEdNome', 'Padaria (compra do mês)'); await page.click('#ctEdSalvar'); await page.waitForTimeout(1200);
 const doc = await get('extratos', 'dd_' + m0 + '_x');
 check(doc.cats.Mercado.v === 420 && doc.cats.Mercado.n === 3 && !doc.cats['Alimentação'] && doc.linhas.find(l => l.id === 'l3').c === 'Mercado' && doc.linhas.find(l => l.id === 'l3').t === 'Padaria (compra do mês)', 'trocar a categoria da linha move o valor entre as categorias e guarda o novo nome');
 await aba('analises'); await page.evaluate(() => document.querySelector('[data-an-periodo="ult"]').click()); await page.waitForTimeout(600);

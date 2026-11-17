@@ -113,6 +113,7 @@ es = es + '\n' + open(R + 'cliente/fichas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/quadros.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/catalogo.js', encoding='utf-8').read()   # catálogo único de categorias de despesa (precisa vir depois de todos os módulos acima: no fim ele refaz a lista)
 bloco_es = '/*ES-INICIO*/\n' + es + '\n/*ES-FIM*/\n'
 if '/*ES-INICIO*/' in s:
     s = re.sub(r'/\*ES-INICIO\*/.*?/\*ES-FIM\*/\n', lambda m: bloco_es, s, flags=re.S)

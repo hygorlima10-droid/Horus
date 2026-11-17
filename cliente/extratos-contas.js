@@ -136,7 +136,7 @@ function excDestinoRegra(r){
 function excAbrirRegras(){
   var cfg = extCfg(), ks = Object.keys(cfg.regras).sort(), oc = (typeof obraCfg === 'function') ? obraCfg() : null, ro = oc && oc.extrato ? oc.extrato.regras : {}, kso = Object.keys(ro || {}).sort();
   var linhas = ks.map(function(k){
-    var d = excDestinoRegra(cfg.regras[k]), campo = d.edita === 'cat' ? extSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', EXT_CATS.map(function(c){ return [c, c]; }), d.txt) : '<input type="text" class="ext-sel" data-exr-txt="' + escapeHtml(k) + '" value="' + escapeHtml(d.txt) + '" maxlength="80" aria-label="Destino da regra">';
+    var d = excDestinoRegra(cfg.regras[k]), campo = d.edita === 'cat' ? ((typeof catSelectHtml === 'function') ? catSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', d.txt) : extSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', EXT_CATS.map(function(c){ return [c, c]; }), d.txt)) : '<input type="text" class="ext-sel" data-exr-txt="' + escapeHtml(k) + '" value="' + escapeHtml(d.txt) + '" maxlength="80" aria-label="Destino da regra">';
     return '<div class="exc-regra"><span class="exc-palavras">' + escapeHtml(k.toLowerCase()) + '</span><span class="exc-seta">→</span><span class="exc-dest"><small>' + d.tipo + '</small>' + campo + '</span><button type="button" class="btn btn-ghost" data-exr-del="' + escapeHtml(k) + '">Apagar</button></div>';
   }).join('');
   var linhasObra = kso.map(function(k){

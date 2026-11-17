@@ -78,6 +78,8 @@ var CT_REGRAS = [
 function ctNorm(t){ return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 function ctHash(t){ var h = 0, i; for (i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 function ctVisual(rot){
+  var cv = (typeof catVisualDe === 'function') ? catVisualDe(String(rot || '').replace(/^Dia a dia\s*·\s*/i, '')) : null;
+  if (cv) return { lu: cv.lu, cor: cv.cor };   /* categoria da lista única: ícone e cor da família */
   var cru = String(rot || ''), n = ctNorm(cru.replace(/^Dia a dia\s*·\s*/i, '')), dia = /^Dia a dia/i.test(cru);
   var i, cat = (typeof CATEGORIAS_LISTA !== 'undefined' ? CATEGORIAS_LISTA : []).filter(function(c){ return c.label === cru; })[0];
   if (/^(outros|outras|diversos|geral)$/.test(n)) return dia ? { ic: 'bag', cor: '#EA580C' } : { ic: 'dots', cor: '#8A93AD' };
@@ -86,7 +88,7 @@ function ctVisual(rot){
 }
 function ctIcone(rot, peq){
   var v = ctVisual(rot);
-  return '<span class="ct-ic' + (peq ? ' sm' : '') + '" style="background:' + v.cor + '" aria-hidden="true"><svg viewBox="0 0 24 24">' + CT_SVG[v.ic] + '</svg></span>';
+  return '<span class="ct-ic' + (peq ? ' sm' : '') + '" style="background:' + v.cor + '" aria-hidden="true"><svg viewBox="0 0 24 24">' + (v.lu ? catPaths(v.lu) : CT_SVG[v.ic]) + '</svg></span>';
 }
 var CT_LAPIS = '<svg class="ct-lapis" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
 
@@ -95,7 +97,7 @@ function ctLinhasDia(m){
   var out = {};
   extratos.forEach(function(d){
     if (d.tipo !== 'diaadia' || d.mes !== m || !Array.isArray(d.linhas)) return;
-    d.linhas.forEach(function(l){ (out[l.c] = out[l.c] || []).push({ doc: d.id, id: l.id, d: l.d, t: l.t, v: l.v }); });
+    d.linhas.forEach(function(l){ var c0 = (typeof catNomeNovo === 'function') ? catNomeNovo(l.c) : l.c; (out[c0] = out[c0] || []).push({ doc: d.id, id: l.id, d: l.d, t: l.t, v: l.v }); });
   });
   return out;
 }
@@ -109,7 +111,7 @@ function ctColetar(meses){
     });
     var L = ctLinhasDia(m);
     Object.keys(D.diaADiaCats).forEach(function(c){
-      var rot = 'Dia a dia · ' + c, tot = D.diaADiaCats[c], x = por[rot] = por[rot] || { v: 0, itens: [], sem: 0 }, soma = 0;
+      var rot = c, tot = D.diaADiaCats[c], x = por[rot] = por[rot] || { v: 0, itens: [], sem: 0 }, soma = 0;
       x.v = r2(x.v + tot);
       (L[c] || []).forEach(function(l){ soma += l.v; x.itens.push({ k: 'dd', doc: l.doc, id: l.id, t: l.t, d: l.d, v: l.v }); });
       if (tot - soma > 0.004) x.sem = r2(x.sem + tot - soma);
@@ -151,7 +153,7 @@ function ctCardHtml(meses, base, setaFn){
       '<span class="ct-nm">' + escapeHtml(x.k) + seta + '</span><span class="ct-vl">' + fmtMoeda(x.v) + '</span>' +
       '<span class="ct-br"><i style="width:' + Math.max(2, x.v / lista[0].v * 100).toFixed(0) + '%;background:' + cor + '"></i></span><span class="ct-pc">' + Math.round(x.v / total * 100) + '%</span></summary><div class="ct-det">' + ctLista(por[x.k]) + '</div></details>';
   });
-  return { total: total, html: h + '</div>', lista: lista, por: por };
+  return { total: total, html: h + '</div>' + ((typeof catRcBotaoHtml === 'function' && por['Outros'] && por['Outros'].v > 0.004) ? '<div class="ct-rc" style="margin-top:8px">' + catRcBotaoHtml() + '</div>' : ''), lista: lista, por: por };
 }
 
 /* ---------- folha de edição (categoria e nome; o valor é o do extrato e não muda) ---------- */
@@ -171,16 +173,16 @@ function ctCatsDia(doc){
   var l = EXT_CATS.slice(); Object.keys((doc && doc.cats) || {}).forEach(function(c){ if (l.indexOf(c) < 0) l.push(c); }); return l;
 }
 function ctAbrirEd(ref){
-  ctMontarEd(); var p = ref.split('|'), k = p[0], id = p[1], docId = p[2], info = '', nome = '', cats = [], atual = '', hint = '', val = 0;
+  ctMontarEd(); var p = ref.split('|'), k = p[0], id = p[1], docId = p[2], info = '', nome = '', cats = [], atual = '', hint = '', val = 0, colDesp = '';
   if (k === 'desp'){
     var d = despesas.filter(function(x){ return x.id === id; })[0]; if (!d) return;
-    nome = d.nome || ''; atual = catIdValida(d.categoria); val = d.valorPadrao || d.valor || 0;
+    nome = d.nome || ''; atual = catIdValida(d.categoria); val = d.valorPadrao || d.valor || 0; colDesp = d.coluna;
     cats = (CATEGORIAS_LISTA || []).map(function(c){ return [c.id, c.label]; });
     info = '<b>' + escapeHtml(nome) + '</b>' + (d.data ? ' · ' + fmtData(d.data) : '');
     if (d.tipo === 'fixa') hint = 'Despesa fixa: a mudança vale para todos os meses dela.';
   } else if (k === 'dd'){
     var doc = extDocPorId(docId), ln = doc && (doc.linhas || []).filter(function(x){ return x.id === id; })[0]; if (!ln) return;
-    nome = ln.t || ''; atual = ln.c; val = ln.v; cats = ctCatsDia(doc).map(function(c){ return [c, 'Dia a dia · ' + c]; });
+    nome = ln.t || ''; atual = (typeof catNomeNovo === 'function') ? catNomeNovo(ln.c) : ln.c; val = ln.v; cats = ctCatsDia(doc).map(function(c){ return [c, c]; });
     info = '<b>' + escapeHtml(nome) + '</b> · ' + fmtData(ln.d) + ' · ' + fmtMoeda(ln.v);
   } else if (k === 'rec'){
     var r = receitasManuais.filter(function(x){ return x.id === id; })[0]; if (!r) return;
@@ -188,7 +190,10 @@ function ctAbrirEd(ref){
   } else return;
   ctEd = { k: k, id: id, docId: docId };
   qs('ctEdInfo').innerHTML = info + '<br><span class="saldo-data">O valor é o do extrato e não muda aqui.</span>';
-  var sel = qs('ctEdCat'); sel.innerHTML = cats.map(function(c){ return '<option value="' + escapeHtml(c[0]) + '"' + (c[0] === atual ? ' selected' : '') + '>' + escapeHtml(c[1]) + '</option>'; }).join('');
+  var sel = qs('ctEdCat');
+  if (k === 'desp' && typeof catOpcoesIdHtml === 'function') sel.innerHTML = catOpcoesIdHtml(atual, colDesp === 'pf' ? ['A', 'F'] : ['A', 'J']);
+  else if (k === 'dd' && typeof catOpcoesHtml === 'function') sel.innerHTML = catOpcoesHtml(atual);
+  else sel.innerHTML = cats.map(function(c){ return '<option value="' + escapeHtml(c[0]) + '"' + (c[0] === atual ? ' selected' : '') + '>' + escapeHtml(c[1]) + '</option>'; }).join('');
   sel.parentNode.style.display = cats.length ? '' : 'none';
   qs('ctEdNome').value = nome; qs('ctEdHint').textContent = hint; qs('ctEdErro').textContent = '';
   qs('overlayCtEd').classList.add('show');
@@ -203,6 +208,8 @@ function ctSalvarEd(){
   } else if (e.k === 'dd'){
     var doc = extDocPorId(e.docId); if (!doc) return;
     var cats = JSON.parse(JSON.stringify(doc.cats || {})), linhas = JSON.parse(JSON.stringify(doc.linhas || [])), ln = linhas.filter(function(x){ return x.id === e.id; })[0]; if (!ln) return;
+    /* se o documento já guarda essa categoria com o nome antigo (Mercado, Alimentação…), continua usando esse nome: o extrato antigo não é reescrito */
+    if (typeof catNomeNovo === 'function'){ var alvoN = catNomeNovo(cat), igual = Object.keys(cats).filter(function(k){ return catNomeNovo(k) === alvoN; })[0]; if (igual) cat = igual; if (catNomeNovo(ln.c) === alvoN) cat = ln.c; }
     if (ln.c !== cat){
       var o = cats[ln.c]; if (o){ o.v = r2(o.v - ln.v); o.n = Math.max(0, (o.n || 1) - 1); if (o.n <= 0 || o.v < 0.005) delete cats[ln.c]; }
       var nv = cats[cat] = cats[cat] || { v: 0, n: 0 }; nv.v = r2(nv.v + ln.v); nv.n++; ln.c = cat;
@@ -227,7 +234,7 @@ function ctJaItens(m){
   var out = [];
   extratos.forEach(function(d){
     if (d.tipo !== 'diaadia' || d.mes !== m || !Array.isArray(d.linhas)) return;
-    d.linhas.forEach(function(l){ out.push({ k: 'dd', id: l.id, doc: d.id, t: l.t, d: l.d, v: l.v, rot: 'Dia a dia · ' + l.c, grupo: 'dia' }); });
+    d.linhas.forEach(function(l){ out.push({ k: 'dd', id: l.id, doc: d.id, t: l.t, d: l.d, v: l.v, rot: (typeof catNomeNovo === 'function') ? catNomeNovo(l.c) : l.c, grupo: 'dia' }); });
   });
   despesas.forEach(function(x){
     if (!x.origemExtrato || x.tipo !== 'unica' || String(x.data || '').slice(0, 7) !== m) return;

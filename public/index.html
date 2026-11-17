@@ -1847,6 +1847,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4902,6 +4908,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}
     itens.sort(function(a,b){
       if (a.ordem !== b.ordem) return a.ordem - b.ordem;
@@ -7074,6 +7092,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     Array.prototype.forEach.call(group.children, function(btn){
       btn.classList.toggle('active', btn.getAttribute('data-value') === value);
     });
+    if ((groupId === 'segDespesaCategoria' || groupId === 'segDespesaColuna') && typeof catPickAtualizar === 'function') catPickAtualizar();
   }
   function wireSegmented(groupId, stateKey, onChange){
     var group = qs(groupId);
@@ -10123,6 +10142,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10226,6 +10257,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10233,7 +10276,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', pj:'Hygor (PJ)', pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10247,6 +10290,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -12908,7 +12963,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     FASE_LABEL = { sem: 'Sem fase definida' }; FASE_CURTA = { sem: 'Sem fase' };
     fases.forEach(function(f){ FASE_LABEL[f.id] = f.label; FASE_CURTA[f.id] = f.curta || f.label; });
 
-    var cats = CATEGORIAS_PADRAO.map(function(c){ return { id: c.id, label: c.label, cor: '', padrao: true }; });
+    var cats = CATEGORIAS_PADRAO.map(function(c){ return { id: c.id, label: c.label, cor: '', padrao: true, fam: c.fam, ic: c.ic, esc: c.esc }; });
     (listaValida(p.categorias) || []).forEach(function(c){
       if (CATEGORIAS_PADRAO.some(function(x){ return x.id === c.id; })) return;
       cats.push({ id: c.id, label: c.label, cor: c.cor || PALETA_CATEGORIA[0], padrao: false });
@@ -12925,11 +12980,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   function tagCategoria(id){
     var v = catIdValida(id);
     var c = CATEGORIAS_LISTA.filter(function(x){ return x.id === v; })[0];
+    if (c && typeof catVisCat === 'function'){ var vis = catVisCat(c); return '<span class="tag-cat cat-novo" style="background:' + vis.cor + '">' + catSvg(vis.lu, 12) + escapeHtml(c.label) + '</span>'; }
     if (c && !c.padrao) return '<span class="tag-cat" style="background:' + c.cor + '">' + escapeHtml(c.label) + '</span>';
     return '<span class="tag-cat cat-' + v + '">' + escapeHtml(CATEGORIA_LABEL[v]) + '</span>';
   }
   function linhasCategoria(porCat){
-    return CATEGORIAS_LISTA.map(function(c){ return ['  ' + c.label, fmtMoeda(porCat[c.id] || 0)]; });
+    return CATEGORIAS_LISTA.filter(function(c){ return (porCat[c.id] || 0) > 0.004; }).map(function(c){ return ['  ' + c.label, fmtMoeda(porCat[c.id] || 0)]; });   /* só as que tiveram gasto no mês */
   }
   function faseInicialAlvara(){
     var f = FASES_ALVARA.filter(function(x){ return x !== 'depositado'; })[0];
@@ -12968,6 +13024,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     });
     formStateDespesa.categoria = catIdValida(formStateDespesa.categoria);
     setSegValue('segDespesaCategoria', formStateDespesa.categoria);
+    if (typeof catPickMontar === 'function') catPickMontar();   /* seletor com ícones, famílias e busca (cliente/catalogo.js); os botões acima ficam escondidos e guardam o estado */
     renderModelosSelect();
     atualizarContagemFiltros();
   }
@@ -13010,11 +13067,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('editorNovoNome').placeholder = t.ph;
     qs('editorNovoCores').style.display = ehCat ? '' : 'none';
     qs('editorNovoCores').innerHTML = ehCat ? swatchesHtml('novo', ed.novaCor) : '';
-    qs('editorLista').innerHTML = ed.itens.map(function(it, i){
+    qs('editorLista').innerHTML = (ehCat ? '<div class="pb-aviso" style="margin:0 0 8px">A lista padrão tem ' + ed.itens.filter(function(x){ return x.padrao; }).length + ' categorias, com ícone, cor e palavras do extrato que classificam sozinhas. Aqui ficam só as suas.' + ((typeof catRcBotaoHtml === 'function') ? '<div style="margin-top:8px">' + catRcBotaoHtml() + '</div>' : '') + '</div>' : '') + ed.itens.map(function(it, i){
       var fixo = !!it.final || !!it.padrao;
       var podeExcluir = !fixo && !(ed.modo === 'peticao' && ed.itens.length <= 1);
       var h = '<div class="ed-linha"><div class="ed-topo">';
-      if (ehCat) h += '<span class="ed-dot' + (it.padrao ? ' tag-cat cat-' + it.id : '') + '"' + (it.padrao ? '' : ' style="background:' + it.cor + '"') + '></span>';
+      if (ehCat && it.padrao) return '';   /* a lista padrão (78 categorias, com ícones) é fixa e não precisa ser editada aqui */
+      if (ehCat) h += '<span class="ed-dot"' + ' style="background:' + it.cor + '"></span>';
       h += '<input type="text" class="ed-nome" data-ed-nome="' + i + '" maxlength="60" value="' + escapeHtml(it.label) + '"' + (it.padrao ? ' disabled' : '') + '>';
       if (!ehCat && !it.final){
         var prox = ed.itens[i + 1];
@@ -13706,9 +13764,10 @@ var EXT_REGRAS_CAT = [
 function extChaveRegra(l){ return EX.norm(l.s).replace(/\d{1,2}\/\d{1,2}/g, '').replace(/[0-9]/g, '').split(' ').filter(Boolean).slice(0, 2).join(' '); }
 function extCategoria(l, regras){
   var k = extChaveRegra(l), rg = k ? regras[k] : null;
-  if (rg){ if (typeof rg === 'string') return rg; if (rg.t === 'cat' && rg.cat) return rg.cat; }
+  if (rg){ if (typeof rg === 'string') return (typeof catNomeNovo === 'function') ? catNomeNovo(rg) : rg; if (rg.t === 'cat' && rg.cat) return (typeof catNomeNovo === 'function') ? catNomeNovo(rg.cat) : rg.cat; }
   var t = EX.norm(l.s + ' ' + l.n);
-  for (var i = 0; i < EXT_REGRAS_CAT.length; i++) if (EXT_REGRAS_CAT[i][1].test(t)) return EXT_REGRAS_CAT[i][0];
+  if (typeof catClassificar === 'function'){ var nova = catClassificar(l.s + ' ' + l.n); if (nova) return nova; }   /* lista única: UBER, IFOOD, NETFLIX, OFICINA… */
+  for (var i = 0; i < EXT_REGRAS_CAT.length; i++) if (EXT_REGRAS_CAT[i][1].test(t)) return (typeof catNomeNovo === 'function') ? catNomeNovo(EXT_REGRAS_CAT[i][0]) : EXT_REGRAS_CAT[i][0];
   return 'Outros';
 }
 function extDataCompra(l, dataLinha){
@@ -13826,7 +13885,7 @@ function extConstruirRevisao(){
     if (extContaObra(v.chave)) return;
     var t = EX.norm(v.l.s + ' ' + v.l.n);
     if (/REND PAGO APLIC|RENDIMENTOS/.test(t)) decidir(v, 'ignorar', 'rendimento da aplicação automática');
-    else if (v.v < 0 && /^(TAR |TARIFA|IOF|JUROS|DEB\.PARC)/.test(EX.norm(v.l.s))) decidir(v, 'dia', 'tarifas e encargos', { cat: 'Tarifas e juros' });
+    else if (v.v < 0 && /^(TAR |TARIFA|IOF|JUROS|DEB\.PARC)/.test(EX.norm(v.l.s))) decidir(v, 'dia', 'tarifas e encargos', { cat: 'Tarifas bancárias' });
   });
   /* 2) aplicação RDC: sugestão de aporte na reserva (e o dinheiro que veio da PJ para ela) */
   views.forEach(function(v){
@@ -13932,7 +13991,7 @@ function extConstruirRevisao(){
     v.sel.cat = cat; v.sel.nome = v.l.n || v.l.s;
     if (cfg.regras[extChaveRegra(v.l)]){ v.regra = cfg.regras[extChaveRegra(v.l)]; v.motivo = 'regra que você ensinou: ' + cat; }
     if (v.coluna === 'pf') decidir(v, 'dia', 'gasto do dia a dia');
-    else if (cat !== 'Outros' && cat !== 'Tarifas e juros') decidir(v, 'dia', 'gasto do dia a dia pago pela PJ');
+    else if (cat !== 'Outros' && cat !== 'Tarifas bancárias' && cat !== 'Juros, multas e IOF' && (typeof catEscopoDe !== 'function' || catEscopoDe(cat) !== 'J')) decidir(v, 'dia', 'gasto do dia a dia pago pela PJ');
   });
   atribuirCobrancas();
   return { views: views, cfg: cfg };
@@ -14224,7 +14283,7 @@ function extLinhaExtra(v, i){
     }
     html = extSelectHtml('data-i="' + i + '" data-campo="desp"', [['', 'Escolha a despesa…']].concat(ds), s.desp || '');
   } else if (v.act === 'dia'){
-    html = extSelectHtml('data-i="' + i + '" data-campo="cat"', EXT_CATS.map(function(c){ return [c, c]; }), s.cat || 'Outros');
+    html = (typeof catSelectHtml === 'function') ? catSelectHtml('data-i="' + i + '" data-campo="cat"', s.cat || 'Outros') : extSelectHtml('data-i="' + i + '" data-campo="cat"', EXT_CATS.map(function(c){ return [c, c]; }), s.cat || 'Outros');
   } else if (v.act === 'transf'){
     html = extSelectHtml('data-i="' + i + '" data-campo="tipo"', [['prolabore', 'Pró-labore'], ['distribuicao', 'Distribuição de lucros']], s.tipo || 'prolabore');
   } else if (v.act === 'obraGasto'){
@@ -14548,7 +14607,7 @@ function renderExtratos(){
   qs('extPend').innerHTML = p;
   /* dia a dia por mês */
   var dd = extratos.filter(function(d){ return d.tipo === 'diaadia'; }), porMes = {};
-  dd.forEach(function(d){ var m = porMes[d.mes] = porMes[d.mes] || { pf: {}, pj: {} }; var alvo = d.coluna === 'pj' ? m.pj : m.pf; Object.keys(d.cats || {}).forEach(function(k){ var x = alvo[k] = alvo[k] || { v: 0, n: 0 }; x.v = r2(x.v + d.cats[k].v); x.n += d.cats[k].n; }); });
+  dd.forEach(function(d){ var m = porMes[d.mes] = porMes[d.mes] || { pf: {}, pj: {} }; var alvo = d.coluna === 'pj' ? m.pj : m.pf; Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0; var x = alvo[k] = alvo[k] || { v: 0, n: 0 }; x.v = r2(x.v + d.cats[k0].v); x.n += d.cats[k0].n; }); });
   var meses = Object.keys(porMes).sort().reverse().slice(0, 6), dh = '';
   if (meses.length){
     dh = '<div class="financeiro-secao-head"><h4>Gastos do dia a dia (dos extratos)</h4></div>' + meses.map(function(m){
@@ -14638,7 +14697,7 @@ function anDiaADiaMes(m){
   var cats = {}, total = 0;
   extratos.forEach(function(d){
     if (d.tipo !== 'diaadia' || d.mes !== m) return;
-    Object.keys(d.cats || {}).forEach(function(k){ var v = Number(d.cats[k].v) || 0; cats[k] = r2((cats[k] || 0) + v); total += v; });
+    Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0, v = Number(d.cats[k0].v) || 0; cats[k] = r2((cats[k] || 0) + v); total += v; });
   });
   return { total: r2(total), cats: cats };
 }
@@ -14945,7 +15004,7 @@ var anMesUlt = null;
 function anCatsMes(m){
   var d = anDespesasMes(m), c = {};
   Object.keys(d.porCat).forEach(function(k){ var r = CATEGORIA_LABEL[k] || 'Outros'; c[r] = r2((c[r] || 0) + d.porCat[k]); });
-  Object.keys(d.diaADiaCats).forEach(function(k){ var r = 'Dia a dia · ' + k; c[r] = r2((c[r] || 0) + d.diaADiaCats[k]); });
+  Object.keys(d.diaADiaCats).forEach(function(k){ var r = k; c[r] = r2((c[r] || 0) + d.diaADiaCats[k]); });   /* mesma lista de categorias das despesas lançadas */
   return c;
 }
 function anMesesFechados(lista){
@@ -15426,7 +15485,7 @@ function renderAnalises(){
   dados.forEach(function(x){
     if (porNome) Object.keys(x.d.porNome).forEach(function(n){ porCat[n] = r2((porCat[n] || 0) + x.d.porNome[n]); });
     else Object.keys(x.d.porCat).forEach(function(c){ var rot = CATEGORIA_LABEL[c] || 'Outros'; porCat[rot] = r2((porCat[rot] || 0) + x.d.porCat[c]); });
-    Object.keys(x.d.diaADiaCats).forEach(function(c){ var rot = 'Dia a dia · ' + c; porCat[rot] = r2((porCat[rot] || 0) + x.d.diaADiaCats[c]); });
+    Object.keys(x.d.diaADiaCats).forEach(function(c){ var rot = c; porCat[rot] = r2((porCat[rot] || 0) + x.d.diaADiaCats[c]); });
   });
   var listaCat = Object.keys(porCat).map(function(k){ return { k: k, v: porCat[k] }; }).sort(function(a, b){ return b.v - a.v; });
   listaCat.forEach(function(x){ totalCat += x.v; });
@@ -17672,6 +17731,8 @@ var CT_REGRAS = [
 function ctNorm(t){ return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 function ctHash(t){ var h = 0, i; for (i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return h; }
 function ctVisual(rot){
+  var cv = (typeof catVisualDe === 'function') ? catVisualDe(String(rot || '').replace(/^Dia a dia\s*·\s*/i, '')) : null;
+  if (cv) return { lu: cv.lu, cor: cv.cor };   /* categoria da lista única: ícone e cor da família */
   var cru = String(rot || ''), n = ctNorm(cru.replace(/^Dia a dia\s*·\s*/i, '')), dia = /^Dia a dia/i.test(cru);
   var i, cat = (typeof CATEGORIAS_LISTA !== 'undefined' ? CATEGORIAS_LISTA : []).filter(function(c){ return c.label === cru; })[0];
   if (/^(outros|outras|diversos|geral)$/.test(n)) return dia ? { ic: 'bag', cor: '#EA580C' } : { ic: 'dots', cor: '#8A93AD' };
@@ -17680,7 +17741,7 @@ function ctVisual(rot){
 }
 function ctIcone(rot, peq){
   var v = ctVisual(rot);
-  return '<span class="ct-ic' + (peq ? ' sm' : '') + '" style="background:' + v.cor + '" aria-hidden="true"><svg viewBox="0 0 24 24">' + CT_SVG[v.ic] + '</svg></span>';
+  return '<span class="ct-ic' + (peq ? ' sm' : '') + '" style="background:' + v.cor + '" aria-hidden="true"><svg viewBox="0 0 24 24">' + (v.lu ? catPaths(v.lu) : CT_SVG[v.ic]) + '</svg></span>';
 }
 var CT_LAPIS = '<svg class="ct-lapis" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
 
@@ -17689,7 +17750,7 @@ function ctLinhasDia(m){
   var out = {};
   extratos.forEach(function(d){
     if (d.tipo !== 'diaadia' || d.mes !== m || !Array.isArray(d.linhas)) return;
-    d.linhas.forEach(function(l){ (out[l.c] = out[l.c] || []).push({ doc: d.id, id: l.id, d: l.d, t: l.t, v: l.v }); });
+    d.linhas.forEach(function(l){ var c0 = (typeof catNomeNovo === 'function') ? catNomeNovo(l.c) : l.c; (out[c0] = out[c0] || []).push({ doc: d.id, id: l.id, d: l.d, t: l.t, v: l.v }); });
   });
   return out;
 }
@@ -17703,7 +17764,7 @@ function ctColetar(meses){
     });
     var L = ctLinhasDia(m);
     Object.keys(D.diaADiaCats).forEach(function(c){
-      var rot = 'Dia a dia · ' + c, tot = D.diaADiaCats[c], x = por[rot] = por[rot] || { v: 0, itens: [], sem: 0 }, soma = 0;
+      var rot = c, tot = D.diaADiaCats[c], x = por[rot] = por[rot] || { v: 0, itens: [], sem: 0 }, soma = 0;
       x.v = r2(x.v + tot);
       (L[c] || []).forEach(function(l){ soma += l.v; x.itens.push({ k: 'dd', doc: l.doc, id: l.id, t: l.t, d: l.d, v: l.v }); });
       if (tot - soma > 0.004) x.sem = r2(x.sem + tot - soma);
@@ -17745,7 +17806,7 @@ function ctCardHtml(meses, base, setaFn){
       '<span class="ct-nm">' + escapeHtml(x.k) + seta + '</span><span class="ct-vl">' + fmtMoeda(x.v) + '</span>' +
       '<span class="ct-br"><i style="width:' + Math.max(2, x.v / lista[0].v * 100).toFixed(0) + '%;background:' + cor + '"></i></span><span class="ct-pc">' + Math.round(x.v / total * 100) + '%</span></summary><div class="ct-det">' + ctLista(por[x.k]) + '</div></details>';
   });
-  return { total: total, html: h + '</div>', lista: lista, por: por };
+  return { total: total, html: h + '</div>' + ((typeof catRcBotaoHtml === 'function' && por['Outros'] && por['Outros'].v > 0.004) ? '<div class="ct-rc" style="margin-top:8px">' + catRcBotaoHtml() + '</div>' : ''), lista: lista, por: por };
 }
 
 /* ---------- folha de edição (categoria e nome; o valor é o do extrato e não muda) ---------- */
@@ -17765,16 +17826,16 @@ function ctCatsDia(doc){
   var l = EXT_CATS.slice(); Object.keys((doc && doc.cats) || {}).forEach(function(c){ if (l.indexOf(c) < 0) l.push(c); }); return l;
 }
 function ctAbrirEd(ref){
-  ctMontarEd(); var p = ref.split('|'), k = p[0], id = p[1], docId = p[2], info = '', nome = '', cats = [], atual = '', hint = '', val = 0;
+  ctMontarEd(); var p = ref.split('|'), k = p[0], id = p[1], docId = p[2], info = '', nome = '', cats = [], atual = '', hint = '', val = 0, colDesp = '';
   if (k === 'desp'){
     var d = despesas.filter(function(x){ return x.id === id; })[0]; if (!d) return;
-    nome = d.nome || ''; atual = catIdValida(d.categoria); val = d.valorPadrao || d.valor || 0;
+    nome = d.nome || ''; atual = catIdValida(d.categoria); val = d.valorPadrao || d.valor || 0; colDesp = d.coluna;
     cats = (CATEGORIAS_LISTA || []).map(function(c){ return [c.id, c.label]; });
     info = '<b>' + escapeHtml(nome) + '</b>' + (d.data ? ' · ' + fmtData(d.data) : '');
     if (d.tipo === 'fixa') hint = 'Despesa fixa: a mudança vale para todos os meses dela.';
   } else if (k === 'dd'){
     var doc = extDocPorId(docId), ln = doc && (doc.linhas || []).filter(function(x){ return x.id === id; })[0]; if (!ln) return;
-    nome = ln.t || ''; atual = ln.c; val = ln.v; cats = ctCatsDia(doc).map(function(c){ return [c, 'Dia a dia · ' + c]; });
+    nome = ln.t || ''; atual = (typeof catNomeNovo === 'function') ? catNomeNovo(ln.c) : ln.c; val = ln.v; cats = ctCatsDia(doc).map(function(c){ return [c, c]; });
     info = '<b>' + escapeHtml(nome) + '</b> · ' + fmtData(ln.d) + ' · ' + fmtMoeda(ln.v);
   } else if (k === 'rec'){
     var r = receitasManuais.filter(function(x){ return x.id === id; })[0]; if (!r) return;
@@ -17782,7 +17843,10 @@ function ctAbrirEd(ref){
   } else return;
   ctEd = { k: k, id: id, docId: docId };
   qs('ctEdInfo').innerHTML = info + '<br><span class="saldo-data">O valor é o do extrato e não muda aqui.</span>';
-  var sel = qs('ctEdCat'); sel.innerHTML = cats.map(function(c){ return '<option value="' + escapeHtml(c[0]) + '"' + (c[0] === atual ? ' selected' : '') + '>' + escapeHtml(c[1]) + '</option>'; }).join('');
+  var sel = qs('ctEdCat');
+  if (k === 'desp' && typeof catOpcoesIdHtml === 'function') sel.innerHTML = catOpcoesIdHtml(atual, colDesp === 'pf' ? ['A', 'F'] : ['A', 'J']);
+  else if (k === 'dd' && typeof catOpcoesHtml === 'function') sel.innerHTML = catOpcoesHtml(atual);
+  else sel.innerHTML = cats.map(function(c){ return '<option value="' + escapeHtml(c[0]) + '"' + (c[0] === atual ? ' selected' : '') + '>' + escapeHtml(c[1]) + '</option>'; }).join('');
   sel.parentNode.style.display = cats.length ? '' : 'none';
   qs('ctEdNome').value = nome; qs('ctEdHint').textContent = hint; qs('ctEdErro').textContent = '';
   qs('overlayCtEd').classList.add('show');
@@ -17797,6 +17861,8 @@ function ctSalvarEd(){
   } else if (e.k === 'dd'){
     var doc = extDocPorId(e.docId); if (!doc) return;
     var cats = JSON.parse(JSON.stringify(doc.cats || {})), linhas = JSON.parse(JSON.stringify(doc.linhas || [])), ln = linhas.filter(function(x){ return x.id === e.id; })[0]; if (!ln) return;
+    /* se o documento já guarda essa categoria com o nome antigo (Mercado, Alimentação…), continua usando esse nome: o extrato antigo não é reescrito */
+    if (typeof catNomeNovo === 'function'){ var alvoN = catNomeNovo(cat), igual = Object.keys(cats).filter(function(k){ return catNomeNovo(k) === alvoN; })[0]; if (igual) cat = igual; if (catNomeNovo(ln.c) === alvoN) cat = ln.c; }
     if (ln.c !== cat){
       var o = cats[ln.c]; if (o){ o.v = r2(o.v - ln.v); o.n = Math.max(0, (o.n || 1) - 1); if (o.n <= 0 || o.v < 0.005) delete cats[ln.c]; }
       var nv = cats[cat] = cats[cat] || { v: 0, n: 0 }; nv.v = r2(nv.v + ln.v); nv.n++; ln.c = cat;
@@ -17821,7 +17887,7 @@ function ctJaItens(m){
   var out = [];
   extratos.forEach(function(d){
     if (d.tipo !== 'diaadia' || d.mes !== m || !Array.isArray(d.linhas)) return;
-    d.linhas.forEach(function(l){ out.push({ k: 'dd', id: l.id, doc: d.id, t: l.t, d: l.d, v: l.v, rot: 'Dia a dia · ' + l.c, grupo: 'dia' }); });
+    d.linhas.forEach(function(l){ out.push({ k: 'dd', id: l.id, doc: d.id, t: l.t, d: l.d, v: l.v, rot: (typeof catNomeNovo === 'function') ? catNomeNovo(l.c) : l.c, grupo: 'dia' }); });
   });
   despesas.forEach(function(x){
     if (!x.origemExtrato || x.tipo !== 'unica' || String(x.data || '').slice(0, 7) !== m) return;
@@ -23631,6 +23697,377 @@ function qdIniciar(){
 qdIniciar();
 (function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { qdPeriodo: qdPeriodo, qdNome: qdNome, qdSaudacao: qdSaudacao }); })();
 
+/* ============================================================
+   CATÁLOGO ÚNICO DE CATEGORIAS DE DESPESA (prefixo cat)
+   Uma lista só (78 categorias em 11 famílias, com ícone, cor da família, escopo e palavras que classificam sozinhas), usada:
+   - no lançamento de despesa da PJ e da PF (seletor com busca e famílias);
+   - na classificação do extrato "dia a dia" (palavras como UBER, IFOOD, NETFLIX, OFICINA…);
+   - na aba Análise (as despesas lançadas e as do extrato somam na mesma categoria, com o mesmo ícone e a mesma cor).
+   As 5 categorias antigas (estrutura, impostos, pessoal, sistemas, outros) mantêm os mesmos ids: nada do que já foi lançado se perde.
+   Os nomes antigos do extrato (Mercado, Alimentação, Casa…) viram os novos na leitura (catNomeNovo). "Reclassificar Outros em lote" sugere
+   a categoria certa para o que já está em "Outros" e só muda o que a pessoa aprovar.
+   ============================================================ */
+var CAT_FAMILIAS = [
+  ['moradia', 'Moradia', '#0284C7'], ['alimentacao', 'Alimentação', '#C98500'], ['transporte', 'Transporte e veículos', '#4F46E5'],
+  ['saude', 'Saúde e bem-estar', '#DB2777'], ['educacao', 'Educação e desenvolvimento', '#0D9488'], ['lazer', 'Lazer, assinaturas e serviços online', '#8B5CF6'],
+  ['compras', 'Compras e cuidados pessoais', '#EA580C'], ['familia', 'Família e doações', '#16A34A'], ['financas', 'Finanças e impostos', '#475569'],
+  ['escritorio', 'Escritório (PJ)', '#B7791E'], ['outros', 'Outros', '#8A93AD']
+];
+/* [id, rótulo, ícone (lucide), família, escopo (A = os dois, F = pessoal, J = escritório), palavras do extrato ("*" no fim = começa com), nome antigo do extrato] */
+var CAT_DADOS = [
+  ['aluguel_moradia', 'Aluguel e financiamento do imóvel', 'house', 'moradia', 'F', 'IMOBILIARIA|ALUGUEL|FINANCIAMENTO IMOVEL|CAIXA HABITACAO'],
+  ['condominio', 'Condomínio', 'building-2', 'moradia', 'F', 'CONDOMINIO'],
+  ['energia', 'Energia elétrica', 'zap', 'moradia', 'A', 'CELG|ENEL|EQUATORIAL|CPFL|CEMIG|ENERGIA'],
+  ['agua', 'Água e esgoto', 'droplets', 'moradia', 'A', 'SANEAGO|SABESP|COPASA|AGUA E ESGOTO'],
+  ['gas', 'Gás', 'flame', 'moradia', 'F', 'ULTRAGAZ|LIQUIGAS|SUPERGASBRAS|COMGAS|GAS DE COZINHA'],
+  ['internet_tel', 'Internet e telefone', 'wifi', 'moradia', 'A', 'CLARO|VIVO|TIM|OI FIBRA|OI MOVEL|INTERNET|TELEFON*|BRISANET|ALGAR', 'Telefone e internet'],
+  ['iptu', 'IPTU e taxas do imóvel', 'landmark', 'moradia', 'F', 'IPTU|PREFEITURA'],
+  ['manut_casa', 'Manutenção da casa', 'wrench', 'moradia', 'F', 'ELETRICA|HIDRAULICA|ENCANADOR|ELETRICISTA|PEDREIRO', 'Casa'],
+  ['reforma', 'Reforma e obra', 'hammer', 'moradia', 'F', 'MATERIAL DE CONSTRUCAO|CONSTRU*|LEROY MERLIN|TELHANORTE|REFORMA'],
+  ['moveis', 'Móveis, eletro e decoração', 'armchair', 'moradia', 'F', 'MOVEIS|MAGAZINE LUIZA|MAGALU|TOK STOK|CASAS BAHIA|PONTO FRIO'],
+  ['limpeza', 'Limpeza e diarista', 'spray-can', 'moradia', 'F', 'DIARISTA|FAXINA|LIMPEZA'],
+  ['mercado', 'Supermercado', 'shopping-cart', 'alimentacao', 'A', 'SUPER*|ATACADAO|ASSAI|CARREFOUR|MERCEARIA|MERCA|ATACAREJO|SOLID', 'Mercado'],
+  ['feira', 'Feira, açougue e hortifruti', 'carrot', 'alimentacao', 'F', 'ACOUGUE|HORTIFRUT*|SACOLAO|FEIRA|CARNES|FRIGORIFICO'],
+  ['padaria', 'Padaria e lanchonete', 'croissant', 'alimentacao', 'F', 'PADARIA|PANIF*|LANCHONETE|LANCH*|SALGAD*'],
+  ['restaurante', 'Restaurantes e bares', 'utensils', 'alimentacao', 'A', 'RESTAUR*|PIZZ*|BURGER|CHURRASC*|CERVEJ*|CERVA|CANTINA|BOTECO|SUSHI|BAR', 'Alimentação'],
+  ['delivery', 'Delivery (iFood e similares)', 'bike', 'alimentacao', 'A', 'IFOOD|IFD|RAPPI|99FOOD|UBER EATS|KEETA'],
+  ['cafe', 'Café e sobremesas', 'coffee', 'alimentacao', 'F', 'CAFE*|CAFETERIA|SORVET*|ACAI|DOCERIA|CACAU|STARBUCKS'],
+  ['combustivel', 'Combustível', 'fuel', 'transporte', 'A', 'POSTO|COMBUST*|GASOLINA|ETANOL|DIESEL|IPIRANGA|SHELL|PETROBRAS', 'Combustível'],
+  ['apps_transporte', 'Aplicativos de transporte (Uber, 99)', 'car-taxi-front', 'transporte', 'A', 'UBER|99|99POP|99 TAXI|CABIFY|INDRIVE|TAXI*'],
+  ['transp_publico', 'Transporte público', 'bus', 'transporte', 'F', 'METROBUS|RMTC|BILHETE UNICO|ONIBUS|CARTAO TRANSPORTE'],
+  ['estacionamento', 'Estacionamento e pedágio', 'parking-circle', 'transporte', 'A', 'ESTACIONAMENTO|ESTAPAR|SEM PARAR|CONECTCAR|PEDAGIO|VELOE'],
+  ['manut_veiculo', 'Manutenção do veículo', 'wrench', 'transporte', 'A', 'OFICINA|MECANICA|AUTO PECAS|PECAS AUTO|BORRACHARIA|PNEU*|FUNILARIA|AUTO CENTER|TROCA DE OLEO'],
+  ['lavagem', 'Lavagem e estética automotiva', 'car-front', 'transporte', 'F', 'LAVA JATO|LAVAGEM|ESTETICA AUTOMOTIVA'],
+  ['ipva', 'IPVA, licenciamento e multas', 'alert-triangle', 'transporte', 'A', 'DETRAN|IPVA|LICENCIAMENTO|MULTA DE TRANSITO|DPVAT'],
+  ['seguro_veiculo', 'Seguro e financiamento do veículo', 'shield-check', 'transporte', 'A', 'SEGURO AUTO|PORTO SEGURO|BV FINANCEIRA|FINANCIAMENTO VEICULO'],
+  ['viagens', 'Passagens, hospedagem e viagens', 'plane', 'transporte', 'A', 'LATAM|GOL LINHAS|AZUL LINHAS|BOOKING|AIRBNB|DECOLAR|HOTEL*|POUSADA|CVC|MAXMILHAS'],
+  ['plano_saude', 'Plano de saúde', 'heart-pulse', 'saude', 'F', 'UNIMED|BRADESCO SAUDE|AMIL|SULAMERICA|HAPVIDA|PLANO DE SAUDE'],
+  ['consultas', 'Consultas e exames', 'stethoscope', 'saude', 'F', 'CLINICA|LABORATORIO|HOSPITAL|EXAME*|CONSULTA|MEDICO'],
+  ['farmacia', 'Farmácia e medicamentos', 'pill', 'saude', 'A', 'DROGA*|FARMA*|DROGARIA|PACHECO|PAGUE MENOS', 'Farmácia'],
+  ['dentista', 'Dentista', 'smile', 'saude', 'F', 'ODONTO*|DENTISTA'],
+  ['terapia', 'Psicólogo e terapias', 'brain', 'saude', 'F', 'PSICOLOG*|TERAPIA|PSIQUIATR*'],
+  ['academia', 'Academia e esportes', 'dumbbell', 'saude', 'F', 'ACADEMIA|SMARTFIT|BLUEFIT|BODYTECH|CROSSFIT|PILATES'],
+  ['otica', 'Óculos e ótica', 'glasses', 'saude', 'F', 'OTICA*|OCULOS|CHILLI BEANS'],
+  ['faculdade', 'Faculdade e pós-graduação', 'graduation-cap', 'educacao', 'A', 'UNIVERSIDADE|FACULDADE|POS GRADUACAO|ANHANGUERA|ESTACIO|UNIP'],
+  ['cursos', 'Cursos e treinamentos', 'book-open', 'educacao', 'A', 'CURSO*|UDEMY|ALURA|COURSERA|HOTMART|TREINAMENTO*'],
+  ['livros', 'Livros e materiais', 'book', 'educacao', 'A', 'LIVRARIA|SARAIVA|LIVRO*'],
+  ['congressos', 'Congressos e eventos', 'presentation', 'educacao', 'A', 'CONGRESSO|SEMINARIO|SIMPOSIO'],
+  ['idiomas', 'Idiomas', 'languages', 'educacao', 'F', 'WIZARD|CNA|DUOLINGO|CCAA|FISK|IDIOMA*'],
+  ['escola', 'Escola e mensalidades', 'calendar-days', 'educacao', 'F', 'COLEGIO|ESCOLA|MENSALIDADE ESCOLAR'],
+  ['streaming', 'Streaming de vídeo e música', 'tv', 'lazer', 'F', 'NETFLIX|SPOTIFY|DISNEY*|HBO|PRIME VIDEO|AMAZON PRIME|YOUTUBE PREMIUM|DEEZER|GLOBOPLAY|APPLE COM BILL|APPLE MUSIC|PARAMOUNT|TELECINE|CRUNCHYROLL'],
+  ['jogos', 'Jogos e entretenimento', 'gamepad-2', 'lazer', 'F', 'STEAM|PLAYSTATION|XBOX|NINTENDO|EPIC GAMES'],
+  ['cinema_eventos', 'Cinema, shows e eventos', 'clapperboard', 'lazer', 'F', 'CINEMA|CINEMARK|INGRESSO*|SYMPLA|SHOW*|TEATRO|TICKET MASTER'],
+  ['passeios', 'Hotéis e passeios', 'bed-double', 'lazer', 'F', 'PASSEIO*|PARQUE*|EXCURS*|TURISMO'],
+  ['apps_servicos', 'Aplicativos e serviços online', 'cloud', 'lazer', 'A', 'GOOGLE ONE|GOOGLE STORAGE|ICLOUD|DROPBOX|OPENAI|CHATGPT|ANTHROPIC|CLAUDE|ADOBE|MICROSOFT*|CANVA|ZOOM|NOTION|SLACK|GITHUB'],
+  ['dominio_hosp', 'Domínios e hospedagem', 'globe', 'lazer', 'A', 'HOSTINGER|GODADDY|REGISTRO BR|LOCAWEB|HOSTGATOR|CLOUDFLARE'],
+  ['assinaturas_div', 'Assinaturas diversas', 'repeat', 'lazer', 'A', 'ASSINATURA*|CLUBE*|REVISTA*|JORNAL*'],
+  ['roupas', 'Roupas e calçados', 'shirt', 'compras', 'F', 'RENNER|C&A|RIACHUELO|MARISA|ZARA|CALCADO*|ROUPAS|MODA|HERING|AREZZO|NIKE|ADIDAS'],
+  ['beleza', 'Beleza e estética', 'sparkles', 'compras', 'F', 'BOTICARIO|NATURA|ESTETICA|SEPHORA|AVON|PERFUM*'],
+  ['barbearia', 'Cabeleireiro e barbearia', 'scissors', 'compras', 'F', 'SALAO|BARBEARIA|CABELEIREIR*'],
+  ['eletronicos', 'Eletrônicos e informática', 'laptop', 'compras', 'A', 'KABUM|FAST SHOP|SAMSUNG|APPLE STORE|INFORMATICA|CELULAR'],
+  ['presentes', 'Presentes', 'gift', 'compras', 'F', 'PRESENTE*'],
+  ['compras_online', 'Compras online', 'package', 'compras', 'A', 'MERCADO LIVRE|MERCADOLIVRE|AMAZON|SHOPEE|SHEIN|ALIEXPRESS|AMERICANAS|SUBMARINO'],
+  ['pets', 'Pets e veterinário', 'paw-print', 'compras', 'F', 'PETZ|COBASI|PET SHOP|PETSHOP|VETERINAR*'],
+  ['filhos', 'Filhos e família', 'user-round', 'familia', 'F', 'ESCOLINHA|BRINQUEDO*|RIHAPPY'],
+  ['doacoes', 'Doações e dízimo', 'handshake', 'familia', 'F', 'IGREJA|DIZIMO|DOACAO'],
+  ['tarifas', 'Tarifas bancárias', 'building-2', 'financas', 'A', 'TARIFA*|ANUIDADE CARTAO|PACOTE SERVICOS', 'Tarifas e juros'],
+  ['juros', 'Juros, multas e IOF', 'percent', 'financas', 'A', 'JUROS|IOF|MULTA|ENCARGOS|MORA'],
+  ['emprestimos', 'Empréstimos e financiamentos', 'hand-coins', 'financas', 'A', 'EMPRESTIMO|FINANCIAMENTO|PARCELA*|CONSIGNADO'],
+  ['cartao', 'Fatura de cartão', 'credit-card', 'financas', 'A', 'FATURA|PAGAMENTO FATURA|CARTAO DE CREDITO'],
+  ['seguros', 'Seguros', 'shield-check', 'financas', 'A', 'SEGURO*|SEGURADORA|MAPFRE|TOKIO MARINE'],
+  ['impostos_pf', 'Imposto de renda e tributos pessoais', 'landmark', 'financas', 'F', 'DARF|IMPOSTO DE RENDA|RECEITA FEDERAL|IRPF'],
+  ['estrutura', 'Estrutura do escritório (aluguel, condomínio)', 'building-2', 'escritorio', 'J', 'ALUGUEL ESCRIT*|COWORKING|CONDOMINIO ESCRIT*', 'Estrutura'],
+  ['contabilidade', 'Contabilidade', 'calculator', 'escritorio', 'J', 'CONTADOR|CONTABIL*|CONTABILIDADE'],
+  ['impostos', 'Impostos e taxas (DAS, ISS)', 'landmark', 'escritorio', 'J', 'DAS|ISS|SIMPLES NACIONAL|DAS MEI', 'Impostos'],
+  ['pessoal', 'Pessoal e encargos', 'users', 'escritorio', 'J', 'SALARIO*|FGTS|ESTAGIARIO*|FOLHA|FUNCIONARIO*', 'Pessoal'],
+  ['pro_labore', 'Pró-labore e retiradas', 'wallet', 'escritorio', 'J', 'PRO LABORE|PROLABORE|DISTRIBUICAO DE LUCROS'],
+  ['sistemas', 'Sistemas e software jurídico', 'scale', 'escritorio', 'J', 'PROJURIS|ASTREA|ADVBOX|SOFTWARE JURIDICO|JUSBRASIL', 'Sistemas'],
+  ['marketing', 'Marketing e anúncios', 'megaphone', 'escritorio', 'J', 'META ADS|GOOGLE ADS|FACEBK|FACEBOOK ADS|INSTAGRAM ADS|LINKEDIN ADS|TIKTOK ADS|MARKETING|PUBLICIDADE'],
+  ['material_escritorio', 'Material de escritório e impressões', 'printer', 'escritorio', 'J', 'PAPELARIA|KALUNGA|IMPRESS*|TONER|CARTUCHO'],
+  ['custas', 'Custas e despesas processuais', 'landmark', 'escritorio', 'J', 'CUSTAS|TJGO|GUIA JUDICIAL|EMOLUMENTO*'],
+  ['correios_cartorio', 'Correios e cartório', 'mail', 'escritorio', 'J', 'CORREIOS|SEDEX|CARTORIO|CERTIDAO'],
+  ['correspondente', 'Correspondentes e diligências', 'handshake', 'escritorio', 'J', 'CORRESPONDENTE|DILIGENCIA*'],
+  ['deslocamento', 'Deslocamentos a trabalho', 'briefcase', 'escritorio', 'J', 'DESLOCAMENTO*'],
+  ['cert_digital', 'Certificado digital e assinaturas', 'file-check', 'escritorio', 'J', 'CERTISIGN|SERASA CERTIFICADO|CERTIFICADO DIGITAL|SAFEWEB'],
+  ['anuidade_oab', 'Anuidade OAB e entidades', 'scale', 'escritorio', 'J', 'OAB|CAA GO|ANUIDADE OAB'],
+  ['manut_equip', 'Manutenção de equipamentos', 'wrench', 'escritorio', 'J', 'ASSISTENCIA TECNICA|MANUTENCAO DE EQUIPAMENTO*'],
+  ['copa_limpeza', 'Limpeza e copa do escritório', 'spray-can', 'escritorio', 'J', 'COPA|MATERIAL DE LIMPEZA'],
+  ['outros', 'Outros', 'ellipsis', 'outros', 'A', '', 'Outros']
+];
+var CAT_PRONTO = false;
+var CAT_FAM = {}; CAT_FAMILIAS.forEach(function(f){ CAT_FAM[f[0]] = { id: f[0], nome: f[1], cor: f[2] }; });
+var CAT_CATALOGO = CAT_DADOS.map(function(d){
+  var pal = d[5] ? d[5].split('|').map(function(p){ var pref = /\*$/.test(p); return { t: p.replace(/\*$/, ''), pref: pref }; }) : [];
+  return { id: d[0], label: d[1], ic: d[2], fam: d[3], esc: d[4], pal: pal, leg: d[6] || '' };
+});
+var CAT_POR_ID = {}, CAT_POR_LABEL = {}, CAT_LEGADO = {};
+CAT_CATALOGO.forEach(function(c){ CAT_POR_ID[c.id] = c; CAT_POR_LABEL[c.label] = c; if (c.leg) CAT_LEGADO[c.leg] = c.label; });
+/* ordem de teste das palavras: os mais específicos primeiro (UBER EATS antes de UBER, GOOGLE ADS antes de GOOGLE ONE…) */
+var CAT_CEDO = ['delivery', 'apps_transporte', 'streaming', 'marketing', 'estrutura', 'cert_digital', 'anuidade_oab', 'custas', 'compras_online', 'jogos', 'dominio_hosp', 'apps_servicos', 'plano_saude', 'seguro_veiculo', 'ipva', 'impostos_pf', 'cartao', 'juros', 'sistemas'];
+var CAT_ORDEM = CAT_CEDO.map(function(id){ return CAT_POR_ID[id]; }).concat(CAT_CATALOGO.filter(function(c){ return CAT_CEDO.indexOf(c.id) < 0 && c.id !== 'outros'; }));
+
+/* as 5 categorias padrão antigas continuam com os mesmos ids; as novas se juntam a elas (aplicarPersonalizacao lê CATEGORIAS_PADRAO) */
+CATEGORIAS_PADRAO.splice(0, CATEGORIAS_PADRAO.length);
+CAT_CATALOGO.forEach(function(c){ CATEGORIAS_PADRAO.push({ id: c.id, label: c.label, fam: c.fam, ic: c.ic, esc: c.esc }); });
+/* a lista de categorias do extrato passa a ser a mesma (rótulos novos) */
+EXT_CATS.splice(0, EXT_CATS.length);
+CAT_CATALOGO.forEach(function(c){ EXT_CATS.push(c.label); });
+
+function catNormTxt(t){ return ' ' + String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9&]+/g, ' ').trim() + ' '; }
+/* o rótulo de categoria escrito no passado (extrato antigo, "Dia a dia · …") no rótulo de hoje; nomes que a pessoa criou ficam como estão */
+function catNomeNovo(nome){
+  if (!CAT_PRONTO) return String(nome == null ? '' : nome).replace(/^Dia a dia\s*·\s*/i, '').trim() || 'Outros';
+  var n = String(nome == null ? '' : nome).replace(/^Dia a dia\s*·\s*/i, '').trim();
+  if (CAT_POR_LABEL[n]) return n;
+  return CAT_LEGADO[n] || n || 'Outros';
+}
+/* a categoria que as palavras do texto indicam (rótulo) ou null */
+function catClassificar(texto){
+  if (!CAT_PRONTO) return null;
+  var t = catNormTxt(texto), i, j, c, p;
+  for (i = 0; i < CAT_ORDEM.length; i++){
+    c = CAT_ORDEM[i];
+    for (j = 0; j < c.pal.length; j++){ p = c.pal[j]; if (t.indexOf(' ' + p.t + (p.pref ? '' : ' ')) >= 0) return c.label; }
+  }
+  return null;
+}
+function catEscopoDe(label){ if (!CAT_PRONTO) return 'A'; var c = CAT_POR_LABEL[label]; return c ? c.esc : 'A'; }
+/* ícone e cor de uma categoria (pelo rótulo ou pelo id); null se não for do catálogo */
+function catVisualDe(chave){
+  if (!CAT_PRONTO) return null;
+  var c = CAT_POR_LABEL[catNomeNovo(chave)] || CAT_POR_ID[chave]; if (!c) return null;
+  return { lu: c.ic, cor: CAT_FAM[c.fam].cor, fam: c.fam, id: c.id, label: c.label };
+}
+function catPaths(lu){ return (typeof IC_LUCIDE !== 'undefined' && IC_LUCIDE[lu]) || (lu === 'ellipsis' ? '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>' : ''); }
+function catSvg(lu, t){
+  var d = catPaths(lu);
+  return '<svg viewBox="0 0 24 24" width="' + (t || 16) + '" height="' + (t || 16) + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none">' + d + '</svg>';
+}
+/* o rótulo de um limite de orçamento antigo ("Dia a dia · Mercado", "Alimentação"…) no rótulo de hoje */
+function catRotNovo(rot){ if (!CAT_PRONTO) return String(rot || ''); var r = String(rot || ''); return r ? catNomeNovo(r) : r; }
+
+/* opções agrupadas por família para <select> (rótulos como valor) */
+function catOpcoesHtml(atual, so){
+  if (!CAT_PRONTO) return '';
+  var h = '', atualN = catNomeNovo(atual), vistos = {};
+  CAT_FAMILIAS.forEach(function(f){
+    var its = CAT_CATALOGO.filter(function(c){ return c.fam === f[0] && (!so || so.indexOf(c.esc) >= 0 || c.label === atualN); });
+    if (!its.length) return;
+    h += '<optgroup label="' + escapeHtml(f[1]) + '">' + its.map(function(c){ vistos[c.label] = 1; return '<option value="' + escapeHtml(c.label) + '"' + (c.label === atualN ? ' selected' : '') + '>' + escapeHtml(c.label) + '</option>'; }).join('') + '</optgroup>';
+  });
+  if (atualN && !vistos[atualN]) h = '<option value="' + escapeHtml(atualN) + '" selected>' + escapeHtml(atualN) + '</option>' + h;
+  return h;
+}
+/* opções (valor = id) para a ficha de edição de uma despesa já lançada: as da conta, a atual e as criadas à mão */
+function catOpcoesIdHtml(atualId, so){
+  if (!CAT_PRONTO) return '';
+  var h = '', vistos = {};
+  CAT_FAMILIAS.forEach(function(f){
+    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && (!so || so.indexOf(ci.esc) >= 0 || c.id === atualId); });
+    if (!its.length) return;
+    h += '<optgroup label="' + escapeHtml(f[1]) + '">' + its.map(function(c){ vistos[c.id] = 1; return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atualId ? ' selected' : '') + '>' + escapeHtml(c.label) + '</option>'; }).join('') + '</optgroup>';
+  });
+  var meus = CATEGORIAS_LISTA.filter(function(c){ return !CAT_POR_ID[c.id]; });
+  if (meus.length) h += '<optgroup label="Minhas categorias">' + meus.map(function(c){ return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atualId ? ' selected' : '') + '>' + escapeHtml(c.label) + '</option>'; }).join('') + '</optgroup>';
+  return h;
+}
+function catSelectHtml(attrs, atual, so){ return '<select class="ext-sel" ' + attrs + '>' + catOpcoesHtml(atual, so) + '</select>'; }
+
+/* ---------- seletor de categoria da ficha de despesa (PJ e PF) ---------- */
+var catPickS = { aberto: false, q: '', todas: false };
+function catColunaAtual(){ try{ return (formStateDespesa && formStateDespesa.coluna) === 'pf' ? 'pf' : 'pj'; }catch(e){ return 'pj'; } }
+function catListaParaPick(){
+  var col = catColunaAtual(), ok = col === 'pf' ? ['A', 'F'] : ['A', 'J'], sel = null;
+  try{ sel = formStateDespesa.categoria; }catch(e){}
+  var out = [];
+  CAT_FAMILIAS.forEach(function(f){
+    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && (catPickS.todas || ok.indexOf(ci.esc) >= 0 || c.id === sel); });
+    if (its.length) out.push({ nome: f[1], cor: f[2], its: its });
+  });
+  var meus = CATEGORIAS_LISTA.filter(function(c){ return !CAT_POR_ID[c.id]; });
+  if (meus.length) out.push({ nome: 'Minhas categorias', cor: '', its: meus, meus: true });
+  return out;
+}
+function catVisCat(c){ if (!CAT_PRONTO) return { lu: 'tag', cor: (c && c.cor) || '#8B5CF6' }; var ci = CAT_POR_ID[c.id]; return ci ? { lu: ci.ic, cor: CAT_FAM[ci.fam].cor } : { lu: 'tag', cor: c.cor || '#8B5CF6' }; }
+function catIconeHtml(c, t){ var v = catVisCat(c); return '<span class="cat-ic" style="background:' + v.cor + '">' + catSvg(v.lu, t || 16) + '</span>'; }
+function catPickAtualizar(){
+  if (!CAT_PRONTO) return;
+  var btn = qs('catPickBtn'); if (!btn) return;
+  var id = null; try{ id = formStateDespesa.categoria; }catch(e){}
+  var c = CATEGORIAS_LISTA.filter(function(x){ return x.id === id; })[0] || CATEGORIAS_LISTA.filter(function(x){ return x.id === 'outros'; })[0];
+  if (!c) return;
+  var ci = CAT_POR_ID[c.id], fam = ci ? CAT_FAM[ci.fam].nome : 'Minha categoria';
+  btn.innerHTML = catIconeHtml(c, 18) + '<span class="cat-pk-t"><b>' + escapeHtml(c.label) + '</b><small>' + escapeHtml(fam) + '</small></span><span class="cat-pk-seta">▾</span>';
+  if (catPickS.aberto) catPickDesenhar();
+}
+function catPickDesenhar(){
+  var pop = qs('catPickPop'); if (!pop) return;
+  var toks = catNormTxt(catPickS.q).trim().split(' ').filter(Boolean), sel = null; try{ sel = formStateDespesa.categoria; }catch(e){}
+  var h = '<input type="search" id="catPickQ" class="cat-pk-q" placeholder="Buscar categoria (uber, netflix, farmácia…)" value="' + escapeHtml(catPickS.q) + '" autocomplete="off"><div class="cat-pk-l">', n = 0;
+  catListaParaPick().forEach(function(f){
+    var its = f.its.filter(function(c){ var ci = CAT_POR_ID[c.id], hay = catNormTxt(c.label + ' ' + f.nome + ' ' + (ci ? ci.pal.map(function(p){ return p.t; }).join(' ') : '')); return toks.every(function(t){ return hay.indexOf(t) >= 0; }); });
+    if (!its.length) return;
+    h += '<div class="cat-pk-f">' + (f.cor ? '<span style="background:' + f.cor + '"></span>' : '') + escapeHtml(f.nome) + '</div>';
+    its.forEach(function(c){ n++; h += '<button type="button" class="cat-pk-i' + (c.id === sel ? ' on' : '') + '" data-catpick="' + escapeHtml(c.id) + '">' + catIconeHtml(c, 15) + '<span>' + escapeHtml(c.label) + '</span></button>'; });
+  });
+  if (!n) h += '<div class="cat-pk-v">Nenhuma categoria com “' + escapeHtml(catPickS.q) + '”.' + (catPickS.todas ? '' : ' <button type="button" class="cat-pk-lk" data-catpick-todas="1">Procurar em todas</button>') + '</div>';
+  h += '</div><div class="cat-pk-rod"><button type="button" class="cat-pk-lk" data-catpick-todas="1">' + (catPickS.todas ? 'Mostrar só as da ' + (catColunaAtual() === 'pf' ? 'pessoa física' : 'PJ') : 'Mostrar também as do outro lado') + '</button></div>';
+  pop.innerHTML = h; pop.style.display = 'flex';
+  var inp = qs('catPickQ'); if (inp && document.activeElement !== inp){ inp.focus(); try{ inp.setSelectionRange(catPickS.q.length, catPickS.q.length); }catch(e){} }
+}
+function catPickAbrir(){ catPickS.aberto = true; catPickS.q = ''; catPickDesenhar(); }
+function catPickFechar(){ catPickS.aberto = false; var pop = qs('catPickPop'); if (pop) pop.style.display = 'none'; }
+function catPickEscolher(id){
+  var sc = qs('segDespesaCategoria'), b = sc && sc.querySelector('[data-value="' + id + '"]');
+  if (b) b.click();
+  catPickFechar(); catPickAtualizar();
+}
+/* chamado por montarControlesDinamicos: o seletor visível + os botões escondidos (guardam o estado e atendem o resto do app) */
+function catPickMontar(){
+  if (!CAT_PRONTO) return;
+  var sc = qs('segDespesaCategoria'); if (!sc) return;
+  sc.classList.add('cat-oculto');
+  var campo = sc.parentNode, w = qs('catPick');
+  if (!w){ w = document.createElement('div'); w.id = 'catPick'; w.className = 'cat-pick'; w.innerHTML = '<button type="button" id="catPickBtn" class="cat-pk-btn" aria-haspopup="listbox"></button><div id="catPickPop" class="cat-pk-pop" style="display:none"></div>'; campo.insertBefore(w, sc); }
+  catPickAtualizar();
+}
+
+/* ---------- reclassificar "Outros" em lote ---------- */
+var catRcS = null;
+function catRcColeta(){
+  var out = { desp: [], dd: [], sem: 0 };
+  despesas.forEach(function(d){
+    if (d.transferenciaId || catIdValida(d.categoria) !== 'outros') return;
+    var s = catClassificar((d.nome || '') + ' ' + (d.observacoes || ''));
+    if (s && s !== 'Outros') out.desp.push({ k: 'desp', id: d.id, t: d.nome || 'Sem nome', d: d.data || '', v: Number(d.valorPadrao || d.valor || 0), sug: s }); else out.sem++;
+  });
+  extratos.forEach(function(doc){
+    if (doc.tipo !== 'diaadia' || !Array.isArray(doc.linhas)) return;
+    doc.linhas.forEach(function(l){
+      if (catNomeNovo(l.c) !== 'Outros') return;
+      var s = catClassificar(l.t || '');
+      if (s && s !== 'Outros') out.dd.push({ k: 'dd', id: l.id, doc: doc.id, t: l.t || 'Sem nome', d: l.d, v: Number(l.v) || 0, sug: s }); else out.sem++;
+    });
+  });
+  return out;
+}
+function catRcContagem(){ var c = catRcColeta(); return { sug: c.desp.length + c.dd.length, sem: c.sem }; }
+function catRcMontar(){
+  if (qs('overlayCatRc')) return;
+  var d = document.createElement('div'); d.className = 'overlay'; d.id = 'overlayCatRc'; d.style.zIndex = '260';
+  d.innerHTML = '<div class="modal"><div class="modal-head"><h2>Reclassificar “Outros”</h2><button class="icon-btn" type="button" data-catrc="x" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="modal-body" id="overlayCatRcC"></div></div>';
+  document.body.appendChild(d);
+  d.addEventListener('click', function(e){
+    if (e.target === d){ d.classList.remove('show'); return; }
+    var b = e.target.closest ? e.target.closest('[data-catrc]') : null; if (!b) return; var a = b.getAttribute('data-catrc');
+    if (a === 'x' || a === 'cancelar') d.classList.remove('show');
+    else if (a === 'todas'){ catRcS.itens.forEach(function(x){ x.on = true; }); catRcDesenhar(); }
+    else if (a === 'nenhuma'){ catRcS.itens.forEach(function(x){ x.on = false; }); catRcDesenhar(); }
+    else if (a === 'aplicar') catRcAplicar();
+  });
+  d.addEventListener('change', function(e){
+    var t = e.target; if (!t || !t.getAttribute) return;
+    var i = t.getAttribute('data-catrc-on'); if (i !== null){ catRcS.itens[Number(i)].on = t.checked; catRcAtualizaBotao(); return; }
+    i = t.getAttribute('data-catrc-cat'); if (i !== null) catRcS.itens[Number(i)].sug = t.value;
+  });
+}
+function catRcAtualizaBotao(){ var b = document.querySelector('#overlayCatRc [data-catrc="aplicar"]'), n = catRcS.itens.filter(function(x){ return x.on; }).length; if (b){ b.disabled = !n || catRcS.ocupado; b.textContent = 'Aplicar a ' + n + (n === 1 ? ' lançamento' : ' lançamentos'); } }
+function catRcDesenhar(){
+  var el = qs('overlayCatRcC'), S = catRcS; if (!el || !S) return;
+  var linha = function(x, i){
+    return '<label class="cat-rc-it"><input type="checkbox" data-catrc-on="' + i + '"' + (x.on ? ' checked' : '') + '><span class="cat-rc-t"><b>' + escapeHtml(x.t) + '</b><small>' + (x.d ? escapeHtml(fmtData(String(x.d).slice(0, 10))) + ' · ' : '') + fmtMoeda(x.v) + '</small></span>' +
+      '<select class="ext-sel cat-rc-sel" data-catrc-cat="' + i + '" aria-label="Categoria sugerida">' + catOpcoesHtml(x.sug) + '</select></label>';
+  };
+  var desp = S.itens.map(function(x, i){ return x.k === 'desp' ? linha(x, i) : ''; }).join(''), dd = S.itens.map(function(x, i){ return x.k === 'dd' ? linha(x, i) : ''; }).join('');
+  var h = '<div class="pb-aviso">O app olhou o nome de cada lançamento em “Outros” e sugeriu a categoria. Nada muda até você tocar em <b>Aplicar</b>; dá para desmarcar ou trocar a sugestão de cada um.</div>';
+  if (!S.itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nenhum lançamento em “Outros” com sugestão.' + (S.sem ? ' ' + S.sem + (S.sem === 1 ? ' continua sem sugestão (corrija na mão).' : ' continuam sem sugestão (corrija na mão).') : '') + '</div>';
+  else {
+    if (desp) h += '<div class="cat-rc-g">Despesas lançadas (' + S.itens.filter(function(x){ return x.k === 'desp'; }).length + ')</div>' + desp;
+    if (dd) h += '<div class="cat-rc-g">Gastos do extrato (' + S.itens.filter(function(x){ return x.k === 'dd'; }).length + ')</div>' + dd;
+    if (S.sem) h += '<div class="saldo-data" style="margin-top:8px">' + S.sem + (S.sem === 1 ? ' lançamento em “Outros” não tem sugestão e fica como está.' : ' lançamentos em “Outros” não têm sugestão e ficam como estão.') + '</div>';
+    h += '<div class="cat-rc-ac"><button type="button" class="btn btn-ghost pb-b" data-catrc="todas">Marcar todas</button><button type="button" class="btn btn-ghost pb-b" data-catrc="nenhuma">Desmarcar todas</button></div>';
+  }
+  h += '<div class="form-error" id="catRcErro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-catrc="cancelar">Fechar</button>' + (S.itens.length ? '<button type="button" class="btn btn-primary" data-catrc="aplicar"></button>' : '') + '</div>';
+  el.innerHTML = h; catRcAtualizaBotao();
+}
+function catRcAbrir(){
+  catRcMontar(); var c = catRcColeta();
+  catRcS = { itens: c.desp.concat(c.dd).map(function(x){ x.on = true; return x; }), sem: c.sem, ocupado: false };
+  catRcDesenhar(); qs('overlayCatRc').classList.add('show');
+}
+function catRcAplicar(){
+  var S = catRcS, esc = qs('catRcErro'); if (!S || S.ocupado) return;
+  var sel = S.itens.filter(function(x){ return x.on; }); if (!sel.length) return;
+  S.ocupado = true; catRcAtualizaBotao();
+  var cadeia = Promise.resolve(), porDoc = {};
+  sel.forEach(function(x){
+    if (x.k === 'desp'){
+      var d = despesas.filter(function(z){ return z.id === x.id; })[0], c = CAT_POR_LABEL[x.sug]; if (!d || !c) return;
+      cadeia = cadeia.then(function(){ return persistPatchDespesa(d, { categoria: c.id }); });
+    } else (porDoc[x.doc] = porDoc[x.doc] || []).push(x);
+  });
+  Object.keys(porDoc).forEach(function(docId){
+    cadeia = cadeia.then(function(){
+      var doc = extDocPorId(docId); if (!doc) return;
+      var cats = JSON.parse(JSON.stringify(doc.cats || {})), linhas = JSON.parse(JSON.stringify(doc.linhas || []));
+      porDoc[docId].forEach(function(x){
+        var ln = linhas.filter(function(l){ return l.id === x.id; })[0]; if (!ln) return;
+        var o = cats[ln.c]; if (o){ o.v = r2(o.v - ln.v); o.n = Math.max(0, (o.n || 1) - 1); if (o.n <= 0 || o.v < 0.005) delete cats[ln.c]; }
+        var nv = cats[x.sug] = cats[x.sug] || { v: 0, n: 0 }; nv.v = r2(nv.v + ln.v); nv.n++; ln.c = x.sug;
+      });
+      return extGravar(doc.id, { tipo: 'diaadia', mes: doc.mes, conta: doc.conta, coluna: doc.coluna, cats: cats, linhas: linhas, atualizadoEm: new Date().toISOString() });
+    });
+  });
+  cadeia.then(function(){
+    qs('overlayCatRc').classList.remove('show'); toast(sel.length + (sel.length === 1 ? ' lançamento reclassificado.' : ' lançamentos reclassificados.'));
+    try{ ctAtualizarTelas(); }catch(e){} try{ renderEditorSeAberto(); }catch(e){}
+  }).catch(function(e){ S.ocupado = false; catRcAtualizaBotao(); var er = qs('catRcErro'); if (er) er.textContent = 'Não consegui aplicar tudo: ' + (e && e.message ? e.message : 'tente de novo') + '. O que já foi aplicado fica.'; });
+}
+/* botão (no gerenciador de categorias e na Análise) */
+function catRcBotaoHtml(classe){
+  if (!CAT_PRONTO) return '';
+  var c = catRcContagem(); if (!c.sug) return '';
+  return '<button type="button" class="' + (classe || 'btn btn-ghost pb-b') + '" data-cat-reclass="1">Reclassificar “Outros” em lote · ' + c.sug + (c.sug === 1 ? ' sugestão' : ' sugestões') + '</button>';
+}
+function renderEditorSeAberto(){ var ov = qs('overlayEditor'); if (ov && ov.classList.contains('show') && typeof renderEditor === 'function') renderEditor(); }
+
+function catCss(){
+  if (document.getElementById('catCss')) return;
+  var st = document.createElement('style'); st.id = 'catCss';
+  st.textContent =
+    '.cat-oculto{display:none!important}.cat-pick{position:relative}' +
+    '.cat-ic{width:28px;height:28px;border-radius:9px;color:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none}' +
+    '.cat-pk-btn{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface);padding:6px 10px;font:inherit;color:var(--ink);cursor:pointer;text-align:left}.cat-pk-btn:hover,.cat-pk-btn:focus-visible{border-color:var(--accent)}' +
+    '.cat-pk-t{flex:1;min-width:0}.cat-pk-t b{display:block;font-size:var(--t3,14px);line-height:1.2}.cat-pk-t small{display:block;color:var(--ink-soft);font-size:var(--t1)}.cat-pk-seta{color:var(--ink-soft)}' +
+    '.cat-pk-pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:8px;max-height:min(420px,60vh);display:none;flex-direction:column}' +
+    '.cat-pk-q{width:100%;min-height:40px;border:1.5px solid var(--border);border-radius:10px;padding:6px 10px;font:inherit;background:var(--bg);color:var(--ink);margin-bottom:6px}.cat-pk-l{overflow-y:auto;flex:1;min-height:0}' +
+    '.cat-pk-f{position:sticky;top:0;background:var(--surface);display:flex;align-items:center;gap:6px;font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);padding:8px 4px 4px}.cat-pk-f span{width:10px;height:10px;border-radius:3px}' +
+    '.cat-pk-i{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;border:0;background:transparent;border-radius:10px;padding:4px 6px;font:inherit;font-size:var(--t3,14px);color:var(--ink);cursor:pointer;text-align:left}.cat-pk-i:hover{background:var(--surface-2)}.cat-pk-i.on{background:rgba(201,133,0,.14);font-weight:700}' +
+    '.cat-pk-v{padding:12px 6px;color:var(--ink-soft);font-size:var(--t2)}.cat-pk-rod{border-top:1px solid var(--border);margin-top:6px;padding-top:4px}.cat-pk-lk{border:0;background:transparent;color:var(--accent);font:inherit;font-weight:700;font-size:var(--t2);cursor:pointer;min-height:36px;padding:0 4px}' +
+    '@media(max-width:700px){.cat-pk-pop{position:fixed;left:8px;right:8px;top:auto;bottom:8px;max-height:72vh}}' +
+    '.cat-rc-g{font-size:var(--t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:12px 2px 4px}.cat-rc-it{display:grid;grid-template-columns:22px minmax(0,1fr) minmax(130px,46%);gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}.cat-rc-it input{width:18px;height:18px;accent-color:var(--accent)}' +
+    '.cat-rc-t b{display:block;font-size:var(--t3,14px);overflow:hidden;text-overflow:ellipsis}.cat-rc-t small{color:var(--ink-soft);font-size:var(--t1)}.cat-rc-sel{width:100%;min-height:36px}.cat-rc-ac{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}' +
+    '#overlayCatRcC>*{flex-shrink:0}@media(max-width:560px){.cat-rc-it{grid-template-columns:22px minmax(0,1fr)}.cat-rc-sel{grid-column:2}}' +
+    '.tag-cat.cat-novo{display:inline-flex;align-items:center;gap:5px;color:#fff}';
+  document.head.appendChild(st);
+}
+(function(){
+  catCss();
+  document.addEventListener('click', function(e){
+    var t = e.target; if (!t || !t.closest) return;
+    var btn = t.closest('#catPickBtn'); if (btn){ if (catPickS.aberto) catPickFechar(); else catPickAbrir(); return; }
+    var it = t.closest('[data-catpick]'); if (it){ catPickEscolher(it.getAttribute('data-catpick')); return; }
+    if (t.closest('[data-catpick-todas]')){ catPickS.todas = !catPickS.todas; catPickDesenhar(); return; }
+    var rc = t.closest('[data-cat-reclass]'); if (rc){ e.preventDefault(); catRcAbrir(); return; }
+    if (catPickS.aberto && !t.closest('#catPickPop')) catPickFechar();
+  });
+  document.addEventListener('input', function(e){ if (e.target && e.target.id === 'catPickQ'){ catPickS.q = e.target.value; catPickDesenhar(); } });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && catPickS.aberto){ e.stopPropagation(); catPickFechar(); } }, true);
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { catClassificar: catClassificar, catNomeNovo: catNomeNovo, catRotNovo: catRotNovo, catRcColeta: catRcColeta, CAT_CATALOGO: CAT_CATALOGO });
+  CAT_PRONTO = true;   /* daqui em diante as funções acima funcionam (as declarações são içadas e o app pode chamá-las antes deste ponto) */
+  try{ aplicarPersonalizacao(); montarControlesDinamicos(); }catch(e){ console.error('categorias', e); }
+})();
+
 /*ES-FIM*/
 /*LG-INICIO*/
 /* ============================================================
@@ -26639,7 +27076,14 @@ document.addEventListener('change', function(ev){ if (ev.target && ev.target.get
 var orcS = { cat: null };
 /* número digitado em português (aceita 2.500,00, 2500,5 e 2500.5) */
 function orcNum(t){ var x = String(t == null ? '' : t).replace(/[^\d,.]/g, ''); if (!x) return 0; if (x.indexOf(',') >= 0) x = x.replace(/\./g, '').replace(',', '.'); var n = parseFloat(x); return isFinite(n) ? n : 0; }
-function orcDados(){ var o = config.orcamento; return (o && o.limites && typeof o.limites === 'object') ? o.limites : {}; }
+function orcDados(){
+  var o = config.orcamento, raw = (o && o.limites && typeof o.limites === 'object') ? o.limites : {};
+  if (typeof catRotNovo !== 'function') return raw;
+  /* limites guardados com o nome antigo ("Dia a dia · Mercado") passam para o nome da lista única; se os dois existirem, vale o novo */
+  var ks = Object.keys(raw), out = {};
+  ks.filter(function(k){ return catRotNovo(k) !== k; }).concat(ks.filter(function(k){ return catRotNovo(k) === k; })).forEach(function(k){ var nk = catRotNovo(k); out[nk] = Object.assign(out[nk] || {}, raw[k]); });
+  return out;
+}
 function orcLimite(cat, m){
   var h = orcDados()[cat]; if (!h) return null;
   var ks = Object.keys(h).filter(function(k){ return k <= m; }).sort(); if (!ks.length) return null;
@@ -26665,7 +27109,7 @@ function orcColeta(m){
     });
   });
   var dd = anDiaADiaMes(m).cats;
-  Object.keys(dd).forEach(function(c){ if (dd[c] > 0.004) out['Dia a dia · ' + c] = { gasto: dd[c], aPagar: 0 }; });
+  Object.keys(dd).forEach(function(c){ if (dd[c] > 0.004){ var x = out[c] = out[c] || { gasto: 0, aPagar: 0 }; x.gasto += dd[c]; } });   /* mesma categoria das despesas lançadas */
   return out;
 }
 function orcLinhas(m){
@@ -27205,7 +27649,7 @@ function excDestinoRegra(r){
 function excAbrirRegras(){
   var cfg = extCfg(), ks = Object.keys(cfg.regras).sort(), oc = (typeof obraCfg === 'function') ? obraCfg() : null, ro = oc && oc.extrato ? oc.extrato.regras : {}, kso = Object.keys(ro || {}).sort();
   var linhas = ks.map(function(k){
-    var d = excDestinoRegra(cfg.regras[k]), campo = d.edita === 'cat' ? extSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', EXT_CATS.map(function(c){ return [c, c]; }), d.txt) : '<input type="text" class="ext-sel" data-exr-txt="' + escapeHtml(k) + '" value="' + escapeHtml(d.txt) + '" maxlength="80" aria-label="Destino da regra">';
+    var d = excDestinoRegra(cfg.regras[k]), campo = d.edita === 'cat' ? ((typeof catSelectHtml === 'function') ? catSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', d.txt) : extSelectHtml('data-exr-cat="' + escapeHtml(k) + '"', EXT_CATS.map(function(c){ return [c, c]; }), d.txt)) : '<input type="text" class="ext-sel" data-exr-txt="' + escapeHtml(k) + '" value="' + escapeHtml(d.txt) + '" maxlength="80" aria-label="Destino da regra">';
     return '<div class="exc-regra"><span class="exc-palavras">' + escapeHtml(k.toLowerCase()) + '</span><span class="exc-seta">→</span><span class="exc-dest"><small>' + d.tipo + '</small>' + campo + '</span><button type="button" class="btn btn-ghost" data-exr-del="' + escapeHtml(k) + '">Apagar</button></div>';
   }).join('');
   var linhasObra = kso.map(function(k){
