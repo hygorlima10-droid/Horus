@@ -1844,6 +1844,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4841,6 +4844,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10108,6 +10117,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10205,6 +10220,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10212,7 +10233,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', pj:'Hygor (PJ)', pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10226,6 +10247,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -19232,18 +19259,18 @@ function agCartaoQuadro(i){
   else if (i.fonte === 'alvara') tags += '<span class="fv-chip">Alvará' + (i.faseTxt ? ' · ' + escapeHtml(i.faseTxt) : '') + '</span>';
   else tags += '<span class="fv-chip">' + (i.tipo === 'audiencia' ? 'Audiência' : (i.tipo === 'tarefa' ? 'Tarefa' : AG_SITUACAO[i.situacao])) + '</span>';
   if (!i.concluido){
-    if (i.fonte === 'alvara') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="acao" data-k="' + k + '">Abrir alvará</button>';
-    else if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && i.situacao === 'afazer') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="mover" data-k="' + k + '" data-v="elaboracao">Avançar ›</button>';
-    else if (i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'pronta') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">Protocolar</button>';
-    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="btn btn-primary pb-b" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button><button type="button" class="btn btn-ghost pb-b" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
-    else btn += '<button type="button" class="btn btn-primary pb-b" data-ag="concluir" data-k="' + k + '">' + (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Realizada' : 'Concluir')) + '</button>';
-    if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && (i.situacao === 'elaboracao' || i.situacao === 'pronta')) btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="mover" data-k="' + k + '" data-v="' + (i.situacao === 'pronta' ? 'elaboracao' : 'afazer') + '">‹ Voltar</button>';
-    btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="adiar" data-k="' + k + '">Adiar</button>';
-    if (i.fonte === 'caso') btn += '<button type="button" class="btn-text pb-b" data-ag="acao" data-k="' + k + '">Abrir na aba Iniciais</button>';
-    else if (i.fonte === 'agenda') btn += '<button type="button" class="btn-text pb-b" data-ag="abrir" data-k="' + k + '">Editar</button>';
-  } else if (i.fonte !== 'alvara') btn += '<button type="button" class="btn btn-ghost pb-b" data-ag="reabrir" data-k="' + k + '">Reabrir</button>';
+    if (i.fonte === 'alvara') btn += '<button type="button" class="q-b q-neutro" data-ag="acao" data-k="' + k + '">Abrir alvará</button>';
+    else if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && i.situacao === 'afazer') btn += '<button type="button" class="q-b q-ouro" data-ag="mover" data-k="' + k + '" data-v="elaboracao">Avançar ›</button>';
+    else if (i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'pronta') btn += '<button type="button" class="q-b q-verde" data-ag="concluir" data-k="' + k + '">Protocolar</button>';
+    else if (sit && i.fonte === 'agenda' && i.tipo === 'prazo' && i.situacao === 'elaboracao') btn += '<button type="button" class="q-b q-verde" data-ag="pronta" data-k="' + k + '">' + ico('check') + 'Peça pronta</button><button type="button" class="q-b q-verde" data-ag="concluir" data-k="' + k + '">Marcar protocolada</button>';
+    else btn += '<button type="button" class="q-b q-verde" data-ag="concluir" data-k="' + k + '">' + (i.tipo === 'prazo' ? 'Marcar protocolada' : (i.tipo === 'audiencia' ? 'Realizada' : 'Concluir')) + '</button>';
+    if (sit && i.fonte === 'agenda' && i.tipo !== 'audiencia' && (i.situacao === 'elaboracao' || i.situacao === 'pronta')) btn += '<button type="button" class="q-b q-neutro" data-ag="mover" data-k="' + k + '" data-v="' + (i.situacao === 'pronta' ? 'elaboracao' : 'afazer') + '">‹ Voltar</button>';
+    btn += '<button type="button" class="q-b q-azul" data-ag="adiar" data-k="' + k + '">Adiar</button>';
+    if (i.fonte === 'caso') btn += '<button type="button" class="q-b q-neutro" data-ag="acao" data-k="' + k + '">Abrir na aba Iniciais</button>';
+    else if (i.fonte === 'agenda') btn += '<button type="button" class="q-b q-neutro" data-ag="abrir" data-k="' + k + '">Editar</button>';
+  } else if (i.fonte !== 'alvara') btn += '<button type="button" class="q-b q-azul" data-ag="reabrir" data-k="' + k + '">Reabrir</button>';
   return '<div class="kanban-card ag-kc ' + i.cat + (i.concluido ? ' ok' : '') + '" data-agcard="' + k + '" draggable="true"><div class="kc-top">' + fvIc(ic[0], ic[1]) + '<div class="kc-tit"><div class="kc-nome">' + escapeHtml(i.titulo) + '</div><div class="kc-sub">' + escapeHtml((i.cliente || '') + (i.cliente && i.processo ? ' · ' : '') + (i.processo || '')) + '</div></div></div>' +
-    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
+    '<div class="kc-sub" style="margin-top:6px">' + escapeHtml(agTipoLinha(i)) + '</div>' + (i.tipo === 'audiencia' && i.local ? '<div class="kc-sub">' + ico('map-pin', 14) + escapeHtml(i.local) + '</div>' : '') + (i.concluido && i.tipo === 'prazo' && i.protocoladoEm ? '<div class="kc-sub">Protocolada em ' + escapeHtml(fmtData(i.protocoladoEm)) + '</div>' : '') + '<div class="kc-chips">' + tags + '</div><div class="kc-acoes">' + btn + (i.tipo === 'audiencia' && /^https?:\/\//i.test(i.link) ? '<a class="q-b q-neutro" href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener noreferrer">Entrar na sala ↗</a>' : '') + '</div></div>';
 }
 /* solta um cartão do Quadro numa coluna: devolve se pode; com teste = true só confere, sem mudar nada */
 function agSoltar(key, ck, teste){
@@ -23554,6 +23581,17 @@ function qdCss(){
   st.textContent =
     '.ini-sauda{display:flex;align-items:center;gap:12px;padding:14px 2px 2px}.ini-sauda:empty{display:none}.ini-sauda .is-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none}.ini-sauda .is-t{margin:0;font-family:var(--font-display);font-size:24px;line-height:1.15;letter-spacing:-.01em}.ini-sauda small{color:var(--ink-soft);font-size:var(--t3)}' +
     '@media(max-width:999px){.ini-sauda{padding:10px 2px 0}.ini-sauda .is-ic{width:36px;height:36px;border-radius:11px}.ini-sauda .is-t{font-size:20px}}' +
+    /* botões dos cartões dos quadros (Agenda, Iniciais e Alvarás): cartõezinhos coloridos, a cor diz o que o botão faz
+       ouro = avançar de fase · verde = concluir · azul = adiar/reabrir · cinza = voltar/editar/abrir · vermelho = excluir (no menu ⋯) */
+    '.kanban-card .kc-acoes{display:flex;flex-wrap:wrap;gap:6px;align-items:center;--qb-ouro-bg:rgba(201,133,0,.17);--qb-ouro-fg:#7A4E00;--qb-ouro-bd:rgba(201,133,0,.42);--qb-verde-bg:rgba(23,137,90,.14);--qb-verde-fg:#0F6B46;--qb-verde-bd:rgba(23,137,90,.38);--qb-azul-bg:rgba(42,120,214,.12);--qb-azul-fg:#1B5BAA;--qb-azul-bd:rgba(42,120,214,.34)}' +
+    ':root[data-theme="dark"] .kanban-card .kc-acoes{--qb-ouro-bg:rgba(242,176,30,.18);--qb-ouro-fg:#F2C260;--qb-ouro-bd:rgba(242,176,30,.45);--qb-verde-bg:rgba(34,197,94,.16);--qb-verde-fg:#6FDBA8;--qb-verde-bd:rgba(34,197,94,.42);--qb-azul-bg:rgba(56,189,248,.15);--qb-azul-fg:#8DBBF5;--qb-azul-bd:rgba(56,189,248,.4)}' +
+    '.kanban-card .kc-acoes>button,.kanban-card .kc-acoes>a.q-b,.kanban-card .kc-acoes .kc-mais summary{height:36px;box-sizing:border-box;padding:0 11px!important;border-radius:9px!important;font-family:inherit;font-size:12px!important;font-weight:700!important;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--border)!important;background:var(--surface)!important;color:var(--ink-soft)!important;white-space:nowrap;text-decoration:none;cursor:pointer}' +
+    '.kanban-card .kc-acoes>button.kc-avancar,.kanban-card .kc-acoes>button.kc-desf,.kanban-card .kc-acoes>.q-ouro{background:var(--qb-ouro-bg)!important;color:var(--qb-ouro-fg)!important;border-color:var(--qb-ouro-bd)!important}' +
+    '.kanban-card .kc-acoes>button.kc-sim,.kanban-card .kc-acoes>.q-verde{background:var(--qb-verde-bg)!important;color:var(--qb-verde-fg)!important;border-color:var(--qb-verde-bd)!important}' +
+    '.kanban-card .kc-acoes>.q-azul{background:var(--qb-azul-bg)!important;color:var(--qb-azul-fg)!important;border-color:var(--qb-azul-bd)!important}' +
+    '.kanban-card .kc-acoes>button svg{width:14px;height:14px}.kanban-card .kc-acoes .kc-mais{margin-left:auto}.kanban-card .kc-acoes .kc-mais summary{width:36px;padding:0!important;font-size:15px!important}' +
+    '.kc-menu .kc-del{color:var(--danger)!important;background:rgba(217,59,59,.1)!important;border-color:rgba(217,59,59,.32)!important}' +
+    '@media(min-width:1000px){.kanban-card .kc-acoes>button,.kanban-card .kc-acoes>a.q-b,.kanban-card .kc-acoes .kc-mais summary{height:28px;min-height:0!important;min-width:0!important}.kanban-card .kc-acoes .kc-mais summary{width:28px}}@media(pointer:coarse){.kanban-card .kc-acoes>button,.kanban-card .kc-acoes>a.q-b,.kanban-card .kc-acoes .kc-mais summary{height:36px}.kanban-card .kc-acoes .kc-mais summary{width:36px}}' +   /* 28 px no computador com mouse; 36 px no celular e em telas de toque */
     /* quadros no computador */
     '@media(min-width:1000px){' +
     '.kanban-wrap{gap:10px}#kanbanPeticoes .kanban-col:not(.q-vazia),#kanbanAlvaras .kanban-col:not(.q-vazia){flex:1 1 0;min-width:236px}.kanban-wrap .kanban-col{padding:10px;gap:8px}' +

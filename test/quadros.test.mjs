@@ -12,6 +12,9 @@ for (const d of (await f('GET', '/api/db/alvaras')).j.docs || []) if (d.id.start
 const NOMES = ['Marinho do Carmo Marques da Silva', 'Ray Costa Ávila', 'Alexandre Barbosa', 'Rafael de Paula'];
 for (let i = 0; i < 4; i++) await f('PUT', '/api/db/casos/qz' + i, { tipo: 'inicial', cliente: NOMES[i] + ' QZ', nomeAcao: 'Ação de Rescisão Contratual c/c Despejo Rural', origem: 'proprio', prioridade: 'normal', status: i % 2 ? 'aguardando_cliente' : 'pendente', statusDesde: agora, modalidadeHonorario: 'fixo', formaPagamento: 'avista', valorHonorarios: 1500, avista: { data: dia(10), pago: false }, parcelas: [], clienteIds: [], criadoEm: agora, atualizadoEm: agora });
 for (let i = 0; i < 6; i++) await f('PUT', '/api/db/alvaras/qz' + i, { numeroProcesso: '5368644-67.2026.8.09.01' + (10 + i), partes: 'Ciclano de Tal x Banco Bradesco S/A QZ', origem: 'proprio', valorTotalHonorarios: 5000, valorMeuHonorario: 4000, status: 'pendente', fase: ['protocolada', 'aguardando', 'expedido', 'banco', 'protocolada', 'aguardando'][i], faseDesde: dia(-3), previsaoLevantamento: dia(5), clienteIds: [], criadoEm: agora, atualizadoEm: agora });
+for (const d of (await f('GET', '/api/db/agenda')).j.docs || []) if ((d.data || {}).titulo && /^QZ /.test(d.data.titulo)) await f('DELETE', '/api/db/agenda/' + d.id);
+for (const [ti, n] of [['QZ prazo hoje', 0], ['QZ prazo amanhã', 1], ['QZ prazo adiante', 9]]) await f('POST', '/api/db/agenda', { tipo: 'prazo', titulo: ti, cliente: 'Complem QZ', processo: '5142731-43.2021.8.09.0107', data: dia(n), situacao: 'afazer', concluido: false, criadoEm: agora });
+await f('POST', '/api/db/agenda', { tipo: 'audiencia', titulo: 'QZ audiência', cliente: 'César QZ', processo: '5123979-73.2024.8.09.0024', data: dia(6), hora: '13:30', local: 'Fórum', situacao: 'afazer', concluido: false, criadoEm: agora });
 const br = await chromium.launch(); const erros = [];
 async function abrir(w, h) {
   const page = await (await br.newContext({ viewport: { width: w, height: h }, timezoneId: 'America/Sao_Paulo' })).newPage(); await page.route(/fonts\./, x => x.abort());
@@ -51,6 +54,11 @@ const mv = await page.evaluate(() => { const col = document.querySelector('#kanb
 await page.evaluate(() => { const b = document.querySelector('#kanbanPeticoes [data-p-mover$="|aguardando_documentacao"]'); b && b.click(); }); await page.waitForTimeout(1000);
 check(await page.evaluate(m => { const c = document.querySelector('#kanbanPeticoes [data-pcol="aguardando_documentacao"]'); return !!c && !c.classList.contains('q-vazia') && !!c.querySelector('.kanban-card'); }, mv), 'quando a coluna recebe um cartão, volta a ser coluna normal');
 if (process.env.FOTOS) await page.screenshot({ path: process.env.FOTOS + '/q-iniciais.png' });
+// botões dos cartões: cartõezinhos coloridos (ouro avançar, cinza voltar), no lugar do botão preto
+const cor = async (sel) => page.evaluate(sel => { const e = document.querySelector(sel); if (!e) return null; const c = getComputedStyle(e), m = c.backgroundColor.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], a: m[3] === undefined ? 1 : m[3], raio: c.borderRadius, h: Math.round(e.getBoundingClientRect().height), fg: c.color }; }, sel);
+const av = await cor('#kanbanPeticoes .kc-acoes .kc-avancar'), vt = await cor('#kanbanPeticoes .kc-acoes button[data-p-mover]:not(.kc-avancar)');
+check(av && av.r > 150 && av.g > 90 && av.b < 60 && av.a < 0.5 && av.raio === '9px' && av.h === 28, 'Iniciais: "Avançar ›" é um cartãozinho ouro (não mais preto), cantos de 9 px, 28 px de altura: ' + JSON.stringify(av));
+check(vt && vt.r > 240 && vt.g > 240 && vt.raio === '9px', 'Iniciais: "‹ Voltar" é cinza/neutro, do mesmo formato: ' + JSON.stringify(vt));
 // barra numa linha
 check(await page.evaluate(() => { const f = document.querySelector('#headPeticoes .filters'); return !!f.querySelector('#editarColunasPeticao') && !!f.querySelector('.q-amplo-btn') && !!f.querySelector('input#buscaInput'); }), '"Editar colunas", a busca e o botão "Ampliar quadro" ficam na mesma linha');
 const lin = await page.evaluate(() => { const f = document.querySelector('#headPeticoes .filters'); const ys = ['input#buscaInput', '#editarColunasPeticao', '.q-amplo-btn'].map(s => Math.round(f.querySelector(s).getBoundingClientRect().top)); return ys; });
@@ -78,6 +86,15 @@ for (const w of [1280, 1000]) {
   const bt = await page.evaluate(() => Array.from(document.querySelectorAll('.ag-acoes .acao')).map(b => ({ t: b.innerText.trim(), y: Math.round(b.getBoundingClientRect().top), x: Math.round(b.getBoundingClientRect().right) })));
   check(bt.length === 3 && Math.max(...bt.map(b => b.y)) - Math.min(...bt.map(b => b.y)) <= 2 && await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Agenda › Lista em ' + w + ' px: os 3 botões ficam na mesma linha (' + bt.map(b => b.t + ' y=' + b.y).join('; ') + ')');
 }
+// Agenda › Quadro: botões coloridos por função
+await aba(page, 'agenda'); await page.evaluate(() => { const b = document.querySelector('[data-ag="vista"][data-v="quadro"]'); b && b.click(); }); await page.waitForTimeout(900);
+const ac = async (a) => page.evaluate(a => { const e = Array.from(document.querySelectorAll('.ag-quadro .kc-acoes [data-ag="' + a + '"]')).find(x => x.offsetParent); if (!e) return null; const c = getComputedStyle(e), m = c.backgroundColor.match(/[\d.]+/g).map(Number); return { r: m[0], g: m[1], b: m[2], raio: c.borderRadius, h: Math.round(e.getBoundingClientRect().height), t: e.innerText.trim() }; }, a);
+const kc = await ac('concluir'), ka = await ac('adiar'), ke = await ac('abrir');
+check(kc && kc.g > kc.r && kc.g > kc.b && kc.raio === '9px' && kc.h === 28, 'Agenda: "' + (kc && kc.t) + '" (concluir) é um cartãozinho verde: ' + JSON.stringify(kc));
+check(ka && ka.b > ka.r && ka.b > 100 && ka.raio === '9px', 'Agenda: "Adiar" é azul: ' + JSON.stringify(ka));
+check(ke && ke.r > 240 && ke.raio === '9px' && ke.h === 28, 'Agenda: "Editar" é cinza/neutro, do mesmo tamanho: ' + JSON.stringify(ke));
+if (process.env.FOTOS) await page.screenshot({ path: process.env.FOTOS + '/q-agenda-botoes.png' });
+check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('.ag-quadro .kanban-card')).find(c => c.querySelector('.kc-acoes [data-ag="concluir"]')); const bs = Array.from(l.querySelectorAll('.kc-acoes > *')).map(b => Math.round(b.getBoundingClientRect().top)); return bs.length >= 3; }), 'Agenda: o cartão tem os botões Marcar protocolada, Adiar e Editar');
 await page.setViewportSize({ width: 1440, height: 900 });
 check(erros.length === 0, 'computador: sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await page.close();
