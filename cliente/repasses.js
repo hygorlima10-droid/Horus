@@ -68,6 +68,7 @@ function rcDivIniciar(chave, doc){
   var sel = esS.resp[chave] || (esS.resp[chave] = []);
   partes.forEach(function(p){ if (p.oab && !sel.some(function(x){ return x.oab === p.oab; })) sel.push({ oab: p.oab, nome: p.nome }); });
   rcDivSync(chave); rcDivDesenhar(chave);
+  setTimeout(rcChecarSemHonor, 0); setTimeout(rcChecarSemHonor, 300);   // a modalidade do formulário pode ser preenchida logo depois
 }
 function rcDivSync(chave){
   var D = rcS.div[chave]; if (!D) return;
@@ -78,9 +79,12 @@ function rcDivSync(chave){
   var com = D.partes.filter(function(p){ return p.oab; }).length, sem = D.partes.filter(function(p){ return !p.oab; }).length;
   if (D.partes.length >= 2 && D.partes.every(function(p){ return !p.pct; })) { var n = D.partes.length; D.partes.forEach(function(p){ p.pct = Math.round(10000 / n) / 100; }); D.partes[0].pct = Math.round((100 - D.partes.slice(1).reduce(function(t, p){ return t + p.pct; }, 0)) * 100) / 100; }
 }
+/* Inicial "Sem honorários" ou Acordo sem honorários: não há valor a dividir, então a divisão não é pedida nem validada */
+function rcSemHonor(chave){ try{ return chave === 'casos' ? formState.modalidade === 'sem_honorarios' : (chave === 'termosAcordo' ? formStateAcordo.honorarios === 'sem' : false); }catch(e){ return false; } }
 function rcDivBase(chave){ try{ return repBaseForm(RC_FORM[chave]); }catch(e){ return 0; } }
 function rcDivHtml(chave){
   var D = rcS.div[chave]; if (!D) return '';
+  if (rcSemHonor(chave)) return '<div class="saldo-data" style="margin-top:2px">Sem honorários: não há valor a dividir nem a repassar a parceiro.</div>';
   var base = rcDivBase(chave), n = D.partes.length;
   if (n < 2) return '<div class="saldo-data" style="margin-top:2px">Com mais de um advogado, aparece aqui a divisão dos honorários. <button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Dividir com parceiro sem cadastro</button></div>';
   var soma = D.partes.reduce(function(t, p){ return t + (Number(p.pct) || 0); }, 0), ok = Math.abs(soma - 100) < 0.05;
@@ -92,9 +96,13 @@ function rcDivHtml(chave){
     '<div class="pb-acts" style="justify-content:flex-start;margin:2px 0"><button type="button" class="es-lk" data-rcd="igual" data-c="' + chave + '">Dividir igualmente</button><button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Adicionar parceiro sem cadastro</button></div>';
   return h;
 }
-function rcDivDesenhar(chave){ var el = qs('rcDiv_' + chave); if (el) el.innerHTML = rcDivHtml(chave); }
+function rcDivDesenhar(chave){ var el = qs('rcDiv_' + chave); (rcS.semH = rcS.semH || {})[chave] = rcSemHonor(chave); if (el) el.innerHTML = rcDivHtml(chave); }
+/* ao trocar a modalidade (com/sem honorários) a divisão aparece ou some; só redesenha quando isso muda, para não atrapalhar quem está digitando os percentuais */
+function rcChecarSemHonor(){ ['casos', 'termosAcordo'].forEach(function(c){ if (rcS.div[c] && (rcS.semH || {})[c] !== rcSemHonor(c)) rcDivDesenhar(c); }); }
+['click', 'change'].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(rcChecarSemHonor, 0); }); });
 function rcDivAplicar(chave, dados, erroEl){
   var D = rcS.div[chave]; if (!D || !qs('rcDiv_' + chave)) return true;
+  if (rcSemHonor(chave)){ dados.divisao = null; dados.repasse = null; return true; }   // sem honorários: nada a dividir
   var ps = D.partes.filter(function(p){ return p.oab || p.nome; });
   if (ps.length < 2){ dados.divisao = null; return true; }
   var soma = ps.reduce(function(t, p){ return t + (Number(p.pct) || 0); }, 0);
@@ -240,3 +248,6 @@ document.addEventListener('click', function(e){
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { rcSincronizar: rcSincronizar, rcLista: function(){ return rcS.lista; }, rcUnidades: function(id){ return listarUnidades().filter(function(u){ return u.docId === id; }).map(function(u){ return { chave: u.chave, pago: u.pago, fator: u.fator, repasse: u.repasse, parceiro: u.parceiro, outro: !!u.recebidoPorOutro, meu: meuValor(u, u.valor) }; }); } });
 })();
+
+/* só para os testes */
+try{ window.__horusTeste = Object.assign(window.__horusTeste || {}, { rcSemHonor: rcSemHonor, rcDivAplicar: rcDivAplicar, rcS: rcS, repasseDoc: repasseDoc, docSemHonor: docSemHonor }); }catch(e){}
