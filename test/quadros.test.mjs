@@ -72,6 +72,13 @@ if (process.env.FOTOS) await page.screenshot({ path: process.env.FOTOS + '/q-alv
 await page.click('#headAlvaras .q-amplo-btn'); await page.waitForTimeout(300); check((await mw()).menu === 264 && /Ampliar quadro/.test(await t(page, '#headAlvaras .q-amplo-btn')), '"Restaurar menu" devolve o menu ao normal');
 await page.evaluate(() => { const b = Array.from(document.querySelectorAll('.md-abas button')).find(x => x.offsetParent && /Lista/.test(x.innerText)); b && b.click(); }); await page.waitForTimeout(500);
 check(!(await page.locator('#editarColunasAlvara').isVisible()), '"Editar colunas" não aparece na Lista (só nos quadros)');
+// Agenda › Lista: Novo compromisso, Selecionar e Calculadora de prazos na mesma linha
+for (const w of [1280, 1000]) {
+  await page.setViewportSize({ width: w, height: 800 }); await aba(page, 'agenda'); await page.evaluate(() => { const b = document.querySelector('[data-ag="vista"][data-v="lista"]'); b && b.click(); }); await page.waitForTimeout(700);
+  const bt = await page.evaluate(() => Array.from(document.querySelectorAll('.ag-acoes .acao')).map(b => ({ t: b.innerText.trim(), y: Math.round(b.getBoundingClientRect().top), x: Math.round(b.getBoundingClientRect().right) })));
+  check(bt.length === 3 && Math.max(...bt.map(b => b.y)) - Math.min(...bt.map(b => b.y)) <= 2 && await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Agenda › Lista em ' + w + ' px: os 3 botões ficam na mesma linha (' + bt.map(b => b.t + ' y=' + b.y).join('; ') + ')');
+}
+await page.setViewportSize({ width: 1440, height: 900 });
 check(erros.length === 0, 'computador: sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await page.close();
 
