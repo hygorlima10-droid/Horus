@@ -83,6 +83,8 @@ const fxF = (await lista()).find(d => d.id === fxT.id);
 check(Object.keys(fxF.feitas || {}).length === 1 && fxF.status === 'afazer' && (await lista()).some(d => d.id === fxT.id), 'um toque marca o ciclo como feito (quem e quando) e a fixa continua na lista, não vai para Concluídas');
 await page.click(`tr[data-dgl="${fxT.id}"] .dg-stbtn`); await page.waitForTimeout(900);
 check(Object.keys((await lista()).find(d => d.id === fxT.id).feitas || {}).length === 0, 'tocar de novo desfaz');
+const alin = await page.evaluate(() => { const x = e => { const td = e.closest('td'); return Math.round(e.getBoundingClientRect().left - td.getBoundingClientRect().left); }; const f = document.querySelector('.dg-ta tr.dg-fx .dg-nd'), n = document.querySelector('.dg-ta tr:not(.dg-fx):not(.dg-novo) .dg-nd'); return { f: f ? x(f) : null, n: n ? x(n) : null }; });
+check(alin.f !== null && alin.n !== null && Math.abs(alin.f - alin.n) <= 1, 'o cartão dos dias fica no mesmo lugar da coluna nas linhas comuns e nas fixas (' + alin.n + ' px e ' + alin.f + ' px da borda da coluna)');
 // copiar o processo e coluna Cliente mais estreita, com ênfase na descrição
 await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => { });
 check(await page.locator('.dg-ta [data-dg="copiar"]').count() >= 1, 'as linhas com processo têm o botão de copiar o número');
