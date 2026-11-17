@@ -5,7 +5,7 @@ import { pagina, htmlResp } from './paginas.js';
 import { stmtRegistro } from './auditoria.js';
 
 export const DIAS_SESSAO = 30, MAX_FALHAS = 5, BLOQUEIO_MS = 15 * 60e3, MIN_SENHA = 12, VOLTAS_PADRAO = 20000, VOLTAS_MAX = 100000, ATUALIZA_USO_MS = 10 * 60e3;
-export const COL_USU = '_usuarios', COL_SES = '_sessoes', COL_SIS = '_sistema', COL_CONV = '_convites';
+export const COL_USU = '_usuarios', COL_SES = '_sessoes', COL_SIS = '_sistema', COL_CONV = '_convites', COL_REC = '_recuperacao';
 export const DIAS_CONVITE_HORAS = 48;
 const enc = new TextEncoder();
 export const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -94,7 +94,75 @@ export const avisoSeAtivo = (deps, env, u, aviso) => { if (u && u.alertas !== fa
 const FORMULARIO_LOGIN = (msg, email) => pagina({ acao: '/login', sub: 'Entre com o seu e-mail e a sua senha', campos: [{ name: 'email', type: 'email', label: 'E-mail', auto: 'username', valor: email }, { name: 'senha', senha: true, label: 'Senha', auto: 'current-password' }], msg, link: { href: '/recuperar', txt: 'Esqueci minha senha' } });
 const FORMULARIO_LEGADO = (msg) => pagina({ acao: '/login', sub: 'Digite a senha para entrar', campos: [{ name: 'senha', senha: true, label: 'Senha', auto: 'current-password' }], msg });
 const FORMULARIO_CRIAR = (msg, v = {}) => pagina({ acao: '/criar-acesso', titulo: 'Crie o seu acesso', sub: 'Você entrou com a senha atual do app. Agora crie o seu acesso individual, com e-mail e senha só seus.', botao: 'Criar acesso e entrar', ocupado: 'Criando…', campos: [{ name: 'nome', label: 'Nome', auto: 'name', valor: v.nome }, { name: 'email', type: 'email', label: 'E-mail', auto: 'username', valor: v.email }, { name: 'senha', senha: true, label: `Nova senha (mínimo ${MIN_SENHA} caracteres)`, auto: 'new-password' }, { name: 'senha2', senha: true, label: 'Repita a senha', auto: 'new-password' }], msg, nota: 'A senha antiga do app vira a <b>chave de emergência</b>: só serve para recuperar o acesso, nunca para entrar.' });
-const FORMULARIO_RECUPERAR = (msg) => pagina({ acao: '/recuperar', titulo: 'Recuperar o acesso', sub: 'Digite a chave de emergência (a senha antiga do app, guardada no Cloudflare) e escolha uma senha nova.', botao: 'Redefinir a senha', ocupado: 'Redefinindo…', campos: [{ name: 'chave', senha: true, label: 'Chave de emergência', auto: 'off' }, { name: 'senha', senha: true, label: `Nova senha (mínimo ${MIN_SENHA} caracteres)`, auto: 'new-password' }, { name: 'senha2', senha: true, label: 'Repita a nova senha', auto: 'new-password' }], msg, nota: 'Ao redefinir, <b>todas as sessões abertas são encerradas</b> e você entra de novo.', link: { href: '/login', txt: 'Voltar para a entrada' } });
+const FORMULARIO_RECUPERAR = (msg) => pagina({ acao: '/recuperar', titulo: 'Recuperar o acesso', sub: 'Digite a chave de emergência (a senha antiga do app, guardada no Cloudflare) e escolha uma senha nova.', botao: 'Redefinir a senha', ocupado: 'Redefinindo…', campos: [{ name: 'chave', senha: true, label: 'Chave de emergência', auto: 'off' }, { name: 'senha', senha: true, label: `Nova senha (mínimo ${MIN_SENHA} caracteres)`, auto: 'new-password' }, { name: 'senha2', senha: true, label: 'Repita a nova senha', auto: 'new-password' }], msg, nota: 'Ao redefinir, <b>todas as sessões abertas são encerradas</b> e você entra de novo.', link: { href: '/recuperar', txt: 'Voltar: receber o código por e-mail' } });
+/* ---------- recuperar a senha por código enviado ao e-mail ---------- */
+const CODIGO_MINUTOS = 15, CODIGO_TENTATIVAS = 5, CODIGO_INTERVALO_MS = 60e3;
+const FORMULARIO_RECUPERAR_EMAIL = (msg, email) => pagina({ acao: '/recuperar', titulo: 'Recuperar o acesso', sub: 'Digite o e-mail do seu acesso. Enviaremos um código de 6 números para você criar uma senha nova.', botao: 'Enviar o código', ocupado: 'Enviando…', campos: [{ name: 'email', type: 'email', label: 'E-mail', auto: 'username', valor: email }], msg, nota: 'Sem acesso a esse e-mail? Quem é o proprietário pode usar a <a href="/recuperar/chave" style="color:inherit;font-weight:700">chave de emergência</a>; os demais pedem ajuda ao proprietário.', link: { href: '/login', txt: 'Voltar para a entrada' } });
+const FORMULARIO_CODIGO = (msg, email) => pagina({ acao: '/recuperar/codigo', titulo: 'Digite o código', sub: `Se esse e-mail tiver acesso, enviamos um código de 6 números (confira também o spam). Ele vale por ${CODIGO_MINUTOS} minutos.`, botao: 'Criar a nova senha', ocupado: 'Salvando…', campos: [{ name: 'email', type: 'email', label: 'E-mail', auto: 'username', valor: email, ler: true }, { name: 'codigo', label: 'Código recebido por e-mail', auto: 'one-time-code' }, { name: 'senha', senha: true, label: `Nova senha (mínimo ${MIN_SENHA} caracteres)`, auto: 'new-password' }, { name: 'senha2', senha: true, label: 'Repita a nova senha', auto: 'new-password' }], msg, nota: 'Ao criar a nova senha, <b>todas as sessões abertas dessa conta são encerradas</b> e você entra de novo.', link: { href: '/recuperar', txt: 'Não chegou? Pedir um novo código' } });
+const hashCodigo = async (env, email, codigo) => hex(await sha256('recuperar-v1:' + env.SENHA + ':' + email + ':' + codigo));
+const idRecuperacao = async (email) => hex(await sha256('recuperar-id:' + email)).slice(0, 40);
+const novoCodigo = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+const escHtml = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const emailConfigurado = (env) => !!(env.BREVO_API_KEY && env.EMAIL_REMETENTE);
+/* envia pelo Brevo (https://developers.brevo.com/reference/sendtransacemail); EMAIL_API_URL existe só para os testes */
+export async function enviarCodigoEmail(env, para, nome, codigo) {
+  const primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
+  const texto = `Olá${primeiro ? ', ' + primeiro : ''}.\n\nSeu código para criar uma nova senha no Horus é: ${codigo}\n\nEle vale por ${CODIGO_MINUTOS} minutos e só pode ser usado uma vez. Se você não pediu, ignore este e-mail: a sua senha continua a mesma.`;
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1B2336"><p>Olá${primeiro ? ', ' + escHtml(primeiro) : ''}.</p><p>Seu código para criar uma nova senha no Horus é:</p><p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:12px 0">${codigo}</p><p>Ele vale por ${CODIGO_MINUTOS} minutos e só pode ser usado uma vez.</p><p style="color:#5A647C">Se você não pediu, ignore este e-mail: a sua senha continua a mesma.</p></div>`;
+  try {
+    const r = await fetch(env.EMAIL_API_URL || 'https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ sender: { name: env.EMAIL_NOME || 'Horus', email: env.EMAIL_REMETENTE }, to: [{ email: para, name: String(nome || para).slice(0, 80) }], subject: 'Seu código do Horus: ' + codigo, textContent: texto, htmlContent: html }) });
+    return r.ok;
+  } catch (e) { return false; }
+}
+async function recuperarPedirCodigo(request, env, f) {
+  const email = String(f.email || '').trim().toLowerCase(), chaveT = chaveIp('tent-recem-', request), t = await lerTent(env, chaveT);
+  if (bloqueado(t)) return htmlResp(FORMULARIO_RECUPERAR_EMAIL(MSG_BLOQUEIO, email), 429);
+  if (!emailOk(email)) return htmlResp(FORMULARIO_RECUPERAR_EMAIL('Informe um e-mail válido.', email), 400);
+  if (!emailConfigurado(env)) return htmlResp(FORMULARIO_RECUPERAR_EMAIL('O envio de e-mail ainda não foi configurado neste sistema. O proprietário pode usar a chave de emergência; os demais pedem ajuda ao proprietário.', email), 503);
+  await gravarTent(env, chaveT, contaFalha(t));   // no máximo 5 pedidos por aparelho a cada 15 minutos
+  const u = await acharPorEmail(env, email);
+  if (u) {
+    const id = await idRecuperacao(email), antes = await lerDoc(env, COL_REC, id);
+    if (!antes || Date.now() - antes.enviadoEm >= CODIGO_INTERVALO_MS) {   // um código por minuto, por e-mail
+      const codigo = novoCodigo(), agora = Date.now();
+      await stmtDoc(env, COL_REC, id, { usuario: u.id, email, hash: await hashCodigo(env, email, codigo), expira: agora + CODIGO_MINUTOS * 60e3, tent: 0, enviadoEm: agora }).run();
+      if (!(await enviarCodigoEmail(env, email, u.nome, codigo))) {
+        await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_REC, id).run();
+        await stmtRegistro(env, { op: 'falhou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Não consegui enviar o código de recuperação por e-mail (confira a chave do Brevo e o remetente)' }).run();
+        return htmlResp(FORMULARIO_RECUPERAR_EMAIL('Não consegui enviar o e-mail agora. Tente de novo em alguns minutos.', email), 502);
+      }
+      await stmtRegistro(env, { op: 'criou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Código de recuperação enviado para ' + u.nome + ' · ' + ipParcial(ipDe(request)) }).run();
+    }
+  }
+  return htmlResp(FORMULARIO_CODIGO('', email));   // a mesma resposta com ou sem e-mail cadastrado
+}
+async function recuperarComCodigo(request, env, deps, f) {
+  const email = String(f.email || '').trim().toLowerCase(), codigo = String(f.codigo || '').replace(/\D/g, ''), senha = String(f.senha || '');
+  const chaveT = chaveIp('tent-reccod-', request), t = await lerTent(env, chaveT);
+  if (bloqueado(t)) return htmlResp(FORMULARIO_CODIGO(MSG_BLOQUEIO, email), 429);
+  const e = checaNovaSenha(senha, String(f.senha2 || '')); if (e) return htmlResp(FORMULARIO_CODIGO(e, email), 400);   // a senha é checada antes: não revela se o código está certo
+  const falha = async (msg, status) => { await gravarTent(env, chaveT, contaFalha(t)); return htmlResp(FORMULARIO_CODIGO(msg, email), status); };
+  const id = await idRecuperacao(email), rec = emailOk(email) ? await lerDoc(env, COL_REC, id) : null;
+  if (!rec || rec.expira <= Date.now() || rec.tent >= CODIGO_TENTATIVAS) return falha('Código inválido ou vencido. Peça um novo código.', 400);
+  if (!igual(enc.encode(await hashCodigo(env, email, codigo)), enc.encode(rec.hash))) {
+    if (rec.tent + 1 >= CODIGO_TENTATIVAS) await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_REC, id).run();
+    else await stmtDoc(env, COL_REC, id, { ...rec, tent: rec.tent + 1 }).run();
+    return falha(rec.tent + 1 >= CODIGO_TENTATIVAS ? 'Código incorreto. Peça um novo código.' : 'Código incorreto.', 401);
+  }
+  const u = await acharPorEmail(env, email);
+  const pegou = await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_REC, id).run();   // o código vale uma vez só (dois pedidos juntos: só um passa)
+  if (!u || u.id !== rec.usuario || !(pegou && pegou.meta && pegou.meta.changes > 0)) return falha('Código inválido ou vencido. Peça um novo código.', 400);
+  const cred = await credencial(env, senha), upd = { ...u, ...cred }; delete upd.id;
+  const ctx = contexto(request);
+  await env.DB.batch([env.DB.prepare("DELETE FROM docs WHERE colecao = ? AND json_extract(dados, '$.usuario') = ?").bind(COL_SES, u.id), stmtDoc(env, COL_USU, u.id, upd)]);
+  await limparTent(env, chaveT);
+  const token = await criarSessaoBanco(env, request, u.id);
+  await env.DB.batch([stmtRegistro(env, { op: 'alterou', por: u.nome, rotulo: 'Acesso', titulo: 'Senha redefinida pelo código enviado ao e-mail; sessões dessa conta encerradas' }), stmtRegistro(env, { op: 'entrou', por: u.nome, rotulo: 'Acesso', titulo: ctx.rotulo + (ctx.lugar ? ' · ' + ctx.lugar : '') })]);
+  avisoSeAtivo(deps, env, u, { tag: 'acesso-recuperado', titulo: 'Senha do Horus redefinida', corpo: 'Feito pelo código enviado ao e-mail, ' + ctx.rotulo + (ctx.lugar ? ' · ' + ctx.lugar : '') + '. Se não foi você, avise já.', url: '/' });
+  if (u.papel !== 'proprietario') { const dono = await proprietario(env); avisoSeAtivo(deps, env, dono, { tag: 'acesso-recuperado-equipe', titulo: 'Senha redefinida por e-mail', corpo: String(u.nome || '').split(' ')[0] + ' criou uma nova senha pelo código enviado ao e-mail.', url: '/' }); }
+  return redirecionar('/', cookieSessao(token));
+}
 export const MSG_BLOQUEIO = 'Muitas tentativas. Aguarde 15 minutos e tente de novo.';
 export const redirecionar = (para, cookie) => new Response(null, { status: 303, headers: { location: para, 'cache-control': 'no-store', ...(cookie ? { 'set-cookie': cookie } : {}) } });
 export const lerForm = async (request) => { try { const f = await request.formData(); const o = {}; for (const [k, v] of f.entries()) if (typeof v === 'string') o[k] = v; return o; } catch (e) { return {}; } };
@@ -156,12 +224,15 @@ export async function paginasDeAcesso(request, env, deps) {
     await env.DB.batch([stmtRegistro(env, { op: 'criou', rotulo: 'Acesso', titulo: 'Acesso individual do proprietário criado' }), stmtRegistro(env, { op: 'entrou', rotulo: 'Acesso', titulo: ctx.rotulo + (ctx.lugar ? ' · ' + ctx.lugar : '') })]);
     return redirecionar('/', cookieSessao(token));
   }
-  if (p === '/recuperar') {
+  if (p === '/recuperar' || p === '/recuperar/chave' || p === '/recuperar/codigo') {
     if (!(await temProprietario(env))) return redirecionar('/login');
-    if (!post) return htmlResp(FORMULARIO_RECUPERAR(''));
+    if (!post) return p === '/recuperar/codigo' ? redirecionar('/recuperar') : htmlResp(p === '/recuperar/chave' ? FORMULARIO_RECUPERAR('') : FORMULARIO_RECUPERAR_EMAIL('', ''));
+    const f = await lerForm(request);
+    if (p === '/recuperar/codigo') return recuperarComCodigo(request, env, deps, f);
+    if (p === '/recuperar' && !('chave' in f)) return recuperarPedirCodigo(request, env, f);
     const chave = chaveIp('tent-rec-', request), t = await lerTent(env, chave);
     if (bloqueado(t)) return htmlResp(FORMULARIO_RECUPERAR(MSG_BLOQUEIO), 429);
-    const f = await lerForm(request), senha = String(f.senha || '');
+    const senha = String(f.senha || '');
     if (!(await chaveEmergenciaConfere(env, String(f.chave || '')))) {
       const novo = contaFalha(t); await gravarTent(env, chave, novo);
       if (novo.n <= MAX_FALHAS) await stmtRegistro(env, { op: 'falhou', por: 'desconhecido', rotulo: 'Acesso', titulo: 'Chave de emergência errada na recuperação · ' + ipParcial(ipDe(request)) }).run();
