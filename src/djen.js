@@ -350,14 +350,17 @@ const uidDe = (auth) => (auth && auth.usuario && auth.usuario.id) || 'dono';
 const nomeDe = (auth) => (auth && auth.usuario && auth.usuario.nome) || 'Proprietário';
 /* a publicação, do ponto de vista de uma pessoa (uid + papel): leitura efetiva, "não é prazo" e quem mexeu */
 export function estadoDaPessoa(d, uid, papel) {
-  const lp = d.lidaPor || {}, trat = Array.isArray(d.tratadas) ? d.tratadas : [];
-  const autoPara = papel === 'estagiario' ? trat.length > 0 : trat.some((t) => t.papel !== 'estagiario');
+  const lp = d.lidaPor || {}, trat = Array.isArray(d.tratadas) ? d.tratadas : [], spTodos = d.semPrazoPor || {};
+  /* estagiária: o que qualquer pessoa já resolveu (tratou, leu ou marcou "não é prazo") sai das "Não lidas" dela; ela pode devolver (↩), e a escolha dela vale */
+  const algumOutro = Object.keys(lp).some((k) => k !== uid && lp[k] === true) || Object.keys(spTodos).some((k) => k !== uid && spTodos[k] === true) || d.lida === true || d.semPrazo === true;
+  const autoPara = papel === 'estagiario' ? (trat.length > 0 || algumOutro) : trat.some((t) => t.papel !== 'estagiario');
   const explicita = Object.prototype.hasOwnProperty.call(lp, uid) ? !!lp[uid] : (papel === 'proprietario' && d.lida === true ? true : undefined);
   const lida = explicita !== undefined ? explicita : autoPara;
   const sp = d.semPrazoPor || {}, semPrazo = Object.prototype.hasOwnProperty.call(sp, uid) ? !!sp[uid] : !!d.semPrazo;   // "não é prazo" antigo (de todos) continua valendo até a pessoa decidir
   const nomes = d.lidaNomes || {}, tratadores = new Set(trat.map((t) => t.uid));
   const leuPor = Object.keys(lp).filter((k) => k !== uid && lp[k] === true && !tratadores.has(k)).map((k) => ({ nome: primeiroNome(nomes[k]), semPrazo: sp[k] === true })).filter((x) => x.nome).slice(0, 4);
-  return { lida, semPrazo, lidaAuto: lida && explicita === undefined, tratadas: trat.map((t) => ({ nome: primeiroNome(t.nome), papel: t.papel, em: t.em, como: t.como, meu: t.uid === uid })), leuPor };
+  const emOutros = [...Object.keys(d.lidaEm || {}).filter((k) => k !== uid && lp[k] === true).map((k) => d.lidaEm[k]), ...trat.map((t) => t.em)].filter(Boolean).sort();   // quando foi resolvida por outra pessoa (a aba "Resolvidas por outros" mostra os últimos 30 dias)
+  return { lida, semPrazo, lidaAuto: lida && explicita === undefined, resolvidaEm: emOutros.length ? emOutros[emOutros.length - 1] : null, tratadas: trat.map((t) => ({ nome: primeiroNome(t.nome), papel: t.papel, em: t.em, como: t.como, meu: t.uid === uid })), leuPor };
 }
 async function visaoDePubs(env, auth, cfg, escopo) {
   const dono = ehDono(auth), u = normalizarUsuario(auth && auth.usuario), porId = new Map(cfg.oabs.map((o) => [o.id, chaveOab(o.numero, o.uf)])), papel = papelDe(auth), uid = uidDe(auth);
@@ -367,7 +370,7 @@ async function visaoDePubs(env, auth, cfg, escopo) {
   return {
     todas, meus, uid, papel, porId,
     ve: (d) => todas || [...chavesDaPub(d, porId)].some((k) => meus.has(k)) || doProcesso.has(digitosPub(d.processo || d.numero)),
-    como: (d) => { const e = estadoDaPessoa(d, uid, papel), { lidaPor, lidaNomes, semPrazoPor, tratadas, ...resto } = d; return { ...resto, lida: e.lida, semPrazo: e.semPrazo, lidaAuto: e.lidaAuto, tratadas: e.tratadas, leuPor: e.leuPor }; },
+    como: (d) => { const e = estadoDaPessoa(d, uid, papel), { lidaPor, lidaNomes, lidaEm, semPrazoPor, tratadas, ...resto } = d; return { ...resto, lida: e.lida, semPrazo: e.semPrazo, lidaAuto: e.lidaAuto, resolvidaEm: e.resolvidaEm, tratadas: e.tratadas, leuPor: e.leuPor }; },
   };
 }
 export async function djenRotas(request, env, partes, auth) {
@@ -432,13 +435,13 @@ export async function djenRotas(request, env, partes, auth) {
   if (acao === 'marcar' && m === 'POST') {
     const b = await request.json().catch(() => null);
     if (!b || !Array.isArray(b.ids) || b.ids.length > 300) return erro(400, 'invalid', 'Pedido inválido.');
-    const ids = b.ids.map(String).filter((id) => /^\d{1,20}$/.test(id)), cmds = [], dono = ehDono(auth), v = await visaoDePubs(env, auth, await lerCfg(env), ''), podeSemPrazo = dono || v.papel === 'advogado';
+    const ids = b.ids.map(String).filter((id) => /^\d{1,20}$/.test(id)), cmds = [], dono = ehDono(auth), v = await visaoDePubs(env, auth, await lerCfg(env), ''), podeSemPrazo = dono || v.papel === 'advogado' || v.papel === 'estagiario';
     const quem = { uid: v.uid, nome: nomeDe(auth), papel: v.papel }, agora = new Date().toISOString();
     for (const lote of em100(ids)) {
       const { results } = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ? AND id IN (' + lote.map(() => '?').join(',') + ')').bind(COL_PUB, ...lote).all();
       for (const r of results) {
         const d = JSON.parse(r.dados); if (!v.ve(d)) continue;   // só o que a pessoa vê
-        const marcarLida = (valor) => { d.lidaPor = { ...(d.lidaPor || {}), [quem.uid]: valor }; d.lidaNomes = { ...(d.lidaNomes || {}), [quem.uid]: quem.nome }; if (v.papel === 'proprietario') d.lida = valor; };   // a leitura é de cada pessoa
+        const marcarLida = (valor) => { d.lidaPor = { ...(d.lidaPor || {}), [quem.uid]: valor }; d.lidaNomes = { ...(d.lidaNomes || {}), [quem.uid]: quem.nome }; d.lidaEm = { ...(d.lidaEm || {}), [quem.uid]: agora }; if (v.papel === 'proprietario') d.lida = valor; };   // a leitura é de cada pessoa
         if (typeof b.lida === 'boolean') marcarLida(b.lida);
         else if (b.lida === null && d.lidaPor) { const { [quem.uid]: _x, ...resto } = d.lidaPor; d.lidaPor = resto; if (v.papel === 'proprietario') d.lida = false; }   // volta ao automático (lida só se alguém tratou)
         if (typeof b.semPrazo === 'boolean' && podeSemPrazo) d.semPrazoPor = { ...(d.semPrazoPor || {}), [quem.uid]: b.semPrazo };

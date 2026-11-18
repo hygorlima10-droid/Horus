@@ -28,7 +28,7 @@ check((await ana('POST', '/api/djen/marcar', { ids: ['100', '102', '101'], lida:
 check((await ana('GET', '/api/djen/lista')).j.pubs.filter((p) => p.id !== '104').every((p) => p.lida === true) && (await ana('GET', '/api/djen/estado')).j.naoLidas === 1, 'para a Ana ficam lidas (a 104, que ela não marcou, continua não lida)');
 check((await bruno('GET', '/api/djen/lista')).j.pubs.every((p) => p.lida === false) && (await dono('GET', '/api/djen/lista')).j.pubs.every((p) => p.lida === false), 'para o Bruno e para o proprietário continuam não lidas (a 102 é das duas OABs)');
 check((await bruno('POST', '/api/djen/marcar', { ids: ['100'], lida: true })).j.alteradas === 0, 'não marca publicação de outro advogado');
-check((await dono('POST', '/api/djen/marcar', { ids: ['103'], lida: true })).j.alteradas === 1 && (await dono('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '103').lida === true && (await caio('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '103').lida === false, 'a leitura do proprietário continua valendo para ele e não muda a do estagiário');
+check((await dono('POST', '/api/djen/marcar', { ids: ['103'], lida: true })).j.alteradas === 1 && (await dono('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '103').lida === true && (await caio('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '103').lida === true, 'a leitura do proprietário vale para ele e também limpa a lista do estagiário (lida de qualquer pessoa)');
 check((await ana('POST', '/api/djen/marcar', { ids: ['100'], semPrazo: true })).j.alteradas === 1 && (await ana('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '100').semPrazo === true && (await dono('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '100').semPrazo === false, 'advogado pode dizer "sem prazo" nas dele, e isso vale só para ele (o colega continua vendo a sugestão)');
 check((await caio('POST', '/api/djen/marcar', { ids: ['101'], semPrazo: true })).j.alteradas === 1 && !(await dono('GET', '/api/djen/lista')).j.pubs.find((p) => p.id === '101').semPrazo, 'estagiário não mexe em "sem prazo"');
 
@@ -63,7 +63,7 @@ check((await caio('POST', '/api/djen/marcar', { ids: ['101'], tratada: true, com
 // proprietário trata
 check((await dono('POST', '/api/djen/marcar', { ids: ['103'], tratada: true, como: 'prazo' })).j.alteradas === 1 && (await pub(dani, '103')).lida === true && (await pub(caio, '103')).lida === true, 'o proprietário trata a 103: vira lida para as estagiárias');
 // desfazer
-check((await ana('POST', '/api/djen/marcar', { ids: ['100'], tratada: false, lida: false })).j.alteradas === 1, 'a Ana desfaz o tratamento da 100');
+check((await ana('POST', '/api/djen/marcar', { ids: ['100'], tratada: false, lida: false, semPrazo: false })).j.alteradas === 1, 'a Ana desfaz o tratamento da 100');
 { const pd = await pub(dono, '100'), pc = await pub(caio, '100'), pa = await pub(ana, '100'); check(pd.lida === false && pc.lida === false && pa.lida === false && pd.tratadas.length === 0, 'desfeito: volta a não lida para todos, sem selo'); }
 // "não é prazo" pessoal
 check((await ana('POST', '/api/djen/marcar', { ids: ['102'], semPrazo: true, lida: true })).j.alteradas === 1, 'a Ana marca "não é prazo" na 102');

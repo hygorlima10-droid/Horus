@@ -415,7 +415,7 @@ function pbListaFiltrada(){
   var vis = pbGrupos(pbVisiveis().filter(pbPassaFiltros));
   if (pbS.filtro === 'naolidas') vis = vis.filter(function(p){ return !pbLidaG(p); });
   else if (pbS.filtro === 'meus') vis = vis.filter(function(p){ return !!pbVinculo(p.processo); });
-  else if (pbS.filtro === 'tratadas') vis = vis.filter(pbTratadaRecente);
+  else if (pbS.filtro === 'tratadas') vis = vis.filter(pbNaAbaOutros);
   return vis;
 }
 function pbRender(){
@@ -430,8 +430,8 @@ function pbRender(){
   /* sub-abas padrão (Fase 2): Resumo, Não lidas, Meus processos e Todas; a última usada fica lembrada */
   if (!pbS.mdOk){ pbS.mdOk = 1; var s0 = mdInicial('publicacoes', ['naolidas', 'meus', 'todas']); if (s0 === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = s0; } }
   var res = pbS.sub === 'resumo';
-  var nTrat = vis.filter(pbTratadaRecente).length;
-  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos']].concat(nTrat || pbS.filtro === 'tratadas' ? [['tratadas', 'Tratadas por colegas', nTrat || '']] : []).concat([['todas', 'Todas']]), res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
+  var nTrat = vis.filter(pbNaAbaOutros).length;
+  var h = '<div id="pbSeg">' + mdBarraHtml([['resumo', 'Resumo'], ['naolidas', 'Não lidas', naoLidas.length || ''], ['meus', 'Meus processos']].concat(nTrat || pbS.filtro === 'tratadas' ? [['tratadas', pbEhEstagiaria() ? 'Resolvidas por outros' : 'Tratadas por colegas', nTrat || '']] : []).concat([['todas', 'Todas']]), res ? 'resumo' : pbS.filtro, function(k){ return 'data-pb="filtro" data-v="' + k + '"'; }) + '</div>';
   var n = pbFiltrosAtivos();
   if (res){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
@@ -636,6 +636,14 @@ function pbDeColegas(p){
   });
   return { tratadas: trat, leuPor: leu };
 }
+/* estagiária: "Resolvidas por outros" = saiu das Não lidas dela porque outra pessoa leu, tratou ou marcou "não é prazo" (últimos 30 dias, pela data da publicação) */
+function pbEhEstagiaria(){ return typeof ppPapel === 'function' && ppPapel() === 'estagiario'; }
+function pbResolvidaPorOutro(p){
+  if (!pbLidaG(p)) return false; var m = pbMembros(p).filter(function(x){ return x.lidaAuto; }); if (!m.length) return false;
+  var quando = m.map(function(x){ return x.resolvidaEm || (String(x.data || '').slice(0, 10) + 'T12:00:00'); }).sort().pop();   /* sem data de quem resolveu (antigas): vale a data da publicação */
+  return (Date.now() - Date.parse(quando)) < 30 * 864e5;
+}
+function pbNaAbaOutros(p){ return pbEhEstagiaria() ? pbResolvidaPorOutro(p) : pbTratadaRecente(p); }
 function pbTratadaRecente(p){ return pbDeColegas(p).tratadas.some(function(t){ return t.em && (Date.now() - Date.parse(t.em)) < 7 * 864e5; }); }
 /* Agenda: audiência ou tarefa criada a partir de uma publicação também conta como tratar; apagar o item desfaz */
 function pbTratarDeAgenda(pubId, tipo){ var p = pbPub(pubId); if (p) pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: true, como: tipo === 'audiencia' ? 'audiencia' : 'tarefa' }); }
@@ -651,7 +659,9 @@ function pbCartao(p){
   if (!v){ var prov = cliProvaveis(pbDestinatarios(p)); if (prov.length) tags += '<span class="pb-tg ok">provável cliente: ' + escapeHtml(prov.slice(0, 2).map(function(c){ return c.nome; }).join(', ')) + '</span>'; }
   { var dc = pbDeColegas(p);
     dc.tratadas.forEach(function(t){ tags += '<span class="pb-tg ' + (t.papel === 'estagiario' ? 'nv' : 'ok') + '">' + ico(t.papel === 'estagiario' ? 'user-round' : 'check', 12) + (t.papel === 'estagiario' ? 'preparada por ' : 'tratada por ') + escapeHtml(t.nome) + '</span>'; });
-    if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; }); }
+    var porOutro = lida && mem.some(function(x){ return x.lidaAuto; });   /* saiu das "Não lidas" porque outra pessoa resolveu */
+    if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; });
+    else if (porOutro){ if (dc.leuPor.length) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg nv">' + (x.semPrazo ? escapeHtml(x.nome) + ': não é prazo' : 'lida por ' + escapeHtml(x.nome)) + '</span>'; }); else if (!dc.tratadas.length) tags += '<span class="pb-tg nv">lida por outra pessoa</span>'; } }
   if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
   else if (!semPz && pbPecaPrincipal(pbPecasDe(p))) { var pp = pbPecaPrincipal(pbPecasDe(p)); tags += '<span class="pb-tg pz">' + ico('sparkles', 12) + escapeHtml(pp.peca.slice(0, 44)) + (pp.dias ? ' · ' + pp.dias + ' dias' : '') + '</span>'; }
   else if (p.sug && !semPz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'sugerido: ' + p.sug.dias + (p.sug.tipo === 'corridos' ? ' dias corridos' : ' dias') + '</span>';

@@ -36,11 +36,15 @@ check(await bruno.evaluate(() => document.querySelectorAll('.pb-card').length) =
 await clicaFiltro(bruno, 'naolidas'); await bruno.waitForTimeout(400);
 check(!/Cooperativa|Intimação 102/.test(await bruno.evaluate(() => document.getElementById('pbListaBox').innerText)) || (await bruno.evaluate(() => document.querySelectorAll('.pb-card[data-cid="102"]').length)) === 0, 'e ela sai da aba "Não lidas" do Bruno');
 
-// só ler: a Ana lê a 100 sem criar nada; a Dani (estagiária) continua vendo como não lida, com "Ana leu, sem prazo"
+// só ler: a Ana lê a 100 sem criar nada; para a Dani (estagiária) a 100 sai das Não lidas, com o selo "lida por Ana" (advogados continuam com "Ana leu, sem prazo")
 await api('ana', 'POST', '/api/djen/marcar', { ids: ['100'], lida: true });
 const dani = await abrir('dani');
+await clicaFiltro(dani, 'naolidas'); await dani.waitForTimeout(400);
+check((await card(dani, '100')) === '', 'a Dani não vê mais a 100 entre as Não lidas (a Ana já leu)');
+await clicaFiltro(dani, 'todas'); await dani.waitForTimeout(400);
 const c100 = await card(dani, '100');
-check(/Ana leu, sem prazo/.test(c100) && !(await dani.evaluate(() => (document.querySelector('.pb-card[data-cid="100"]') || { className: '' }).className.includes('lida'))), 'a estagiária continua vendo a 100 como não lida, com o aviso "Ana leu, sem prazo"');
+check(/lida por Ana/.test(c100) && (await dani.evaluate(() => (document.querySelector('.pb-card[data-cid="100"]') || { className: '' }).className.includes('lida'))), 'em Todas ela aparece como lida, com o selo "lida por Ana"');
+await clicaFiltro(dani, 'todas'); await dani.waitForTimeout(300);
 // estagiária trata: advogados continuam sem ver como lida ("preparada por")
 await api('dani', 'POST', '/api/djen/marcar', { ids: ['100'], tratada: true, como: 'prazo' });
 const ana2 = await abrir('ana'); const c100a = await card(ana2, '100');
