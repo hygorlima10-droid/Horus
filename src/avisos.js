@@ -8,7 +8,7 @@ import { normalizarUsuario, oabsDoRegistro, ehDono } from './politica.js';
 import { canon, tituloDe, ROTULOS } from './auditoria.js';
 
 export const PREFS_PADRAO = { resumo: true, prazos: true, indicado: true, publicacoes: true, repasses: true };
-export const EQUIPE_PADRAO = { convite: true, aparelho: true, recebeu: true, desfeito: true, exclusao: true, honorarios: false, pronta: true, semanal: false };
+export const EQUIPE_PADRAO = { convite: true, aparelho: true, recebeu: true, desfeito: true, exclusao: true, honorarios: false, pronta: true, agenda: true, semanal: false };
 export const prefsDe = (config) => ({ ...PREFS_PADRAO, ...((config && config.avisos) || {}) });
 export const equipeDe = (config) => ({ ...EQUIPE_PADRAO, ...((config && config.equipe) || {}) });
 export const limparPrefs = (b, padrao) => { const o = {}; if (b && typeof b === 'object') for (const k of Object.keys(padrao)) if (typeof b[k] === 'boolean') o[k] = b[k]; return o; };
@@ -20,6 +20,7 @@ export async function usuariosAtivos(env) {
   return results.map((r) => ({ id: r.id, ...JSON.parse(r.dados) })).filter((u) => u.ativo !== false).map((u) => ({ ...u, norm: normalizarUsuario(u) }));
 }
 const usuariosDaChave = (us, chave) => us.filter((u) => (String(chave).startsWith('u:') ? chave === 'u:' + u.id : u.norm.oabs.includes(chave)));
+const ehEstagiario = (auth) => !!(auth && auth.usuario && normalizarUsuario(auth.usuario).papel === 'estagiario');
 const ATOR = (auth) => ({ id: auth && auth.usuario ? auth.usuario.id : '', nome: auth && auth.usuario ? auth.usuario.nome : '' });
 
 /* quem está como responsável no registro (chaves "60456/GO" ou "u:<id>") */
@@ -57,10 +58,21 @@ export async function avisarAtividade(env, enviar, { colecao, id, antes, depois,
     if (acao !== 'excluiu' && depois && COLS_INDICADO.has(colecao)) {
       const antigos = new Set(chavesDeResponsaveis(colecao, antes)), novas = chavesDeResponsaveis(colecao, depois).filter((k) => !antigos.has(k));
       if (novas.length) {
-        const us = await usuariosAtivos(env), alvos = new Set();
-        for (const k of novas) for (const u of usuariosDaChave(us, k)) if (u.id !== ator.id) alvos.add(u.id);
+        const us = await usuariosAtivos(env), alvos = new Set(), lancouEstagiario = colecao === 'agenda' && acao === 'criou' && ehEstagiario(auth);   // quando a estagiária lança na agenda, advogados e proprietário recebem o aviso "lançou" (abaixo), não este
+        for (const k of novas) for (const u of usuariosDaChave(us, k)) if (u.id !== ator.id && !(lancouEstagiario && u.norm.papel !== 'estagiario')) alvos.add(u.id);
         for (const uid of alvos) await enviar(env, { tag: 'indicado-' + colecao + '-' + id + '-' + uid, titulo: 'Você foi indicado', corpo: quem + ' colocou você como responsável: ' + rotulo + ' · ' + titulo, url: '/' }, uid, 'indicado');
       }
+    }
+    /* a estagiária lançou (ou mudou data/hora de) prazo, audiência ou tarefa na agenda: não precisa conferir — o proprietário e os advogados responsáveis só são avisados */
+    if (colecao === 'agenda' && depois && ehEstagiario(auth) && (acao === 'criou' || (acao === 'alterou' && antes && (antes.data !== depois.data || (antes.hora || '') !== (depois.hora || ''))))) {
+      const tipo = { audiencia: ['uma audiência', 'a audiência'], prazo: ['um prazo', 'o prazo'], tarefa: ['uma tarefa', 'a tarefa'] }[depois.tipo] || ['um item', 'o item'];
+      const quando = depois.data ? depois.data.split('-').reverse().join('/') + (depois.hora ? ' às ' + depois.hora : '') : '';
+      const corpo = [depois.titulo || depois.tipo, quando, depois.processo ? 'Proc. ' + depois.processo : (depois.cliente || '')].filter(Boolean).join(' · ');
+      const titulo2 = acao === 'criou' ? quem + ' lançou ' + tipo[0] + ' na agenda' : quem + ' alterou ' + tipo[1] + ' na agenda';
+      await enviar(env, { tag: 'agenda-' + acao + '-' + id + '-' + (depois.data || '') + (depois.hora || ''), titulo: titulo2, corpo, url: '/', equipe: 'agenda' }, undefined);   // proprietário (chave da equipe "agenda")
+      const us = await usuariosAtivos(env), alvos = new Set();
+      for (const k of chavesDeResponsaveis(colecao, depois)) for (const u of usuariosDaChave(us, k)) if (u.id !== ator.id && u.norm.papel === 'advogado') alvos.add(u.id);
+      for (const uid of alvos) await enviar(env, { tag: 'agenda-' + acao + '-' + id + '-' + (depois.data || '') + (depois.hora || '') + '-' + uid, titulo: titulo2, corpo, url: '/' }, uid, 'prazos');
     }
     /* peça pronta: quem terminou a peça avisa o proprietário e os advogados responsáveis, para conferirem e protocolarem */
     if (colecao === 'agenda' && acao === 'alterou' && antes && depois && depois.situacao === 'pronta' && antes.situacao !== 'pronta' && !depois.concluido) {

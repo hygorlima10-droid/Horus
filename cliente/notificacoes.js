@@ -18,6 +18,7 @@ var NT_EQUIPE = [
   ['exclusao', 'Registro for excluído', 'por quem não é o proprietário'],
   ['honorarios', 'Alterarem honorários ou divisão', 'valor, parcelas, percentual'],
   ['pronta', 'Alguém marcar “Peça pronta”', 'para eu conferir e protocolar'],
+  ['agenda', 'Estagiária lançar prazo, audiência ou tarefa', 'só um aviso: não precisa conferir'],
   ['semanal', 'Resumo semanal do que a equipe fez', 'segunda-feira, 08:00']
 ];
 function ntSuportado(){ return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window); }
