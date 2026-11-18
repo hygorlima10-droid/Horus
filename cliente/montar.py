@@ -180,6 +180,13 @@ if '/*PD-INICIO*/' in s:
 else:
     assert s.count('/*MD-FIM*/\n') == 1
     s = s.replace('/*MD-FIM*/\n', '/*MD-FIM*/\n' + bloco_pd)
+rs_js = open(R + 'cliente/redistribuir.js', encoding='utf-8').read()
+bloco_rs = '/*RS-INICIO*/\n' + rs_js + '\n/*RS-FIM*/\n'
+if '/*RS-INICIO*/' in s:
+    s = re.sub(r'/\*RS-INICIO\*/.*?/\*RS-FIM\*/\n', lambda m: bloco_rs, s, flags=re.S)
+else:
+    assert s.count('/*PD-FIM*/\n') == 1
+    s = s.replace('/*PD-FIM*/\n', '/*PD-FIM*/\n' + bloco_rs)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)
