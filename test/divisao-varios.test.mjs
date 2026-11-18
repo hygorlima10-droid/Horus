@@ -39,5 +39,7 @@ const rs = (await dono('GET', '/api/db/repasses')).j.docs.map((d) => d.data);
 const v = (oab) => (rs.find((r) => r.para.oab === oab && r.de.oab === '11111/GO') || {}).valor;
 check(rs.length === 2 && v('60456/GO') === 500 && v('22222/GO') === 200, 'nascem 2 repasses a partir da Ana: R$ 500 para o proprietário e R$ 200 para o Bruno (' + rs.map((r) => r.para.nome + ' ' + r.valor).join(' · ') + ')');
 check(pd.errs.length === 0 && pa.errs.length === 0, 'sem erros de JavaScript' + [...pd.errs, ...pa.errs].join(' | '));
+for (const d of (await dono('GET', '/api/db/repasses')).j.docs || []) await dono('DELETE', '/api/db/repasses/' + d.id);
+await dono('DELETE', '/api/db/casos/dv3');
 await br.close();
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo.'); process.exit(falhas ? 1 : 0);

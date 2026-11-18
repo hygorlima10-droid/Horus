@@ -44,4 +44,6 @@ check((await ana('DELETE', '/api/db/recebimentos/ra1')).s === 200, 'a Ana desfaz
 check(negado(await ana('DELETE', '/api/db/recebimentos/rbr1')), 'a Ana não apaga o do Bruno');
 check(ids(await ana('GET', '/api/db/recebimentos')) === 'mc1', 'depois de desfazer, a Ana só vê o marcador: ' + ids(await ana('GET', '/api/db/recebimentos')));
 check((await dono('GET', '/api/backup')).s === 200, 'o backup do proprietário continua funcionando com a nova coleção');
+for (const d of (await dono('GET', '/api/db/recebimentos')).j.docs || []) await dono('DELETE', '/api/db/recebimentos/' + d.id);
+await dono('DELETE', '/api/db/casos/rb1'); await dono('DELETE', '/api/db/casos/rb2');
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo.'); process.exit(falhas ? 1 : 0);

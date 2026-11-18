@@ -56,6 +56,7 @@ function ppHonorariosMeus(){
   var mes = (typeof mesSelecionado !== 'undefined' && mesSelecionado) ? mesSelecionado : todayISO().slice(0, 7), aReceber = 0, recebido = 0, sem = {};
   listarUnidades().forEach(function(u){
     if (u.arquivado) return;
+    if (u.direto){ aReceber += restanteUn(u); recebido += recebidoNoMesUn(u, mes); return; }   /* pagamento separado: a parcela já é só a parte dele */
     var doc = rcDocDe(u), f = ppFracaoMinha(doc);
     if (f === null){ sem[u.docTipo + '|' + u.docId] = 1; return; }
     aReceber += restanteUn(u) * f; recebido += recebidoNoMesUn(u, mes) * f;

@@ -8,7 +8,8 @@ const api = (n) => async (m, p, b) => { const x = await fetch(B + p, { method: m
 const dono = api('dono');
 const dia = (n) => new Date(Date.now() - 3 * 3600e3 + n * 86400e3).toISOString().slice(0, 10), ontem = dia(-1), mes = dia(0).slice(0, 7);
 await dono('PUT', '/api/usuarios/u1', { oabs: ['60456/GO'] });
-for (const c of ['recebimentos', 'repasses', 'casos', 'termosAcordo', 'alvaras']) for (const d of (await dono('GET', '/api/db/' + c)).j.docs || []) await dono('DELETE', '/api/db/' + c + '/' + d.id);
+for (const d of (await dono('GET', '/api/db/recebimentos')).j.docs || []) await dono('DELETE', '/api/db/recebimentos/' + d.id);
+const limpar = async () => { for (const d of (await dono('GET', '/api/db/recebimentos')).j.docs || []) await dono('DELETE', '/api/db/recebimentos/' + d.id); await dono('DELETE', '/api/db/casos/pf1'); await dono('DELETE', '/api/db/termosAcordo/pf2'); await dono('DELETE', '/api/db/alvaras/pf3'); };
 const MUR = { oab: '49308/GO', nome: 'Murilo Falone Rocha' }, HYG = { oab: '60456/GO', nome: 'Dono Teste' }, ANA = { oab: '11111/GO', nome: 'Ana Advogada' };
 const div = (h, a, m) => ({ modo: 'direto', partes: [{ oab: '60456/GO', nome: 'Dono Teste', pct: h }, { oab: '11111/GO', nome: 'Ana Advogada', pct: a }, { oab: '49308/GO', nome: 'Murilo Falone Rocha', pct: m, pagador: true }] });
 await dono('PUT', '/api/db/casos/pf1', { tipo: 'inicial', origem: 'murilo', prioridade: 'normal', status: 'pendente', cliente: 'Ficha Direta', nomeAcao: 'Ação', numeroProcesso: '0000841-01.2024.8.09.0841', modalidadeHonorario: 'fixo', formaPagamento: 'avista', valorHonorarios: 10000, avista: { data: ontem, pago: false }, advogados: [HYG, ANA, MUR], divisao: div(10, 5, 85), criadoEm: new Date().toISOString() });
@@ -60,5 +61,6 @@ await pd.evaluate(() => { const r = document.querySelector('input[data-rcd="modo
 await pd.click('#saveBtn'); await pd.waitForTimeout(700);
 check((await pd.locator('#formError').innerText()).includes('modo de pagamento'), 'com recebimento já registrado, o modo de pagamento não pode mudar');
 check(pa.errs.length === 0 && pd.errs.length === 0 && pb.errs.length === 0, 'sem erros de JavaScript' + [...pa.errs, ...pd.errs, ...pb.errs].join(' | '));
+await limpar();
 await br.close();
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo.'); process.exit(falhas ? 1 : 0);

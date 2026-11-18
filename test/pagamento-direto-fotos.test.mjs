@@ -9,7 +9,8 @@ const api = (n) => async (m, p, b) => { const x = await fetch(B + p, { method: m
 const dono = api('dono'), ana = api('ana');
 const dia = (n) => new Date(Date.now() - 3 * 3600e3 + n * 86400e3).toISOString().slice(0, 10), ontem = dia(-1), mes = dia(0).slice(0, 7);
 await dono('PUT', '/api/usuarios/u1', { oabs: ['60456/GO'] });
-for (const c of ['recebimentos', 'repasses', 'casos', 'termosAcordo', 'alvaras']) for (const d of (await dono('GET', '/api/db/' + c)).j.docs || []) await dono('DELETE', '/api/db/' + c + '/' + d.id);
+for (const d of (await dono('GET', '/api/db/recebimentos')).j.docs || []) await dono('DELETE', '/api/db/recebimentos/' + d.id);
+const limpar = async () => { for (const d of (await dono('GET', '/api/db/recebimentos')).j.docs || []) await dono('DELETE', '/api/db/recebimentos/' + d.id); await dono('DELETE', '/api/db/casos/ft1'); await dono('DELETE', '/api/db/casos/ft2'); };
 const MUR = { oab: '49308/GO', nome: 'Murilo Falone Rocha' }, HYG = { oab: '60456/GO', nome: 'Dono Teste' }, ANA = { oab: '11111/GO', nome: 'Ana Advogada' };
 await dono('PUT', '/api/db/casos/ft1', { tipo: 'inicial', origem: 'murilo', prioridade: 'normal', status: 'pendente', cliente: 'Indenizacao Silva', nomeAcao: 'Ação de indenização', numeroProcesso: '0000851-01.2024.8.09.0851', modalidadeHonorario: 'fixo', formaPagamento: 'parcelado', valorHonorarios: 50000, parcelas: [{ numero: 1, valor: 25000, data: ontem, pago: false }, { numero: 2, valor: 25000, data: dia(30), pago: false }], advogados: [HYG, ANA, MUR], divisao: { modo: 'direto', partes: [{ oab: '60456/GO', nome: 'Dono Teste', pct: 10 }, { oab: '11111/GO', nome: 'Ana Advogada', pct: 5 }, { oab: '49308/GO', nome: 'Murilo Falone Rocha', pct: 85, pagador: true }] }, criadoEm: new Date().toISOString() });
 await dono('PUT', '/api/db/casos/ft2', { tipo: 'inicial', origem: 'murilo', prioridade: 'normal', status: 'pendente', cliente: 'Contrato Souza', nomeAcao: 'Ação', numeroProcesso: '0000852-02.2024.8.09.0852', modalidadeHonorario: 'fixo', formaPagamento: 'avista', valorHonorarios: 12000, avista: { data: ontem, pago: false }, advogados: [HYG, ANA, MUR], divisao: { modo: 'direto', partes: [{ oab: '60456/GO', nome: 'Dono Teste', pct: 10 }, { oab: '11111/GO', nome: 'Ana Advogada', pct: 5 }, { oab: '49308/GO', nome: 'Murilo Falone Rocha', pct: 85, pagador: true }] }, criadoEm: new Date().toISOString() });
@@ -40,5 +41,6 @@ await pd.evaluate(() => { document.getElementById('overlayPdPainel').classList.r
 // 4) ficha
 await pd.evaluate(() => window.__horusTeste.abrirEdicao('ft1')); await pd.waitForTimeout(900);
 await pd.locator('#rcDiv_casos').screenshot({ path: F + '/pd-ficha.png' });
+await limpar();
 await br.close();
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo.'); process.exit(falhas ? 1 : 0);

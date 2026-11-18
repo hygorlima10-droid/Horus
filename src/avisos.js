@@ -97,6 +97,32 @@ export async function avisarRepasseA(env, enviar, id, antes, depois) {
   } catch (e) { console.error('aviso de repasse', e); }
 }
 
+/* ---- pagamento separado (coleção `recebimentos`) ----
+   - uma pessoa recebeu a parte dela / desfez: o proprietário é avisado (chaves da equipe "recebeu" e "desfeito"), quando foi outra pessoa;
+   - o pagador (ex.: Murilo) recebeu do cliente: avisa os advogados do processo (e o proprietário, se não foi ele) de que já dá para cobrar a parte. */
+export async function avisarRecebimentoA(env, enviar, id, antes, depois, auth) {
+  try {
+    if (!depois || typeof depois !== 'object') return;
+    const souDono = ehDono(auth), ator = auth && auth.usuario ? auth.usuario.id : 'dono', quem = primeiro((auth && auth.usuario && auth.usuario.nome) || 'Proprietário');
+    const onde = [depois.cliente, depois.label].filter(Boolean).join(' · ');
+    if (depois.tipo === 'parte') {
+      if (souDono) return;
+      const antesPago = !!(antes && antes.pago), agoraPago = !!depois.pago;
+      if (agoraPago && !antesPago) await enviar(env, { tag: 'receb-' + id + '-ok', titulo: quem + ' recebeu a parte dele(a)', corpo: onde + (depois.valorBase ? ' · ' + brl(depois.valorBase) : ''), url: '/', equipe: 'recebeu' }, undefined);
+      else if (!agoraPago && antesPago) await enviar(env, { tag: 'receb-' + id + '-desfeito', titulo: 'Recebimento desfeito por ' + quem, corpo: onde, url: '/', equipe: 'desfeito' }, undefined);
+      return;
+    }
+    if (depois.tipo === 'cliente' && !depois.desfeito && !(antes && !antes.desfeito)) {
+      const us = await usuariosAtivos(env), alvos = new Map();
+      for (const k of Array.isArray(depois.advs) ? depois.advs : []) for (const u of usuariosDaChave(us, k)) if (u.id !== ator) alvos.set(u.id, u);
+      for (const u of alvos.values()) {
+        const dono = u.norm.papel === 'proprietario';
+        await enviar(env, { tag: 'receb-cli-' + id + '-' + u.id, titulo: 'O pagador recebeu do cliente', corpo: (onde ? onde + '. ' : '') + 'Já dá para cobrar a sua parte.', url: '/', ...(dono ? { equipe: 'recebeu' } : {}) }, u.id, dono ? undefined : 'repasses');
+      }
+    }
+  } catch (e) { console.error('aviso de recebimento', e); }
+}
+
 /* ---- resumo semanal da equipe (segunda 08:00, se o proprietário ligou): quem fez quantas ações nos últimos 7 dias ---- */
 export async function textoSemanal(env) {
   const desde = new Date(Date.now() - 7 * 864e5).toISOString().replace(/\D/g, '').slice(0, 17);

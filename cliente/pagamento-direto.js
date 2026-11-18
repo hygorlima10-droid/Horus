@@ -40,10 +40,38 @@ function pdAplicarUnidade(u, doc, d){
   u.valor = r2(u.valorBruto * m.pct / 100); u.fator = 1; u.repasse = false; u.parceiro = ''; u.oabParte = m.oab;
   u.pago = !!(L && L.pago); u.parciais = (L && L.parciais) ? L.parciais.slice() : []; u.dataRec = (L && L.dataRecebimento) || ''; u.recTs = (L && L.atualizadoEm) || null;
 }
+/* O REGISTRO COMO ESTA PESSOA O VÊ (só para desenhar as telas; nunca é gravado): nas listas e cartões de Iniciais, Acordos e Alvarás, "paga", "recebido",
+   parcelas pagas, próxima parcela e barra de progresso passam a refletir o recebimento DELA (a parte dela), não o status geral da parcela. */
+var pdUC = null;
+function pdMapaUnidades(){
+  if (!pdUC){ pdUC = {}; listarUnidades().forEach(function(u){ if (u.direto) pdUC[u.chave] = u; }); setTimeout(function(){ pdUC = null; }, 0); }
+  return pdUC;
+}
+function pdVista(tipo, doc){
+  if (pdS.bruto || !pdDivisao(doc)) return doc;
+  var m = pdMapaUnidades(), id = doc.id, cl = Object.assign({}, doc), vistoDe = function(chave, no){
+    var u = m[chave]; if (!u) return Object.assign({}, no, { pago: false, parciais: [], dataRecebimento: null });
+    return Object.assign({}, no, { pago: !!u.pago, parciais: u.parciais || [], dataRecebimento: u.pago ? (u.dataRec || null) : null });
+  };
+  cl.pdVista = true;
+  if (tipo === 'caso'){
+    if (cl.avista) cl.avista = vistoDe(id + '|avista', cl.avista);
+    if (Array.isArray(cl.parcelas)) cl.parcelas = cl.parcelas.map(function(p){ return vistoDe(id + '|parcela|' + p.numero, p); });
+    if (cl.exito){ cl.exito = Object.assign({}, cl.exito); if (cl.exito.avista) cl.exito.avista = vistoDe(id + '|exito|avista', cl.exito.avista); if (Array.isArray(cl.exito.parcelas)) cl.exito.parcelas = cl.exito.parcelas.map(function(p){ return vistoDe(id + '|exito|parcela|' + p.numero, p); }); }
+  } else if (tipo === 'acordo' && Array.isArray(cl.parcelas) && cl.parcelas.length){
+    cl.parcelas = cl.parcelas.map(function(p){ return vistoDe('acordo|' + id + '|parcela|' + p.numero, p); });
+    var dv = acordoDerivado(cl); cl.status = dv.status; cl.dataRecebimento = dv.dataRecebimento; cl.data = dv.data || cl.data;
+  } else {   // acordo sem parcelas e alvará: o registro inteiro é a parcela
+    var u = m[tipo === 'acordo' ? 'acordo|' + id : 'alvara|' + id];
+    cl.status = u && u.pago ? 'recebido' : 'pendente'; cl.dataRecebimento = u && u.pago ? (u.dataRec || null) : null; cl.parciais = u ? (u.parciais || []) : [];
+    if (tipo === 'alvara' && u && u.pago && cl.fase !== 'depositado') cl.fase = 'depositado';
+  }
+  return cl;
+}
 /* gravar o livro-caixa de uma pessoa naquela parcela */
 function pdGravarLivro(u, oab, estado){
   var id = pdId(u.chave, oab), ant = pdLivro(u.chave, oab);
-  var dados = { tipo: 'parte', docTipo: u.docTipo, docId: u.docId, chave: u.chave, oab: oab, processo: pdDigitos(u.processo), pago: !!estado.pago, dataRecebimento: estado.pago ? (estado.data || todayISO()) : '', parciais: estado.parciais || [], valorBase: u.valor, atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
+  var dados = { tipo: 'parte', docTipo: u.docTipo, docId: u.docId, chave: u.chave, oab: oab, cliente: u.cliente, label: u.label, processo: pdDigitos(u.processo), pago: !!estado.pago, dataRecebimento: estado.pago ? (estado.data || todayISO()) : '', parciais: estado.parciais || [], valorBase: u.valor, atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
   return pbApi('/api/db/recebimentos/' + id, 'PUT', dados).then(function(){
     dados.id = id; if (ant) Object.assign(ant, dados); else pdS.lista.push(dados);
     return dados;
@@ -66,7 +94,7 @@ function pdDesfazer(u){
 }
 function pdMarcarCliente(u, marcar){
   var id = pdId(u.chave, 'cliente'), docs = pdDocDe(u.docTipo, u.docId), advs = docs && Array.isArray(docs.advogados) ? docs.advogados.map(function(a){ return a.oab; }).filter(Boolean) : [];
-  var dados = { tipo: 'cliente', docTipo: u.docTipo, docId: u.docId, chave: u.chave, processo: pdDigitos(u.processo), advs: advs, desfeito: !marcar, data: marcar ? todayISO() : '', atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
+  var dados = { tipo: 'cliente', docTipo: u.docTipo, docId: u.docId, chave: u.chave, cliente: u.cliente, label: u.label, processo: pdDigitos(u.processo), advs: advs, desfeito: !marcar, data: marcar ? todayISO() : '', atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
   var ant = null; pdS.lista.forEach(function(x){ if (x.id === id) ant = x; });
   return pbApi('/api/db/recebimentos/' + id, 'PUT', dados).then(function(){ dados.id = id; if (ant) Object.assign(ant, dados); else pdS.lista.push(dados); try{ renderTudo(); }catch(e){} });
 }
@@ -106,11 +134,14 @@ function pdReconciliar(){
       else if (u.kind === 'parcela' || u.kind === 'acordoParcela') alvo = (cl.parcelas || []).filter(function(p){ return p.numero === u.numero; })[0];
       else if (u.kind === 'exitoParcela') alvo = ((cl.exito && cl.exito.parcelas) || []).filter(function(p){ return p.numero === u.numero; })[0];
       if (alvo){ alvo.pago = o.pago; alvo.dataRecebimento = o.pago ? o.data : null; }
-      else { cl.status = o.pago ? 'recebido' : (u.docTipo === 'alvara' ? (cl.status === 'recebido' ? 'pendente' : cl.status) : 'pendente'); cl.dataRecebimento = o.pago ? o.data : null; }
+      else {
+        cl.status = o.pago ? 'recebido' : 'pendente'; cl.dataRecebimento = o.pago ? o.data : null;
+        if (u.docTipo === 'alvara'){ if (o.pago){ cl.fase = 'depositado'; cl.faseDesde = o.data; } else if (cl.fase === 'depositado'){ cl.fase = 'banco'; cl.faseDesde = todayISO(); } }
+      }
     });
     if (u0.docTipo === 'caso') return Promise.resolve(persistPatch(doc, { avista: cl.avista, parcelas: cl.parcelas, exito: cl.exito }));
     if (u0.docTipo === 'acordo') return Promise.resolve(persistPatchAcordo(doc, (cl.parcelas && cl.parcelas.length) ? Object.assign({ parcelas: cl.parcelas }, acordoDerivado(cl)) : { status: cl.status, dataRecebimento: cl.dataRecebimento || null }));
-    return Promise.resolve(persistPatchAlvara(doc, { status: cl.status, dataRecebimento: cl.dataRecebimento || null }));
+    return Promise.resolve(persistPatchAlvara(doc, { status: cl.status, dataRecebimento: cl.dataRecebimento || null, fase: cl.fase, faseDesde: cl.faseDesde }));
   });
   Promise.all(ps).catch(function(e){ console.error('pagamento direto', e); }).then(function(){ pdS.sync = false; try{ renderTudo(); }catch(e){} });
 }
@@ -198,5 +229,5 @@ function pdPainelAlternar(chave, oab){
   var t = null; try{ new MutationObserver(function(){ clearTimeout(t); t = setTimeout(function(){ try{ pdDecorar(); }catch(e){ console.error(e); } }, 120); }).observe(document.body, { childList: true, subtree: true }); }catch(e){}
   window.addEventListener('horus-eu', function(){ pdCarregar(); });
   if (window.__horusEu && window.__horusEu.pronto) pdCarregar();
-  window.__horusTeste = Object.assign(window.__horusTeste || {}, { pdS: pdS, pdCarregar: pdCarregar, pdReconciliar: pdReconciliar, pdUnidadesBrutas: pdUnidadesBrutas, pdDecorar: pdDecorar, pdMarcarCliente: pdMarcarCliente, pdPagar: pdPagar, pdUnidade: pdUnidade, pagarUnidades: function(l, d){ return pagarUnidades(l, d); }, listarUnidades: function(){ return listarUnidades(); }, abrirRelMurilo: function(m, modo){ return abrirRelMurilo(m, modo); }, coletarCobranca: function(m, modo){ return coletarCobranca(m, modo, ''); } });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { pdS: pdS, pdCarregar: pdCarregar, pdReconciliar: pdReconciliar, pdUnidadesBrutas: pdUnidadesBrutas, pdDecorar: pdDecorar, pdMarcarCliente: pdMarcarCliente, pdPagar: pdPagar, pdUnidade: pdUnidade, pdVista: pdVista, ppHonorariosMeus: function(){ return ppHonorariosMeus(); }, pagarUnidades: function(l, d){ return pagarUnidades(l, d); }, listarUnidades: function(){ return listarUnidades(); }, abrirRelMurilo: function(m, modo){ return abrirRelMurilo(m, modo); }, coletarCobranca: function(m, modo){ return coletarCobranca(m, modo, ''); } });
 })();

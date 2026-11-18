@@ -80,7 +80,9 @@ function prHonChips(r, pm){
     var p = pm[l.tipo + '|' + l.id], d = l.doc, rec = p && p.receber > 0.004, quit = p && p.valor > 0 && !rec;
     if (l.tipo === 'acordo' && d.semHonorarios){ out.push(['sem honorários (acordo)', 'ok']); return; }
     if (l.tipo === 'caso'){
-      var t = honorarioPrincipal(d), cls = rec ? (p.atrasado > 0.004 ? 'neg' : 'pend') : (quit ? 'ok' : 'pend');
+      var t = honorarioPrincipal(d), dd = pdDivisao(d);
+      if (dd){ var pc = pdMinhaParte(dd).pct; t = pc > 0 ? 'sua parte ' + String(Math.round(pc * 100) / 100).replace('.', ',') + '% de ' + t : 'sem parte sua'; }   /* pagamento separado: o processo mostra a parte da pessoa, não o contrato inteiro */
+      var cls = rec ? (p.atrasado > 0.004 ? 'neg' : 'pend') : (quit ? 'ok' : 'pend');
       out.push([t + (rec ? ' · a receber ' + fmtMoeda(p.receber) : (quit ? ' · quitado' : (d.modalidadeHonorario === 'sem_honorarios' ? '' : ' · a definir'))), d.modalidadeHonorario === 'sem_honorarios' ? 'ok' : cls]); return;
     }
     if (rec) out.push([PR_LBL[l.tipo].toLowerCase() + ': a receber ' + fmtMoeda(p.receber), p.atrasado > 0.004 ? 'neg' : 'pend']);

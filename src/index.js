@@ -11,7 +11,7 @@ import { checarRotaDjen, checarAcessoColecao, linhasVisiveis, autorizarGravacao,
 import { garantirMigracoes } from './migracao.js';
 import { restauracaoRotas } from './restauracao.js';
 import { usuariosRotas } from './usuarios.js';
-import { avisarAtividade, avisarRepasseA, prefsDe, equipeDe, limparPrefs, PREFS_PADRAO, EQUIPE_PADRAO, textoSemanal, usuariosAtivos } from './avisos.js';
+import { avisarAtividade, avisarRepasseA, avisarRecebimentoA, prefsDe, equipeDe, limparPrefs, PREFS_PADRAO, EQUIPE_PADRAO, textoSemanal, usuariosAtivos } from './avisos.js';
 import { indicesRotas, buscarIndices } from './indices.js';
 import { calendarioRotas, calendarioFeed } from './calendario.js';
 import { planilhaRotas, planilhaSync } from './planilha.js';
@@ -507,6 +507,7 @@ async function api(request, env, partes, auth) {
       const neg = await autorizarGravacao(env, colecao, id, at ? JSON.parse(at.dados) : null, dados, auth); if (neg) return neg;
     }
     if (colecao === 'repasses') { const at1 = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first(); await avisarRepasseA(env, enviarAviso, id, at1 ? JSON.parse(at1.dados) : null, dados); }
+    if (colecao === 'recebimentos') { const at2 = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first(); await avisarRecebimentoA(env, enviarAviso, id, at2 ? JSON.parse(at2.dados) : null, dados, auth); }
     /* ?mesclar=1 (documentos de trabalho do proprietário, como config/obra e config/extratos): o app manda só as chaves que mudou e o servidor junta ao documento
        que está gravado agora, em vez de substituir o documento inteiro por uma cópia antiga (auditoria F-05). Na mesma chave vale a última gravação. */
     let mesclado = false;
