@@ -49,3 +49,25 @@ Estado: **código e testes prontos no ramo local `estudo-pagamento-direto`, NÃO
 
 ## 5. Testes (todos passando no ramo de estudo)
 `recebimentos` (servidor: quem vê/grava, falsificação, estagiário, desfazer, backup) · `pagamento-direto` (R$ 50.000 10/5/85: parte de cada um, marcador, seletor das vencidas, relatório do proprietário, livro-caixa, status geral, tela) · `pagamento-direto-ficha` (acordo com 2 parcelas, alvará, baixa parcial/total, Bruno fora do processo, ficha com modo/pagador e trava) · `pagamento-direto-fotos` (capturas das telas). Mais os grupos `permissoes`, `principal`, `configuracao`, `notificacoes` de regressão.
+
+## 6. Revisão por aba (18/11) — a regra está em todas as telas?
+
+Método: li todas as telas que leem "pago/recebido/valor" direto do cadastro (159 pontos) e separei em (A) o que já usa a "parcela da pessoa" e (B) o que lia o status geral do cadastro. Resultado e correções:
+
+| Aba / tela | Situação | O que foi feito |
+|---|---|---|
+| **Início** — resumo, Central de atenção, próximos recebimentos, Recebi R$ | já usava a parcela da pessoa | nada a mudar; coberto por teste |
+| **Início do advogado** — "Honorários dos seus processos" | **errava**: multiplicava a parte duas vezes (5% de 5%) | corrigido (`cliente/papel.js`) |
+| **Iniciais** — lista, cartão do quadro, resumo de pagamento, "pagas / próxima / vencidas", caixinhas | lia o status geral | corrigido: desenha com a visão da pessoa (`pdVista`); a caixinha marca o recebimento da pessoa |
+| **Termos de acordo** — lista, parcelas, status "Recebido/Pendente" | lia o status geral | corrigido (acordo com parcelas e acordo único) |
+| **Alvarás** — lista, cartão do quadro, "Recebido/Pendente", fase "Depositado" | lia o status geral | corrigido; quando todos recebem, o alvará vai a "Depositado" (e volta se alguém desfaz) |
+| **Processos** — ficha, linha do tempo, chips de honorários | linha do tempo e "a receber" já usavam a parcela da pessoa; o chip mostrava o contrato inteiro | corrigido: mostra "sua parte 5% de R$ 50.000,00" |
+| **Finanças** (PJ, Divisão do mês, Análises, Patrimônio, metas) e totais do Início | já usavam a parcela da pessoa / o fator da divisão | coberto por teste (parte do proprietário e da advogada) |
+| **Relatório do Murilo** | — | parte da pessoa, marcador, seletor das vencidas (seção 2) |
+| **Avisos no celular** | o pagamento separado não gerava aviso | novo: o proprietário é avisado quando outra pessoa recebe ou desfaz; os advogados, quando o pagador recebeu do cliente |
+| **Cobrança de clientes (clientes próprios)** | não se aplica (processo "próprio" é sempre o modo antigo) | nada a mudar |
+| **Backup/Restauração** | a coleção `recebimentos` entra no backup do proprietário | coberto por teste |
+
+O que cada tela mostra de propósito: a lista continua mostrando o valor cheio da parcela do contrato (o advogado também é parte dele), mas **sempre acompanhado de "sua parte R$ x (y%)"**; todo total, KPI, alerta, relatório e finança usa só a parte da pessoa.
+
+Testes novos desta revisão: `pagamento-direto-abas` (Início, Iniciais, Acordos, Alvarás, Processos) e `recebimentos-avisos`. Os testes do estudo agora **limpam o que criam** (antes derrubavam testes de outros grupos).
