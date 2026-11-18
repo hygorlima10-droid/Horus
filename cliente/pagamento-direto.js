@@ -39,6 +39,8 @@ function pdAplicarUnidade(u, doc, d){
   var L = pdLivro(u.chave, m.oab);
   u.valor = r2(u.valorBruto * m.pct / 100); u.fator = 1; u.repasse = false; u.parceiro = ''; u.oabParte = m.oab;
   u.pago = !!(L && L.pago); u.parciais = (L && L.parciais) ? L.parciais.slice() : []; u.dataRec = (L && L.dataRecebimento) || ''; u.recTs = (L && L.atualizadoEm) || null;
+  u.extra = u.pago ? Math.max(0, Number(L.extra) || 0) : 0;   /* o pagador pagou mais que o combinado: o que passou da parte vira receita da pessoa */
+  if (u.extra > 0) u.valor = r2(u.valor + u.extra);
 }
 /* O REGISTRO COMO ESTA PESSOA O VÊ (só para desenhar as telas; nunca é gravado): nas listas e cartões de Iniciais, Acordos e Alvarás, "paga", "recebido",
    parcelas pagas, próxima parcela e barra de progresso passam a refletir o recebimento DELA (a parte dela), não o status geral da parcela. */
@@ -71,7 +73,7 @@ function pdVista(tipo, doc){
 /* gravar o livro-caixa de uma pessoa naquela parcela */
 function pdGravarLivro(u, oab, estado){
   var id = pdId(u.chave, oab), ant = pdLivro(u.chave, oab);
-  var dados = { tipo: 'parte', docTipo: u.docTipo, docId: u.docId, chave: u.chave, oab: oab, cliente: u.cliente, label: u.label, processo: pdDigitos(u.processo), pago: !!estado.pago, dataRecebimento: estado.pago ? (estado.data || todayISO()) : '', parciais: estado.parciais || [], valorBase: u.valor, atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
+  var dados = { tipo: 'parte', docTipo: u.docTipo, docId: u.docId, chave: u.chave, oab: oab, cliente: u.cliente, label: u.label, processo: pdDigitos(u.processo), pago: !!estado.pago, dataRecebimento: estado.pago ? (estado.data || todayISO()) : '', parciais: estado.parciais || [], extra: estado.pago ? r2(estado.extra || 0) : 0, valorBase: u.valorBruto ? r2(u.valorBruto * (u.pct || 0) / 100) : u.valor, atualizadoEm: new Date().toISOString(), porNome: (esS.eu && esS.eu.nome) || 'Proprietário' };
   return pbApi('/api/db/recebimentos/' + id, 'PUT', dados).then(function(){
     dados.id = id; if (ant) Object.assign(ant, dados); else pdS.lista.push(dados);
     return dados;
@@ -83,7 +85,7 @@ function pdPagar(lista, data){
   var ps = lista.map(function(it){
     var u = it.u, v = r2(it.valor); if (v <= 0.004 || u.pago || !u.oabParte) return null;
     var falta = Math.max(0, r2(u.valor - somaParciais(u))), L = pdLivro(u.chave, u.oabParte), parciais = L && L.parciais ? L.parciais.slice() : [];
-    if (v >= falta - 0.005) return pdGravarLivro(u, u.oabParte, { pago: true, data: data, parciais: parciais });
+    if (v >= falta - 0.005) return pdGravarLivro(u, u.oabParte, { pago: true, data: data, parciais: parciais, extra: Math.max(0, r2(v - falta)) });   /* acima do que falta: o excedente fica registrado como "a mais" */
     parciais.push({ data: data, valor: v }); return pdGravarLivro(u, u.oabParte, { pago: false, parciais: parciais });
   }).filter(Boolean);
   return Promise.all(ps).then(function(){ pdAgendarReconciliar(); try{ renderTudo(); }catch(e){} });
@@ -184,9 +186,10 @@ function pdDecorar(){
     if (!u || u.naoMeu){ el.style.display = 'none'; var s0 = document.createElement('span'); s0.className = sel + ' saldo-data'; s0.setAttribute('data-pd-k', c.chave); s0.textContent = 'Paga direto a cada advogado — sem parte sua'; host.appendChild(s0); return; }
     if (c.botao) el.textContent = u.pago ? 'Desfazer recebimento da minha parte' : 'Marcar minha parte como recebida'; else el.checked = !!u.pago;
     var sp = document.createElement('span'); sp.className = sel + ' saldo-data'; sp.setAttribute('data-pd-k', c.chave);
-    sp.innerHTML = ' · sua parte <b>' + fmtMoeda(u.valor) + '</b> (' + String(Math.round(u.pct * 100) / 100).replace('.', ',') + '%) ' + (u.pago ? '— recebida' : '') +
-      ' <button type="button" class="es-lk" data-pd-cli="' + escapeHtml(c.chave) + '">' + (u.muriloRec ? (escapeHtml(u.pagadorNome || 'Pagador') + ' já recebeu do cliente ✓') : ('Marcar: ' + escapeHtml(u.pagadorNome || 'pagador') + ' recebeu do cliente')) + '</button>' +
-      (pdEhDono() ? ' <button type="button" class="es-lk" data-pd-painel="' + escapeHtml(c.chave) + '">Pagamentos por pessoa</button>' : '');
+    var pg = escapeHtml(u.pagadorNome ? String(u.pagadorNome).split(' ')[0] : 'pagador');
+    sp.innerHTML = '<span class="pd-txt">sua parte <b>' + fmtMoeda(u.valor) + '</b> (' + String(Math.round(u.pct * 100) / 100).replace('.', ',') + '%)' + (u.pago ? ' · recebida' + (u.extra > 0 ? ' (inclui ' + fmtMoeda(u.extra) + ' a mais)' : '') : '') + '</span>' +
+      '<span class="pd-bts"><button type="button" class="pd-bt ' + (u.muriloRec ? 'pd-verde' : 'pd-ouro') + '" data-pd-cli="' + escapeHtml(c.chave) + '">' + (u.muriloRec ? pg + ' já recebeu do cliente ✓' : pg + ' recebeu do cliente?') + '</button>' +
+      (pdEhDono() ? '<button type="button" class="pd-bt" data-pd-painel="' + escapeHtml(c.chave) + '">Pagamentos por pessoa</button>' : '') + '</span>';
     host.appendChild(sp);
   });
 }
@@ -213,7 +216,7 @@ function pdDesenharPainel(){
   h += d.partes.map(function(p){
     var L = p.oab ? pdLivro(chave, p.oab) : null, v = r2(bruta.valor * (Number(p.pct) || 0) / 100);
     if (p.pagador) return '<div class="pb-lin"><span>' + escapeHtml(p.nome || p.oab) + ' · ' + rcFmtPct(p.pct) + ' <small>(fica com a parte dele)</small></span><b>' + fmtMoeda(v) + '</b></div>';
-    return '<div class="pb-lin"><span>' + escapeHtml(p.nome || p.oab) + ' · ' + rcFmtPct(p.pct) + '</span><b>' + fmtMoeda(v) + '</b>' + (p.oab ? ' <button type="button" class="es-lk" data-pd-por="' + escapeHtml(chave + '|' + p.oab) + '">' + (L && L.pago ? 'recebeu ✓ ' + fmtData(L.dataRecebimento) + ' (desfazer)' : 'marcar como recebido') + '</button>' : ' <small>sem cadastro</small>') + '</div>';
+    return '<div class="pb-lin"><span>' + escapeHtml(p.nome || p.oab) + ' · ' + rcFmtPct(p.pct) + '</span><b>' + fmtMoeda(v) + '</b>' + (p.oab ? ' <button type="button" class="pd-bt ' + (L && L.pago ? '' : 'pd-verde') + '" data-pd-por="' + escapeHtml(chave + '|' + p.oab) + '">' + (L && L.pago ? 'Recebeu ' + fmtData(L.dataRecebimento) + ' · desfazer' : 'Marcar como recebido') + '</button>' : ' <small>sem cadastro</small>') + '</div>';
   }).join('');
   el.innerHTML = h;
 }
@@ -224,7 +227,22 @@ function pdPainelAlternar(chave, oab){
 }
 (function(){
   var st = document.createElement('style');
-  st.textContent = '.pd-chip{display:inline;margin-left:4px}.pd-chip .es-lk{margin-left:4px}.papel-estagiario .pd-chip{display:none}';
+  /* Botões no padrão dos cartões do app (cartõezinhos de 9 px; cor pela função): ouro = pede atenção, verde = confirmar/receber, azul = renegociar, vermelho = excluir, cinza = o resto.
+     Valem para os botões novos do pagamento separado e para as ações das listas de Iniciais, Acordos e Alvarás (antes eram só texto). */
+  st.textContent =
+    ':root{--qb-ouro-bg:rgba(201,133,0,.17);--qb-ouro-fg:#7A4E00;--qb-ouro-bd:rgba(201,133,0,.42);--qb-verde-bg:rgba(23,137,90,.14);--qb-verde-fg:#0F6B46;--qb-verde-bd:rgba(23,137,90,.38);--qb-azul-bg:rgba(42,120,214,.12);--qb-azul-fg:#1B5BAA;--qb-azul-bd:rgba(42,120,214,.34);--qb-verm-bg:rgba(217,59,59,.1);--qb-verm-fg:#B42323;--qb-verm-bd:rgba(217,59,59,.32)}' +
+    ':root[data-theme="dark"]{--qb-ouro-bg:rgba(242,176,30,.18);--qb-ouro-fg:#F2C260;--qb-ouro-bd:rgba(242,176,30,.45);--qb-verde-bg:rgba(34,197,94,.16);--qb-verde-fg:#6FDBA8;--qb-verde-bd:rgba(34,197,94,.42);--qb-azul-bg:rgba(56,189,248,.15);--qb-azul-fg:#8DBBF5;--qb-azul-bd:rgba(56,189,248,.4);--qb-verm-bg:rgba(239,68,68,.16);--qb-verm-fg:#FCA5A5;--qb-verm-bd:rgba(239,68,68,.4)}' +
+    '.pd-bt,#list .detail-actions button,#listAcordos .detail-actions button,#listAlvaras .detail-actions button,#list .parcela-row .btn-text.mini,#listAcordos .parcela-row .btn-text.mini,#listAlvaras .parcela-row .btn-text.mini{height:36px;box-sizing:border-box;padding:0 12px!important;border-radius:9px!important;font-family:inherit;font-size:12px!important;font-weight:700!important;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--border)!important;background:var(--surface)!important;color:var(--ink-soft)!important;white-space:nowrap;text-decoration:none;cursor:pointer;width:auto}' +
+    '@media(min-width:1000px) and (pointer:fine){.pd-bt,#list .detail-actions button,#listAcordos .detail-actions button,#listAlvaras .detail-actions button,#list .parcela-row .btn-text.mini,#listAcordos .parcela-row .btn-text.mini,#listAlvaras .parcela-row .btn-text.mini{height:28px;min-height:0!important;min-width:0!important}}' +
+    '.pd-bt.pd-ouro{background:var(--qb-ouro-bg)!important;color:var(--qb-ouro-fg)!important;border-color:var(--qb-ouro-bd)!important}' +
+    '.pd-bt.pd-verde,#list .parcela-row .btn-text.mini[data-baixa-doc],#list .detail-actions button[data-baixa-doc],#list .detail-actions button[data-concluir],#list .detail-actions button[data-acordo-status],#list .detail-actions button[data-alvara-status],#listAcordos .parcela-row .btn-text.mini[data-baixa-doc],#listAcordos .detail-actions button[data-baixa-doc],#listAcordos .detail-actions button[data-concluir],#listAcordos .detail-actions button[data-acordo-status],#listAcordos .detail-actions button[data-alvara-status],#listAlvaras .parcela-row .btn-text.mini[data-baixa-doc],#listAlvaras .detail-actions button[data-baixa-doc],#listAlvaras .detail-actions button[data-concluir],#listAlvaras .detail-actions button[data-acordo-status],#listAlvaras .detail-actions button[data-alvara-status]{background:var(--qb-verde-bg)!important;color:var(--qb-verde-fg)!important;border-color:var(--qb-verde-bd)!important}' +
+    '.pd-bt.pd-azul,#list .parcela-row .btn-text.mini[data-reneg-doc],#list .detail-actions button[data-reneg-doc],#listAcordos .parcela-row .btn-text.mini[data-reneg-doc],#listAcordos .detail-actions button[data-reneg-doc],#listAlvaras .parcela-row .btn-text.mini[data-reneg-doc],#listAlvaras .detail-actions button[data-reneg-doc]{background:var(--qb-azul-bg)!important;color:var(--qb-azul-fg)!important;border-color:var(--qb-azul-bd)!important}' +
+    '#list .detail-actions .btn-danger-text,#listAcordos .detail-actions .btn-danger-text,#listAlvaras .detail-actions .btn-danger-text{background:var(--qb-verm-bg)!important;color:var(--qb-verm-fg)!important;border-color:var(--qb-verm-bd)!important}' +
+    '#list .detail-actions,#listAcordos .detail-actions,#listAlvaras .detail-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}' +
+    '#list .parcela-row:has(.btn-text.mini:not(:only-child)),#listAcordos .parcela-row:has(.btn-text.mini:not(:only-child)){display:flex;flex-wrap:wrap;gap:6px}' +
+    '.pd-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0 2px}.pd-chip .pd-txt{font-size:var(--t2);color:var(--ink-soft)}.pd-chip .pd-bts{display:flex;flex-wrap:wrap;gap:6px}.papel-estagiario .pd-chip{display:none}' +
+    '#overlayPdPainel .pb-lin{align-items:center;gap:8px}#overlayPdPainel .pb-lin .pd-bt{margin-left:auto}' +
+    '.rc-acts-pd{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}';
   document.head.appendChild(st);
   var t = null; try{ new MutationObserver(function(){ clearTimeout(t); t = setTimeout(function(){ try{ pdDecorar(); }catch(e){ console.error(e); } }, 120); }).observe(document.body, { childList: true, subtree: true }); }catch(e){}
   window.addEventListener('horus-eu', function(){ pdCarregar(); });

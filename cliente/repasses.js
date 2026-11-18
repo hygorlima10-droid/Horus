@@ -99,7 +99,7 @@ function rcDivHtml(chave){
   var D = rcS.div[chave]; if (!D) return '';
   if (rcSemHonor(chave)) return '<div class="saldo-data" style="margin-top:2px">Sem honorários: não há valor a dividir nem a repassar a parceiro.</div>';
   var base = rcDivBase(chave), n = D.partes.length;
-  if (n < 2) return '<div class="saldo-data" style="margin-top:2px">Com mais de um advogado, aparece aqui a divisão dos honorários. <button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Dividir com parceiro sem cadastro</button></div>';
+  if (n < 2) return '<div class="saldo-data" style="margin-top:2px">Com mais de um advogado, aparece aqui a divisão dos honorários. <button type="button" class="pd-bt" data-rcd="parceiro" data-c="' + chave + '">Dividir com parceiro sem cadastro</button></div>';
   var soma = D.partes.reduce(function(t, p){ return t + (Number(p.pct) || 0); }, 0), ok = Math.abs(soma - 100) < 0.05;
   var modo = rcModoDiv(chave), mostraModo = rcOrigemForm(chave) !== 'proprio', direto = modo === 'direto';
   if (direto && !D.partes.some(function(p){ return p.pagador; })){ var pg = D.partes.filter(function(p){ return /murilo/i.test(p.nome || ''); })[0]; if (pg) pg.pagador = true; }
@@ -110,7 +110,7 @@ function rcDivHtml(chave){
       '<input type="text" inputmode="decimal" class="rc-pct" data-rcd="pct" data-c="' + chave + '" data-i="' + i + '" value="' + escapeHtml(String(p.pct || '').replace('.', ',')) + '" aria-label="Percentual de ' + escapeHtml(p.nome || p.oab) + '"><span>%</span>' +
       '<b class="rc-val" id="rcv_' + chave + '_' + i + '">' + (base > 0 ? fmtMoeda(Math.round(base * (Number(p.pct) || 0)) / 100) : '') + '</b>' + (p.oab ? '' : '<button type="button" class="es-x" data-rcd="tirar" data-c="' + chave + '" data-i="' + i + '" aria-label="Tirar">' + ico('x', 14) + '</button>') + (direto ? '<label class="rc-pg"><input type="radio" name="rcPag_' + chave + '" data-rcd="pagador" data-c="' + chave + '" data-i="' + i + '"' + (p.pagador ? ' checked' : '') + '> quem paga</label>' : '') + '</div>';
   }).join('') + '</div><div class="saldo-data" id="rcs_' + chave + '" style="' + (ok ? '' : 'color:var(--urgente);font-weight:700') + '">' + (ok ? 'Soma 100%.' : 'Soma ' + rcFmtPct(soma) + ': precisa fechar 100%.') + ' ' + (direto ? 'Quem paga fica com a parte dele; cada advogado recebe a sua direto e marca no app (o relatório de cobrança de cada um mostra só a parte dele).' : 'Vale para os recebimentos deste registro: cada advogado fica com a sua parte.') + '</div>' +
-    '<div class="pb-acts" style="justify-content:flex-start;margin:2px 0"><button type="button" class="es-lk" data-rcd="igual" data-c="' + chave + '">Dividir igualmente</button><button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Adicionar parceiro sem cadastro</button></div>';
+    '<div class="rc-acts-pd"><button type="button" class="pd-bt" data-rcd="igual" data-c="' + chave + '">Dividir igualmente</button><button type="button" class="pd-bt" data-rcd="parceiro" data-c="' + chave + '">Adicionar parceiro sem cadastro</button></div>';
   return h;
 }
 function rcDivDesenhar(chave){ var el = qs('rcDiv_' + chave); (rcS.semH = rcS.semH || {})[chave] = rcSemHonor(chave); if (el) el.innerHTML = rcDivHtml(chave); }

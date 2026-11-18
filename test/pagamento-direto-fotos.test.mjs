@@ -23,8 +23,7 @@ await pa.evaluate(() => window.__horusTeste.pdMarcarCliente(window.__horusTeste.
 await pa.click('#drawer [data-tab="peticoes"]'); await pa.waitForTimeout(800);
 await pa.getByText('Lista', { exact: true }).first().click().catch(() => { }); await pa.waitForTimeout(600);
 await pa.locator('.cliente-cell .nome:visible', { hasText: 'Indenizacao Silva' }).first().click(); await pa.waitForTimeout(800);
-const card = pa.locator('.pd-chip').first().locator('xpath=ancestor::*[contains(@class,"parcela-row")]/parent::*').first();
-await card.screenshot({ path: F + '/pd-parcela.png' }).catch(async () => { await pa.screenshot({ path: F + '/pd-parcela.png' }); });
+await pa.locator('.card-detail:visible').first().screenshot({ path: F + '/pd-parcela.png' });
 check((await pa.locator('.pd-chip').count()) >= 2, 'selos nas parcelas');
 // 2) relatório da Ana (com a lista "aguardando")
 await pa.evaluate(([m]) => window.__horusTeste.abrirRelMurilo(m, 'murilo'), [mes]); await pa.waitForTimeout(500);

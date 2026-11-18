@@ -37,6 +37,20 @@ check(acordo.parcelas.every((p) => p.pago === false && !(p.parciais || []).lengt
 await pa.evaluate(() => window.__horusTeste.pagarUnidades([{ u: window.__horusTeste.listarUnidades().find((x) => x.chave === 'alvara|pf3'), valor: 400 }], undefined)); await pa.waitForTimeout(800);
 check((await un(pa, 'pf3'))[0].pago === true && (await un(pd, 'pf3'))[0].pago === false, 'alvará: a Ana recebeu a parte dela; a do proprietário segue aberta');
 
+console.log('\n— o Murilo paga a mais que o combinado');
+await pa.click('#drawer [data-tab="acordos"]'); await pa.waitForTimeout(700);
+await pa.evaluate(() => { const t = document.querySelector('[data-acordo-toggle="pf2"]'); if (t && !document.querySelector('[data-baixa-doc="acordo|pf2"]')) t.click(); }); await pa.waitForTimeout(700);
+await pa.evaluate(() => document.querySelector('[data-baixa-doc="acordo|pf2"]').click()); await pa.waitForTimeout(700);
+const dlg = await pa.evaluate(() => { const ck = document.querySelector('#baixaLista [data-bx]'); if (!ck) return 'sem lista'; if (!ck.checked) ck.click(); const i = ck.getAttribute('data-bx'), inp = document.querySelector('#baixaLista [data-bx-val="' + i + '"]'); inp.value = '1300'; inp.dispatchEvent(new Event('input', { bubbles: true })); return 'ok ' + i + ' ' + inp.value; });
+await pa.waitForTimeout(300);
+await pa.evaluate(() => document.getElementById('baixaSalvar').click()); await pa.waitForTimeout(1800);
+const erroBx = await pa.evaluate(() => (document.getElementById('baixaErro') || {}).textContent || '');
+const livro = (await dono('GET', '/api/db/recebimentos')).j.docs.map((d) => d.data).find((x) => x.chave === 'acordo|pf2|parcela|2' && x.oab === '11111/GO');
+check(dlg.startsWith('ok') && !/maior do que falta/.test(erroBx) && livro && livro.pago === true && livro.extra === 300, 'na baixa, a Ana lança R$ 1.300,00 numa parte de R$ 1.000,00: aceita e guarda R$ 300,00 a mais (' + dlg + ' | ' + erroBx + ' | ' + JSON.stringify(livro && { pago: livro.pago, extra: livro.extra }) + ')');
+const ua2 = await un(pa, 'pf2');
+check(ua2.find((x) => x.chave === 'acordo|pf2|parcela|2').meu === 1300, 'a receita da Ana nessa parcela passa a ser R$ 1.300,00 (parte + o que veio a mais)');
+check(!(await pa.evaluate(() => 0)) , 'sem estouro na tela');
+
 console.log('\n— quem não está no processo');
 check((await un(pb, 'pf1')).length === 0 && (await un(pb, 'pf2')).length === 0 && !(await pb.evaluate(() => document.documentElement.classList.contains('pd-murilo'))), 'o Bruno não vê as parcelas e não ganha o botão "Relatório do Murilo"');
 check(!(await pb.locator('#abrirRelMuriloBtn').isVisible()), 'o botão do relatório do Murilo não aparece para ele');
