@@ -72,6 +72,7 @@ export function podeVer(colecao, d, auth, esc) {
   if (colecao === 'config') return false;                       // config só pelas rotas de documento liberado (ver checarDocConfig)
   if (colecao === 'diasSemExpediente') return true;                // o calendário do escritório (feriado municipal, ponto facultativo…): todos leem, só o proprietário muda
   if (colecao === 'repasses') return u.papel === 'advogado' && envolvidoNoRepasse(d, u);   // quem paga ou quem recebe (o proprietário vê todos)
+  if (colecao === 'recebimentos') return u.papel === 'advogado' && recebimentoVisivel(d, u, esc);   // o recebimento é de quem recebeu; o marcador "pagador recebeu do cliente" é de todos do processo
   if (LIVRES.has(colecao)) return true;
   if (u.papel === 'estagiario') return colecao !== 'agenda' || u.permissoes.verAgendas || agendaVisivel(d, u, null) || !!(d && d.processo);   // o estagiário vê o escritório inteiro (jurídico); a agenda de todos, se a permissão estiver ligada
   if (u.papel !== 'advogado') return false;
@@ -82,6 +83,32 @@ export function podeVer(colecao, d, auth, esc) {
   return false;
 }
 /* agenda: a própria, as compartilhadas e as de processos em que participa (prazos e audiências do processo são sempre do escritório) */
+/* ---------- recebimentos por pessoa (coleção `recebimentos`) — pagamento separado ----------
+   Processo cujo pagador (ex.: Murilo) paga cada advogado a parte dele, direto. Dois tipos de documento:
+   - tipo "parte": o livro-caixa de UMA pessoa naquela parcela ({ oab, pago, dataRecebimento, parciais }): só ela (e o proprietário) lê e grava;
+   - tipo "cliente": o marcador "o pagador já recebeu do cliente nesta parcela": todo advogado do processo lê e grava (o proprietário também).
+   Estagiário não registra nem lê recebimentos. A rota confere no banco que a pessoa participa do registro (casos/acordos/alvarás). */
+const COL_DOC = { caso: 'casos', acordo: 'termosAcordo', alvara: 'alvaras' };
+export const recebimentoVisivel = (d, u, esc) => {
+  if (!d) return false;
+  if (d.tipo === 'parte') return u.oabs.includes(d.oab);
+  if (d.tipo !== 'cliente') return false;
+  return (Array.isArray(d.advs) && d.advs.some((k) => u.oabs.includes(k))) || (!!esc && !!d.processo && esc.processos.has(digitos(d.processo)));
+};
+async function checarRecebimento(env, antes, depois, u, esc) {
+  if (u.papel !== 'advogado') return NEGADO('Só advogado e proprietário registram recebimentos de honorários.');
+  const ref = depois || antes;
+  if (!ref || typeof ref !== 'object' || !['parte', 'cliente'].includes(ref.tipo) || typeof ref.chave !== 'string' || !ref.chave || !COL_DOC[ref.docTipo] || typeof ref.docId !== 'string') return NEGADO('Recebimento inválido.');
+  if (ref.tipo === 'parte' && (typeof ref.oab !== 'string' || !ref.oab)) return NEGADO('Recebimento inválido.');
+  if (antes && depois) for (const k of ['tipo', 'chave', 'oab', 'docTipo', 'docId']) if (antes[k] !== depois[k]) return NEGADO('A pessoa e a parcela de um recebimento não mudam.');
+  if (ref.tipo === 'parte' && !u.oabs.includes(ref.oab)) return erro(404, 'not_found', 'Registro não encontrado.');   // cada um mexe só no recebimento dele
+  const reg = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(COL_DOC[ref.docTipo], ref.docId).first();
+  let doc = null; try { doc = reg ? JSON.parse(reg.dados) : null; } catch (e) { doc = null; }
+  const daPessoa = !!doc && (oabsDoRegistro(doc).some((k) => u.oabs.includes(k)) || (!!esc && esc.processos.has(digitos(doc.numero || doc.numeroProcesso))));
+  if (!daPessoa) return erro(404, 'not_found', 'Registro não encontrado.');
+  return null;
+}
+
 /* ---------- repasses entre advogados (coleção `repasses`) ---------- */
 export const envolvidoNoRepasse = (d, u) => { const ks = new Set(u.oabs); return !!d && ((d.de && ks.has(d.de.oab)) || (d.para && ks.has(d.para.oab))); };
 const STATUS_REPASSE = ['pendente', 'feito', 'confirmado', 'cancelado'];
@@ -112,7 +139,7 @@ function agendaVisivel(d, u, esc) {
 }
 
 /* ---------- decisão por rota e coleção ---------- */
-const COL_JURIDICAS = new Set(['repasses', 'casos', 'termosAcordo', 'alvaras', 'clientes', 'processos', 'agenda', 'pecasAprendidas', 'delegadas', 'prazosPub', 'diasSemExpediente']);
+const COL_JURIDICAS = new Set(['repasses', 'recebimentos', 'casos', 'termosAcordo', 'alvaras', 'clientes', 'processos', 'agenda', 'pecasAprendidas', 'delegadas', 'prazosPub', 'diasSemExpediente']);
 /* coleção inteira: o papel pode abri-la? (a filtragem registro a registro vem depois) */
 export function checarAcessoColecao(colecao, auth) {
   if (ehDono(auth)) return null;
@@ -167,6 +194,7 @@ export async function autorizarGravacao(env, colecao, id, antes, depois, auth, e
   if (colecao === 'diasSemExpediente') return NEGADO('Só o proprietário cadastra dias sem expediente.');
   if (colecao === 'repasses') { const r = checarRepasse(antes, depois, u); if (r) return r; if (!antes) depois.criadoPorId = u.id; return null; }
   esc = esc || (u.papel === 'advogado' ? await escopoDoAdvogado(env, auth) : null);
+  if (colecao === 'recebimentos') return checarRecebimento(env, antes, depois, u, esc);
   if (antes) { const ant = { ...antes, id: antes.id || id }; if (!podeVer(colecao, ant, auth, esc)) return erro(404, 'not_found', 'Registro não encontrado.'); }
   if (LIVRES.has(colecao)) return null;
   if (colecao === 'agenda' && antes && !agendaAlteravel(antes, depois, u, esc)) return NEGADO('Só quem criou, quem é responsável ou quem está no processo pode alterar esta tarefa.');
@@ -190,6 +218,7 @@ export async function autorizarExclusao(env, colecao, id, antes, auth, esc) {
   const u = usu(auth);
   if (colecao === 'config' || colecao === 'repasses' || colecao === 'diasSemExpediente') return NEGADO();
   esc = esc || (u.papel === 'advogado' ? await escopoDoAdvogado(env, auth) : null);
+  if (colecao === 'recebimentos') return checarRecebimento(env, antes, null, u, esc);   // desfazer o próprio recebimento (ou o marcador do processo)
   if (antes && !podeVer(colecao, { ...antes, id: antes.id || id }, auth, esc)) return erro(404, 'not_found', 'Registro não encontrado.');
   if (colecao === 'delegadas') return null;   // a tabela de tarefas delegadas é de toda a equipe (a Lixeira guarda 30 dias)
   if (!podeExcluir(auth)) return NEGADO('Você não tem permissão para excluir registros.');
