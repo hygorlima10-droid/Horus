@@ -184,11 +184,12 @@ await page.click('[data-prp="hon"] [data-prf="link"]'); await page.waitForTimeou
 check(/Editar honorários do processo/.test(await t('#modalTitle')) && await page.evaluate(() => document.getElementById('overlay').classList.contains('show')), 'Editar abre os honorários em modo próprio');
 await page.click('#closeModal'); await page.waitForTimeout(500);
 check(await page.evaluate(() => getComputedStyle(document.getElementById('segTipo').closest('.field')).display !== 'none'), 'ao fechar, a janela de Inicial volta ao normal');
-// escolher "tenho honorários a receber" no cadastro do processo abre o cadastro dos honorários depois de salvar
+// escolher "tenho honorários a receber" no cadastro do processo mostra os campos dos honorários na MESMA ficha e salva tudo junto
 await page.click('[data-pr="novo"]'); await page.waitForTimeout(400);
-await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_numero', '5111222-33.2025.8.09.0107'); await page.fill('#pr_partes', 'Novo x Processo'); await page.selectOption('#pr_hon', 'receber'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(1500);
-check(await page.evaluate(() => document.getElementById('overlay').classList.contains('show') && document.getElementById('modalTitle').textContent === 'Honorários do processo' && document.getElementById('processoInput').value === '5111222-33.2025.8.09.0107'), 'escolhendo "tenho honorários a receber", depois de salvar o processo abre o cadastro dos honorários');
-await page.click('#closeModal'); await page.waitForTimeout(400);
+await page.evaluate(() => { const d = document.getElementById('pr_dadosDet'); if (d) d.open = true; }); await page.fill('#pr_numero', '5111222-33.2025.8.09.0107'); await page.fill('#pr_partes', 'Novo x Processo'); await page.selectOption('#pr_hon', 'receber'); await page.waitForTimeout(600);
+check(await page.evaluate(() => !document.getElementById('overlay').classList.contains('show') && !!document.querySelector('#overlayPr #valorInput') && !!document.querySelector('#overlayPr #segModalidade')), 'escolhendo "tenho honorários a receber", os campos dos honorários aparecem na própria ficha do processo (sem segunda janela)');
+await page.fill('#valorInput', '1200'); await page.fill('#dataAvistaInput', '2030-01-10'); await page.click('[data-prf="salvar"]'); await page.waitForTimeout(2000);
+check(await page.evaluate(() => !document.getElementById('overlay').classList.contains('show') && !document.getElementById('overlayPr').classList.contains('show')), 'ao salvar, o processo e os honorários são cadastrados de uma vez e tudo fecha');
 
 // perfil do cliente
 await page.evaluate(() => document.querySelector('#drawer [data-tab="clientes"]').click()); await page.waitForTimeout(700);
