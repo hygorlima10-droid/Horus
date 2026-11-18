@@ -78,10 +78,11 @@ function ppPor(n){
 (function(){
   var st = document.createElement('style');
   /* some para todos que não são o proprietário (advogado inclusive): Construção, Relatório do Murilo, backup, leitura por IA (foto/PDF) e o aviso do sistema */
-  var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
+  var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
   /* e só o estagiário perde o resto das Finanças (o advogado usa o cofre dele) */
   var finEst = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos'];
   st.textContent = finTodos.map(function(s){ return '.so-central ' + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
+    '.so-central:not(.pd-murilo) #abrirRelMuriloBtn,.papel-estagiario #abrirRelMuriloBtn{display:none!important}' +
     '.papel-estagiario [data-baixa-doc],.papel-estagiario [data-pf="baixa"],.papel-estagiario [data-arq-act="baixa"],.papel-estagiario [data-acordo-status],.papel-estagiario [data-alvara-status],.papel-estagiario [data-receita-receber]{display:none!important}' +
     '.papel-estagiario input[data-avista],.papel-estagiario input[data-parcela],.papel-estagiario input[data-acordo-parcela],.papel-estagiario input[data-exavista],.papel-estagiario input[data-exparcela]{pointer-events:none;opacity:.55}' +
     '.papel-estagiario #abrirCobrancaMenuBtn,.papel-estagiario #abrirCobrancaProprioBtn,.papel-estagiario [data-cli-cobrar],.papel-estagiario [data-pf="cobrar"]{display:none!important}' +

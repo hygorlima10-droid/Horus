@@ -56,15 +56,28 @@ function rcAjustarUnidade(u, doc){
   else { u.fator = 0; u.repasse = false; u.parceiro = ''; u.recebidoPorOutro = true; }   // o dinheiro está com outro advogado: só vira receita quando o repasse for confirmado
 }
 function rcCarimbarDivisao(n, doc, agora){
-  var d = doc && doc.divisao; if (!d || !Array.isArray(d.partes) || d.partes.length < 2) return;
+  var d = doc && doc.divisao; if (!d || !Array.isArray(d.partes) || d.partes.length < 2 || d.modo === 'direto') return;   /* pagamento separado: ninguém recebe pelos outros, não há "em que conta entrou" */
   var me = rcMinhaChave(), outros = d.partes.some(function(p){ return p.oab && p.oab !== me; });
   n.divisaoRec = { recebeu: me, partes: d.partes.map(function(p){ return { oab: p.oab || '', nome: p.nome || '', pct: Number(p.pct) || 0 }; }), por: rcNomeChave(me), porChave: me, em: agora, perguntar: outros };
 }
 
 /* ---------- a divisão nos cadastros (Inicial, Acordo, Alvará) ---------- */
+function rcOrigemForm(chave){ try{ return chave === 'casos' ? formState.origem : (chave === 'termosAcordo' ? formStateAcordo.origem : formStateAlvara.origem); }catch(e){ return 'murilo'; } }
+function rcDocTemPago(doc){
+  if (!doc) return false;
+  var n = [doc.avista, doc.exito && doc.exito.avista].concat(doc.parcelas || [], (doc.exito && doc.exito.parcelas) || []).filter(Boolean);
+  return doc.status === 'recebido' || (doc.parciais || []).length > 0 || n.some(function(x){ return x.pago || (x.parciais || []).length > 0; });
+}
+/* como o dinheiro chega: "direto" = o pagador (ex.: Murilo) paga cada advogado a parte dele; "conta" = uma conta recebe tudo e repassa (padrão antigo). Processo do pagador começa em "direto"; particular é sempre "conta" */
+function rcModoDiv(chave){
+  var D = rcS.div[chave]; if (!D || rcOrigemForm(chave) === 'proprio') return 'conta';
+  return D.modo || 'direto';
+}
 function rcDivIniciar(chave, doc){
-  var partes = rcDivisaoDe(doc, chave);
-  rcS.div[chave] = { partes: partes };
+  var partes = rcDivisaoDe(doc, chave), dv = doc && doc.divisao;
+  rcS.div[chave] = { partes: partes, modo: dv && dv.partes && dv.partes.length ? (dv.modo === 'direto' ? 'direto' : 'conta') : '' };
+  (rcS.divAnt = rcS.divAnt || {})[chave] = { modo: dv && dv.modo === 'direto' ? 'direto' : 'conta', pago: rcDocTemPago(doc) || (typeof pdS !== 'undefined' && pdS.lista.some(function(l){ return doc && l.docId === doc.id && (l.pago || (l.parciais || []).length > 0); })) };
+  if (dv && Array.isArray(dv.partes)) partes.forEach(function(p, i){ if (dv.partes[i] && dv.partes[i].pagador) p.pagador = true; });
   var sel = esS.resp[chave] || (esS.resp[chave] = []);
   partes.forEach(function(p){ if (p.oab && !sel.some(function(x){ return x.oab === p.oab; })) sel.push({ oab: p.oab, nome: p.nome }); });
   rcDivSync(chave); rcDivDesenhar(chave);
@@ -88,17 +101,21 @@ function rcDivHtml(chave){
   var base = rcDivBase(chave), n = D.partes.length;
   if (n < 2) return '<div class="saldo-data" style="margin-top:2px">Com mais de um advogado, aparece aqui a divisão dos honorários. <button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Dividir com parceiro sem cadastro</button></div>';
   var soma = D.partes.reduce(function(t, p){ return t + (Number(p.pct) || 0); }, 0), ok = Math.abs(soma - 100) < 0.05;
-  var h = '<label class="field-label">Divisão dos honorários</label><div class="es-lista">' + D.partes.map(function(p, i){
+  var modo = rcModoDiv(chave), mostraModo = rcOrigemForm(chave) !== 'proprio', direto = modo === 'direto';
+  if (direto && !D.partes.some(function(p){ return p.pagador; })){ var pg = D.partes.filter(function(p){ return /murilo/i.test(p.nome || ''); })[0]; if (pg) pg.pagador = true; }
+  var h = '<label class="field-label">Divisão dos honorários</label>' +
+    (mostraModo ? '<div class="rc-modo"><label><input type="radio" name="rcModo_' + chave + '" data-rcd="modo" data-c="' + chave + '" value="direto"' + (direto ? ' checked' : '') + '> Cada um recebe a sua parte direto de quem paga</label><label><input type="radio" name="rcModo_' + chave + '" data-rcd="modo" data-c="' + chave + '" value="conta"' + (direto ? '' : ' checked') + '> Uma conta recebe tudo e repassa aos demais</label></div>' : '') +
+    '<div class="es-lista">' + D.partes.map(function(p, i){
     return '<div class="rc-lin"><span class="rc-nm"><b>' + escapeHtml(p.nome || p.oab) + '</b>' + (p.oab ? '<span class="saldo-data"> OAB ' + escapeHtml(p.oab) + '</span>' : '<span class="saldo-data"> parceiro sem cadastro</span>') + '</span>' +
       '<input type="text" inputmode="decimal" class="rc-pct" data-rcd="pct" data-c="' + chave + '" data-i="' + i + '" value="' + escapeHtml(String(p.pct || '').replace('.', ',')) + '" aria-label="Percentual de ' + escapeHtml(p.nome || p.oab) + '"><span>%</span>' +
-      '<b class="rc-val" id="rcv_' + chave + '_' + i + '">' + (base > 0 ? fmtMoeda(Math.round(base * (Number(p.pct) || 0)) / 100) : '') + '</b>' + (p.oab ? '' : '<button type="button" class="es-x" data-rcd="tirar" data-c="' + chave + '" data-i="' + i + '" aria-label="Tirar">' + ico('x', 14) + '</button>') + '</div>';
-  }).join('') + '</div><div class="saldo-data" id="rcs_' + chave + '" style="' + (ok ? '' : 'color:var(--urgente);font-weight:700') + '">' + (ok ? 'Soma 100%.' : 'Soma ' + rcFmtPct(soma) + ': precisa fechar 100%.') + ' Vale para os recebimentos deste registro: cada advogado fica com a sua parte.</div>' +
+      '<b class="rc-val" id="rcv_' + chave + '_' + i + '">' + (base > 0 ? fmtMoeda(Math.round(base * (Number(p.pct) || 0)) / 100) : '') + '</b>' + (p.oab ? '' : '<button type="button" class="es-x" data-rcd="tirar" data-c="' + chave + '" data-i="' + i + '" aria-label="Tirar">' + ico('x', 14) + '</button>') + (direto ? '<label class="rc-pg"><input type="radio" name="rcPag_' + chave + '" data-rcd="pagador" data-c="' + chave + '" data-i="' + i + '"' + (p.pagador ? ' checked' : '') + '> quem paga</label>' : '') + '</div>';
+  }).join('') + '</div><div class="saldo-data" id="rcs_' + chave + '" style="' + (ok ? '' : 'color:var(--urgente);font-weight:700') + '">' + (ok ? 'Soma 100%.' : 'Soma ' + rcFmtPct(soma) + ': precisa fechar 100%.') + ' ' + (direto ? 'Quem paga fica com a parte dele; cada advogado recebe a sua direto e marca no app (o relatório de cobrança de cada um mostra só a parte dele).' : 'Vale para os recebimentos deste registro: cada advogado fica com a sua parte.') + '</div>' +
     '<div class="pb-acts" style="justify-content:flex-start;margin:2px 0"><button type="button" class="es-lk" data-rcd="igual" data-c="' + chave + '">Dividir igualmente</button><button type="button" class="es-lk" data-rcd="parceiro" data-c="' + chave + '">Adicionar parceiro sem cadastro</button></div>';
   return h;
 }
 function rcDivDesenhar(chave){ var el = qs('rcDiv_' + chave); (rcS.semH = rcS.semH || {})[chave] = rcSemHonor(chave); if (el) el.innerHTML = rcDivHtml(chave); }
 /* ao trocar a modalidade (com/sem honorários) a divisão aparece ou some; só redesenha quando isso muda, para não atrapalhar quem está digitando os percentuais */
-function rcChecarSemHonor(){ ['casos', 'termosAcordo'].forEach(function(c){ if (rcS.div[c] && (rcS.semH || {})[c] !== rcSemHonor(c)) rcDivDesenhar(c); }); }
+function rcChecarSemHonor(){ ['casos', 'termosAcordo', 'alvaras'].forEach(function(c){ if (!rcS.div[c]) return; var o = rcModoDiv(c); if ((rcS.semH || {})[c] !== rcSemHonor(c) || (rcS.modoV || {})[c] !== o){ (rcS.modoV = rcS.modoV || {})[c] = o; rcDivDesenhar(c); } }); }
 ['click', 'change'].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(rcChecarSemHonor, 0); }); });
 function rcDivAplicar(chave, dados, erroEl){
   var D = rcS.div[chave]; if (!D || !qs('rcDiv_' + chave)) return true;
@@ -107,7 +124,10 @@ function rcDivAplicar(chave, dados, erroEl){
   if (ps.length < 2){ dados.divisao = null; return true; }
   var soma = ps.reduce(function(t, p){ return t + (Number(p.pct) || 0); }, 0);
   if (Math.abs(soma - 100) > 0.05){ if (erroEl) erroEl.textContent = 'A divisão dos honorários precisa somar 100% (hoje soma ' + rcFmtPct(soma) + ').'; return false; }
-  dados.divisao = { partes: ps.map(function(p){ return { oab: p.oab || '', nome: p.nome || '', pct: Math.round((Number(p.pct) || 0) * 100) / 100 }; }) };
+  var modo = rcModoDiv(chave), ant = (rcS.divAnt || {})[chave] || { modo: 'conta', pago: false };
+  if (ant.pago && ant.modo !== modo){ if (erroEl) erroEl.textContent = 'Já há pagamento registrado neste registro: o modo de pagamento (direto ou por uma conta) não pode mudar.'; return false; }
+  dados.divisao = { partes: ps.map(function(p){ var x = { oab: p.oab || '', nome: p.nome || '', pct: Math.round((Number(p.pct) || 0) * 100) / 100 }; if (modo === 'direto' && p.pagador) x.pagador = true; return x; }) };
+  if (modo === 'direto') dados.divisao.modo = 'direto';
   dados.repasse = null;   // o formato antigo (um parceiro) foi absorvido pela divisão
   return true;
 }
@@ -125,6 +145,8 @@ document.addEventListener('click', function(e){
   if (a === 'igual'){ var n = D.partes.length; D.partes.forEach(function(p){ p.pct = Math.round(10000 / n) / 100; }); D.partes[0].pct = Math.round((100 - D.partes.slice(1).reduce(function(t, p){ return t + p.pct; }, 0)) * 100) / 100; rcDivDesenhar(c); }
   else if (a === 'parceiro'){ var nome = window.prompt ? window.prompt('Nome do advogado parceiro (sem cadastro no app):') : ''; if (nome && nome.trim()){ D.partes.push({ oab: '', nome: nome.trim().slice(0, 60), pct: 0 }); rcDivDesenhar(c); } }
   else if (a === 'tirar'){ D.partes.splice(Number(b.getAttribute('data-i')), 1); rcDivDesenhar(c); }
+  else if (a === 'modo'){ D.modo = b.value === 'conta' ? 'conta' : 'direto'; rcDivDesenhar(c); }
+  else if (a === 'pagador'){ var ix = Number(b.getAttribute('data-i')); D.partes.forEach(function(p, k){ p.pagador = k === ix; }); }
 });
 
 /* ---------- repasses: carregar, reconciliar com os recebimentos e agir ---------- */
@@ -243,7 +265,7 @@ document.addEventListener('click', function(e){
 });
 (function(){
   var st = document.createElement('style');
-  st.textContent = '#repBoxCaso,#repBoxAcordo,#repBoxAlvara{display:none!important}.rc-lin{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border)}.rc-lin:first-child{border-top:0}.rc-nm{flex:1;min-width:0}.rc-pct{width:64px!important;height:34px!important;text-align:right;padding:0 8px!important}.rc-val{min-width:84px;text-align:right;font-size:var(--t2)}' +
+  st.textContent = '.rc-modo{display:flex;flex-direction:column;gap:6px;margin:4px 0 8px;font-size:var(--t2)}.rc-modo label,.rc-pg{display:flex;align-items:center;gap:6px}.rc-pg{font-size:var(--t1);color:var(--ink-soft);white-space:nowrap}#repBoxCaso,#repBoxAcordo,#repBoxAlvara{display:none!important}.rc-lin{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border)}.rc-lin:first-child{border-top:0}.rc-nm{flex:1;min-width:0}.rc-pct{width:64px!important;height:34px!important;text-align:right;padding:0 8px!important}.rc-val{min-width:84px;text-align:right;font-size:var(--t2)}' +
     '.rc-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px;margin:0 0 12px}.rc-it{padding:6px 0 6px 10px;margin:4px 0}';
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { rcSincronizar: rcSincronizar, rcLista: function(){ return rcS.lista; }, rcUnidades: function(id){ return listarUnidades().filter(function(u){ return u.docId === id; }).map(function(u){ return { chave: u.chave, pago: u.pago, fator: u.fator, repasse: u.repasse, parceiro: u.parceiro, outro: !!u.recebidoPorOutro, meu: meuValor(u, u.valor) }; }); } });

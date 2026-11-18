@@ -173,6 +173,13 @@ if '/*MD-INICIO*/' in s:
 else:
     assert s.count('/*IC-FIM*/\n') == 1
     s = s.replace('/*IC-FIM*/\n', '/*IC-FIM*/\n' + bloco_md)
+pd_js = open(R + 'cliente/pagamento-direto.js', encoding='utf-8').read()
+bloco_pd = '/*PD-INICIO*/\n' + pd_js + '\n/*PD-FIM*/\n'
+if '/*PD-INICIO*/' in s:
+    s = re.sub(r'/\*PD-INICIO\*/.*?/\*PD-FIM\*/\n', lambda m: bloco_pd, s, flags=re.S)
+else:
+    assert s.count('/*MD-FIM*/\n') == 1
+    s = s.replace('/*MD-FIM*/\n', '/*MD-FIM*/\n' + bloco_pd)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)
@@ -453,7 +460,7 @@ rep('    <button type="button" class="bt-it" data-tab="alvaras"><svg><use href="
 rep("  function setActiveTab(tab){\n    if (!TITULOS_TELA[tab]) tab = 'inicio';\n", "  function setActiveTab(tab){\n    if (!TITULOS_TELA[tab]) tab = 'inicio';\n    try{ tab = ppAbaValida(tab); }catch(e){}\n")
 rep("    itens.sort(function(a,b){\n      if (a.ordem !== b.ordem) return a.ordem - b.ordem;\n      if (a.ordem === 1) return String(a.dataOrdenacao).localeCompare(String(b.dataOrdenacao));",
     "    try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}\n    itens.sort(function(a,b){\n      if (a.ordem !== b.ordem) return a.ordem - b.ordem;\n      if (a.ordem === 1) return String(a.dataOrdenacao).localeCompare(String(b.dataOrdenacao));")
-rep("  function abrirRelMurilo(mes, modo, cliente){\n", "  function abrirRelMurilo(mes, modo, cliente){\n    if (!ppDono()){ if (ppPapel() !== 'advogado') return; modo = 'proprio'; }\n")
+rep("  function abrirRelMurilo(mes, modo, cliente){\n", "  function abrirRelMurilo(mes, modo, cliente){\n    if (!ppDono()){ if (ppPapel() !== 'advogado') return; if (!(modo === 'murilo' && document.documentElement.classList.contains('pd-murilo'))) modo = 'proprio'; }   /* o advogado abre o relatório do Murilo só se tem parcelas em pagamento separado */\n")
 rep("  function atualizarAvisosSistema(){\n    var el = qs('avisoSistema');\n    if (!el) return;\n", "  function atualizarAvisosSistema(){\n    var el = qs('avisoSistema');\n    if (!el || !ppDono()) return;\n")
 def so_dono(nome, assinatura, corpo_inicio):
     """a função passa a esperar o servidor dizer quem é a pessoa e só roda para o proprietário (outros não pedem o que é dele)"""
