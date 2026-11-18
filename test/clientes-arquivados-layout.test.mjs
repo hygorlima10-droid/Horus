@@ -25,7 +25,7 @@ check(/Clientes ativos/.test(tx) && /Em atraso/.test(tx) && await page.evaluate(
 check(/R\$\s*1\.500,00/.test(await t('#statsClientes .fv-tile:nth-child(2)')), 'Clientes: em atraso = 1.500');
 check(await page.evaluate(() => document.querySelectorAll('#listClientes .cli-nome .ct-ic').length) === 2, 'Clientes: cada cliente tem ícone');
 const c1 = await t('[data-cli-abrir="cl1"]');
-check(/Atraso de 10 dias/.test(c1) && /Murilo me paga/.test(c1), 'Clientes: selo de atraso e quem paga');
+check(/Atraso de 10 dias/.test(c1) && /Cliente do Murilo/.test(c1), 'Clientes: selo de atraso e quem paga');
 check(await page.evaluate(() => !!document.querySelector('[data-cli-abrir="cl1"] .fv-chip.neg')), 'Clientes: o selo de atraso é vermelho');
 await page.click('[data-cli-abrir="cl2"]'); await page.waitForTimeout(600);
 check(await page.evaluate(() => !!document.querySelector('.overlay.show')), 'abrir o cliente continua funcionando');

@@ -596,7 +596,7 @@ function prDesenhar(){
   h += '<div class="field"><label class="field-label" for="pr_obs">Observações</label><textarea id="pr_obs" rows="3" maxlength="600" placeholder="Anotações sobre o processo">' + escapeHtml(novo ? '' : ((doc && doc.obs) || '')) + '</textarea></div>';
   hObs = h; h = ho0; }
   var hHonNovo = ''; { var hn0 = h; h = '';
-  if (novo) h += '<div class="field"><label class="field-label" for="pr_hon">Honorários</label><select id="pr_hon" class="filter-select" style="width:100%">' + ['sem', 'quitados'].map(function(k){ return '<option value="' + k + '">' + PR_HON[k] + '</option>'; }).join('') + '<option value="receber">Tenho honorários a receber (fixo, êxito…)</option></select><div class="saldo-data">Ao escolher a última opção, depois de salvar abre o cadastro dos honorários.</div></div>';
+  if (novo) h += '<div class="field"><label class="field-label" for="pr_hon">Honorários</label><select id="pr_hon" class="filter-select" style="width:100%">' + ['sem', 'quitados'].map(function(k){ return '<option value="' + k + '">' + PR_HON[k] + '</option>'; }).join('') + '<option value="receber">Tenho honorários a receber (fixo, êxito…)</option></select><div class="saldo-data">Ao escolher a última opção, os campos dos honorários aparecem logo abaixo, nesta mesma ficha.</div><div id="pr_honSlot" style="display:none;margin-top:10px"></div></div>';
   hHonNovo = h; h = hn0; }
   var hResp = '<div class="field" id="esResp_processos"></div>';
   var hErro = '<div class="form-error" id="pr_erro"></div>', hSalvar = '<button type="button" class="btn btn-primary" data-prf="salvar" style="width:100%;justify-content:center;">' + (novo ? 'Cadastrar processo' : 'Salvar') + '</button>';
@@ -618,7 +618,7 @@ function prDesenhar(){
       pane('dados', fSec('Dados do processo', hNum + hDad) + fSec('Cliente e observações', hCli + hObs) + fSec('Responsáveis', hResp) + '<div class="pb-acts">' + (arq ? '<button type="button" class="btn btn-ghost pb-b" data-prf="reabrir">Reabrir processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-prf="arquivar">Concluir e arquivar</button>') + (doc && !r.links.length ? '<button type="button" class="btn-text" data-prf="excluir" style="color:var(--urgente)">Excluir este processo</button>' : '') + '</div>') + pane('hist', hHist) +
       '<div id="prRodape"' + (/^(resumo|hon|dados)$/.test(ab) ? '' : ' hidden') + '>' + hErro + hRodape + '</div>';
   }
-  qs('prCorpo').innerHTML = h; try{ esRespIniciar('processos', doc); }catch(e){} prChips(); prInfoNumero(); prRefazVinc(); try{ adAbrirData(qs('pr_ajuiz')); adAbrirData(qs('pr_proxdata')); }catch(e){}
+  qs('prCorpo').innerHTML = h; try{ esRespIniciar('processos', doc); }catch(e){} prChips(); prInfoNumero(); prRefazVinc(); try{ prHonReanexar(); }catch(e){} try{ adAbrirData(qs('pr_ajuiz')); adAbrirData(qs('pr_proxdata')); }catch(e){}
   prEd.buscadoDj = '';
   try{ fichaMaisEm(qs('prCorpo')); }catch(e){}
   if (novo){ clearInterval(prResT); prDadosResumo(); prResT = setInterval(function(){ if (!qs('pr_dadosRes') || !qs('overlayPr').classList.contains('show')){ clearInterval(prResT); return; } prDadosResumo(); }, 500); }
@@ -654,6 +654,22 @@ function prDadosResumo(){
 function prSalvar(){
   var novo = prEd.novo, err = qs('pr_erro'), numero = qs('pr_numero').value.trim();
   if (!numero){ err.textContent = 'Informe o número do processo.'; return; }
+  if (novo && prHonIn.ativo && !prHonIn.feito){   /* honorários preenchidos nesta mesma ficha: grava primeiro os honorários (com as mesmas conferências da ficha de Inicial) e depois o processo */
+    var a0 = cnjAnalisar(numero), num0 = (a0 && a0.completo) ? a0.formatado : numero, ids0 = prEd.ids.slice();
+    var partes0 = qs('pr_partes').value.trim() || ids0.map(nomeCliente).filter(Boolean).join(', ') || 'Processo ' + num0;
+    err.textContent = '';
+    qs('clienteInput').value = partes0; qs('nomeAcaoInput').value = qs('pr_classe').value.trim() || 'Honorários do processo'; qs('processoInput').value = num0;
+    try{ pickerDefinir('caso', ids0); }catch(e){}
+    qs('formError').textContent = ''; prModoHon = true; qs('saveBtn').click();
+    var t0 = Date.now();
+    (function espera(){
+      if (qs('saveBtn').disabled && Date.now() - t0 < 10000) return setTimeout(espera, 60);
+      var m = qs('formError').textContent;
+      if (m){ err.textContent = m; return; }
+      prHonIn.feito = true; esS.resp.processos = (esS.resp.casos || []).map(function(x){ return { oab: x.oab, nome: x.nome }; }); prSalvar();
+    })();
+    return;
+  }
   var a = cnjAnalisar(numero); if (a && a.completo) numero = a.formatado;
   var n = prNum(numero), mp = prMapa(), ex = mp.m[n];
   if (novo && ex && ex.doc){ err.textContent = 'Este processo já está cadastrado.'; return; }
@@ -689,7 +705,8 @@ function prSalvar(){
     if (vincId) toast('Processo cadastrado e ligado à Inicial.', 'Desfazer', function(){ var cv = casos.filter(function(x){ return x.id === vincId; })[0]; if (cv) persistPatchDoc('caso', cv, { numeroProcesso: vincAnt }).then(function(){ prDepois(); }); });
     else toast((novo ? 'Processo cadastrado.' : 'Salvo.') + (rotAtos.length ? ' Cliente vinculado também a: ' + rotAtos.join(', ') + '.' : ''));
     if (pedirAuto){ try{ prAprenderApelido(pedirAuto.cli, pedirAuto.nome); }catch(e){} setTimeout(function(){ impPerguntarAuto(pedirAuto.cli, pedirAuto.nome); }, 250); }
-    prDepois(); if (querHon){ prEd = { num: n, novo: false, ids: [] }; setTimeout(function(){ prNovoHonorario('caso'); }, 80); } }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+    prDepois(); if (prHonIn.feito){ prHonInlineDesligar(); }
+    else if (querHon){ prEd = { num: n, novo: false, ids: [] }; setTimeout(function(){ prNovoHonorario('caso'); }, 80); } }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 function prExcluir(b){
   var r = prMapa().m[prEd.num]; if (!r || !r.doc) return;
@@ -705,10 +722,11 @@ function prNovoHonorario(tipo){
     qs('processoInput').value = numero; qs('clienteInput').value = prTitulo(r);
     pickerDefinir('caso', ids);
     var c0 = ids.length ? clienteById(ids[0]) : null; if (c0){ formState.origem = c0.pagador === 'murilo' ? 'murilo' : 'proprio'; setSegValue('segOrigem', formState.origem); }
-    if (doc && doc.classe) qs('nomeAcaoInput').value = doc.classe;
+    qs('nomeAcaoInput').value = (doc && doc.classe) || 'Honorários do processo';
+    prHonEnxuto(true);   /* atualiza o cabeçalho com o número e as partes */
   }
-  else if (tipo === 'acordo'){ abrirNovoAcordo(); qs('acordoProcessoInput').value = numero; qs('acordoProcessoInput').dispatchEvent(new Event('blur')); }
-  else { abrirNovoAlvara(); qs('alvaraProcessoInput').value = numero; qs('alvaraProcessoInput').dispatchEvent(new Event('blur')); }
+  else if (tipo === 'acordo'){ abrirNovoAcordo(); qs('acordoProcessoInput').value = numero; qs('acordoProcessoInput').dispatchEvent(new Event('blur')); if (!qs('acordoPartesInput').value.trim()) qs('acordoPartesInput').value = prTitulo(r); prLeanOutros('acordo', true, numero, prTitulo(r)); }
+  else { abrirNovoAlvara(); qs('alvaraProcessoInput').value = numero; qs('alvaraProcessoInput').dispatchEvent(new Event('blur')); if (!qs('alvaraPartesInput').value.trim()) qs('alvaraPartesInput').value = prTitulo(r); prLeanOutros('alvara', true, numero, prTitulo(r)); }
 }
 /* a janela de Inicial serve também para os honorários de um processo: título próprio e sem a escolha de tipo */
 function prSemProcessoMarcar(on, soSeTem){
@@ -721,7 +739,83 @@ function prAplicaModoHon(){
   var seg = qs('segTipo'), fld = seg && seg.closest ? seg.closest('.field') : null;
   if (prModoHon){ qs('modalTitle').textContent = qs('modalTitle').textContent.indexOf('Editar') === 0 ? 'Editar honorários do processo' : 'Honorários do processo'; if (fld) fld.style.display = 'none'; }
   else if (fld) fld.style.display = '';
+  try{ prHonEnxuto(prModoHon); }catch(e){}
 }
+/* ---------- ficha ENXUTA de honorários de um processo que já existe ----------
+   A ficha de Inicial serve de motor (mesmas contas, parcelas, divisão e conferências), mas aqui sai o que é de petição nova: tipo, descrição do cliente, nome da ação,
+   prioridade (urgente / tutela), status (pendente / protocolado…), modelo, prazo processual e o número do processo (vem do processo; aparece só no cabeçalho). */
+function prOcultarCampo(id, on, nivel){ var el = qs(id); if (!el) return; var alvo = nivel === 'sec' ? (el.closest('.f-sec') || el) : (el.closest('.field') || el); alvo.style.display = on ? 'none' : ''; }
+function prHonEnxuto(on){
+  ['clienteInput', 'nomeAcaoInput', 'prazoDataInput', 'segPrioridade', 'segStatus', 'modeloSelect'].forEach(function(id){ prOcultarCampo(id, on); });
+  prOcultarCampo('processoInput', on, 'sec');
+  var det = document.querySelector('#overlay details.f-mais'); if (det){ var sm = det.querySelector('summary'); if (sm) sm.style.display = on ? 'none' : ''; if (on) det.open = true; }
+  var body = document.querySelector('#overlay .modal-body'), cab = qs('honCab');
+  if (!cab && body){ cab = document.createElement('div'); cab.id = 'honCab'; cab.className = 'pr-hon-cab'; body.insertBefore(cab, body.firstChild); }
+  if (cab){ if (on){ var num = (qs('processoInput') && qs('processoInput').value.trim()) || '', par = (qs('clienteInput') && qs('clienteInput').value.trim()) || ''; cab.style.display = ''; cab.innerHTML = '<span>Processo</span><b>' + escapeHtml(num || 'sem número') + '</b>' + (par ? '<em>' + escapeHtml(par) + '</em>' : ''); } else cab.style.display = 'none'; }
+  var jr = qs('campoJaRecebi'); if (jr){ var mostra = on && !editingId; jr.style.display = mostra ? '' : 'none'; if (!mostra){ if (qs('jaRecebiValor')) qs('jaRecebiValor').value = ''; if (qs('jaRecebiData')) qs('jaRecebiData').value = ''; } else if (qs('jaRecebiData') && !qs('jaRecebiData').value) qs('jaRecebiData').value = todayISO(); }
+}
+/* Acordo e Alvará abertos de dentro do processo: o número e as partes vêm do processo */
+function prLeanOutros(qual, on, numero, partes){
+  var ov = qs(qual === 'acordo' ? 'overlayAcordo' : 'overlayAlvara'), pid = qual === 'acordo' ? 'acordoProcessoInput' : 'alvaraProcessoInput', par = qual === 'acordo' ? 'acordoPartesInput' : 'alvaraPartesInput';
+  if (!ov) return; var body = ov.querySelector('.modal-body'); if (!body) return;
+  prOcultarCampo(pid, on); prOcultarCampo(par, on);
+  var cab = ov.querySelector('.pr-hon-cab');
+  if (!cab && body){ cab = document.createElement('div'); cab.className = 'pr-hon-cab'; body.insertBefore(cab, body.firstChild); }
+  if (cab){ if (on){ cab.style.display = ''; cab.innerHTML = '<span>Processo</span><b>' + escapeHtml(numero || '') + '</b>' + (partes ? '<em>' + escapeHtml(partes) + '</em>' : ''); } else cab.style.display = 'none'; }
+}
+
+/* ---------- honorários na MESMA ficha de "Cadastrar processo" ----------
+   Ao escolher "Tenho honorários a receber", os blocos de honorários da ficha de Inicial (origem, modalidade, valor, forma de pagamento, divisão e responsáveis) passam a aparecer
+   aqui dentro; ao salvar, grava primeiro os honorários e depois o processo. Se a pessoa desiste, os blocos voltam para a ficha de Inicial. */
+var prHonIn = { ativo: false, feito: false, itens: [] };
+function prHonSecoes(){
+  var a = qs('segOrigem'), b = qs('segModalidade'), c = qs('esResp_casos'); if (!a || !b || !c) return [];
+  return [a.closest('.field'), b.closest('.f-sec'), c.closest('.f-sec')].filter(Boolean);
+}
+function prHonInlineLigar(){
+  if (prHonIn.ativo) return;
+  var slot = qs('pr_honSlot'); if (!slot) return;
+  prProximoHon = true; abrirNovo(); qs('overlay').classList.remove('show');   /* prepara o estado da ficha de Inicial sem mostrá-la */
+  prHonIn.itens = prHonSecoes().map(function(el){ var ph = document.createComment('hon'); el.parentNode.insertBefore(ph, el); return { el: el, ph: ph }; });
+  prHonIn.itens.forEach(function(i){ slot.appendChild(i.el); });
+  prHonIn.ativo = true; prHonIn.feito = false; slot.style.display = '';
+  var c0 = prEd.ids.length ? clienteById(prEd.ids[0]) : null; if (c0){ formState.origem = c0.pagador === 'murilo' ? 'murilo' : 'proprio'; setSegValue('segOrigem', formState.origem); }
+  prHonEnxuto(true); var cab = qs('honCab'); if (cab) cab.style.display = 'none';
+  var rs = qs('esResp_processos'); if (rs && rs.closest('.f-sec')) rs.closest('.f-sec').style.display = 'none';   /* os responsáveis são os da ficha de honorários */
+}
+function prHonInlineDesligar(){
+  if (!prHonIn.ativo) return;
+  prHonIn.itens.slice().reverse().forEach(function(i){ if (i.ph.parentNode){ i.ph.parentNode.insertBefore(i.el, i.ph); i.ph.parentNode.removeChild(i.ph); } });
+  prHonIn.itens = []; prHonIn.ativo = false; prHonIn.feito = false; prModoHon = false; prAplicaModoHon();
+  var slot = qs('pr_honSlot'); if (slot) slot.style.display = 'none';
+  var rs = qs('esResp_processos'); if (rs && rs.closest('.f-sec')) rs.closest('.f-sec').style.display = '';
+}
+function prHonReanexar(){   /* a ficha foi redesenhada (ex.: escolheu um cliente): põe os blocos de honorários no lugar de novo */
+  if (!prHonIn.ativo) return;
+  var slot = qs('pr_honSlot'), hs = qs('pr_hon'); if (!slot || !prEd.novo){ prHonInlineDesligar(); return; }
+  prHonIn.itens.forEach(function(i){ slot.appendChild(i.el); }); slot.style.display = ''; if (hs) hs.value = 'receber';
+  var rs = qs('esResp_processos'); if (rs && rs.closest('.f-sec')) rs.closest('.f-sec').style.display = 'none';
+}
+document.addEventListener('change', function(e){
+  var t = e.target; if (!t || t.id !== 'pr_hon' || !prEd || !prEd.novo) return;
+  if (t.value === 'receber') prHonInlineLigar(); else prHonInlineDesligar();
+});
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.pr-hon-cab{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;background:var(--surface-2,var(--surface));border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:var(--t2)}.pr-hon-cab span{font-size:var(--t1);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700}.pr-hon-cab b{font-size:var(--t3)}.pr-hon-cab em{font-style:normal;color:var(--ink-soft)}#pr_honSlot .f-sec{margin-top:10px}';
+  document.head.appendChild(st);
+  var ov = qs('overlayPr'); /* se a ficha do processo fechar (cancelar, X, fora) com os blocos emprestados, devolve-os à ficha de Inicial */
+  var obs = new MutationObserver(function(){ var o = qs('overlayPr'); if (o && !o.classList.contains('show') && prHonIn.ativo) prHonInlineDesligar(); });
+  var tentar = function(){ var o = qs('overlayPr'); if (o){ obs.observe(o, { attributes: true, attributeFilter: ['class'] }); } else setTimeout(tentar, 400); };
+  tentar();
+})();
+(function(){   /* aberto de outro lugar (FAB, lista), Acordo e Alvará voltam à ficha completa */
+  var nA = abrirNovoAcordo, nV = abrirNovoAlvara, eA = typeof abrirEdicaoAcordo === 'function' ? abrirEdicaoAcordo : null, eV = typeof abrirEdicaoAlvara === 'function' ? abrirEdicaoAlvara : null;
+  abrirNovoAcordo = function(){ var r = nA.apply(this, arguments); prLeanOutros('acordo', false); return r; };
+  abrirNovoAlvara = function(){ var r = nV.apply(this, arguments); prLeanOutros('alvara', false); return r; };
+  if (eA) abrirEdicaoAcordo = function(){ var r = eA.apply(this, arguments); prLeanOutros('acordo', false); return r; };
+  if (eV) abrirEdicaoAlvara = function(){ var r = eV.apply(this, arguments); prLeanOutros('alvara', false); return r; };
+})();
 function prIrParaHonorario(c){
   var n = prNum(c.numeroProcesso);
   if (n && prMapa().m[n]){ setActiveTab('processos'); setTimeout(function(){ prAbrir(n); }, 40); }
