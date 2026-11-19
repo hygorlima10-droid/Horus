@@ -13075,7 +13075,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     t.push('Murilo, segue o que tenho a receber.');
     t.push('Referência: ' + mesTxt + ' · gerado em ' + fmtData(todayISO()));
     t.push('');
-    t.push('*1) A receber até ' + fmtData(fim) + (d.itens.length ? ' — ' + fmtMoeda(d.tot.exigivel) : '') + '*');
+    /* os itens vêm primeiro; os totais ficam no fim ("TOTAL A PASSAR"), para o Murilo somar de cabeça o que leu */
+    t.push('*1) A receber até ' + fmtData(fim) + '*');
     if (!d.itens.length){
       t.push(d.qtdOrig > 0 ? 'Nenhum honorário selecionado para esta prestação de contas.' : 'Não há honorários pendentes de pagamento até essa data.');
       t.push('');
@@ -13084,26 +13085,27 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     }
     var n = 2, secoesTotal = [1];
     if (cfg.incluirRecebidos){
-      t.push('*' + n + ') Já recebido em ' + mesTxt + (d.recebidos.length ? ' — ' + fmtMoeda(d.tot.recebido) : '') + '*');
+      t.push('*' + n + ') Já recebido em ' + mesTxt + '*');
       n++;
       if (!d.recebidos.length) t.push(d.recOrig > 0 ? 'Nenhum recebimento selecionado.' : 'Nenhum recebimento registrado no mês.');
       d.recebidos.forEach(function(it){ t.push('• ' + fmtData(it.recData).slice(0, 5) + ' — ' + it.cliente + ' (' + (REL_TIPO_CURTO[it.grupo] || 'honorários') + ', ' + it.label.charAt(0).toLowerCase() + it.label.slice(1) + ') — ' + fmtMoeda(it.recValor)); });
+      if (d.recebidos.length) t.push('Total já recebido no mês (não entra no total a passar): ' + fmtMoeda(d.tot.recebido));
       t.push('');
     }
     if (temProx){
-      t.push('*' + n + ') Previsto para ' + mesLabel(deslocarMes(d.mes, 1)).toLowerCase() + ' — ' + fmtMoeda(d.tot.prox) + '*');
+      t.push('*' + n + ') Previsto para ' + mesLabel(deslocarMes(d.mes, 1)).toLowerCase() + '*');
       secoesTotal.push(n); n++;
       d.prox.forEach(function(it){ t.push(relLinhaCurtaMurilo(it)); });
       t.push('');
     }
     if (temOutros){
-      t.push('*' + n + ') Sem previsão ou mais adiante — ' + fmtMoeda(d.tot.outros) + '*');
+      t.push('*' + n + ') Sem previsão ou mais adiante*');
       secoesTotal.push(n); n++;
       d.outros.forEach(function(it){ t.push(relLinhaCurtaMurilo(it)); });
       t.push('');
     }
-    if (secoesTotal.length > 1){
-      t.push('*Total geral a me passar: ' + fmtMoeda(relTotalGeral(d, cfg)) + '* (itens ' + secoesTotal.slice(0, -1).join(', ') + ' e ' + secoesTotal[secoesTotal.length - 1] + ')');
+    if (d.itens.length || temProx || temOutros){
+      t.push('*TOTAL A PASSAR: ' + fmtMoeda(relTotalGeral(d, cfg)) + '*' + (secoesTotal.length > 1 ? ' (itens ' + secoesTotal.slice(0, -1).join(', ') + ' e ' + secoesTotal[secoesTotal.length - 1] + ')' : ''));
       t.push('');
     }
     if (cfg.pix){ t.push('Chave PIX para pagamento: ' + cfg.pix); t.push(''); }
