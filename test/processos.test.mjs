@@ -141,7 +141,7 @@ check(!/Réplica/.test(await t('#agWrap')), 'o prazo do processo arquivado sai d
 // Arquivados
 await page.evaluate(() => document.querySelector('#drawer [data-tab="arquivados"]').click()); await page.waitForTimeout(700);
 await page.click('#headArquivados [data-filtros-toggle]'); await page.waitForTimeout(200);
-await page.selectOption('#filtroArqTipo', 'processo'); await page.waitForTimeout(400);
+await page.click('#arqSub [data-arqsub="processo"]'); await page.waitForTimeout(400);
 check(await page.evaluate(() => document.querySelectorAll('[data-arq-pr]').length) === 1 && /Acordo cumprido/.test(await t('#listArquivados')), 'em Arquivados, o filtro "Processos" mostra o processo e o motivo');
 await page.click('[data-pr-reabrir]'); await page.waitForTimeout(1500);
 pd = await docs('processos');

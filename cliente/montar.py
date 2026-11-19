@@ -194,6 +194,13 @@ if '/*DP-INICIO*/' in s:
 else:
     assert s.count('/*RS-FIM*/\n') == 1
     s = s.replace('/*RS-FIM*/\n', '/*RS-FIM*/\n' + bloco_dp)
+ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
+bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
+if '/*AI-INICIO*/' in s:
+    s = re.sub(r'/\*AI-INICIO\*/.*?/\*AI-FIM\*/\n', lambda m: bloco_ai, s, flags=re.S)
+else:
+    assert s.count('/*DP-FIM*/\n') == 1
+    s = s.replace('/*DP-FIM*/\n', '/*DP-FIM*/\n' + bloco_ai)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)

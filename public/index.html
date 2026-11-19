@@ -1902,6 +1902,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -5077,6 +5080,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}
     itens.sort(function(a,b){
       if (a.ordem !== b.ordem) return a.ordem - b.ordem;
@@ -5649,6 +5658,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       itens.forEach(function(c){ soma += Number(c.valorHonorarios) || 0; });
       return '<div class="kanban-col st-' + k + '" data-pcol="' + k + '">' +
         '<div class="kanban-col-head"><h4>' + rsIconeColuna(STATUS_LABEL[k]) + ' ' + escapeHtml(STATUS_LABEL[k]) + ' <span class="fv-chip">' + itens.length + '</span></h4><div class="kc-soma">' + (itens.length === 1 ? '1 caso' : itens.length + ' casos') + ' · ' + fmtMoeda(soma) + '</div></div>' +
+        ((itens.length && typeof aiColunaAntiga === 'function' && aiColunaAntiga(k)) ? '<button type="button" class="pd-bt pd-ouro" data-arq-antigas="' + escapeHtml(k) + '" style="width:100%;margin:2px 0 8px">Arquivar antigas…</button>' : '') +
         (itens.length ? itens.map(cardKanbanPeticao).join('') : '<div class="kanban-vazio">Nenhum caso nesta etapa.</div>') +
         '</div>';
     }).join('') + '<div class="kanban-add" data-add-col="peticao">Adicionar coluna</div>';
@@ -10441,6 +10451,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10654,6 +10670,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10661,7 +10683,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10675,6 +10697,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -11873,7 +11901,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         return '<div class="card arq-card ' + (p.atrasado > 0.004 ? 'status-vencido' : (p.receber > 0.004 ? 'status-pendente' : 'status-recebido')) + '" data-arq="' + key + '">' +
           '<div class="arq-top">' + fvIc(x.tipo === 'acordo' ? 'scale' : (x.tipo === 'alvara' ? 'bank' : 'user'), x.tipo === 'acordo' ? '#8B5CF6' : (x.tipo === 'alvara' ? '#2A78D6' : '#B7791E')) + '<span class="badge">' + TIPO_DOC_LABEL[x.tipo] + '</span><span>' + escapeHtml(x.titulo) + '</span></div>' +
           (sub ? '<div class="cli-sub">' + escapeHtml(sub) + '</div>' : '') +
-          '<div class="cli-sub">Arquivado em ' + fmtData(String(d.arquivadoEm || '').slice(0, 10)) + (p.valor > 0 ? ' · honorários ' + fmtMoeda(p.valor) : '') + '</div>' +
+          '<div class="cli-sub">' + (x.tipo === 'caso' && STATUS_LABEL[statusDe(d)] ? escapeHtml(STATUS_LABEL[statusDe(d)]) + (d.statusDesde ? ' em ' + fmtData(String(d.statusDesde).slice(0, 10)) : '') + ' · ' : '') + 'Arquivado em ' + fmtData(String(d.arquivadoEm || '').slice(0, 10)) + (p.valor > 0 ? ' · honorários ' + fmtMoeda(p.valor) : '') + (x.tipo === 'caso' && d.numeroProcesso && prDocs.some(function(q){ return prNum(q.numero) === prNum(d.numeroProcesso); }) ? ' · <button type="button" class="pb-tg nv" data-arq-proc="' + escapeHtml(d.numeroProcesso) + '">Ver o processo ›</button>' : '') + '</div>' +
           pend +
           '<div class="arq-acoes"><button type="button" data-arq-act="editar" data-v="' + key + '">Editar</button>' +
           (p.receber > 0.004 ? '<button type="button" data-arq-act="baixa" data-v="' + key + '">Registrar pagamento</button>' : '') +
@@ -29086,6 +29114,112 @@ function pbdgLancar(){
 })();
 
 /*DP-FIM*/
+/*AI-INICIO*/
+/* Arquivar só a inicial, em lote, a partir das colunas do quadro das Iniciais, e sub-abas na tela Arquivados.
+   Arquivar a inicial NÃO arquiva o processo (que continua em Processos); o que ainda há a receber continua na Central de atenção e nas finanças.
+   Colunas com o botão "Arquivar antigas…": Protocolado e as de "desfecho/quitação" (os nomes das colunas são personalizáveis). */
+var aiS = { col: '', dias: 30, marcadas: {}, colunasDoLote: [] };
+
+function aiColunaAntiga(k){ return k === 'protocolado' || /desfecho|quita/i.test(String(STATUS_LABEL[k] || '')); }
+function aiDiasEm(c){
+  var d = String(c.statusDesde || c.criadoEm || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  return Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(d)) / 864e5));
+}
+/* iniciais de uma coluna (as que aparecem no quadro) com pelo menos "dias" na coluna; dias = 0 traz todas, inclusive as sem data */
+function aiCandidatas(cols, dias){
+  var pm = pendentesPorDoc();
+  return casos.filter(function(c){
+    if (c.arquivado || c.concluido || c.doProcesso) return false;
+    var st = statusDe(c); if (cols.indexOf(st) < 0) return false;
+    if (!dias) return true;
+    var n = aiDiasEm(c); return n !== null && n >= dias;
+  }).map(function(c){ var p = pm['caso|' + c.id] || { receber: 0 }; return { c: c, dias: aiDiasEm(c), receber: r2(p.receber) }; })
+    .sort(function(a, b){ return (b.dias === null ? -1 : b.dias) - (a.dias === null ? -1 : a.dias); });
+}
+function aiAbrir(k){
+  aiS.col = k || 'protocolado';
+  aiS.colunasDoLote = STATUS_ORDEM.filter(aiColunaAntiga);
+  aiS.dias = 30; aiS.marcadas = {};
+  var ov = sgMontar('overlayArqIni', 'Arquivar iniciais'); ov.querySelector('h2').textContent = 'Arquivar iniciais';
+  if (!ov.getAttribute('data-ai')){ ov.setAttribute('data-ai', '1'); ov.addEventListener('click', aiClique); }
+  aiMarcarTodas(true); aiDesenhar(); ov.classList.add('show');
+}
+function aiLista(){ return aiCandidatas(aiS.col === '*' ? aiS.colunasDoLote : [aiS.col], aiS.dias); }
+function aiMarcarTodas(on){ aiS.marcadas = {}; if (on) aiLista().forEach(function(x){ aiS.marcadas[x.c.id] = true; }); }
+function aiDesenhar(){
+  var lista = aiLista(), sel = lista.filter(function(x){ return aiS.marcadas[x.c.id]; }).length;
+  var rot = aiS.col === '*' ? 'das colunas de acompanhamento' : 'na coluna “' + (STATUS_LABEL[aiS.col] || '') + '”';
+  var chipsDias = [[7, '7 dias'], [15, '15 dias'], [30, '30 dias'], [60, '60 dias'], [0, 'Todas']].map(function(d){ return '<button type="button" class="pbdg-c' + (aiS.dias === d[0] ? ' on' : '') + '" data-ai="dias" data-v="' + d[0] + '">' + d[1] + '</button>'; }).join('');
+  var chipsCol = aiS.colunasDoLote.length > 1 ? '<div class="field"><label class="field-label">Coluna</label><div class="pbdg-ch">' + aiS.colunasDoLote.map(function(k){ return '<button type="button" class="pbdg-c' + (aiS.col === k ? ' on' : '') + '" data-ai="col" data-v="' + escapeHtml(k) + '">' + escapeHtml(STATUS_LABEL[k]) + '</button>'; }).join('') + '<button type="button" class="pbdg-c' + (aiS.col === '*' ? ' on' : '') + '" data-ai="col" data-v="*">Todas essas</button></div></div>' : '';
+  var h = chipsCol + '<div class="field"><label class="field-label">Na coluna há mais de</label><div class="pbdg-ch">' + chipsDias + '</div></div>' +
+    '<div class="ai-topo"><span><b>' + lista.length + (lista.length === 1 ? ' inicial</b> encontrada' : ' iniciais</b> encontradas') + '</span>' + (lista.length ? '<button type="button" class="btn-text" data-ai="todas">' + (sel === lista.length ? 'Desmarcar todas' : 'Marcar todas') + '</button>' : '') + '</div>' +
+    (lista.length ? '<div class="ai-lista">' + lista.map(function(x){
+      var c = x.c, sub = [c.nomeAcao || '', (STATUS_LABEL[statusDe(c)] || '') + (x.dias !== null ? ' há ' + x.dias + (x.dias === 1 ? ' dia' : ' dias') : ' (sem data)')].filter(Boolean).join(' · ');
+      return '<label class="ai-li"><input type="checkbox" data-ai="uma" data-id="' + escapeHtml(c.id) + '"' + (aiS.marcadas[c.id] ? ' checked' : '') + '><span><b>' + escapeHtml(c.cliente || 'Sem nome') + '</b><small>' + escapeHtml(sub) + '</small></span><span class="ai-ch ' + (x.receber > 0.004 ? 'pend' : 'ok') + '">' + (x.receber > 0.004 ? fmtMoeda(x.receber) + ' a receber' : 'quitada') + '</span></label>';
+    }).join('') + '</div>' : '<div class="saldo-data" style="margin:10px 0">Nenhuma inicial ' + rot + ' com esse tempo. Escolha “Todas” para ver todas.</div>') +
+    '<div class="ai-nota">Só a <b>inicial</b> é arquivada: o processo continua em Processos. O que ainda tiver a receber continua na Central de atenção e nas finanças. Dá para desarquivar em Arquivados › Iniciais.</div>' +
+    '<div class="form-error" id="ai_erro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-ai="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-ai="arquivar"' + (sel ? '' : ' disabled') + '>' + (sel ? 'Arquivar ' + sel + (sel === 1 ? ' inicial' : ' iniciais') : 'Nada marcado') + '</button></div>';
+  qs('overlayArqIniC').innerHTML = h;
+}
+function aiClique(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-ai]') : null; if (!b) return;
+  var a = b.getAttribute('data-ai'), ov = qs('overlayArqIni');
+  if (a === 'dias'){ aiS.dias = parseInt(b.getAttribute('data-v'), 10) || 0; aiMarcarTodas(true); aiDesenhar(); }
+  else if (a === 'col'){ aiS.col = b.getAttribute('data-v'); aiMarcarTodas(true); aiDesenhar(); }
+  else if (a === 'todas'){ var todas = aiLista().every(function(x){ return aiS.marcadas[x.c.id]; }); aiMarcarTodas(!todas); aiDesenhar(); }
+  else if (a === 'uma'){ var id = b.getAttribute('data-id'); if (b.checked) aiS.marcadas[id] = true; else delete aiS.marcadas[id]; aiDesenhar(); }
+  else if (a === 'cancelar') ov.classList.remove('show');
+  else if (a === 'arquivar') aiArquivar();
+}
+function aiArquivar(){
+  var ids = aiLista().filter(function(x){ return aiS.marcadas[x.c.id]; }).map(function(x){ return x.c.id; });
+  if (!ids.length) return;
+  var agora = new Date().toISOString(), docs = ids.map(function(id){ return casos.filter(function(c){ return c.id === id; })[0]; }).filter(Boolean);
+  var bt = qs('overlayArqIni').querySelector('[data-ai="arquivar"]'); if (bt) bt.disabled = true;
+  Promise.all(docs.map(function(c){ return persistPatchDoc('caso', c, { arquivado: true, arquivadoEm: agora }); })).then(function(){
+    qs('overlayArqIni').classList.remove('show');
+    toast(ids.length + (ids.length === 1 ? ' inicial arquivada.' : ' iniciais arquivadas.') + ' Os processos continuam em Processos.', 'Desfazer', function(){
+      ids.forEach(function(id){ var c = casos.filter(function(x){ return x.id === id; })[0]; if (c) persistPatchDoc('caso', c, { arquivado: false, arquivadoEm: null }); });
+    });
+  }).catch(function(e){ var er = qs('ai_erro'); if (er) er.textContent = 'Não consegui arquivar: ' + e.message; if (bt) bt.disabled = false; });
+}
+
+/* ---------- Arquivados: sub-abas no lugar do filtro "Tipo" ---------- */
+function arqSubRender(){
+  var box = qs('arqSub'); if (!box) return;
+  var n = { caso: casos.filter(function(c){ return c.arquivado; }).length, acordo: acordos.filter(function(c){ return c.arquivado; }).length, alvara: alvaras.filter(function(c){ return c.arquivado; }).length, processo: 0 };
+  try{ n.processo = prDocs.filter(function(d){ return d.arquivado; }).length; }catch(e){}
+  var abas = [['todos', 'Todos', n.caso + n.acordo + n.alvara + n.processo], ['caso', 'Iniciais', n.caso], ['acordo', 'Acordos', n.acordo], ['alvara', 'Alvarás', n.alvara], ['processo', 'Processos', n.processo]];
+  box.innerHTML = mdBarraHtml(abas, arqFiltro.tipo, function(v){ return 'data-arqsub="' + v + '"'; });
+  try{ mdRolarAtivas(); }catch(e){}
+}
+
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-arq-antigas]') : null;
+  if (b){ ev.stopPropagation(); aiAbrir(b.getAttribute('data-arq-antigas')); return; }
+  var s = ev.target.closest ? ev.target.closest('[data-arqsub]') : null;
+  if (s){ arqFiltro.tipo = s.getAttribute('data-arqsub'); var sel = qs('filtroArqTipo'); if (sel) sel.value = arqFiltro.tipo; renderArquivados(); return; }
+  var p = ev.target.closest ? ev.target.closest('[data-arq-proc]') : null;
+  if (p){ ev.stopPropagation(); setActiveTab('processos'); setTimeout(function(){ try{ prAbrir(prNum(p.getAttribute('data-arq-proc'))); }catch(e){} }, 150); }
+}, true);   // captura: os cartões e fichas interrompem o clique antes do document
+
+(function(){
+  var cab = qs('headArquivados');
+  if (cab && !qs('arqSub')){ var d = document.createElement('div'); d.id = 'arqSub'; d.style.margin = '4px 0 10px'; var f = cab.querySelector('.filters'); if (f) f.insertAdjacentElement('beforebegin', d); else cab.appendChild(d); }
+  var sel = qs('filtroArqTipo'); if (sel) sel.style.display = 'none';   // o filtro "Tipo" virou a barra de sub-abas
+  var _ra = renderArquivados; renderArquivados = function(){ _ra.apply(this, arguments); arqSubRender(); };
+  var st = document.createElement('style');
+  st.textContent = '.ai-topo{display:flex;justify-content:space-between;align-items:center;margin:12px 0 2px;font-size:12.5px;color:var(--ink-soft)}' +
+    '.ai-lista{border-top:1px solid var(--border);margin-top:6px}.ai-li{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer}' +
+    '.ai-li input{width:20px;height:20px;margin-top:2px;accent-color:var(--ink,#0f1011)}.ai-li small{display:block;color:var(--ink-soft);font-size:11.5px;margin-top:1px}' +
+    '.ai-ch{border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;white-space:nowrap;align-self:start}.ai-ch.pend{background:#fdf1d8;color:#8a5a00}.ai-ch.ok{background:#e6f3ec;color:#17714a}' +
+    '.ai-nota{background:var(--surface-2,#f2f3f6);border-radius:12px;padding:9px 11px;font-size:12px;line-height:1.45;margin-top:12px}[data-arq-antigas]{flex:none;min-height:36px}';
+  document.head.appendChild(st);
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { aiAbrir: aiAbrir, aiCandidatas: function(cols, dias){ return aiCandidatas(cols, dias).map(function(x){ return { id: x.c.id, dias: x.dias, receber: x.receber }; }); } });
+})();
+
+/*AI-FIM*/
 
 /* ---------- adiar parcela (só o vencimento de uma parcela; as outras não mudam) ---------- */
 function adPodeAdiar(u){
