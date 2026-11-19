@@ -142,8 +142,7 @@ function impFilaDatajud(){
         if (!d.orgao && (x.orgao || x.tribunal)) campos.orgao = [x.tribunal, x.orgao].filter(Boolean).join(' · ');
         campos.djPendente = false;
       } else if (r && r.ok && !r.parcial) campos.djPendente = false;   /* o DataJud ainda não tem o processo: não insiste */
-      var nd = Object.assign({}, d, campos); delete nd.id;
-      return pbApi('/api/db/processos/' + encodeURIComponent(d.id), 'PUT', nd).then(function(){ Object.assign(d, campos); });
+      return pbApi('/api/db/processos/' + encodeURIComponent(d.id) + '?mesclar=1', 'PUT', campos).then(function(r){ if (r && r.doc){ var nd = Object.assign({}, r.doc); delete nd.id; Object.assign(d, nd); } else Object.assign(d, campos); });
     }).catch(function(){ d.djTent = (d.djTent || 0) + 1; }).then(function(){ impS.dj.feitos++; setTimeout(prox, 1500); });
   }
   prox();
@@ -334,18 +333,22 @@ function impDocPorNum(num){ var r = prMapa().m[num]; return r && r.doc ? r.doc :
 /* as gravações dos processos da revisão entram numa fila (uma de cada vez, cada uma montada em cima do que a anterior gravou), para um vínculo
    e uma reavaliação ao mesmo tempo não se atropelarem; "cond" confere o estado no momento de gravar */
 var impFilaSalvar = Promise.resolve();
-function impSalvarDoc(doc, campos, cond){
+/* grava só o que mudou (?mesclar=1: o servidor junta ao processo gravado AGORA, em vez de substituir o processo inteiro por uma cópia que pode estar velha,
+   por exemplo de outro aparelho). seTem: só grava se o processo ainda tiver esse campo preenchido no servidor (ex.: "revisar"). */
+function impSalvarDoc(doc, campos, cond, seTem){
   var p = impFilaSalvar.then(function(){
     if (cond && !cond(doc)) return;
-    var nd = Object.assign({}, doc, campos); delete nd.id;
-    return pbApi('/api/db/processos/' + encodeURIComponent(doc.id), 'PUT', nd).then(function(){ Object.assign(doc, campos); });
+    return pbApi('/api/db/processos/' + encodeURIComponent(doc.id) + '?mesclar=1' + (seTem ? '&seTem=' + encodeURIComponent(seTem) : ''), 'PUT', campos).then(function(r){
+      if (r && r.doc){ var nd = Object.assign({}, r.doc); delete nd.id; Object.assign(doc, nd); } else Object.assign(doc, campos);
+    });
   });
   impFilaSalvar = p.catch(function(){});
   return p;
 }
 /* vincula o processo ao cliente, tira da revisão e (na primeira vez) pergunta se os próximos podem ir direto */
 function impVincular(num, clienteId, opc){
-  var doc = impDocPorNum(num), c = clienteById(clienteId); if (!doc || !c) return Promise.resolve();
+  var doc = impDocPorNum(num), c = clienteById(clienteId) || (opc && opc.cliente) || null;
+  if (!doc || !c){ toast('Não consegui vincular agora: ' + (!doc ? 'não achei o processo' : 'não achei o cliente') + '. Tente de novo.'); return Promise.resolve(); }
   var ids = (doc.clienteIds || []).slice(); if (ids.indexOf(clienteId) < 0) ids.push(clienteId);
   var nome = doc.parteNome || '';
   return impSalvarDoc(doc, { clienteIds: ids, revisar: '', revisadoEm: new Date().toISOString(), sugestaoClienteId: '' }).then(function(){
@@ -357,7 +360,7 @@ function impVincular(num, clienteId, opc){
 function impVincularSugerido(num){ var d = impDocPorNum(num); if (d && d.sugestaoClienteId) impVincular(num, d.sugestaoClienteId); }
 function impNovoCliente(num){
   var d = impDocPorNum(num); if (!d) return;
-  abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false }); } });
+  abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false, cliente: c }); } });
 }
 function impEscolherCliente(num){
   prAbrir(num); setTimeout(function(){ var i = qs('pr_cli'); if (i){ try{ i.scrollIntoView({ block: 'center' }); }catch(e){} i.focus(); } }, 120);
@@ -454,7 +457,7 @@ function impGruposHtml(){
   }).join('');
 }
 function impVincularLote(nums, clienteId, opc){
-  var c = clienteById(clienteId); if (!c) return Promise.resolve();
+  var c = clienteById(clienteId) || (opc && opc.cliente) || null; if (!c){ toast('Não consegui vincular agora: não achei o cliente. Tente de novo.'); return Promise.resolve(); }
   var docs = nums.map(impDocPorNum).filter(function(d){ return d && d.revisar; }), nomes = {};
   if (!docs.length) return Promise.resolve();
   return Promise.all(docs.map(function(d){
@@ -470,7 +473,7 @@ function impVincularLote(nums, clienteId, opc){
 function impGrupoVincular(i){ var g = (prS.revGrupos || [])[Number(i)]; if (g && g.sug) impVincularLote(g.nums, g.sug); }
 function impGrupoNovo(i){
   var g = (prS.revGrupos || [])[Number(i)]; if (!g) return;
-  abrirClienteEdit({ nome: cliTitulo(g.nome), pagador: 'cliente', aoSalvar: function(c){ impVincularLote(g.nums, c.id); } });
+  abrirClienteEdit({ nome: cliTitulo(g.nome), pagador: 'cliente', aoSalvar: function(c){ impVincularLote(g.nums, c.id, { cliente: c }); } });
 }
 /* escolher um cliente já cadastrado (lista com busca) */
 function impEscolherParaGrupo(i){
@@ -513,7 +516,7 @@ function impReavaliar(forcar){
   });
   if (!jobs.length) return 0;
   impS.reavRodando = true;
-  jobs.reduce(function(cad, j){ return cad.then(function(){ return impSalvarDoc(j[0], j[1], function(d){ return !!d.revisar; }); }); }, Promise.resolve()).catch(function(e){ console.error('revisão', e); }).then(function(){
+  jobs.reduce(function(cad, j){ return cad.then(function(){ return impSalvarDoc(j[0], j[1], function(d){ return !!d.revisar; }, 'revisar'); }); }, Promise.resolve()).catch(function(e){ console.error('revisão', e); }).then(function(){
     impS.reavRodando = false;
     toast((nAuto ? nAuto + (nAuto === 1 ? ' processo da revisão vinculado' : ' processos da revisão vinculados') + ' ao cliente automático' : '') + (nAuto && nSug ? ' · ' : '') + (nSug ? 'cliente reconhecido em ' + nSug + (nSug === 1 ? ' processo da revisão' : ' processos da revisão') : '') + '.');
     prDepois();
@@ -529,6 +532,25 @@ function impReavaliar(forcar){
   document.head.appendChild(st);
   /* a lista só pode cadastrar sozinho depois que os clientes chegaram do servidor */
   var rc0 = renderClientesTudo; renderClientesTudo = function(){ impS.cli = true; var r = rc0.apply(this, arguments); try{ impReavaliar(); impTalvezAuto(); }catch(e){} return r; };
+  /* cada atualização vinda do servidor troca a lista inteira de clientes; um cliente salvo há instantes (a gravação ainda a caminho) sumia da lista e o vínculo com o processo falhava.
+     Aqui ele fica guardado até o servidor devolvê-lo (no máximo 90 s). */
+  var cliPend = {};
+  var pcs0 = persistClienteSet; persistClienteSet = function(cl){
+    var x = cliPend[cl.id] = { cl: JSON.parse(JSON.stringify(cl)), ts: Date.now(), ok: false };
+    var p = pcs0.apply(this, arguments); x.cl = JSON.parse(JSON.stringify(cl));
+    return Promise.resolve(p).then(function(r){ x.ok = true; return r; }, function(e){ delete cliPend[cl.id]; throw e; });
+  };
+  var pce0 = persistClienteExclui; persistClienteExclui = function(id){ delete cliPend[id]; return pce0.apply(this, arguments); };
+  function cliPendRepor(){
+    var agora = Date.now();
+    Object.keys(cliPend).forEach(function(id){
+      var x = cliPend[id], no = clientes.some(function(c){ return c.id === id; });
+      if (no){ if (x.ok) delete cliPend[id]; return; }
+      if (agora - x.ts > 90000){ delete cliPend[id]; return; }
+      clientes.push(JSON.parse(JSON.stringify(x.cl)));
+    });
+  }
+  var rc1 = renderClientesTudo; renderClientesTudo = function(){ try{ cliPendRepor(); }catch(e){} return rc1.apply(this, arguments); };
   var ab0 = pbAtualizarBadge; pbAtualizarBadge = function(){ var r = ab0.apply(this, arguments); try{ impTalvezAuto(); }catch(e){} return r; };
   var pd0 = prDepois; prDepois = function(){ var r = pd0.apply(this, arguments); try{ impReavaliar(); impTalvezAuto(); impFilaDatajud(); }catch(e){} return r; };
   if (window.__SERVIDOR) impCarregarCfg();

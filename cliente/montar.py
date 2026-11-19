@@ -201,6 +201,13 @@ if '/*AI-INICIO*/' in s:
 else:
     assert s.count('/*DP-FIM*/\n') == 1
     s = s.replace('/*DP-FIM*/\n', '/*DP-FIM*/\n' + bloco_ai)
+rv_js = open(R + 'cliente/revisao-diario.js', encoding='utf-8').read()
+bloco_rv = '/*RV-INICIO*/\n' + rv_js + '\n/*RV-FIM*/\n'
+if '/*RV-INICIO*/' in s:
+    s = re.sub(r'/\*RV-INICIO\*/.*?/\*RV-FIM\*/\n', lambda m: bloco_rv, s, flags=re.S)
+else:
+    assert s.count('/*AI-FIM*/\n') == 1
+    s = s.replace('/*AI-FIM*/\n', '/*AI-FIM*/\n' + bloco_rv)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)

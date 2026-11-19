@@ -155,6 +155,7 @@ function prMontarTela(){
     else if (a === 'rel'){ prS.mAberto = false; prMenuPainel(); rptProcessos(); }
     else if (a === 'imp'){ prS.mAberto = false; prMenuPainel(); impAbrir(); }
     else if (a === 'rev-ir'){ prS.sub = 'lista'; prS.filtro = 'revisar'; prS.mais = 1; prRender(); }
+    else if (a === 'rv-ok') rvConfirmar();
     else if (a === 'rev-gvinc') impGrupoVincular(n);
     else if (a === 'rev-gesc') impEscolherParaGrupo(n);
     else if (a === 'rev-gnovo') impGrupoNovo(n);
@@ -258,7 +259,7 @@ function prRenderLista(){
   linhas.sort(function(a, b){ return info[a.num].prox.localeCompare(info[b.num].prox) || info[b.num].ult.localeCompare(info[a.num].ult) || prTitulo(a).localeCompare(prTitulo(b), 'pt-BR'); });
   if (!linhas.length){ box.innerHTML = '<div class="financeiro-vazio">' + (prS.busca || prFiltrosAtivos() ? 'Nenhum processo com essa busca ou esses filtros.' : (prS.filtro === 'andamento' ? 'Nenhum processo em andamento. Toque em “Novo processo” ou cadastre pela aba Publicações.' : 'Nada aqui.')) + '</div>'; return; }
   var lim = prS.mais * 30;
-  box.innerHTML = (prS.f.esp && PR_ESP[prS.f.esp] ? '<div class="saldo-data pb-resfiltro">Mostrando só os processos ' + PR_ESP[prS.f.esp] + ' (' + linhas.length + '). <button type="button" class="btn-text" data-pr="limpar">Limpar</button></div>' : '') + (prS.filtro === 'revisar' ? impGruposHtml() : '') + linhas.slice(0, lim).map(function(r){
+  box.innerHTML = (prS.f.esp && PR_ESP[prS.f.esp] ? '<div class="saldo-data pb-resfiltro">Mostrando só os processos ' + PR_ESP[prS.f.esp] + ' (' + linhas.length + '). <button type="button" class="btn-text" data-pr="limpar">Limpar</button></div>' : '') + (prS.filtro === 'revisar' ? ((typeof rvHtml === 'function' ? rvHtml() : '') + impGruposHtml()) : '') + linhas.slice(0, lim).map(function(r){
     var i = info[r.num], origens = prOrigens(r), arq = prArquivado(r), pubs = prPubsDe(r.num), tags = '';
     var orgao = r.doc ? [r.doc.orgao, r.doc.classe].filter(Boolean).join(' · ') : (pubs[0] ? [pubs[0].tribunal, pubs[0].orgao].filter(Boolean).join(' · ') : '');
     var pzs = i.pz.filter(function(x){ return x.tipo === 'prazo'; }), aud = i.pz.filter(function(x){ return x.tipo === 'audiencia'; })[0];
