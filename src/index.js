@@ -498,6 +498,14 @@ async function api(request, env, partes, auth) {
   }
   if (id && metodo === 'PUT') {
     let dados = await lerDoc(request); if (dados instanceof Response) return dados;
+    /* ?mesclar=1 nos processos: o app manda só o que mudou e o servidor junta ao processo gravado AGORA (em vez de substituir o processo inteiro por uma cópia que pode estar velha,
+       por exemplo a de outro aparelho, e desfazer um vínculo recém-feito). ?seTem=campo: só grava se o processo gravado ainda tiver esse campo preenchido (ex.: "revisar"). */
+    let mescladoCedo = false;
+    if (colecao === 'processos' && new URL(request.url).searchParams.get('mesclar') === '1') {
+      const atualP = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first(), objP = atualP ? JSON.parse(atualP.dados) : null, seTem = new URL(request.url).searchParams.get('seTem');
+      if (seTem && (!objP || !objP[seTem])) return json({ ok: true, ignorado: true, ...(objP ? { doc: objP } : {}) });
+      dados = { ...(objP || {}), ...dados }; mescladoCedo = true;
+    }
     if (ehDono(auth) && auth && auth.usuario && (colecao === 'agenda' || colecao === 'clientes')) {   // proprietário: só o carimbo de autor
       const at0 = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       carimbarAutor(colecao, at0 ? JSON.parse(at0.dados) : null, dados, auth);
@@ -510,7 +518,7 @@ async function api(request, env, partes, auth) {
     if (colecao === 'recebimentos') { const at2 = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first(); await avisarRecebimentoA(env, enviarAviso, id, at2 ? JSON.parse(at2.dados) : null, dados, auth); }
     /* ?mesclar=1 (documentos de trabalho do proprietário, como config/obra e config/extratos): o app manda só as chaves que mudou e o servidor junta ao documento
        que está gravado agora, em vez de substituir o documento inteiro por uma cópia antiga (auditoria F-05). Na mesma chave vale a última gravação. */
-    let mesclado = false;
+    let mesclado = mescladoCedo;
     if (new URL(request.url).searchParams.get('mesclar') === '1' && (baseDoCofre(colecao) === 'configDono' || colecao === 'config' || colecao === 'delegadas')) {
       const atualM = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       dados = { ...(atualM ? JSON.parse(atualM.dados) : {}), ...dados }; mesclado = true;

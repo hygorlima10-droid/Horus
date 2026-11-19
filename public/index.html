@@ -1906,6 +1906,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4913,6 +4917,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10482,6 +10494,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10701,6 +10721,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10708,7 +10736,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10722,6 +10750,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -20583,6 +20619,7 @@ function prMontarTela(){
     else if (a === 'rel'){ prS.mAberto = false; prMenuPainel(); rptProcessos(); }
     else if (a === 'imp'){ prS.mAberto = false; prMenuPainel(); impAbrir(); }
     else if (a === 'rev-ir'){ prS.sub = 'lista'; prS.filtro = 'revisar'; prS.mais = 1; prRender(); }
+    else if (a === 'rv-ok') rvConfirmar();
     else if (a === 'rev-gvinc') impGrupoVincular(n);
     else if (a === 'rev-gesc') impEscolherParaGrupo(n);
     else if (a === 'rev-gnovo') impGrupoNovo(n);
@@ -20686,7 +20723,7 @@ function prRenderLista(){
   linhas.sort(function(a, b){ return info[a.num].prox.localeCompare(info[b.num].prox) || info[b.num].ult.localeCompare(info[a.num].ult) || prTitulo(a).localeCompare(prTitulo(b), 'pt-BR'); });
   if (!linhas.length){ box.innerHTML = '<div class="financeiro-vazio">' + (prS.busca || prFiltrosAtivos() ? 'Nenhum processo com essa busca ou esses filtros.' : (prS.filtro === 'andamento' ? 'Nenhum processo em andamento. Toque em “Novo processo” ou cadastre pela aba Publicações.' : 'Nada aqui.')) + '</div>'; return; }
   var lim = prS.mais * 30;
-  box.innerHTML = (prS.f.esp && PR_ESP[prS.f.esp] ? '<div class="saldo-data pb-resfiltro">Mostrando só os processos ' + PR_ESP[prS.f.esp] + ' (' + linhas.length + '). <button type="button" class="btn-text" data-pr="limpar">Limpar</button></div>' : '') + (prS.filtro === 'revisar' ? impGruposHtml() : '') + linhas.slice(0, lim).map(function(r){
+  box.innerHTML = (prS.f.esp && PR_ESP[prS.f.esp] ? '<div class="saldo-data pb-resfiltro">Mostrando só os processos ' + PR_ESP[prS.f.esp] + ' (' + linhas.length + '). <button type="button" class="btn-text" data-pr="limpar">Limpar</button></div>' : '') + (prS.filtro === 'revisar' ? ((typeof rvHtml === 'function' ? rvHtml() : '') + impGruposHtml()) : '') + linhas.slice(0, lim).map(function(r){
     var i = info[r.num], origens = prOrigens(r), arq = prArquivado(r), pubs = prPubsDe(r.num), tags = '';
     var orgao = r.doc ? [r.doc.orgao, r.doc.classe].filter(Boolean).join(' · ') : (pubs[0] ? [pubs[0].tribunal, pubs[0].orgao].filter(Boolean).join(' · ') : '');
     var pzs = i.pz.filter(function(x){ return x.tipo === 'prazo'; }), aud = i.pz.filter(function(x){ return x.tipo === 'audiencia'; })[0];
@@ -22315,8 +22352,7 @@ function impFilaDatajud(){
         if (!d.orgao && (x.orgao || x.tribunal)) campos.orgao = [x.tribunal, x.orgao].filter(Boolean).join(' · ');
         campos.djPendente = false;
       } else if (r && r.ok && !r.parcial) campos.djPendente = false;   /* o DataJud ainda não tem o processo: não insiste */
-      var nd = Object.assign({}, d, campos); delete nd.id;
-      return pbApi('/api/db/processos/' + encodeURIComponent(d.id), 'PUT', nd).then(function(){ Object.assign(d, campos); });
+      return pbApi('/api/db/processos/' + encodeURIComponent(d.id) + '?mesclar=1', 'PUT', campos).then(function(r){ if (r && r.doc){ var nd = Object.assign({}, r.doc); delete nd.id; Object.assign(d, nd); } else Object.assign(d, campos); });
     }).catch(function(){ d.djTent = (d.djTent || 0) + 1; }).then(function(){ impS.dj.feitos++; setTimeout(prox, 1500); });
   }
   prox();
@@ -22507,18 +22543,22 @@ function impDocPorNum(num){ var r = prMapa().m[num]; return r && r.doc ? r.doc :
 /* as gravações dos processos da revisão entram numa fila (uma de cada vez, cada uma montada em cima do que a anterior gravou), para um vínculo
    e uma reavaliação ao mesmo tempo não se atropelarem; "cond" confere o estado no momento de gravar */
 var impFilaSalvar = Promise.resolve();
-function impSalvarDoc(doc, campos, cond){
+/* grava só o que mudou (?mesclar=1: o servidor junta ao processo gravado AGORA, em vez de substituir o processo inteiro por uma cópia que pode estar velha,
+   por exemplo de outro aparelho). seTem: só grava se o processo ainda tiver esse campo preenchido no servidor (ex.: "revisar"). */
+function impSalvarDoc(doc, campos, cond, seTem){
   var p = impFilaSalvar.then(function(){
     if (cond && !cond(doc)) return;
-    var nd = Object.assign({}, doc, campos); delete nd.id;
-    return pbApi('/api/db/processos/' + encodeURIComponent(doc.id), 'PUT', nd).then(function(){ Object.assign(doc, campos); });
+    return pbApi('/api/db/processos/' + encodeURIComponent(doc.id) + '?mesclar=1' + (seTem ? '&seTem=' + encodeURIComponent(seTem) : ''), 'PUT', campos).then(function(r){
+      if (r && r.doc){ var nd = Object.assign({}, r.doc); delete nd.id; Object.assign(doc, nd); } else Object.assign(doc, campos);
+    });
   });
   impFilaSalvar = p.catch(function(){});
   return p;
 }
 /* vincula o processo ao cliente, tira da revisão e (na primeira vez) pergunta se os próximos podem ir direto */
 function impVincular(num, clienteId, opc){
-  var doc = impDocPorNum(num), c = clienteById(clienteId); if (!doc || !c) return Promise.resolve();
+  var doc = impDocPorNum(num), c = clienteById(clienteId) || (opc && opc.cliente) || null;
+  if (!doc || !c){ toast('Não consegui vincular agora: ' + (!doc ? 'não achei o processo' : 'não achei o cliente') + '. Tente de novo.'); return Promise.resolve(); }
   var ids = (doc.clienteIds || []).slice(); if (ids.indexOf(clienteId) < 0) ids.push(clienteId);
   var nome = doc.parteNome || '';
   return impSalvarDoc(doc, { clienteIds: ids, revisar: '', revisadoEm: new Date().toISOString(), sugestaoClienteId: '' }).then(function(){
@@ -22530,7 +22570,7 @@ function impVincular(num, clienteId, opc){
 function impVincularSugerido(num){ var d = impDocPorNum(num); if (d && d.sugestaoClienteId) impVincular(num, d.sugestaoClienteId); }
 function impNovoCliente(num){
   var d = impDocPorNum(num); if (!d) return;
-  abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false }); } });
+  abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false, cliente: c }); } });
 }
 function impEscolherCliente(num){
   prAbrir(num); setTimeout(function(){ var i = qs('pr_cli'); if (i){ try{ i.scrollIntoView({ block: 'center' }); }catch(e){} i.focus(); } }, 120);
@@ -22627,7 +22667,7 @@ function impGruposHtml(){
   }).join('');
 }
 function impVincularLote(nums, clienteId, opc){
-  var c = clienteById(clienteId); if (!c) return Promise.resolve();
+  var c = clienteById(clienteId) || (opc && opc.cliente) || null; if (!c){ toast('Não consegui vincular agora: não achei o cliente. Tente de novo.'); return Promise.resolve(); }
   var docs = nums.map(impDocPorNum).filter(function(d){ return d && d.revisar; }), nomes = {};
   if (!docs.length) return Promise.resolve();
   return Promise.all(docs.map(function(d){
@@ -22643,7 +22683,7 @@ function impVincularLote(nums, clienteId, opc){
 function impGrupoVincular(i){ var g = (prS.revGrupos || [])[Number(i)]; if (g && g.sug) impVincularLote(g.nums, g.sug); }
 function impGrupoNovo(i){
   var g = (prS.revGrupos || [])[Number(i)]; if (!g) return;
-  abrirClienteEdit({ nome: cliTitulo(g.nome), pagador: 'cliente', aoSalvar: function(c){ impVincularLote(g.nums, c.id); } });
+  abrirClienteEdit({ nome: cliTitulo(g.nome), pagador: 'cliente', aoSalvar: function(c){ impVincularLote(g.nums, c.id, { cliente: c }); } });
 }
 /* escolher um cliente já cadastrado (lista com busca) */
 function impEscolherParaGrupo(i){
@@ -22686,7 +22726,7 @@ function impReavaliar(forcar){
   });
   if (!jobs.length) return 0;
   impS.reavRodando = true;
-  jobs.reduce(function(cad, j){ return cad.then(function(){ return impSalvarDoc(j[0], j[1], function(d){ return !!d.revisar; }); }); }, Promise.resolve()).catch(function(e){ console.error('revisão', e); }).then(function(){
+  jobs.reduce(function(cad, j){ return cad.then(function(){ return impSalvarDoc(j[0], j[1], function(d){ return !!d.revisar; }, 'revisar'); }); }, Promise.resolve()).catch(function(e){ console.error('revisão', e); }).then(function(){
     impS.reavRodando = false;
     toast((nAuto ? nAuto + (nAuto === 1 ? ' processo da revisão vinculado' : ' processos da revisão vinculados') + ' ao cliente automático' : '') + (nAuto && nSug ? ' · ' : '') + (nSug ? 'cliente reconhecido em ' + nSug + (nSug === 1 ? ' processo da revisão' : ' processos da revisão') : '') + '.');
     prDepois();
@@ -22702,6 +22742,25 @@ function impReavaliar(forcar){
   document.head.appendChild(st);
   /* a lista só pode cadastrar sozinho depois que os clientes chegaram do servidor */
   var rc0 = renderClientesTudo; renderClientesTudo = function(){ impS.cli = true; var r = rc0.apply(this, arguments); try{ impReavaliar(); impTalvezAuto(); }catch(e){} return r; };
+  /* cada atualização vinda do servidor troca a lista inteira de clientes; um cliente salvo há instantes (a gravação ainda a caminho) sumia da lista e o vínculo com o processo falhava.
+     Aqui ele fica guardado até o servidor devolvê-lo (no máximo 90 s). */
+  var cliPend = {};
+  var pcs0 = persistClienteSet; persistClienteSet = function(cl){
+    var x = cliPend[cl.id] = { cl: JSON.parse(JSON.stringify(cl)), ts: Date.now(), ok: false };
+    var p = pcs0.apply(this, arguments); x.cl = JSON.parse(JSON.stringify(cl));
+    return Promise.resolve(p).then(function(r){ x.ok = true; return r; }, function(e){ delete cliPend[cl.id]; throw e; });
+  };
+  var pce0 = persistClienteExclui; persistClienteExclui = function(id){ delete cliPend[id]; return pce0.apply(this, arguments); };
+  function cliPendRepor(){
+    var agora = Date.now();
+    Object.keys(cliPend).forEach(function(id){
+      var x = cliPend[id], no = clientes.some(function(c){ return c.id === id; });
+      if (no){ if (x.ok) delete cliPend[id]; return; }
+      if (agora - x.ts > 90000){ delete cliPend[id]; return; }
+      clientes.push(JSON.parse(JSON.stringify(x.cl)));
+    });
+  }
+  var rc1 = renderClientesTudo; renderClientesTudo = function(){ try{ cliPendRepor(); }catch(e){} return rc1.apply(this, arguments); };
   var ab0 = pbAtualizarBadge; pbAtualizarBadge = function(){ var r = ab0.apply(this, arguments); try{ impTalvezAuto(); }catch(e){} return r; };
   var pd0 = prDepois; prDepois = function(){ var r = pd0.apply(this, arguments); try{ impReavaliar(); impTalvezAuto(); impFilaDatajud(); }catch(e){} return r; };
   if (window.__SERVIDOR) impCarregarCfg();
@@ -29245,6 +29304,195 @@ document.addEventListener('click', function(ev){
 })();
 
 /*AI-FIM*/
+/*RV-INICIO*/
+/* Revisão de ligações assistida pelo Diário Oficial.
+   O Diário traz as partes intimadas ligadas às OABs (é nelas que o app já se baseia para sugerir o cliente). No alto da sub-aba "Revisar" o app mostra uma lista
+   para conferir: uma linha por parte (processos da mesma parte juntos), com o nome já arrumado e editável; "Cadastrar e vincular" cria os clientes marcados
+   (ou usa o que já existe) e vincula os processos. Só iniciais (segredo de justiça) ficam numa seção própria, com campo de nome. Nada é cadastrado sem confirmar. */
+var rvS = { marca: {}, nome: {}, tambem: {}, sig: {}, ocupado: false };
+
+function rvIniciais(n){ var t = String(n || '').replace(/[.\s]/g, ''); return t.length <= 2 && t.length > 0; }
+/* partes intimadas do processo: as do Diário nas publicações dele; sem elas, a parte que o app guardou na importação */
+function rvPartesDe(d){
+  var nomes = [], vistos = {};
+  function add(n){ n = String(n || '').trim(); var k = normNome(n); if (n && !vistos[k]){ vistos[k] = 1; nomes.push(n); } }
+  var num = prNum(d.numero), pubs = [];
+  try{ pubs = prPubsDe(num); }catch(e){}
+  for (var i = 0; i < pubs.length; i++){ var dest = pubs[i].dest || []; if (dest.length){ dest.forEach(function(x){ add(x.n); }); break; } }
+  if (d.parteNome){ var k0 = normNome(d.parteNome); nomes = nomes.filter(function(n){ return normNome(n) !== k0; }); nomes.unshift(d.parteNome); vistos[k0] = 1; }
+  return nomes;
+}
+function rvPapel(d, nome){
+  var k = normNome(nome);
+  if (impNomes(d.reu).some(function(x){ return normNome(x) === k; })) return 'réu';
+  if (impNomes(d.autor).some(function(x){ return normNome(x) === k; })) return 'autor';
+  return '';
+}
+/* linhas da lista: { k, nome, docs, extras, existe } e os de só iniciais */
+function rvLinhas(){
+  var grupos = [], sig = [];
+  prDocs.filter(function(d){ return d.revisar && !d.arquivado; }).forEach(function(d){
+    var nomes = rvPartesDe(d), prim = nomes[0] || '';
+    if (!prim || rvIniciais(prim)){ sig.push(d); return; }
+    var g = grupos.filter(function(x){ return normNome(x.nome) === normNome(prim) || cliNivel(x.nome, prim) === 3; })[0];
+    if (!g){ g = { k: normNome(prim), nome: prim, docs: [], extras: [] }; grupos.push(g); }
+    g.docs.push(d);
+    nomes.slice(1).forEach(function(n){
+      if (rvIniciais(n) || cliNivel(g.nome, n) === 3 || g.extras.some(function(e){ return normNome(e) === normNome(n); })) return;
+      g.extras.push(n);
+    });
+  });
+  grupos.forEach(function(g){
+    var m = cliParecidos(g.nome).filter(function(x){ return x.nivel >= 2; })[0];
+    g.existe = m ? m.c : null;
+    if (rvS.marca[g.k] === undefined) rvS.marca[g.k] = true;   /* já vem marcada: o app só propõe, quem confirma é você */
+  });
+  grupos.sort(function(a, b){ return b.docs.length - a.docs.length || a.nome.localeCompare(b.nome, 'pt-BR'); });
+  return { grupos: grupos, sig: sig };
+}
+function rvNomeFinal(g){ var n = rvS.nome[g.k]; return String(n === undefined ? cliTitulo(g.nome) : n).replace(/\s+/g, ' ').trim(); }
+
+function rvHtml(){
+  var L = rvLinhas(), nProc = L.grupos.reduce(function(t, g){ return t + g.docs.length; }, 0);
+  if (!L.grupos.length && !L.sig.length) return '';
+  var h = '<div class="rv-box" id="rvBox">';
+  if (L.grupos.length){
+    h += '<div class="rv-sum"><b>' + L.grupos.length + (L.grupos.length === 1 ? ' cliente reconhecido' : ' clientes reconhecidos') + '</b> em ' + nProc + (nProc === 1 ? ' processo' : ' processos') + '<br><span>Confira os nomes e confirme. Cadastra o cliente e já vincula o(s) processo(s). Se o cliente já existe, só vincula.</span></div>';
+    L.grupos.forEach(function(g){
+      var papel = rvPapel(g.docs[0], g.nome), nome = rvNomeFinal(g);
+      h += '<div class="rv-row"><input type="checkbox" class="rv-ck" data-rv="marca" data-k="' + escapeHtml(g.k) + '"' + (rvS.marca[g.k] ? ' checked' : '') + ' aria-label="Incluir ' + escapeHtml(nome) + '"><div class="rv-c">' +
+        '<input type="text" class="rv-in" data-rv="nome" data-k="' + escapeHtml(g.k) + '" value="' + escapeHtml(nome) + '" maxlength="120" aria-label="Nome do cliente">' +
+        '<div class="rv-chs">' + (g.existe ? '<span class="pb-tg pz">já existe: ' + escapeHtml(g.existe.nome) + '</span><span class="pb-tg">vincular ao existente</span>' : '<span class="pb-tg ok">cliente novo</span>') +
+        '<span class="pb-tg nv">' + (papel ? papel + ' · ' : '') + 'parte intimada</span><span class="pb-tg">' + g.docs.length + (g.docs.length === 1 ? ' processo' : ' processos') + '</span></div>' +
+        g.extras.map(function(n, i){ return '<label class="rv-tb"><input type="checkbox" data-rv="tambem" data-k="' + escapeHtml(g.k) + '" data-i="' + i + '"' + ((rvS.tambem[g.k] || {})[i] ? ' checked' : '') + '> também consta como parte intimada: <b>' + escapeHtml(cliTitulo(n)) + '</b> — cadastrar também</label>'; }).join('') +
+        '</div></div>';
+    });
+  }
+  if (L.sig.length){
+    h += '<div class="rv-sec">Só iniciais no Diário · ' + L.sig.length + (L.sig.length === 1 ? ' processo' : ' processos') + '</div><div class="rv-dica">Segredo de justiça: o Diário não informa o nome. Digite o nome do cliente (ou escolha um que já exista).</div>';
+    L.sig.forEach(function(d){
+      var id = d.id, nome = (rvS.sig[id] || '');
+      h += '<div class="rv-row"><input type="checkbox" class="rv-ck" data-rv="sigmarca" data-id="' + escapeHtml(id) + '"' + (nome.trim() ? ' checked' : '') + ' aria-label="Incluir"><div class="rv-c"><div><b>' + escapeHtml(d.parteNome || '—') + '</b> <span class="rv-mut">· ' + escapeHtml(d.orgao || '') + ' · ' + escapeHtml(d.numero) + '</span></div>' +
+        '<input type="text" class="rv-in" data-rv="signome" data-id="' + escapeHtml(id) + '" value="' + escapeHtml(nome) + '" placeholder="Digite o nome do cliente…" maxlength="120" aria-label="Nome do cliente">' +
+        '<div class="rv-chs"><span class="pb-tg" style="background:rgba(217,59,59,.12);color:var(--urgente)">segredo de justiça</span><button type="button" class="btn btn-ghost pb-b rv-esc" data-pr="rev-esc" data-n="' + escapeHtml(prNum(d.numero)) + '">escolher cliente existente</button></div></div></div>';
+    });
+  }
+  h += '<div class="rv-rod"><button type="button" class="btn btn-primary" id="rvOk" data-pr="rv-ok" style="width:100%;justify-content:center"></button></div></div>';
+  return h;
+}
+/* o que está marcado agora: [{ nome, existente, docs, extras:[nome] }] */
+function rvTarefas(){
+  var L = rvLinhas(), out = [];
+  L.grupos.forEach(function(g){
+    if (!rvS.marca[g.k]) return;
+    var nome = rvNomeFinal(g); if (!nome) return;
+    var t = (rvS.tambem[g.k] || {});
+    out.push({ nome: nome, docs: g.docs, extras: g.extras.filter(function(n, i){ return t[i]; }).map(cliTitulo), existe: g.existe && normNome(nome) === normNome(g.existe.nome) ? g.existe : null });
+  });
+  L.sig.forEach(function(d){
+    var n = String(rvS.sig[d.id] || '').replace(/\s+/g, ' ').trim(), ck = qs('rvBox') ? qs('rvBox').querySelector('[data-rv="sigmarca"][data-id="' + d.id + '"]') : null;
+    if (n && (!ck || ck.checked)) out.push({ nome: cliTitulo(n), docs: [d], extras: [], existe: null });
+  });
+  return out;
+}
+function rvBotao(){
+  var b = qs('rvOk'); if (!b) return;
+  var t = rvTarefas();
+  b.textContent = rvS.ocupado ? 'Cadastrando…' : (t.length ? 'Cadastrar e vincular ' + t.length + (t.length === 1 ? ' marcado' : ' marcados') : 'Nada marcado');
+  b.disabled = rvS.ocupado || !t.length;
+}
+function rvAcharCliente(nome){
+  var k = normNome(nome);
+  return clientes.filter(function(c){ return !c.arquivado && normNome(c.nome) === k; })[0] || null;
+}
+/* cliente para o nome: o que já existe (mesmo nome) ou um novo, criado agora; devolve { c, criado } */
+function rvCliente(nome, existe, criados){
+  var ja = existe || rvAcharCliente(nome);
+  if (ja) return Promise.resolve({ c: ja, criado: false });
+  var obj = novoClienteObj({ nome: nome, pagador: 'cliente' });
+  return Promise.resolve(persistClienteSet(obj)).then(function(){ criados.push(obj.id); return { c: obj, criado: true }; });
+}
+function rvConfirmar(){
+  if (rvS.ocupado) return;
+  var tarefas = rvTarefas(); if (!tarefas.length) return;
+  rvS.ocupado = true; rvBotao();
+  var criados = [], antes = [], envolvidos = {}, nProc = 0, agora = new Date().toISOString();
+  function vincular(d, clienteIds){
+    antes.push({ d: d, prev: { clienteIds: (d.clienteIds || []).slice(), revisar: d.revisar || '', sugestaoClienteId: d.sugestaoClienteId || '', revisadoEm: d.revisadoEm || '' } });
+    var ids = (d.clienteIds || []).slice(); clienteIds.forEach(function(i){ if (ids.indexOf(i) < 0) ids.push(i); });
+    return impSalvarDoc(d, { clienteIds: ids, revisar: '', revisadoEm: agora, sugestaoClienteId: '' });
+  }
+  tarefas.reduce(function(cad, t){
+    return cad.then(function(){
+      return rvCliente(t.nome, t.existe, criados).then(function(r1){
+        envolvidos[r1.c.id] = r1.c;
+        return t.extras.reduce(function(c2, n){ return c2.then(function(ids){ return rvCliente(n, null, criados).then(function(r2){ envolvidos[r2.c.id] = r2.c; return ids.concat([r2.c.id]); }); }); }, Promise.resolve([r1.c.id]));
+      }).then(function(ids){
+        return t.docs.reduce(function(c3, d){ return c3.then(function(){ nProc++; var nomePub = d.parteNome; return vincular(d, ids).then(function(){ try{ if (nomePub) prAprenderApelido(ids[0], nomePub); }catch(e){} }); }); }, Promise.resolve());
+      });
+    });
+  }, Promise.resolve()).then(function(){
+    rvS.ocupado = false; rvS.marca = {}; rvS.nome = {}; rvS.tambem = {}; rvS.sig = {};
+    var nCli = Object.keys(envolvidos).length, nNovos = criados.length;
+    toast(nNovos + (nNovos === 1 ? ' cliente cadastrado' : ' clientes cadastrados') + (nCli > nNovos ? ' (e ' + (nCli - nNovos) + ' já existente' + (nCli - nNovos === 1 ? '' : 's') + ')' : '') + ' · ' + nProc + (nProc === 1 ? ' processo vinculado.' : ' processos vinculados.'), 'Desfazer', function(){ rvDesfazer(antes, criados); });
+    try{ prDepois(); }catch(e){}
+    rvPerguntarAuto(envolvidos, function(){ rvDesfazer(antes, criados); });
+  }).catch(function(e){
+    rvS.ocupado = false; toast('Não consegui terminar: ' + e.message + '. O que já foi cadastrado continua; confira a lista.'); try{ prDepois(); }catch(e2){}
+  });
+}
+function rvDesfazer(antes, criados){
+  Promise.all(antes.map(function(x){ return impSalvarDoc(x.d, x.prev); })).then(function(){
+    criados.forEach(function(id){ try{ persistClienteExclui(id); }catch(e){} });
+    toast('Desfeito: os processos voltaram para a revisão.'); try{ prDepois(); }catch(e){}
+  }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
+}
+/* depois do lote: uma pergunta só para os clientes que ainda não têm essa escolha (os próximos processos deles vão direto?) */
+function rvPerguntarAuto(env, desfazer){
+  var lista = Object.keys(env).map(function(id){ return clienteById(id) || env[id]; }).filter(function(c){ return c && c.vinculoAuto !== true && c.vinculoAuto !== false; });
+  if (!lista.length) return;
+  function marcar(sim){ lista.forEach(function(c){ var o = JSON.parse(JSON.stringify(clienteById(c.id) || c)); o.vinculoAuto = !!sim; persistClienteSet(o); }); }
+  impDialogo('Vincular os próximos automaticamente?',
+    '<div class="parcela-sum">Quando aparecer outro processo de ' + (lista.length === 1 ? '<b>' + escapeHtml(lista[0].nome) + '</b>' : 'um destes <b>' + lista.length + '</b> clientes') + ', o app já vincula, sem passar pela revisão.</div><div class="pb-aviso">Dá para desligar depois na ficha de cada cliente.</div>',
+    [['Sim, vincular automaticamente', 'btn-primary', function(){ marcar(true); toast('Pronto: os próximos processos desses clientes já vão direto.'); }], ['Não, sempre revisar', 'btn-ghost', function(){ marcar(false); }], ['Desfazer o cadastro', 'btn-ghost', desfazer]]);
+}
+
+document.addEventListener('input', function(ev){
+  var t = ev.target, a = t && t.getAttribute ? t.getAttribute('data-rv') : null; if (!a) return;
+  if (a === 'nome'){ rvS.nome[t.getAttribute('data-k')] = t.value; }
+  else if (a === 'signome'){
+    var id = t.getAttribute('data-id'); rvS.sig[id] = t.value;
+    var ck = qs('rvBox') && qs('rvBox').querySelector('[data-rv="sigmarca"][data-id="' + id + '"]'); if (ck) ck.checked = !!t.value.trim();
+  } else return;
+  rvBotao();
+}, true);
+document.addEventListener('change', function(ev){
+  var t = ev.target, a = t && t.getAttribute ? t.getAttribute('data-rv') : null; if (!a) return;
+  if (a === 'marca') rvS.marca[t.getAttribute('data-k')] = t.checked;
+  else if (a === 'tambem'){ var k = t.getAttribute('data-k'); rvS.tambem[k] = rvS.tambem[k] || {}; rvS.tambem[k][t.getAttribute('data-i')] = t.checked; }
+  else if (a === 'sigmarca'){ /* o estado fica na própria caixa */ }
+  else return;
+  rvBotao();
+}, true);
+(function(){
+  var prl0 = prRenderLista; prRenderLista = function(){ var r = prl0.apply(this, arguments); try{ rvBotao(); }catch(e){} return r; };
+  var st = document.createElement('style');
+  st.textContent = '.rv-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md,16px);padding:12px;margin:0 0 12px}' +
+    '.rv-sum{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:var(--t3);line-height:1.45;margin-bottom:6px}.rv-sum span{color:var(--ink-soft);font-size:var(--t2)}' +
+    '.rv-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border)}.rv-ck{width:20px;height:20px;margin-top:8px;accent-color:var(--ink)}' +
+    '.rv-c{min-width:0;display:flex;flex-direction:column;gap:6px}.rv-in{width:100%;font-weight:700}.rv-chs{display:flex;gap:5px;flex-wrap:wrap;align-items:center}' +
+    '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4}.rv-tb input{margin-top:2px;width:18px;height:18px;accent-color:var(--ink)}' +
+    '.rv-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:14px 0 2px}.rv-dica{font-size:var(--t2);color:var(--ink-soft);margin-bottom:2px}.rv-mut{color:var(--ink-soft)}' +
+    '.rv-rod{margin-top:12px}.rv-esc{min-height:36px}';
+  document.head.appendChild(st);
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { rvLinhas: function(){ var L = rvLinhas(); return { grupos: L.grupos.map(function(g){ return { k: g.k, nome: g.nome, n: g.docs.length, extras: g.extras, existe: g.existe ? g.existe.nome : '' }; }), sig: L.sig.map(function(d){ return d.numero; }) }; },
+    pbInjetar: function(pubs){ pbS.pubs = (pbS.pubs || []).concat(pubs); },
+    rvIdsClientes: function(){ return clientes.map(function(c){ return c.id; }); },
+    /* como a atualização do servidor: a lista de clientes é trocada por uma que ainda não tem o cliente salvo há instantes */
+    rvSubstituirClientes: function(ids){ clientes = clientes.filter(function(c){ return ids.indexOf(c.id) >= 0; }); renderClientesTudo(); } });
+})();
+
+/*RV-FIM*/
 
 /* ---------- adiar parcela (só o vencimento de uma parcela; as outras não mudam) ---------- */
 function adPodeAdiar(u){

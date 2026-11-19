@@ -34,11 +34,12 @@ check(await visivel('#rvBox'), 'a sub-aba Revisar mostra a lista no alto');
 const L = await p.evaluate(() => window.__horusTeste.rvLinhas());
 check(L.grupos.length >= 4 && L.sig.length === 2, 'reconhece as partes e separa as de só iniciais (2): ' + JSON.stringify(L.grupos.map((g) => [g.nome, g.n])) + ' sig=' + L.sig.length);
 let tx = await painel();
-check(/Cliente Rd Um/.test(tx) && /Maria Rd Dois/.test(tx) && !/CLIENTE RD UM/.test(await p.evaluate(() => [...document.querySelectorAll('#rvBox .rv-in')].map((i) => i.value).join('|'))), 'os nomes vêm arrumados (Cleuber… em maiúsculas vira "Cliente Rd Um")');
+const nomes = await p.evaluate(() => [...document.querySelectorAll('#rvBox .rv-in[data-rv="nome"]')].map((i) => i.value).join('|'));
+check(/Cliente Rd Um/.test(nomes) && /Maria Rd Dois/.test(nomes) && !/CLIENTE RD UM/.test(nomes), 'os nomes vêm arrumados (em maiúsculas vira "Cliente Rd Um"): ' + nomes);
 check(/2 processos/.test(tx), 'processos da mesma parte viram uma linha só ("2 processos")');
 check(/já existe: Fabio Junio Rd/.test(tx) && /vincular ao existente/.test(tx), 'parte que já é cliente: "já existe… vincular ao existente"');
 check(/também consta como parte intimada: Joao Rd Tres/i.test(tx), 'outra parte intimada aparece como "cadastrar também", desmarcada');
-check(/Só iniciais no Diário · 2 processos/.test(tx) && /Digite o nome do cliente/.test(await p.evaluate(() => document.getElementById('rvBox').innerHTML)), 'segredo de justiça: seção própria com campo para digitar o nome');
+check(/Só iniciais no Diário · 2 processos/i.test(tx) && /Digite o nome do cliente/.test(await p.evaluate(() => document.getElementById('rvBox').innerHTML)), 'segredo de justiça: seção própria com campo para digitar o nome');
 check(/Cadastrar e vincular 4 marcados/.test(await p.locator('#rvOk').innerText()), 'o botão conta as linhas marcadas (4)');
 
 console.log('\n— editar, marcar e confirmar');
@@ -58,17 +59,23 @@ check(P('rd3').clienteIds.length === 2 && P('rd3').clienteIds.includes(cm.id) &&
 check(P('rd4').clienteIds.join() === 'rdc1' && !P('rd4').revisar, 'quem já era cliente: só vinculou ao existente');
 check(P('rd5').clienteIds.join() === cp.id && P('rd6').revisar === 'sem-cliente', 'segredo de justiça: vinculou o que teve nome; o outro continua na revisão');
 check(await visivel('#overlayImpPerg.show'), 'depois do lote faz uma pergunta só: os próximos vão direto?');
-await p.click('[data-impp="1"]'); await p.waitForTimeout(1200);
-cli = await docs('clientes'); check(cli.filter((c) => [c1.id, cm.id, cj.id, cp.id, 'rdc1'].includes(c.id)).every((c) => c.vinculoAuto === false), 'responder "Não" deixa os clientes sempre indo para a revisão');
-console.log('\n— desfazer');
-await p.click('#toast button'); await p.waitForTimeout(800);
-if (/Desfazer:/.test(await p.locator('#toast').innerText())) { await p.click('#toast button'); await p.waitForTimeout(800); }
-await p.waitForTimeout(2500);
+console.log('\n— desfazer (pelo botão da própria pergunta)');
+await p.click('[data-impp="2"]'); await p.waitForTimeout(3500);
 pr = await docs('processos'); cli = await docs('clientes');
-check(pr.filter((d) => ['rd1', 'rd2', 'rd3', 'rd4', 'rd5'].some((k) => dig(d.numero) === dig(N[k]))).every((d) => d.revisar) && !cli.some((c) => c.nome === 'Cliente Rd Um' || c.nome === 'Pedro Rd Cinco'), 'Desfazer devolve os processos à revisão e remove os clientes criados');
+check(['rd1', 'rd2', 'rd3', 'rd4', 'rd5'].every((k) => { const d = pr.find((q) => dig(q.numero) === dig(N[k])); return d.revisar && !d.clienteIds.length; }) && !cli.some((c) => ['Cliente Rd Um', 'Pedro Rd Cinco', 'Joao Rd Tres', 'Maria Rd Dois Silva'].includes(c.nome)), 'Desfazer devolve os processos à revisão e remove os clientes que tinham sido criados');
+console.log('\n— confirmar de novo (sem editar) e responder "Não"');
+await p.evaluate(() => document.querySelector('#prSub [data-v="revisar"]') && document.querySelector('#prSub [data-v="revisar"]').click()); await p.waitForTimeout(1200);
+check(/Cadastrar e vincular 4 marcados/.test(await p.locator('#rvOk').innerText()), 'a lista volta como estava (4 marcados)');
+const kCorr = (await p.evaluate(() => window.__horusTeste.rvLinhas())).grupos.find((g) => /Corrida/i.test(g.nome)).k;
+await p.uncheck('#rvBox [data-rv="marca"][data-k="' + kCorr + '"]');
+check(/Cadastrar e vincular 3 marcados/.test(await p.locator('#rvOk').innerText()), 'desmarcar uma linha tira 1 da contagem (3 marcados)');
+await p.click('#rvOk'); await p.waitForTimeout(3500);
+check(await visivel('#overlayImpPerg.show'), 'pergunta de novo');
+await p.click('[data-impp="1"]'); await p.waitForTimeout(1500);
+cli = await docs('clientes'); const novos = cli.filter((c) => ['Cliente Rd Um', 'Maria Rd Dois'].includes(c.nome) || c.id === 'rdc1');
+check(novos.length === 3 && novos.every((c) => c.vinculoAuto === false), 'responder "Não" deixa os clientes sempre indo para a revisão');
 
 console.log('\n— o vínculo não se perde quando chega uma atualização do servidor');
-const antes = await p.evaluate(() => { try { return window.__horusTeste.rvIdsClientes(); } catch (e) { return null; } });
 await p.evaluate(() => document.querySelector('#prSub [data-v="revisar"]') && document.querySelector('#prSub [data-v="revisar"]').click()); await p.waitForTimeout(800);
 await p.click('#prLista [data-pr-card="' + dig(N.rd7) + '"] [data-pr="rev-novo"]'); await p.waitForTimeout(600);
 check(await visivel('#overlayClienteEdit.show') && /Cliente Corrida Rd/i.test(await p.inputValue('#cliNomeInput')), 'Cadastrar cliente novo abre a ficha com o nome da parte');

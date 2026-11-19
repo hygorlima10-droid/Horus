@@ -129,7 +129,7 @@ function rvConfirmar(){
     var nCli = Object.keys(envolvidos).length, nNovos = criados.length;
     toast(nNovos + (nNovos === 1 ? ' cliente cadastrado' : ' clientes cadastrados') + (nCli > nNovos ? ' (e ' + (nCli - nNovos) + ' já existente' + (nCli - nNovos === 1 ? '' : 's') + ')' : '') + ' · ' + nProc + (nProc === 1 ? ' processo vinculado.' : ' processos vinculados.'), 'Desfazer', function(){ rvDesfazer(antes, criados); });
     try{ prDepois(); }catch(e){}
-    rvPerguntarAuto(envolvidos);
+    rvPerguntarAuto(envolvidos, function(){ rvDesfazer(antes, criados); });
   }).catch(function(e){
     rvS.ocupado = false; toast('Não consegui terminar: ' + e.message + '. O que já foi cadastrado continua; confira a lista.'); try{ prDepois(); }catch(e2){}
   });
@@ -141,13 +141,13 @@ function rvDesfazer(antes, criados){
   }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
 }
 /* depois do lote: uma pergunta só para os clientes que ainda não têm essa escolha (os próximos processos deles vão direto?) */
-function rvPerguntarAuto(env){
+function rvPerguntarAuto(env, desfazer){
   var lista = Object.keys(env).map(function(id){ return clienteById(id) || env[id]; }).filter(function(c){ return c && c.vinculoAuto !== true && c.vinculoAuto !== false; });
   if (!lista.length) return;
-  function marcar(sim){ lista.forEach(function(c){ var o = JSON.parse(JSON.stringify(clienteById(c.id) || c)); o.vinculoAuto = !!sim; persistClienteSet(o); }); toast(sim ? 'Pronto: os próximos processos desses clientes já vão direto.' : 'Certo: os próximos continuam indo para a revisão.'); }
+  function marcar(sim){ lista.forEach(function(c){ var o = JSON.parse(JSON.stringify(clienteById(c.id) || c)); o.vinculoAuto = !!sim; persistClienteSet(o); }); }
   impDialogo('Vincular os próximos automaticamente?',
     '<div class="parcela-sum">Quando aparecer outro processo de ' + (lista.length === 1 ? '<b>' + escapeHtml(lista[0].nome) + '</b>' : 'um destes <b>' + lista.length + '</b> clientes') + ', o app já vincula, sem passar pela revisão.</div><div class="pb-aviso">Dá para desligar depois na ficha de cada cliente.</div>',
-    [['Sim, vincular automaticamente', 'btn-primary', function(){ marcar(true); }], ['Não, sempre revisar', 'btn-ghost', function(){ marcar(false); }]]);
+    [['Sim, vincular automaticamente', 'btn-primary', function(){ marcar(true); toast('Pronto: os próximos processos desses clientes já vão direto.'); }], ['Não, sempre revisar', 'btn-ghost', function(){ marcar(false); }], ['Desfazer o cadastro', 'btn-ghost', desfazer]]);
 }
 
 document.addEventListener('input', function(ev){
