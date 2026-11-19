@@ -159,6 +159,7 @@ function pbMontarTela(){
     else if (a === 'aud') pbCriarAudiencia(id);
     else if (a === 'aud-livre') pbCriarAudiencia(id, true);
     else if (a === 'tarefa') pbCriarTarefa(id);
+    else if (a === 'dgt') dgAbrirFicha(b.getAttribute('data-tid'));
     else if (a === 'rel'){ pbS.mAberto = false; pbRender(); rptPublicacoes(); }
     else if (a === 'pecas'){ pbS.mAberto = false; pbRender(); pbAbrirPecas(); }
   });
@@ -660,6 +661,7 @@ function pbCartao(p){
   { var dc = pbDeColegas(p);
     dc.tratadas.forEach(function(t){ tags += '<span class="pb-tg ' + (t.papel === 'estagiario' ? 'nv' : 'ok') + '">' + ico(t.papel === 'estagiario' ? 'user-round' : 'check', 12) + (t.papel === 'estagiario' ? 'preparada por ' : 'tratada por ') + escapeHtml(t.nome) + '</span>'; });
     var porOutro = lida && mem.some(function(x){ return x.lidaAuto; });   /* saiu das "Não lidas" porque outra pessoa resolveu */
+    try{ pbDelegadasDe(p).forEach(function(t){ tags += pbdgEtiqueta(t, 'data-pb'); }); }catch(e){}
     if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; });
     else if (porOutro){ if (dc.leuPor.length) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg nv">' + (x.semPrazo ? escapeHtml(x.nome) + ': não é prazo' : 'lida por ' + escapeHtml(x.nome)) + '</span>'; }); else if (!dc.tratadas.length) tags += '<span class="pb-tg nv">lida por outra pessoa</span>'; } }
   if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
@@ -717,6 +719,8 @@ function pbMontarDetalhe(){
     else if (a === 'aud') pbCriarAudiencia(pbDetId);
     else if (a === 'aud-livre') pbCriarAudiencia(pbDetId, true);
     else if (a === 'tarefa') pbCriarTarefa(pbDetId);
+    else if (a === 'delegada') pbCriarDelegada(pbDetId);
+    else if (a === 'dgt'){ d.classList.remove('show'); dgAbrirFicha(b.getAttribute('data-tid')); }
     else if (a === 'peca'){ var st = pbPeca[pbDetId] = pbPeca[pbDetId] || {}; st.cat = null; st.i = parseInt(b.getAttribute('data-i'), 10); pbDesenharDetalhe(); var bx = qs('pbPrazoBox'); if (bx && bx.scrollIntoView) bx.scrollIntoView(); }
     else if (a === 'catalogo') pbCatAbrir();
     else if (a === 'cat') pbCatEscolher(parseInt(b.getAttribute('data-k'), 10));
@@ -755,7 +759,7 @@ function pbDesenharDetalhe(){
   else h += '<div class="saldo-data">Não consegui buscar o texto completo (' + escapeHtml(t.motivo || 'erro') + '). Abaixo, o trecho guardado.</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';
   h += '<div class="pb-acts">' + (p.link ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(p.link) + '" target="_blank" rel="noopener noreferrer">Abrir original no tribunal ↗</a>' : '') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="copiar">Copiar texto</button></div>' +
     '<div class="pb-acts">' + (!v ? '<button type="button" class="btn btn-primary pb-b" data-pbd="cadastrar">Cadastrar processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="irproc">Abrir o processo</button>' + (v.arquivado ? '<button type="button" class="btn btn-primary pb-b" data-pbd="reabrirproc">Reabrir processo</button>' : '')) + '<button type="button" class="btn btn-ghost pb-b" data-pbd="alternalida">' + (pbLidaG(p) ? 'Marcar como não lida' : 'Marcar como lida') + '</button></div></div>';
-  { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button></div></div>'; }
+  { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda e tarefas</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto. Audiência e tarefa vão para a Agenda; a tarefa delegada vai para a aba Delegadas.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button><button type="button" class="btn btn-ghost pb-b" data-pbd="delegada">Criar tarefa delegada</button></div>' + (function(){ var dl = pbDelegadasDe(p); return dl.length ? '<div class="pb-tags" style="margin-top:8px">' + dl.map(function(t){ return pbdgEtiqueta(t, 'data-pbd'); }).join('') + '</div>' : ''; })() + '</div>'; }
   h += '<div class="pb-sec pb-ia" id="pbPrazoBox">';
   if (pz){
     h += '<div class="pb-sec-t">Prazo confirmado</div><div class="pb-prazo-ok"><b>' + escapeHtml(fmtData(pz.data)) + '</b> <span>(' + escapeHtml(pbDiaSem(pz.data)) + ')</span><div class="saldo-data">' + escapeHtml(pz.descricao || '') + (pz.concluido ? ' · cumprido' : '') + '</div></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" id="pbVerPrazo">Abrir prazo</button></div>';

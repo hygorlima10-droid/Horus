@@ -447,7 +447,7 @@ export async function djenRotas(request, env, partes, auth) {
         if (typeof b.semPrazo === 'boolean' && podeSemPrazo) d.semPrazoPor = { ...(d.semPrazoPor || {}), [quem.uid]: b.semPrazo };
         else if (b.semPrazo === null && d.semPrazoPor) { const { [quem.uid]: _y, ...resto } = d.semPrazoPor; d.semPrazoPor = resto; }   // "não é prazo" vale só para quem marcou
         if (b.tratada === true) {   // criou prazo, audiência ou tarefa a partir da publicação: os colegas veem como lida (regra no topo deste bloco)
-          const como = ['prazo', 'audiencia', 'tarefa'].includes(b.como) ? b.como : 'prazo';
+          const como = ['prazo', 'audiencia', 'tarefa', 'delegada'].includes(b.como) ? b.como : 'prazo';
           d.tratadas = [...(Array.isArray(d.tratadas) ? d.tratadas : []).filter((t) => t.uid !== quem.uid), { ...quem, em: agora, como }].slice(-6);
           marcarLida(true);
         } else if (b.tratada === false && Array.isArray(d.tratadas)) d.tratadas = d.tratadas.filter((t) => t.uid !== quem.uid);

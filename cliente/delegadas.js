@@ -235,7 +235,7 @@ function dgCelProc(id, num){
 function dgCelSel(campo, id, rotulo, vazio, extra){ return '<button type="button" class="dg-sel' + (vazio ? ' vazio' : '') + (extra ? ' ' + extra : '') + '" data-dg="dd" data-c="' + campo + '" data-id="' + id + '"><span class="dg-sl">' + rotulo + '</span><i>▾</i></button>'; }
 function dgRotResp(k){ return k ? '<span class="dg-pess">' + dgAv(k) + dgHl(dgCurto(k)) + '</span>' : 'escolher'; }
 /* cliente em cima e processo (com o botão de copiar) embaixo */
-function dgCelCliProc(d, id){ return '<td>' + dgCelSel('cliente', id, d.cliente ? dgHl(d.cliente) : (id === 'novo' ? 'Cliente' : '—'), !d.cliente, 'dg-m') + dgCelProc(id, d.processo) + '</td>'; }
+function dgCelCliProc(d, id){ return '<td>' + dgCelSel('cliente', id, d.cliente ? dgHl(d.cliente) : (id === 'novo' ? 'Cliente' : '—'), !d.cliente, 'dg-m') + dgCelProc(id, d.processo) + (d.pubId ? '<div class="saldo-data" style="margin:2px 0 0">via publicação</div>' : '') + '</td>'; }
 /* responsável em cima e "por <quem delegou>" embaixo */
 function dgCelRespPor(d, id){ return '<td>' + dgCelSel('resp', id, dgRotResp(d.resp), !d.resp, 'dg-m') + dgCelSel('delegadoPor', id, d.delegadoPor ? '<span class="dg-por-l">por</span> ' + dgHl(dgCurto(d.delegadoPor)) : 'delegado por…', !d.delegadoPor, 'dg-m dg-por') + '</td>'; }
 var DG_ST_CURTO = { aguardando: 'Aguardando' };
@@ -289,7 +289,7 @@ function dgCartao(d){
   if (dgEhFixaT(d)) return dgCartaoFixa(d);
   var dias = dgDias(d), st = dgStatusDe(d.status);
   return '<div class="dg-card ' + (dias.c === 'atr' ? 'atr' : '') + '" data-dgl="' + escapeHtml(d.id) + '"><div class="dg-card-t" data-dg="ficha" data-id="' + escapeHtml(d.id) + '"><b>' + dgHl(d.titulo || '') + '</b>' +
-    ((d.cliente || d.processo) ? '<small>' + [d.cliente, d.processo].filter(Boolean).map(dgHl).join(' · ') + '</small>' : '') + '</div>' + (d.processo ? '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="copiar" data-n="' + escapeHtml(d.processo) + '">' + (typeof AGD_COPIA === 'string' ? AGD_COPIA : '') + ' Copiar o número</button></div>' : '') +
+    ((d.cliente || d.processo || d.pubId) ? '<small>' + [d.cliente, d.processo].filter(Boolean).map(dgHl).join(' · ') + (d.pubId ? ((d.cliente || d.processo) ? ' · ' : '') + 'via publicação' : '') + '</small>' : '') + '</div>' + (d.processo ? '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="copiar" data-n="' + escapeHtml(d.processo) + '">' + (typeof AGD_COPIA === 'string' ? AGD_COPIA : '') + ' Copiar o número</button></div>' : '') +
     '<div class="dg-card-l"><span class="dg-st ' + st[2] + '">' + escapeHtml(st[1]) + '</span><b class="dg-pr ' + dgPrioCls(d.prioridade) + '">' + escapeHtml(d.prioridade || 'Média') + '</b>' + (d.fatal ? '<span class="mut">fatal ' + escapeHtml(fmtData(d.fatal).slice(0, 5)) + '</span>' : '') + dgDiasChip(dias) + '</div>' +
     '<div class="dg-card-l">' + dgAv(d.resp) + '<span>' + escapeHtml(dgCurto(d.resp) || 'sem responsável') + '</span>' + (d.delegadoPor ? '<span class="mut">· delegado por ' + escapeHtml(dgCurto(d.delegadoPor)) + '</span>' : '') + '</div>' +
     '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="status" data-id="' + escapeHtml(d.id) + '">' + escapeHtml(st[1]) + ' ▾</button><button type="button" class="dg-bt" data-dg="ficha" data-id="' + escapeHtml(d.id) + '">Editar</button><button type="button" class="dg-bt ok" data-dg="concluir" data-id="' + escapeHtml(d.id) + '">' + ico('check', 14) + ' Concluir</button></div></div>';

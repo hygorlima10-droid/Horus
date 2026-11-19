@@ -1899,6 +1899,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4906,6 +4909,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10426,6 +10435,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10633,6 +10648,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10640,7 +10661,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10654,6 +10675,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -18633,6 +18660,7 @@ function pbMontarTela(){
     else if (a === 'aud') pbCriarAudiencia(id);
     else if (a === 'aud-livre') pbCriarAudiencia(id, true);
     else if (a === 'tarefa') pbCriarTarefa(id);
+    else if (a === 'dgt') dgAbrirFicha(b.getAttribute('data-tid'));
     else if (a === 'rel'){ pbS.mAberto = false; pbRender(); rptPublicacoes(); }
     else if (a === 'pecas'){ pbS.mAberto = false; pbRender(); pbAbrirPecas(); }
   });
@@ -19134,6 +19162,7 @@ function pbCartao(p){
   { var dc = pbDeColegas(p);
     dc.tratadas.forEach(function(t){ tags += '<span class="pb-tg ' + (t.papel === 'estagiario' ? 'nv' : 'ok') + '">' + ico(t.papel === 'estagiario' ? 'user-round' : 'check', 12) + (t.papel === 'estagiario' ? 'preparada por ' : 'tratada por ') + escapeHtml(t.nome) + '</span>'; });
     var porOutro = lida && mem.some(function(x){ return x.lidaAuto; });   /* saiu das "Não lidas" porque outra pessoa resolveu */
+    try{ pbDelegadasDe(p).forEach(function(t){ tags += pbdgEtiqueta(t, 'data-pb'); }); }catch(e){}
     if (!lida) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg pz">' + escapeHtml(x.nome) + (x.semPrazo ? ': não é prazo' : ' leu, sem prazo') + '</span>'; });
     else if (porOutro){ if (dc.leuPor.length) dc.leuPor.forEach(function(x){ tags += '<span class="pb-tg nv">' + (x.semPrazo ? escapeHtml(x.nome) + ': não é prazo' : 'lida por ' + escapeHtml(x.nome)) + '</span>'; }); else if (!dc.tratadas.length) tags += '<span class="pb-tg nv">lida por outra pessoa</span>'; } }
   if (pz) tags += '<span class="pb-tg pz">' + ico('clock', 12) + 'prazo ' + escapeHtml(fmtData(pz.data)) + (pz.concluido ? ' (cumprido)' : '') + '</span>';
@@ -19191,6 +19220,8 @@ function pbMontarDetalhe(){
     else if (a === 'aud') pbCriarAudiencia(pbDetId);
     else if (a === 'aud-livre') pbCriarAudiencia(pbDetId, true);
     else if (a === 'tarefa') pbCriarTarefa(pbDetId);
+    else if (a === 'delegada') pbCriarDelegada(pbDetId);
+    else if (a === 'dgt'){ d.classList.remove('show'); dgAbrirFicha(b.getAttribute('data-tid')); }
     else if (a === 'peca'){ var st = pbPeca[pbDetId] = pbPeca[pbDetId] || {}; st.cat = null; st.i = parseInt(b.getAttribute('data-i'), 10); pbDesenharDetalhe(); var bx = qs('pbPrazoBox'); if (bx && bx.scrollIntoView) bx.scrollIntoView(); }
     else if (a === 'catalogo') pbCatAbrir();
     else if (a === 'cat') pbCatEscolher(parseInt(b.getAttribute('data-k'), 10));
@@ -19229,7 +19260,7 @@ function pbDesenharDetalhe(){
   else h += '<div class="saldo-data">Não consegui buscar o texto completo (' + escapeHtml(t.motivo || 'erro') + '). Abaixo, o trecho guardado.</div><div class="pb-texto">' + escapeHtml(p.trecho || '') + '</div>';
   h += '<div class="pb-acts">' + (p.link ? '<a class="btn btn-ghost pb-b" href="' + escapeHtml(p.link) + '" target="_blank" rel="noopener noreferrer">Abrir original no tribunal ↗</a>' : '') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="copiar">Copiar texto</button></div>' +
     '<div class="pb-acts">' + (!v ? '<button type="button" class="btn btn-primary pb-b" data-pbd="cadastrar">Cadastrar processo</button>' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="irproc">Abrir o processo</button>' + (v.arquivado ? '<button type="button" class="btn btn-primary pb-b" data-pbd="reabrirproc">Reabrir processo</button>' : '')) + '<button type="button" class="btn btn-ghost pb-b" data-pbd="alternalida">' + (pbLidaG(p) ? 'Marcar como não lida' : 'Marcar como lida') + '</button></div></div>';
-  { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button></div></div>'; }
+  { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda e tarefas</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto. Audiência e tarefa vão para a Agenda; a tarefa delegada vai para a aba Delegadas.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button><button type="button" class="btn btn-ghost pb-b" data-pbd="delegada">Criar tarefa delegada</button></div>' + (function(){ var dl = pbDelegadasDe(p); return dl.length ? '<div class="pb-tags" style="margin-top:8px">' + dl.map(function(t){ return pbdgEtiqueta(t, 'data-pbd'); }).join('') + '</div>' : ''; })() + '</div>'; }
   h += '<div class="pb-sec pb-ia" id="pbPrazoBox">';
   if (pz){
     h += '<div class="pb-sec-t">Prazo confirmado</div><div class="pb-prazo-ok"><b>' + escapeHtml(fmtData(pz.data)) + '</b> <span>(' + escapeHtml(pbDiaSem(pz.data)) + ')</span><div class="saldo-data">' + escapeHtml(pz.descricao || '') + (pz.concluido ? ' · cumprido' : '') + '</div></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" id="pbVerPrazo">Abrir prazo</button></div>';
@@ -23791,7 +23822,7 @@ function dgCelProc(id, num){
 function dgCelSel(campo, id, rotulo, vazio, extra){ return '<button type="button" class="dg-sel' + (vazio ? ' vazio' : '') + (extra ? ' ' + extra : '') + '" data-dg="dd" data-c="' + campo + '" data-id="' + id + '"><span class="dg-sl">' + rotulo + '</span><i>▾</i></button>'; }
 function dgRotResp(k){ return k ? '<span class="dg-pess">' + dgAv(k) + dgHl(dgCurto(k)) + '</span>' : 'escolher'; }
 /* cliente em cima e processo (com o botão de copiar) embaixo */
-function dgCelCliProc(d, id){ return '<td>' + dgCelSel('cliente', id, d.cliente ? dgHl(d.cliente) : (id === 'novo' ? 'Cliente' : '—'), !d.cliente, 'dg-m') + dgCelProc(id, d.processo) + '</td>'; }
+function dgCelCliProc(d, id){ return '<td>' + dgCelSel('cliente', id, d.cliente ? dgHl(d.cliente) : (id === 'novo' ? 'Cliente' : '—'), !d.cliente, 'dg-m') + dgCelProc(id, d.processo) + (d.pubId ? '<div class="saldo-data" style="margin:2px 0 0">via publicação</div>' : '') + '</td>'; }
 /* responsável em cima e "por <quem delegou>" embaixo */
 function dgCelRespPor(d, id){ return '<td>' + dgCelSel('resp', id, dgRotResp(d.resp), !d.resp, 'dg-m') + dgCelSel('delegadoPor', id, d.delegadoPor ? '<span class="dg-por-l">por</span> ' + dgHl(dgCurto(d.delegadoPor)) : 'delegado por…', !d.delegadoPor, 'dg-m dg-por') + '</td>'; }
 var DG_ST_CURTO = { aguardando: 'Aguardando' };
@@ -23845,7 +23876,7 @@ function dgCartao(d){
   if (dgEhFixaT(d)) return dgCartaoFixa(d);
   var dias = dgDias(d), st = dgStatusDe(d.status);
   return '<div class="dg-card ' + (dias.c === 'atr' ? 'atr' : '') + '" data-dgl="' + escapeHtml(d.id) + '"><div class="dg-card-t" data-dg="ficha" data-id="' + escapeHtml(d.id) + '"><b>' + dgHl(d.titulo || '') + '</b>' +
-    ((d.cliente || d.processo) ? '<small>' + [d.cliente, d.processo].filter(Boolean).map(dgHl).join(' · ') + '</small>' : '') + '</div>' + (d.processo ? '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="copiar" data-n="' + escapeHtml(d.processo) + '">' + (typeof AGD_COPIA === 'string' ? AGD_COPIA : '') + ' Copiar o número</button></div>' : '') +
+    ((d.cliente || d.processo || d.pubId) ? '<small>' + [d.cliente, d.processo].filter(Boolean).map(dgHl).join(' · ') + (d.pubId ? ((d.cliente || d.processo) ? ' · ' : '') + 'via publicação' : '') + '</small>' : '') + '</div>' + (d.processo ? '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="copiar" data-n="' + escapeHtml(d.processo) + '">' + (typeof AGD_COPIA === 'string' ? AGD_COPIA : '') + ' Copiar o número</button></div>' : '') +
     '<div class="dg-card-l"><span class="dg-st ' + st[2] + '">' + escapeHtml(st[1]) + '</span><b class="dg-pr ' + dgPrioCls(d.prioridade) + '">' + escapeHtml(d.prioridade || 'Média') + '</b>' + (d.fatal ? '<span class="mut">fatal ' + escapeHtml(fmtData(d.fatal).slice(0, 5)) + '</span>' : '') + dgDiasChip(dias) + '</div>' +
     '<div class="dg-card-l">' + dgAv(d.resp) + '<span>' + escapeHtml(dgCurto(d.resp) || 'sem responsável') + '</span>' + (d.delegadoPor ? '<span class="mut">· delegado por ' + escapeHtml(dgCurto(d.delegadoPor)) + '</span>' : '') + '</div>' +
     '<div class="dg-card-l"><button type="button" class="dg-bt" data-dg="status" data-id="' + escapeHtml(d.id) + '">' + escapeHtml(st[1]) + ' ▾</button><button type="button" class="dg-bt" data-dg="ficha" data-id="' + escapeHtml(d.id) + '">Editar</button><button type="button" class="dg-bt ok" data-dg="concluir" data-id="' + escapeHtml(d.id) + '">' + ico('check', 14) + ' Concluir</button></div></div>';
@@ -28970,6 +29001,91 @@ document.addEventListener('input', function(ev){
 })();
 
 /*RS-FIM*/
+/*DP-INICIO*/
+/* Tarefa delegada criada de dentro da publicação (terceiro botão ao lado de "Criar audiência" e "Criar tarefa").
+   Não vai para a Agenda: nasce na aba Delegadas, já ligada ao processo da publicação (campo pubId = "via publicação").
+   A publicação ganha uma etiqueta com a tarefa, e quem recebeu é avisado pelo mesmo caminho das demais tarefas delegadas (indicado). */
+var pbdgS = { pubId: '', resp: '', prazo: '', prio: 'Média' };
+
+function pbDelegadasDe(p){
+  if (typeof dgS === 'undefined' || !dgS.ok) return [];
+  var ids = pbMembros(p).map(function(x){ return x.id; });
+  return dgS.docs.filter(function(d){ return d.pubId && ids.indexOf(d.pubId) >= 0; });
+}
+function pbdgEtiqueta(t, atrib){
+  var txt = 'tarefa delegada · ' + (typeof dgCurto === 'function' ? dgCurto(t.resp) : '') + (t.fatal ? ' · até ' + fmtData(t.fatal).slice(0, 5) : '') + (dgFeita(t) ? ' · feita' : '');
+  return '<button type="button" class="pb-tg ' + (dgFeita(t) ? 'ok' : 'nv') + '" ' + atrib + '="dgt" data-tid="' + escapeHtml(t.id) + '" title="Abrir a tarefa nas Delegadas">' + escapeHtml(txt) + '</button>';
+}
+function pbdgDiaMais(n){ return somarDias(todayISO(), n); }
+
+function pbCriarDelegada(id){
+  var p = pbPub(id); if (!p) return;
+  if (typeof dgS !== 'undefined' && !dgS.ok && !dgS.carregando) dgCarregar(true);
+  var v = pbVinculo(p.processo), num = p.numero || p.processo, cli = pbNomeParte(p, v);
+  pbdgS = { pubId: p.id, resp: '', prazo: '', prio: 'Média' };
+  var ov = sgMontar('overlayPbDg', 'Tarefa delegada'); ov.querySelector('h2').textContent = 'Tarefa delegada';
+  var pess = dgPessoas();
+  var chipsP = pess.map(function(x){ return '<button type="button" class="pbdg-p" data-pbdg="resp" data-k="' + escapeHtml(x.k) + '">' + dgAv(x.k) + '<span>' + escapeHtml(String(x.nome).split(/\s+/)[0]) + (x.tipo === 'est' ? ' · est.' : '') + '</span></button>'; }).join('');
+  var fld = function(rot, html, f){ return '<div class="field"><label class="field-label" for="pbdg_' + f + '">' + rot + '</label>' + html + '</div>'; };
+  var h = '<div class="pr-hon-cab"><b>' + escapeHtml(cli || 'Processo') + '</b><span>' + (num ? 'Proc. ' + escapeHtml(num) + ' · ' : '') + 'via publicação de ' + escapeHtml(fmtData(p.data)) + '</span></div>' +
+    fSec('Tarefa', fld('Tarefa *', '<textarea id="pbdg_titulo" rows="2" maxlength="200" placeholder="O que precisa ser feito">' + escapeHtml('Providência' + (p.tipo ? ' — ' + p.tipo : '')) + '</textarea>', 'titulo') +
+      '<div class="field"><label class="field-label">Quem faz</label><div class="pbdg-ch" id="pbdg_pess">' + chipsP + '</div></div>' +
+      '<div class="field"><label class="field-label">Prazo fatal (opcional)</label><div class="pbdg-ch" id="pbdg_prazos">' +
+        '<button type="button" class="pbdg-c" data-pbdg="prazo" data-d="' + pbdgDiaMais(0) + '">Hoje</button><button type="button" class="pbdg-c" data-pbdg="prazo" data-d="' + pbdgDiaMais(1) + '">Amanhã</button><button type="button" class="pbdg-c" data-pbdg="prazo" data-d="' + pbdgDiaMais(3) + '">Em 3 dias</button><button type="button" class="pbdg-c" data-pbdg="prazo" data-d="data">Escolher data…</button></div>' +
+        '<input type="date" id="pbdg_fatal" style="display:none;margin-top:8px"></div>' +
+      '<div class="field"><label class="field-label">Prioridade</label><div class="pbdg-ch" id="pbdg_prios">' + DG_PRIO.slice().reverse().map(function(x){ return '<button type="button" class="pbdg-c' + (x[0] === 'Média' ? ' on' : '') + '" data-pbdg="prio" data-v="' + x[0] + '">' + x[0] + '</button>'; }).join('') + '</div></div>') +
+    fMais('trabalhar até · observações', fld('Trabalhar até', '<input type="date" id="pbdg_trabalhar">', 'trabalhar') + fld('Observações', '<textarea id="pbdg_obs" rows="3" maxlength="2000"></textarea>', 'obs')) +
+    '<label class="pbdg-ck"><input type="checkbox" id="pbdg_tratada" checked><span>Marcar a publicação como <b>tratada</b> ao lançar a tarefa</span></label>' +
+    '<div class="form-error" id="pbdg_erro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-pbdg="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-pbdg="lancar" id="pbdg_lancar">Lançar tarefa</button></div>';
+  qs('overlayPbDgC').innerHTML = h;
+  if (!ov.getAttribute('data-pbdg')){ ov.setAttribute('data-pbdg', '1'); ov.addEventListener('click', pbdgClique); }
+  ov.classList.add('show'); try{ fichaMaisEm(qs('overlayPbDgC')); }catch(e){}
+  var t = qs('pbdg_titulo'); if (t){ t.focus(); try{ t.select(); }catch(e){} }
+}
+function pbdgClique(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-pbdg]') : null; if (!b) return;
+  var a = b.getAttribute('data-pbdg'), ov = qs('overlayPbDg');
+  if (a === 'resp'){
+    var k = b.getAttribute('data-k'); pbdgS.resp = pbdgS.resp === k ? '' : k;
+    Array.prototype.forEach.call(qs('pbdg_pess').children, function(c){ c.classList.toggle('on', c.getAttribute('data-k') === pbdgS.resp); });
+  } else if (a === 'prazo'){
+    var d = b.getAttribute('data-d'), campo = qs('pbdg_fatal');
+    if (d === 'data'){ campo.style.display = ''; pbdgS.prazo = campo.value || ''; try{ campo.focus(); }catch(e){} }
+    else { campo.style.display = 'none'; campo.value = ''; pbdgS.prazo = pbdgS.prazo === d ? '' : d; }
+    Array.prototype.forEach.call(qs('pbdg_prazos').children, function(c){ var cd = c.getAttribute('data-d'); c.classList.toggle('on', (cd === 'data' && campo.style.display !== 'none') || (cd !== 'data' && cd === pbdgS.prazo && campo.style.display === 'none')); });
+  } else if (a === 'prio'){
+    pbdgS.prio = b.getAttribute('data-v');
+    Array.prototype.forEach.call(qs('pbdg_prios').children, function(c){ c.classList.toggle('on', c.getAttribute('data-v') === pbdgS.prio); });
+  } else if (a === 'cancelar') ov.classList.remove('show');
+  else if (a === 'lancar') pbdgLancar();
+}
+function pbdgLancar(){
+  var err = qs('pbdg_erro'), p = pbPub(pbdgS.pubId), titulo = qs('pbdg_titulo').value.trim();
+  if (!p) return;
+  if (!titulo){ err.textContent = 'Digite a tarefa.'; qs('pbdg_titulo').focus(); return; }
+  var campo = qs('pbdg_fatal'), fatal = campo.style.display !== 'none' ? campo.value : pbdgS.prazo;
+  var v = pbVinculo(p.processo), num = p.numero || p.processo, dc = dgClienteDoProcesso(num), me = dgMe();
+  var d = { titulo: titulo, cliente: pbNomeParte(p, v) || dc.nome, clienteId: dc.id, processo: num, resp: pbdgS.resp || me, delegadoPor: me, prioridade: pbdgS.prio || 'Média', status: 'afazer', trabalhar: qs('pbdg_trabalhar').value || '', fatal: fatal || '', obs: qs('pbdg_obs').value.trim(), pubId: p.id, criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() };
+  var bt = qs('pbdg_lancar'); bt.disabled = true;
+  dgGravar(d).then(function(){
+    dgS.docs.push(d); dgCacheEst = {}; try{ dgAtualizarSelo(); }catch(e){}
+    if (activeTab === 'delegadas') dgRender();
+    if (qs('pbdg_tratada').checked) pbMarcar(pbMembros(p).map(function(x){ return x.id; }), { tratada: true, como: 'delegada' });
+    qs('overlayPbDg').classList.remove('show'); bt.disabled = false;
+    toast('Tarefa lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.');
+    try{ if (qs('overlayPb') && qs('overlayPb').classList.contains('show')) pbDesenharDetalhe(); else pbRenderLista(); }catch(e){}
+  }).catch(function(e){ bt.disabled = false; err.textContent = 'Não consegui lançar: ' + e.message; });
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.pbdg-ch{display:flex;gap:7px;flex-wrap:wrap}.pbdg-c,.pbdg-p{min-height:40px;border-radius:12px;border:1.5px solid var(--line,#d6d9e0);background:transparent;color:inherit;font:inherit;font-size:13px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px}' +
+    '.pbdg-p{border-radius:99px;padding:6px 12px 6px 7px}.pbdg-c.on{background:#fdf1d8;border-color:#e3b25a;color:#8a5a00;font-weight:700}.pbdg-p.on{background:var(--ink,#0f1011);color:var(--bg,#fff);border-color:var(--ink,#0f1011);font-weight:700}' +
+    '.pbdg-ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;margin:14px 0 4px}.pbdg-ck input{margin-top:3px}';
+  document.head.appendChild(st);
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { pbCriarDelegada: pbCriarDelegada, pbDelegadasDe: pbDelegadasDe, pbAbrirDetalhe: pbAbrirDetalhe, pbCarregar: pbCarregar, pbIds: function(){ return pbS.pubs.map(function(x){ return x.id; }); }, pbCartaoHtml: function(id){ var p = pbPub(id); return p ? pbCartao(p) : ''; } });
+})();
+
+/*DP-FIM*/
 
 /* ---------- adiar parcela (só o vencimento de uma parcela; as outras não mudam) ---------- */
 function adPodeAdiar(u){

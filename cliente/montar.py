@@ -187,6 +187,13 @@ if '/*RS-INICIO*/' in s:
 else:
     assert s.count('/*PD-FIM*/\n') == 1
     s = s.replace('/*PD-FIM*/\n', '/*PD-FIM*/\n' + bloco_rs)
+dp_js = open(R + 'cliente/delegada-pub.js', encoding='utf-8').read()
+bloco_dp = '/*DP-INICIO*/\n' + dp_js + '\n/*DP-FIM*/\n'
+if '/*DP-INICIO*/' in s:
+    s = re.sub(r'/\*DP-INICIO\*/.*?/\*DP-FIM\*/\n', lambda m: bloco_dp, s, flags=re.S)
+else:
+    assert s.count('/*RS-FIM*/\n') == 1
+    s = s.replace('/*RS-FIM*/\n', '/*RS-FIM*/\n' + bloco_dp)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)
