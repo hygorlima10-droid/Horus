@@ -1003,6 +1003,7 @@
   .repasse-box{border:1px dashed var(--border);border-radius:var(--radius-md);padding:10px 12px;}
   .rep-campos{margin-top:8px;}
   .badge-repasse{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
+  .badge.badge-repasse{display:inline-block;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.3;text-align:left;box-sizing:border-box;}   /* o nome do parceiro é longo: quebra a linha em vez de passar do cartão */
   .rep-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);}
   .rep-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .rep-acao{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap;}
@@ -5560,7 +5561,27 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       return { texto: 'Não há honorários neste caso', status: '' };
     }
     if (modal === 'exito' || modal === 'fixo_no_exito' || modal === 'desfecho'){
-      if (c.exito) return { texto: (modal === 'desfecho' ? 'Desfecho registrado: ' : 'Êxito registrado: ') + fmtMoeda(c.exito.valor), status: 'pendente' };
+      if (c.exito){
+        /* êxito/desfecho registrado: as parcelas dele passam a ser contadas (pagas, vencidas, próxima), como nos honorários fixos */
+        var ex0 = c.exito, rot0 = modal === 'desfecho' ? 'Desfecho' + (ex0.desfecho ? ' (' + (ex0.desfecho === 'acordo' ? 'acordo' : 'ação') + ')' : '') : 'Êxito', hoje0 = todayISO();
+        if (ex0.formaPagamento === 'parcelado' && Array.isArray(ex0.parcelas) && ex0.parcelas.length){
+          var pagos0 = ex0.parcelas.filter(function(q){ return q.pago; }).length;
+          if (pagos0 === ex0.parcelas.length) return { texto: rot0 + ': ' + ex0.parcelas.length + 'x, todas pagas', status: 'pago' };
+          var venc0 = ex0.parcelas.filter(function(q){ return !q.pago && q.data && q.data < hoje0; });
+          if (venc0.length){
+            var antiga0 = venc0.reduce(function(a, b){ return a.data < b.data ? a : b; }), d0 = diasDesde(antiga0.data);
+            return { texto: rot0 + ': ' + venc0.length + (venc0.length > 1 ? ' parcelas vencidas há ' : ' parcela vencida há ') + d0 + (d0 === 1 ? ' dia' : ' dias'), status: 'vencido' };
+          }
+          var prox0 = ex0.parcelas.find(function(q){ return !q.pago; });
+          return { texto: rot0 + ': ' + ex0.parcelas.length + 'x, ' + pagos0 + '/' + ex0.parcelas.length + ' pagas' + (prox0 ? ', próx. ' + fmtData(prox0.data) : ''), status: 'pendente' };
+        }
+        if (ex0.formaPagamento === 'avista' && ex0.avista){
+          if (ex0.avista.pago) return { texto: rot0 + ' à vista, recebido em ' + fmtData(ex0.avista.dataRecebimento || ex0.avista.data), status: 'pago' };
+          if (ex0.avista.data && ex0.avista.data < hoje0){ var da0 = diasDesde(ex0.avista.data); return { texto: rot0 + ': vencido há ' + da0 + (da0 === 1 ? ' dia' : ' dias'), status: 'vencido' }; }
+          return { texto: rot0 + ' à vista, vence em ' + fmtData(ex0.avista.data), status: 'pendente' };
+        }
+        return { texto: (modal === 'desfecho' ? 'Desfecho registrado: ' : 'Êxito registrado: ') + fmtMoeda(ex0.valor), status: 'pendente' };
+      }
       if (modal === 'desfecho') return { texto: 'A definir: ' + desfTexto(desfCenario(c, 'acordo')) + ' se houver acordo, ' + desfTexto(desfCenario(c, 'acao')) + ' se a ação prosseguir', status: '' };
       return { texto: c.baseCalculoExito ? c.baseCalculoExito : 'A definir conforme o resultado', status: '' };
     }
@@ -5623,6 +5644,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (c.formaPagamento === 'parcelado' && Array.isArray(c.parcelas) && c.parcelas.length){
       var pagos = c.parcelas.filter(function(p){ return p.pago; }).length, pct = Math.round(pagos / c.parcelas.length * 100);
       barra = '<div class="kc-barra"><i style="width:' + pct + '%"></i></div><div class="kc-sub">' + pagos + ' de ' + c.parcelas.length + (c.parcelas.length === 1 ? ' parcela recebida' : ' parcelas recebidas') + '</div>';
+    } else if (c.exito && c.exito.formaPagamento === 'parcelado' && Array.isArray(c.exito.parcelas) && c.exito.parcelas.length){
+      /* êxito/desfecho registrado e parcelado: a contagem das parcelas dele também aparece no cartão */
+      var pagosE = c.exito.parcelas.filter(function(p){ return p.pago; }).length, pctE = Math.round(pagosE / c.exito.parcelas.length * 100);
+      barra = '<div class="kc-barra"><i style="width:' + pctE + '%"></i></div><div class="kc-sub">' + pagosE + ' de ' + c.exito.parcelas.length + (c.exito.parcelas.length === 1 ? ' parcela recebida' : ' parcelas recebidas') + '</div>';
     }
     return '<div class="kanban-card p-' + c.prioridade + '" draggable="true" data-pcard="' + id + '">' +
       '<div class="kc-top">' + fvIc('user', c.origem === 'murilo' ? '#2A78D6' : '#B7791E') + '<div class="kc-tit"><div class="kc-nome">' + escapeHtml(c.cliente || 'Sem nome') + '</div>' +
