@@ -21,6 +21,9 @@
     l('.financeiro-valor-form') + '{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;margin-top:6px}' +
     l('.financeiro-valor-form input') + '{flex:1 1 100%;min-height:36px;box-sizing:border-box}' +
     l('.financeiro-valor-form button') + '{flex:1 1 0}' +
+    /* Atualizar saldo + Histórico + Lançamentos continuam na mesma linha (também no celular) */
+    l('.fp-acts') + '{display:flex;flex-wrap:nowrap;gap:6px}' +
+    l('.fp-acts > button') + '{padding:0 10px!important;flex:0 1 auto;min-width:0}' +
     l('.financeiro-item:has(.financeiro-valor-form)') + '{flex-wrap:wrap}' +
     l('.financeiro-item-right:has(.financeiro-valor-form)') + '{flex:1 1 100%;width:100%;align-items:stretch}' +
     l('.financeiro-item-actions') + '{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}';

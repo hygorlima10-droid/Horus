@@ -57,7 +57,7 @@ function rvHtml(){
         '<input type="text" class="rv-in" data-rv="nome" data-k="' + escapeHtml(g.k) + '" value="' + escapeHtml(nome) + '" maxlength="120" aria-label="Nome do cliente">' +
         '<div class="rv-chs">' + (g.existe ? '<span class="pb-tg pz">já existe: ' + escapeHtml(g.existe.nome) + '</span><span class="pb-tg">vincular ao existente</span>' : '<span class="pb-tg ok">cliente novo</span>') +
         '<span class="pb-tg nv">' + (papel ? papel + ' · ' : '') + 'parte intimada</span><span class="pb-tg">' + g.docs.length + (g.docs.length === 1 ? ' processo' : ' processos') + '</span></div>' +
-        g.extras.map(function(n, i){ return '<label class="rv-tb"><input type="checkbox" data-rv="tambem" data-k="' + escapeHtml(g.k) + '" data-i="' + i + '"' + ((rvS.tambem[g.k] || {})[i] ? ' checked' : '') + '> também consta como parte intimada: <b>' + escapeHtml(cliTitulo(n)) + '</b> — cadastrar também</label>'; }).join('') +
+        g.extras.map(function(n, i){ return '<label class="rv-tb"><input type="checkbox" data-rv="tambem" data-k="' + escapeHtml(g.k) + '" data-i="' + i + '"' + ((rvS.tambem[g.k] || {})[i] ? ' checked' : '') + '><span>também consta como parte intimada: <b>' + escapeHtml(cliTitulo(n)) + '</b> — cadastrar também</span></label>'; }).join('') +
         '</div></div>';
     });
   }

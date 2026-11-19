@@ -31,6 +31,7 @@ await p.evaluate(() => { const b = document.querySelector('#prSub [data-v="revis
 
 console.log('\n— a lista para conferir');
 check(await visivel('#rvBox'), 'a sub-aba Revisar mostra a lista no alto');
+if (process.env.FOTOS) { await p.locator('#rvBox').screenshot({ path: process.env.FOTOS + '/revisao-lista.png' }); }
 const L = await p.evaluate(() => window.__horusTeste.rvLinhas());
 check(L.grupos.length >= 4 && L.sig.length === 2, 'reconhece as partes e separa as de só iniciais (2): ' + JSON.stringify(L.grupos.map((g) => [g.nome, g.n])) + ' sig=' + L.sig.length);
 let tx = await painel();
