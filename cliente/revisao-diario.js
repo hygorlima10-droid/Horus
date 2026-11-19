@@ -172,9 +172,14 @@ document.addEventListener('change', function(ev){
   var st = document.createElement('style');
   st.textContent = '.rv-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md,16px);padding:12px;margin:0 0 12px}' +
     '.rv-sum{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:var(--t3);line-height:1.45;margin-bottom:6px}.rv-sum span{color:var(--ink-soft);font-size:var(--t2)}' +
-    '.rv-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border)}.rv-ck{width:20px;height:20px;margin-top:8px;accent-color:var(--ink)}' +
-    '.rv-c{min-width:0;display:flex;flex-direction:column;gap:6px}.rv-in{width:100%;font-weight:700}.rv-chs{display:flex;gap:5px;flex-wrap:wrap;align-items:center}' +
-    '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4}.rv-tb input{margin-top:2px;width:18px;height:18px;accent-color:var(--ink)}' +
+    '.rv-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border)}' +
+    /* caixas de marcar e campos de nome no visual do app (antes apareciam com o aspecto padrão do navegador) */
+    '.rv-ck,.rv-tb input{-webkit-appearance:none;appearance:none;display:inline-grid;place-content:center;flex:none;width:22px;height:22px;margin:0;border:1.5px solid var(--ink-soft);border-radius:7px;background:var(--surface);cursor:pointer}.rv-ck{margin-top:9px}.rv-tb input{margin-top:1px}' +
+    '.rv-ck:checked,.rv-tb input:checked{background:var(--ink);border-color:var(--ink)}.rv-ck:checked::after,.rv-tb input:checked::after{content:"";width:6px;height:11px;border:solid var(--bg,#fff);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}' +
+    '.rv-c{min-width:0;display:flex;flex-direction:column;gap:6px}.rv-chs{display:flex;gap:5px;flex-wrap:wrap;align-items:center}' +
+    '.rv-in{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;box-sizing:border-box;min-height:42px;padding:9px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2,var(--surface));color:var(--ink);font:inherit;font-size:var(--t3);font-weight:700;outline:none}' +
+    '.rv-in:focus{border-color:var(--ink);background:var(--surface)}.rv-in::placeholder{font-weight:400;color:var(--ink-soft)}' +
+    '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4;cursor:pointer}' +
     '.rv-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:14px 0 2px}.rv-dica{font-size:var(--t2);color:var(--ink-soft);margin-bottom:2px}.rv-mut{color:var(--ink-soft)}' +
     '.rv-rod{margin-top:12px}.rv-esc{min-height:36px}';
   document.head.appendChild(st);
