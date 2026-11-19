@@ -208,6 +208,13 @@ if '/*RV-INICIO*/' in s:
 else:
     assert s.count('/*AI-FIM*/\n') == 1
     s = s.replace('/*AI-FIM*/\n', '/*AI-FIM*/\n' + bloco_rv)
+fb_js = open(R + 'cliente/financas-botoes.js', encoding='utf-8').read()
+bloco_fb = '/*FB-INICIO*/\n' + fb_js + '\n/*FB-FIM*/\n'
+if '/*FB-INICIO*/' in s:
+    s = re.sub(r'/\*FB-INICIO\*/.*?/\*FB-FIM\*/\n', lambda m: bloco_fb, s, flags=re.S)
+else:
+    assert s.count('/*RV-FIM*/\n') == 1
+    s = s.replace('/*RV-FIM*/\n', '/*RV-FIM*/\n' + bloco_fb)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)
