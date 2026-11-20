@@ -8,6 +8,7 @@ description: Cria e revisa o site institucional do escritório Falone Advogados 
 ## 1. Contexto fixo (não perguntar de novo)
 - Escritório em Goiás; clientes vêm de indicação e de relacionamento com cooperativas. Áreas a destacar: **agronegócio, direito agrário e cível**. Estrutura física grande e advogados que atuam em várias áreas.
 - O site novo **substitui** o de faloneadvogados.com.br (WordPress da agência). Quando pronto: domínio novo próprio, hospedagem em Cloudflare (arquivos estáticos). Nesta fase **não** há WhatsApp integrado, CRM nem formulário que grave dados: só contato por telefone, e-mail, endereço e link comum de WhatsApp.
+- A lista da equipe (nomes, OAB, fotos) será informada pelo proprietário depois; até lá, usar campos marcados como "a definir" e **nunca inventar nomes**.
 - Quem escreve e revisa artigos: **somente advogados**. Todo artigo sai assinado por advogado com nome e número da OAB.
 - Quem aprova é o proprietário (advogado, leigo em design). Explicar em português simples, sem jargão técnico.
 
@@ -49,16 +50,18 @@ Fonte: `Falone.pdf` (logotipo para fundo escuro), `Falone-Fundo-Branco.pdf` (par
   - Off-White (fundos e telas) **#F8F9FA**
   - Folha do logotipo: verde mais vivo (≈ #2A9437), **só dentro do logotipo**, nunca como cor de interface.
 - **Contraste medido (mínimo AA = 4,5:1 para texto):** branco/off-white sobre verde 12–13:1 ✔; **ouro sobre verde 5,35:1 ✔**; grafite sobre off-white 12:1 ✔; verde sobre off-white 12,5:1 ✔; **ouro sobre off-white só 2,3:1 ✘** → ouro **não** serve para texto ou link em fundo claro (só filetes, ícones grandes e detalhes). Em fundo claro, links e botões usam o verde. Botão principal: fundo ouro com texto verde, ou fundo verde com texto off-white. A folha do logotipo sobre o verde tem contraste baixo (≈ 3,4:1): testar o logotipo no cabeçalho verde no esboço antes de aprovar.
-- **Tipografia:** títulos em serifada clássica de alto contraste, como o "FALONE" do logotipo (sugestão: Cormorant Garamond ou Playfair Display); texto e menus em Montserrat (a mesma família do "ADVOGADOS"). Tamanho mínimo 16 px no celular.
+- **Tipografia (decidida por enquanto; o proprietário reavalia depois):** títulos em **Cormorant Garamond** (serifada clássica, como o "FALONE" do logotipo) e texto e menus em **Montserrat** (como o "ADVOGADOS"). Tamanho mínimo 16 px no celular.
 - **Sensação:** sério, regional, de campo e de confiança, elegante e com muito espaço em branco — não "balança e martelo". Telas alternando faixas verde-escuro e off-white, filetes dourados finos, poucos elementos por tela.
 - **Componentes:** cabeçalho simples (Início, Áreas de atuação, Equipe, Artigos, Contato + telefone), um botão principal por tela, cartões de área, cartões de equipe, lista de artigos com data/área/autor, galeria em grade com ampliação, rodapé com endereço, telefones e OAB.
 - **Evitar:** slider automático, pop-up, animação pesada, emoji, ícone de balança, texto sobre foto sem contraste, rolagem lateral, qualquer cor fora da paleta.
 
 ## 5b. Fotos (pastas do Drive: "Escritório - salas Falone" e "inauguração - Falone")
-- **Podem entrar na galeria:** fotos de ambientes sem pessoas — gabinete com a parede do logotipo e poltronas de couro, recepção com painel de mármore verde e luminárias circulares, sala com parede de pedra e estantes iluminadas (pasta "salas", cerca de 15 fotos; as demais da inauguração que mostrem só fachada/ambiente, sem gente).
-- **Não usar:** fotos com pessoas (convidados, clientes, comida e bebida da inauguração) sem **autorização de imagem por escrito** de cada pessoa retratada; foto com marca de terceiros ou de cliente visível (ex.: caderno da Sicoob na mesa, IMG_2906) e foto com reflexo de pessoa; fotos escuras ou desfocadas. Fotos de advogados da casa: só com consentimento e em retrato padronizado.
-- **Legendas neutras:** "Recepção", "Sala de reuniões", "Gabinete". Nada de metros quadrados, número de salas, "amplo", "moderno", "sofisticado" nem comparação.
-- **Tratamento técnico:** originais têm 3–6 MB (até 5712×4284); gerar WebP em 800 e 1600 px de largura, com `width`/`height`, carregamento preguiçoso e cor uniforme (mesma temperatura); remover metadados (EXIF/GPS). Escolher 8 a 12 fotos para a galeria, e 1 horizontal forte para a primeira tela.
+- **Ambientes (galeria da estrutura):** gabinete com a parede do logotipo e poltronas de couro, recepção com painel de mármore verde e luminárias circulares, sala com parede de pedra e estantes iluminadas (pasta "salas", cerca de 15 fotos).
+- **Inauguração:** as fotos com pessoas podem ser usadas (são conhecidos que prestigiaram o evento e já estão em redes sociais; o proprietário dispensou autorização por escrito). Preferir as sóbrias e bem enquadradas; evitar copo de bebida ou comida em primeiro plano e foto desfocada/escura.
+- **Equipe:** o proprietário vai informar quem é da equipe. **Dar ênfase às fotos em que os integrantes do escritório aparecem** (primeira tela, página da equipe, galeria). Legendar só com nome e função de quem for da equipe; **não** legendar convidados com nome nem chamá-los de "clientes".
+- **Não usar:** foto em que apareça marca de terceiro ou de cliente (ex.: caderno da Sicoob na mesa, IMG_2906) e foto com reflexo de pessoa não identificada.
+- **Legendas neutras:** "Recepção", "Sala de reuniões", "Gabinete", "Inauguração do escritório". Nada de metros quadrados, número de salas, "amplo", "moderno", "sofisticado" nem comparação.
+- **Tratamento técnico:** originais têm 3–6 MB (até 5712×4284); gerar WebP em 800 e 1600 px de largura, com `width`/`height`, carregamento preguiçoso e cor uniforme; remover metadados (EXIF/GPS). Escolher 8 a 12 fotos para a galeria e 1 horizontal forte para a primeira tela.
 
 ## 6. Estrutura de páginas
 1. **Início**: frase curta do que o escritório faz e onde; 3 áreas principais; últimos artigos; equipe em destaque; endereço e contato.
