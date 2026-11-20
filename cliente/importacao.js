@@ -328,7 +328,16 @@ function impHtmlFim(){
 }
 
 /* ---------- revisão: vincular, cliente novo, excluir ---------- */
-function impContaRev(){ return prDocs.filter(function(d){ return d.revisar && !d.arquivado; }).length; }
+/* processos que faltam vincular a um cliente (importados em revisão + cadastrados sem cliente), do escritório todo, sem depender do filtro "Meus":
+   { numero sem máscara: { num, sug: [ids do cliente sugerido] | null, motivo } } */
+function prRevMapa(){
+  var m = {}, d = lgRevCalcular();
+  d.semCli.forEach(function(x){ m[x.num] = { num: x.num, sug: x.sug, motivo: x.motivo }; });
+  prDocs.forEach(function(doc){ if (doc.revisar && !doc.arquivado){ var n = prNum(doc.numero); if (n && !m[n]) m[n] = { num: n, sug: null, motivo: '' }; } });
+  return m;
+}
+function impContaRev(){ return Object.keys(prRevMapa()).length; }
+function impSugestaoId(d, num){ if (d && d.sugestaoClienteId) return d.sugestaoClienteId; var x = prRevMapa()[num]; return x && x.sug && x.sug[0] ? x.sug[0] : ''; }
 function impDocPorNum(num){ var r = prMapa().m[num]; return r && r.doc ? r.doc : null; }
 /* as gravações dos processos da revisão entram numa fila (uma de cada vez, cada uma montada em cima do que a anterior gravou), para um vínculo
    e uma reavaliação ao mesmo tempo não se atropelarem; "cond" confere o estado no momento de gravar */
@@ -353,11 +362,11 @@ function impVincular(num, clienteId, opc){
   var nome = doc.parteNome || '';
   return impSalvarDoc(doc, { clienteIds: ids, revisar: '', revisadoEm: new Date().toISOString(), sugestaoClienteId: '' }).then(function(){
     if (nome && !(opc && opc.semApelido)) try{ prAprenderApelido(clienteId, nome); }catch(e){}
-    toast('Processo vinculado a ' + c.nome + '.'); prDepois();
+    var falta = impContaRev(); toast('Processo vinculado a ' + c.nome + '.' + (falta ? ' Faltam ' + falta + '.' : ' Revisão concluída.')); prDepois();
     impPerguntarAuto(clienteId, nome);
   }).catch(function(e){ toast('Não consegui vincular: ' + e.message); });
 }
-function impVincularSugerido(num){ var d = impDocPorNum(num); if (d && d.sugestaoClienteId) impVincular(num, d.sugestaoClienteId); }
+function impVincularSugerido(num){ var d = impDocPorNum(num), id = impSugestaoId(d, num); if (d && id) impVincular(num, id); }
 function impNovoCliente(num){
   var d = impDocPorNum(num); if (!d) return;
   abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false, cliente: c }); } });

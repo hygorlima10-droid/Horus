@@ -179,6 +179,7 @@ function prLinhaReu(r){
   return '<div class="pb-proc">Réu: ' + escapeHtml(reu) + '</div>';
 }
 function prRender(){
+  var yRev = (prS.sub === 'lista' && prS.filtro === 'revisar') ? (window.pageYOffset || 0) : -1;   /* na revisão, depois de cada ação a lista continua no mesmo ponto */
   prMontarTela(); var w = qs('prWrap'); if (!w) return;
   /* sub-abas padrão (Fase 2): Resumo, Lista, Revisar (só quando há importados para conferir) e Análises; a última usada fica lembrada */
   if (!prS.mdOk){ prS.mdOk = 1; if (prS.sub === 'lista' && prS.filtro !== 'revisar'){ var s0 = mdInicial('processos', ['lista', 'revisar', 'analises']); if (s0 === 'revisar'){ prS.filtro = 'revisar'; } else prS.sub = s0; } }
@@ -197,6 +198,7 @@ function prRender(){
   var nRev = impContaRev(); if (!nRev && prS.filtro === 'revisar') prS.filtro = 'andamento';
   qs('prSeg').innerHTML = [['andamento', 'Em andamento'], ['prazo', 'Com prazo'], ['todos', 'Todos']].map(function(f){ return '<button type="button" class="seg-btn' + (prS.filtro === f[0] ? ' active' : '') + '" data-pr="filtro" data-v="' + f[0] + '">' + f[1] + '</button>'; }).join('');
   prAvisoVinc(); prPainel(); prMenuPainel(); prRenderLista();
+  if (yRev >= 0 && prS.filtro === 'revisar') try{ window.scrollTo(0, yRev); }catch(e){}
 }
 function prMenuPainel(){
   var el = qs('prMenu'), b = qs('prMenuBtn'); if (b) b.classList.toggle('ativo', !!prS.mAberto); if (!el) return;
@@ -226,13 +228,13 @@ function prPainel(){
 /* a lista que o filtro e a busca deixam (usada na tela e nos relatórios) */
 function prFiltrar(filtro){
   var mp = prMapa(), q = normNome(prS.busca), pmEsp = prS.f.esp === 'parado' ? pendentesPorDoc() : null; filtro = filtro || prS.filtro;
-  var E = window.__horusEscopo, so = !!(E && E.ativo && E.modo === 'meus');   /* "Meus": só os processos cadastrados com um dos meus advogados */
+  var E = window.__horusEscopo, so = !!(E && E.ativo && E.modo === 'meus'), rv = filtro === 'revisar' ? prRevMapa() : null;   /* "Meus": só os processos cadastrados com um dos meus advogados */
   return mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(r){
     var arq = prArquivado(r);
-    if (so && !(E.meuNum(r.num) || (r.doc && E.meuDoc(r.doc)))) return false;   /* "Meus": o processo é meu se eu estou nele ou em qualquer Inicial, Acordo ou Alvará do mesmo número */
+    if (so && filtro !== 'revisar' && !(E.meuNum(r.num) || (r.doc && E.meuDoc(r.doc)))) return false;   /* a revisão de clientes é do escritório inteiro: não depende do "Meus" */   /* "Meus": o processo é meu se eu estou nele ou em qualquer Inicial, Acordo ou Alvará do mesmo número */
     if (filtro === 'andamento' && arq) return false;
     if (filtro === 'prazo' && (arq || !prPrazosAbertos(r).length)) return false;
-    if (filtro === 'revisar' && (arq || !(r.doc && r.doc.revisar))) return false;
+    if (filtro === 'revisar' && (arq || !(r.doc && rv[r.num]))) return false;
     if (prS.f.cli === '__sem'){ if (prClienteIds(r).length) return false; }
     else if (prS.f.cli && prClienteIds(r).indexOf(prS.f.cli) < 0) return false;
     if (prS.f.orgao && prOrgaoDe(r) !== prS.f.orgao) return false;
@@ -247,14 +249,14 @@ function prFiltrar(filtro){
 }
 /* cartão em revisão: vincular ao cliente sugerido, escolher outro, cadastrar um novo ou excluir o processo do sistema */
 function prAcoesRevisao(r){
-  var n = escapeHtml(r.num), sug = r.doc.sugestaoClienteId ? clienteById(r.doc.sugestaoClienteId) : null, b = function(a, cls, t){ return '<button type="button" class="btn ' + cls + ' pb-b" data-pr="' + a + '" data-n="' + n + '">' + t + '</button>'; };
+  var sid = impSugestaoId(r.doc, r.num), n = escapeHtml(r.num), sug = sid ? (clienteById(sid) || (window.__horusEscopo && window.__horusEscopo.clienteNome(sid) ? { id: sid, nome: window.__horusEscopo.clienteNome(sid) } : null)) : null, b = function(a, cls, t){ return '<button type="button" class="btn ' + cls + ' pb-b" data-pr="' + a + '" data-n="' + n + '">' + t + '</button>'; };
   return '<div class="pb-aviso" style="margin-top:8px">' + (sug ? 'Cliente parecido: <b>' + escapeHtml(sug.nome) + '</b>' : 'Nenhum cliente parecido. Escolha um cliente ou cadastre um novo.') + '</div>' +
     '<div class="pb-acts">' + (sug ? b('rev-vinc', 'btn-primary', 'Vincular a ' + escapeHtml(sug.nome.length > 22 ? sug.nome.slice(0, 22) + '…' : sug.nome)) : '') + b('rev-esc', sug ? 'btn-ghost' : 'btn-primary', 'Escolher outro cliente') + b('rev-novo', 'btn-ghost', 'Cadastrar cliente novo') + '</div>' +
-    '<div class="pb-acts">' + b('abrir', 'btn-ghost', 'Abrir') + b('rev-del', 'btn-ghost', 'Excluir processo') + '</div>';
+    '<div class="pb-acts">' + b('abrir', 'btn-ghost', 'Abrir ficha') + b('rev-del', 'btn-ghost', 'Excluir processo') + '</div>';
 }
 function prRenderLista(){
   var box = qs('prLista'); if (!box) return;
-  var pm = pendentesPorDoc(), linhas = prFiltrar();
+  var pm = pendentesPorDoc(), linhas = prFiltrar(), rvMapa = prRevMapa();
   var info = {}; linhas.forEach(function(r){ var pz = prPrazosAbertos(r); info[r.num] = { pz: pz, prox: pz.length ? pz[0].data : '9999', ult: prUltAtividade(r) }; });
   linhas.sort(function(a, b){ return info[a.num].prox.localeCompare(info[b.num].prox) || info[b.num].ult.localeCompare(info[a.num].ult) || prTitulo(a).localeCompare(prTitulo(b), 'pt-BR'); });
   if (!linhas.length){ box.innerHTML = '<div class="financeiro-vazio">' + (prS.busca || prFiltrosAtivos() ? 'Nenhum processo com essa busca ou esses filtros.' : (prS.filtro === 'andamento' ? 'Nenhum processo em andamento. Toque em “Novo processo” ou cadastre pela aba Publicações.' : 'Nada aqui.')) + '</div>'; return; }
@@ -276,7 +278,7 @@ function prRenderLista(){
     if (prParado(r, pm)) tags += '<span class="pb-tg pz">sem andamento há 60 dias · arquivar?</span>';
     if (arq) tags += '<span class="pb-tg">arquivado' + (r.doc.motivoArquivo ? ' · ' + escapeHtml(r.doc.motivoArquivo) : '') + '</span>';
     var emb = origens.map(function(o){ return o === 'so' ? 'Só processo' : PR_LBL[o]; }).join(' · ');
-    var nn = escapeHtml(r.num), rev = r.doc && r.doc.revisar && !arq;
+    var nn = escapeHtml(r.num), rev = r.doc && !arq && !!rvMapa[r.num];
     var maisBtn = rev ? '' : '<button type="button" class="btn btn-ghost pb-b pr-mais" data-pr="cm" data-n="' + nn + '" aria-label="Mais ações" aria-expanded="' + (prS.cm === r.num ? 'true' : 'false') + '" title="Mais ações">⋯</button>';
     var menuCard = (!rev && prS.cm === r.num) ? '<div class="pb-cm"><button type="button" class="pb-cmi" data-pr="card-prazo" data-n="' + nn + '">Novo prazo</button><button type="button" class="pb-cmi" data-pr="card-rel" data-n="' + nn + '">Relatório</button>' + (arq ? '<button type="button" class="pb-cmi" data-pr="reabrir" data-n="' + nn + '">Reabrir processo</button>' : '<button type="button" class="pb-cmi" data-pr="arquivar" data-n="' + nn + '">Concluir e arquivar</button>') + '</div>' : '';
     return '<div class="pb-card pr-card pr-toque' + (arq ? ' lida' : '') + '" style="--pb-bar:' + PR_COR[origens[0]] + '" data-pr-card="' + nn + '" data-pr="abrir" data-n="' + nn + '"><div class="pb-l1"><span>' + escapeHtml(orgao || 'Processo') + '</span><span class="pb-tipo">' + escapeHtml(emb) + '</span>' + maisBtn + '</div>' +
@@ -1008,7 +1010,7 @@ function prIniciaisPend(comArquivadas){
 function prAvisoVinc(){
   var el = qs('prAvisoVinc'); if (!el) return;
   var n = prIniciaisPend(false).length, nr = impContaRev(), rev = '';
-  if (nr && prS.filtro === 'revisar') rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Revisão dos importados</div><div class="pb-aviso">Mostrando só os <b>' + nr + '</b> ' + (nr === 1 ? 'processo' : 'processos') + ' que faltam vincular a um cliente: vincule, escolha outro cliente, cadastre um novo ou exclua o que não quiser no sistema.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pr="filtro" data-v="andamento">Voltar à lista completa</button></div></div>';
+  if (nr && prS.filtro === 'revisar') rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Revisão do escritório</div><div class="pb-aviso">Faltam <b>' + nr + '</b> ' + (nr === 1 ? 'processo' : 'processos') + ' sem cliente (de todos os advogados: esta lista não depende do filtro “Meus”). Vincule, escolha outro cliente, cadastre um novo ou exclua o que não quiser no sistema; ao resolver um, a lista segue no mesmo ponto.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pr="filtro" data-v="andamento">Voltar à lista completa</button></div></div>';
   /* os avisos "Importados esperando cliente", "Iniciais sem processo" e "Ligações a revisar" ficam no selo Pendências do cabeçalho */
   el.innerHTML = rev;
 }

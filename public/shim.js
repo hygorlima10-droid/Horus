@@ -60,6 +60,9 @@
     if (nome === 'clientes') { var nm = nomesMeus(); return !!ESC.procClienteIds[id] || !!nm[normN(d && d.nome)]; }
     return true;
   }
+  /* o cliente existe no escritório (mesmo que o filtro "Meus" o esconda da lista): as revisões de ligação precisam desta checagem, não da lista filtrada */
+  ESC.clienteExiste = function (id) { var c = colecoes.clientes; return !!(c && c.mapa && c.mapa[id]); };
+  ESC.clienteNome = function (id) { var c = colecoes.clientes, d = c && c.mapa ? c.mapa[id] : null; return d ? (d.nome || '') : ''; };
   ESC.meuDoc = function (d) { recalcNums(); return souMeu(d); };
   ESC.meuNum = function (n) { recalcNums(); return !!ESC.nums[String(n || '').replace(/\D/g, '')]; };
   ESC.aplicar = function (modo) {

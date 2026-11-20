@@ -222,6 +222,13 @@ if '/*PV-INICIO*/' in s:
 else:
     assert s.count('/*FB-FIM*/\n') == 1
     s = s.replace('/*FB-FIM*/\n', '/*FB-FIM*/\n' + bloco_pv)
+bp_js = open(R + 'cliente/botoes-padrao.js', encoding='utf-8').read()
+bloco_bp = '/*BP-INICIO*/\n' + bp_js + '\n/*BP-FIM*/\n'
+if '/*BP-INICIO*/' in s:
+    s = re.sub(r'/\*BP-INICIO\*/.*?/\*BP-FIM\*/\n', lambda m: bloco_bp, s, flags=re.S)
+else:
+    assert s.count('/*PV-FIM*/\n') == 1
+    s = s.replace('/*PV-FIM*/\n', '/*PV-FIM*/\n' + bloco_bp)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)
@@ -557,6 +564,20 @@ def _unico(m):
     if m.group(1) in _vistos: return ''
     _vistos.add(m.group(1)); return m.group(0)
 s = re.sub(r'<symbol id="([^"]+)"[^>]*>.*?</symbol>\n?', _unico, s, flags=re.S)
+# os ajustes "rep" que se sobrepõem se reaplicam a cada montagem e acumulam cópias idênticas (inofensivas, mas incham o arquivo): normaliza
+s = re.sub(r"(processos:'Processos', delegadas:'Delegadas', )+", "processos:'Processos', delegadas:'Delegadas', ", s)
+_PRE = ('try{', 'qs(', 'else if', 'if (tab', 'if (activeTab')
+_l = s.split('\n'); _mudou = True
+while _mudou:   # blocos de 1 a 4 linhas repetidos em seguida viram um só
+    _mudou = False
+    for _k in (1, 2, 3, 4):
+        _i = 0
+        while _i + 2 * _k <= len(_l):
+            _b = _l[_i:_i + _k]
+            if all(x.strip().startswith(_PRE) for x in _b) and _b == _l[_i + _k:_i + 2 * _k]:
+                del _l[_i + _k:_i + 2 * _k]; _mudou = True
+            else: _i += 1
+s = '\n'.join(_l)
 open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

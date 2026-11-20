@@ -11,12 +11,12 @@ function pdLista(){
   try{ n = dono ? agSemResp().length : 0; if (n) l.push({ k: 'agrev', n: n, t: n + (n === 1 ? ' prazo ou audiência sem responsável' : ' prazos e audiências sem responsável'), d: 'Quem é responsável vê o item na própria agenda.', b: 'Definir' }); }catch(e){}
   try{
     if (eu.papel && eu.papel !== 'advogado'){
-      var r = lgRevCalcular(), p = []; n = r.sem.length + r.semCli.length + r.dif.length;
-      if (r.sem.length) p.push(r.sem.length + ' sem processo cadastrado'); if (r.semCli.length) p.push(r.semCli.length + ' sem cliente'); if (r.dif.length) p.push(r.dif.length + ' com cliente diferente');
-      if (n) l.push({ k: 'lg', n: n, t: 'Ligações a revisar', d: p.join(' · '), b: 'Revisar' });
+      var r = lgRevCalcular(), p = []; n = r.sem.length + r.dif.length;
+      if (r.sem.length) p.push(r.sem.length + ' sem processo cadastrado'); if (r.dif.length) p.push(r.dif.length + ' com cliente diferente');
+      if (n) l.push({ k: 'lg', n: n, t: 'Atos com ligação a conferir', d: p.join(' · ') + ' (Iniciais, Acordos e Alvarás).', b: 'Revisar' });
     }
   }catch(e){}
-  try{ n = impContaRev(); if (n) l.push({ k: 'imp', n: n, t: n + (n === 1 ? ' processo importado espera o cliente' : ' processos importados esperam o cliente'), d: 'Vieram do Diário Oficial e faltam vincular a um cliente.', b: 'Revisar' }); }catch(e){}
+  try{ n = impContaRev(); if (n) l.push({ k: 'imp', n: n, t: n + (n === 1 ? ' processo sem cliente' : ' processos sem cliente'), d: 'Importados do Diário Oficial e cadastrados sem cliente: uma lista só, do escritório todo.', b: 'Revisar' }); }catch(e){}
   try{ n = prIniciaisPend(false).length; if (n) l.push({ k: 'ini', n: n, t: n + (n === 1 ? ' Inicial sem processo cadastrado' : ' Iniciais sem processo cadastrado'), d: 'Ao cadastrar o processo, escolha “Vincular a uma Inicial cadastrada”. Se a Inicial não tem processo, marque isso no cadastro dela.', b: '' }); }catch(e){}
   return l;
 }

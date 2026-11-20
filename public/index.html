@@ -1921,6 +1921,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4928,208 +4934,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
-    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
-    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ itens = itens.filter(ppItemAtencaoOk); }catch(e){}
@@ -10337,226 +10141,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyAgenda').style.display = (tab === 'agenda') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
-    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
-    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10586,226 +10170,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'agenda') agRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
-    else if (tab === 'delegadas') dgAbrir();
-    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10813,7 +10177,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10827,226 +10191,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
-    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
-    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'configuracoes') qs('subtitle').textContent = 'Notificações, backup e exportações';
@@ -20761,6 +19905,7 @@ function prLinhaReu(r){
   return '<div class="pb-proc">Réu: ' + escapeHtml(reu) + '</div>';
 }
 function prRender(){
+  var yRev = (prS.sub === 'lista' && prS.filtro === 'revisar') ? (window.pageYOffset || 0) : -1;   /* na revisão, depois de cada ação a lista continua no mesmo ponto */
   prMontarTela(); var w = qs('prWrap'); if (!w) return;
   /* sub-abas padrão (Fase 2): Resumo, Lista, Revisar (só quando há importados para conferir) e Análises; a última usada fica lembrada */
   if (!prS.mdOk){ prS.mdOk = 1; if (prS.sub === 'lista' && prS.filtro !== 'revisar'){ var s0 = mdInicial('processos', ['lista', 'revisar', 'analises']); if (s0 === 'revisar'){ prS.filtro = 'revisar'; } else prS.sub = s0; } }
@@ -20779,6 +19924,7 @@ function prRender(){
   var nRev = impContaRev(); if (!nRev && prS.filtro === 'revisar') prS.filtro = 'andamento';
   qs('prSeg').innerHTML = [['andamento', 'Em andamento'], ['prazo', 'Com prazo'], ['todos', 'Todos']].map(function(f){ return '<button type="button" class="seg-btn' + (prS.filtro === f[0] ? ' active' : '') + '" data-pr="filtro" data-v="' + f[0] + '">' + f[1] + '</button>'; }).join('');
   prAvisoVinc(); prPainel(); prMenuPainel(); prRenderLista();
+  if (yRev >= 0 && prS.filtro === 'revisar') try{ window.scrollTo(0, yRev); }catch(e){}
 }
 function prMenuPainel(){
   var el = qs('prMenu'), b = qs('prMenuBtn'); if (b) b.classList.toggle('ativo', !!prS.mAberto); if (!el) return;
@@ -20808,13 +19954,13 @@ function prPainel(){
 /* a lista que o filtro e a busca deixam (usada na tela e nos relatórios) */
 function prFiltrar(filtro){
   var mp = prMapa(), q = normNome(prS.busca), pmEsp = prS.f.esp === 'parado' ? pendentesPorDoc() : null; filtro = filtro || prS.filtro;
-  var E = window.__horusEscopo, so = !!(E && E.ativo && E.modo === 'meus');   /* "Meus": só os processos cadastrados com um dos meus advogados */
+  var E = window.__horusEscopo, so = !!(E && E.ativo && E.modo === 'meus'), rv = filtro === 'revisar' ? prRevMapa() : null;   /* "Meus": só os processos cadastrados com um dos meus advogados */
   return mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(r){
     var arq = prArquivado(r);
-    if (so && !(E.meuNum(r.num) || (r.doc && E.meuDoc(r.doc)))) return false;   /* "Meus": o processo é meu se eu estou nele ou em qualquer Inicial, Acordo ou Alvará do mesmo número */
+    if (so && filtro !== 'revisar' && !(E.meuNum(r.num) || (r.doc && E.meuDoc(r.doc)))) return false;   /* a revisão de clientes é do escritório inteiro: não depende do "Meus" */   /* "Meus": o processo é meu se eu estou nele ou em qualquer Inicial, Acordo ou Alvará do mesmo número */
     if (filtro === 'andamento' && arq) return false;
     if (filtro === 'prazo' && (arq || !prPrazosAbertos(r).length)) return false;
-    if (filtro === 'revisar' && (arq || !(r.doc && r.doc.revisar))) return false;
+    if (filtro === 'revisar' && (arq || !(r.doc && rv[r.num]))) return false;
     if (prS.f.cli === '__sem'){ if (prClienteIds(r).length) return false; }
     else if (prS.f.cli && prClienteIds(r).indexOf(prS.f.cli) < 0) return false;
     if (prS.f.orgao && prOrgaoDe(r) !== prS.f.orgao) return false;
@@ -20829,14 +19975,14 @@ function prFiltrar(filtro){
 }
 /* cartão em revisão: vincular ao cliente sugerido, escolher outro, cadastrar um novo ou excluir o processo do sistema */
 function prAcoesRevisao(r){
-  var n = escapeHtml(r.num), sug = r.doc.sugestaoClienteId ? clienteById(r.doc.sugestaoClienteId) : null, b = function(a, cls, t){ return '<button type="button" class="btn ' + cls + ' pb-b" data-pr="' + a + '" data-n="' + n + '">' + t + '</button>'; };
+  var sid = impSugestaoId(r.doc, r.num), n = escapeHtml(r.num), sug = sid ? (clienteById(sid) || (window.__horusEscopo && window.__horusEscopo.clienteNome(sid) ? { id: sid, nome: window.__horusEscopo.clienteNome(sid) } : null)) : null, b = function(a, cls, t){ return '<button type="button" class="btn ' + cls + ' pb-b" data-pr="' + a + '" data-n="' + n + '">' + t + '</button>'; };
   return '<div class="pb-aviso" style="margin-top:8px">' + (sug ? 'Cliente parecido: <b>' + escapeHtml(sug.nome) + '</b>' : 'Nenhum cliente parecido. Escolha um cliente ou cadastre um novo.') + '</div>' +
     '<div class="pb-acts">' + (sug ? b('rev-vinc', 'btn-primary', 'Vincular a ' + escapeHtml(sug.nome.length > 22 ? sug.nome.slice(0, 22) + '…' : sug.nome)) : '') + b('rev-esc', sug ? 'btn-ghost' : 'btn-primary', 'Escolher outro cliente') + b('rev-novo', 'btn-ghost', 'Cadastrar cliente novo') + '</div>' +
-    '<div class="pb-acts">' + b('abrir', 'btn-ghost', 'Abrir') + b('rev-del', 'btn-ghost', 'Excluir processo') + '</div>';
+    '<div class="pb-acts">' + b('abrir', 'btn-ghost', 'Abrir ficha') + b('rev-del', 'btn-ghost', 'Excluir processo') + '</div>';
 }
 function prRenderLista(){
   var box = qs('prLista'); if (!box) return;
-  var pm = pendentesPorDoc(), linhas = prFiltrar();
+  var pm = pendentesPorDoc(), linhas = prFiltrar(), rvMapa = prRevMapa();
   var info = {}; linhas.forEach(function(r){ var pz = prPrazosAbertos(r); info[r.num] = { pz: pz, prox: pz.length ? pz[0].data : '9999', ult: prUltAtividade(r) }; });
   linhas.sort(function(a, b){ return info[a.num].prox.localeCompare(info[b.num].prox) || info[b.num].ult.localeCompare(info[a.num].ult) || prTitulo(a).localeCompare(prTitulo(b), 'pt-BR'); });
   if (!linhas.length){ box.innerHTML = '<div class="financeiro-vazio">' + (prS.busca || prFiltrosAtivos() ? 'Nenhum processo com essa busca ou esses filtros.' : (prS.filtro === 'andamento' ? 'Nenhum processo em andamento. Toque em “Novo processo” ou cadastre pela aba Publicações.' : 'Nada aqui.')) + '</div>'; return; }
@@ -20858,7 +20004,7 @@ function prRenderLista(){
     if (prParado(r, pm)) tags += '<span class="pb-tg pz">sem andamento há 60 dias · arquivar?</span>';
     if (arq) tags += '<span class="pb-tg">arquivado' + (r.doc.motivoArquivo ? ' · ' + escapeHtml(r.doc.motivoArquivo) : '') + '</span>';
     var emb = origens.map(function(o){ return o === 'so' ? 'Só processo' : PR_LBL[o]; }).join(' · ');
-    var nn = escapeHtml(r.num), rev = r.doc && r.doc.revisar && !arq;
+    var nn = escapeHtml(r.num), rev = r.doc && !arq && !!rvMapa[r.num];
     var maisBtn = rev ? '' : '<button type="button" class="btn btn-ghost pb-b pr-mais" data-pr="cm" data-n="' + nn + '" aria-label="Mais ações" aria-expanded="' + (prS.cm === r.num ? 'true' : 'false') + '" title="Mais ações">⋯</button>';
     var menuCard = (!rev && prS.cm === r.num) ? '<div class="pb-cm"><button type="button" class="pb-cmi" data-pr="card-prazo" data-n="' + nn + '">Novo prazo</button><button type="button" class="pb-cmi" data-pr="card-rel" data-n="' + nn + '">Relatório</button>' + (arq ? '<button type="button" class="pb-cmi" data-pr="reabrir" data-n="' + nn + '">Reabrir processo</button>' : '<button type="button" class="pb-cmi" data-pr="arquivar" data-n="' + nn + '">Concluir e arquivar</button>') + '</div>' : '';
     return '<div class="pb-card pr-card pr-toque' + (arq ? ' lida' : '') + '" style="--pb-bar:' + PR_COR[origens[0]] + '" data-pr-card="' + nn + '" data-pr="abrir" data-n="' + nn + '"><div class="pb-l1"><span>' + escapeHtml(orgao || 'Processo') + '</span><span class="pb-tipo">' + escapeHtml(emb) + '</span>' + maisBtn + '</div>' +
@@ -21591,7 +20737,7 @@ function prIniciaisPend(comArquivadas){
 function prAvisoVinc(){
   var el = qs('prAvisoVinc'); if (!el) return;
   var n = prIniciaisPend(false).length, nr = impContaRev(), rev = '';
-  if (nr && prS.filtro === 'revisar') rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Revisão dos importados</div><div class="pb-aviso">Mostrando só os <b>' + nr + '</b> ' + (nr === 1 ? 'processo' : 'processos') + ' que faltam vincular a um cliente: vincule, escolha outro cliente, cadastre um novo ou exclua o que não quiser no sistema.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pr="filtro" data-v="andamento">Voltar à lista completa</button></div></div>';
+  if (nr && prS.filtro === 'revisar') rev = '<div class="pb-sec" style="margin:0 0 8px"><div class="pb-sec-t">Revisão do escritório</div><div class="pb-aviso">Faltam <b>' + nr + '</b> ' + (nr === 1 ? 'processo' : 'processos') + ' sem cliente (de todos os advogados: esta lista não depende do filtro “Meus”). Vincule, escolha outro cliente, cadastre um novo ou exclua o que não quiser no sistema; ao resolver um, a lista segue no mesmo ponto.</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-pr="filtro" data-v="andamento">Voltar à lista completa</button></div></div>';
   /* os avisos "Importados esperando cliente", "Iniciais sem processo" e "Ligações a revisar" ficam no selo Pendências do cabeçalho */
   el.innerHTML = rev;
 }
@@ -22656,7 +21802,16 @@ function impHtmlFim(){
 }
 
 /* ---------- revisão: vincular, cliente novo, excluir ---------- */
-function impContaRev(){ return prDocs.filter(function(d){ return d.revisar && !d.arquivado; }).length; }
+/* processos que faltam vincular a um cliente (importados em revisão + cadastrados sem cliente), do escritório todo, sem depender do filtro "Meus":
+   { numero sem máscara: { num, sug: [ids do cliente sugerido] | null, motivo } } */
+function prRevMapa(){
+  var m = {}, d = lgRevCalcular();
+  d.semCli.forEach(function(x){ m[x.num] = { num: x.num, sug: x.sug, motivo: x.motivo }; });
+  prDocs.forEach(function(doc){ if (doc.revisar && !doc.arquivado){ var n = prNum(doc.numero); if (n && !m[n]) m[n] = { num: n, sug: null, motivo: '' }; } });
+  return m;
+}
+function impContaRev(){ return Object.keys(prRevMapa()).length; }
+function impSugestaoId(d, num){ if (d && d.sugestaoClienteId) return d.sugestaoClienteId; var x = prRevMapa()[num]; return x && x.sug && x.sug[0] ? x.sug[0] : ''; }
 function impDocPorNum(num){ var r = prMapa().m[num]; return r && r.doc ? r.doc : null; }
 /* as gravações dos processos da revisão entram numa fila (uma de cada vez, cada uma montada em cima do que a anterior gravou), para um vínculo
    e uma reavaliação ao mesmo tempo não se atropelarem; "cond" confere o estado no momento de gravar */
@@ -22681,11 +21836,11 @@ function impVincular(num, clienteId, opc){
   var nome = doc.parteNome || '';
   return impSalvarDoc(doc, { clienteIds: ids, revisar: '', revisadoEm: new Date().toISOString(), sugestaoClienteId: '' }).then(function(){
     if (nome && !(opc && opc.semApelido)) try{ prAprenderApelido(clienteId, nome); }catch(e){}
-    toast('Processo vinculado a ' + c.nome + '.'); prDepois();
+    var falta = impContaRev(); toast('Processo vinculado a ' + c.nome + '.' + (falta ? ' Faltam ' + falta + '.' : ' Revisão concluída.')); prDepois();
     impPerguntarAuto(clienteId, nome);
   }).catch(function(e){ toast('Não consegui vincular: ' + e.message); });
 }
-function impVincularSugerido(num){ var d = impDocPorNum(num); if (d && d.sugestaoClienteId) impVincular(num, d.sugestaoClienteId); }
+function impVincularSugerido(num){ var d = impDocPorNum(num), id = impSugestaoId(d, num); if (d && id) impVincular(num, id); }
 function impNovoCliente(num){
   var d = impDocPorNum(num); if (!d) return;
   abrirClienteEdit({ nome: cliTitulo(d.parteNome || ''), pagador: 'cliente', aoSalvar: function(c){ impVincular(num, c.id, { semApelido: false, cliente: c }); } });
@@ -23608,12 +22763,12 @@ function pdLista(){
   try{ n = dono ? agSemResp().length : 0; if (n) l.push({ k: 'agrev', n: n, t: n + (n === 1 ? ' prazo ou audiência sem responsável' : ' prazos e audiências sem responsável'), d: 'Quem é responsável vê o item na própria agenda.', b: 'Definir' }); }catch(e){}
   try{
     if (eu.papel && eu.papel !== 'advogado'){
-      var r = lgRevCalcular(), p = []; n = r.sem.length + r.semCli.length + r.dif.length;
-      if (r.sem.length) p.push(r.sem.length + ' sem processo cadastrado'); if (r.semCli.length) p.push(r.semCli.length + ' sem cliente'); if (r.dif.length) p.push(r.dif.length + ' com cliente diferente');
-      if (n) l.push({ k: 'lg', n: n, t: 'Ligações a revisar', d: p.join(' · '), b: 'Revisar' });
+      var r = lgRevCalcular(), p = []; n = r.sem.length + r.dif.length;
+      if (r.sem.length) p.push(r.sem.length + ' sem processo cadastrado'); if (r.dif.length) p.push(r.dif.length + ' com cliente diferente');
+      if (n) l.push({ k: 'lg', n: n, t: 'Atos com ligação a conferir', d: p.join(' · ') + ' (Iniciais, Acordos e Alvarás).', b: 'Revisar' });
     }
   }catch(e){}
-  try{ n = impContaRev(); if (n) l.push({ k: 'imp', n: n, t: n + (n === 1 ? ' processo importado espera o cliente' : ' processos importados esperam o cliente'), d: 'Vieram do Diário Oficial e faltam vincular a um cliente.', b: 'Revisar' }); }catch(e){}
+  try{ n = impContaRev(); if (n) l.push({ k: 'imp', n: n, t: n + (n === 1 ? ' processo sem cliente' : ' processos sem cliente'), d: 'Importados do Diário Oficial e cadastrados sem cliente: uma lista só, do escritório todo.', b: 'Revisar' }); }catch(e){}
   try{ n = prIniciaisPend(false).length; if (n) l.push({ k: 'ini', n: n, t: n + (n === 1 ? ' Inicial sem processo cadastrado' : ' Iniciais sem processo cadastrado'), d: 'Ao cadastrar o processo, escolha “Vincular a uma Inicial cadastrada”. Se a Inicial não tem processo, marque isso no cadastro dela.', b: '' }); }catch(e){}
   return l;
 }
@@ -25135,6 +24290,9 @@ function lgUnirAdvogados(links, doc){
   (doc ? [doc] : []).concat(links.map(function(l){ return l.doc; })).forEach(function(d){ (Array.isArray(d.advogados) ? d.advogados : []).forEach(function(a){ if (a && a.oab && !vistos[a.oab]){ vistos[a.oab] = 1; out.push({ oab: a.oab, nome: a.nome || '' }); } }); });
   return out;
 }
+/* clientes de verdade: o filtro "Meus" esconde da lista os clientes dos colegas, mas eles existem — não podem contar como "sem cliente" */
+function lgIdsReais(ids){ var E = window.__horusEscopo; return (Array.isArray(ids) ? ids : []).filter(function(id){ return E && E.clienteExiste ? E.clienteExiste(id) : !!clienteById(id); }); }
+function lgNomeCli(id){ var E = window.__horusEscopo; return nomeCliente(id) || (E && E.clienteNome ? E.clienteNome(id) : ''); }
 function lgRevCalcular(){
   var mp = prMapa(), sem = [], semCli = [], dif = [], nums = {};
   mp.ordem.forEach(function(n){
@@ -25142,17 +24300,17 @@ function lgRevCalcular(){
     var abertos = r.links.filter(function(l){ return !l.doc.arquivado; });
     if (!r.doc && abertos.length) sem.push({ num: n, numero: r.numero, titulo: prTitulo(r), atos: abertos.map(function(l){ return LG_PR[l.tipo]; }).filter(function(x, i, a){ return a.indexOf(x) === i; }).join(', '), origem: 'ato' });
     if (r.doc && !r.doc.arquivado){
-      var meus = idsValidos(r.doc.clienteIds);
+      var meus = lgIdsReais(r.doc.clienteIds);
       if (!meus.length){
-        var ids = []; r.links.forEach(function(l){ idsValidos(l.doc.clienteIds).forEach(function(i){ if (ids.indexOf(i) < 0) ids.push(i); }); });
+        var ids = []; r.links.forEach(function(l){ lgIdsReais(l.doc.clienteIds).forEach(function(i){ if (ids.indexOf(i) < 0) ids.push(i); }); });
         var sug = null, motivo = '';
         if (ids.length){ sug = ids; motivo = 'cliente dos atos deste processo'; }
         else { var dv = prDividePartes(r.doc.partes), nomes = dv ? [dv.autor, dv.reu] : [r.doc.partes || '']; var pv = cliProvaveis(nomes.filter(Boolean)); if (pv.length){ sug = [pv[0].id]; motivo = 'nome parecido com as partes'; } }
         semCli.push({ num: n, id: r.doc.id, numero: r.numero, titulo: prTitulo(r), sug: sug, motivo: motivo });
       } else {
         r.links.forEach(function(l){
-          var dos = idsValidos(l.doc.clienteIds);
-          if (dos.length && !dos.some(function(i){ return meus.indexOf(i) >= 0; }) && !l.doc.arquivado) dif.push({ num: n, numero: r.numero, tipo: l.tipo, id: l.id, doc: l.doc, proc: r.doc, titulo: l.doc.cliente || l.doc.partes || 'Sem nome', doAto: dos.map(nomeCliente).join(', '), doProc: meus.map(nomeCliente).join(', ') });
+          var dos = lgIdsReais(l.doc.clienteIds);
+          if (dos.length && !dos.some(function(i){ return meus.indexOf(i) >= 0; }) && !l.doc.arquivado) dif.push({ num: n, numero: r.numero, tipo: l.tipo, id: l.id, doc: l.doc, proc: r.doc, titulo: l.doc.cliente || l.doc.partes || 'Sem nome', doAto: dos.map(lgNomeCli).join(', '), doProc: meus.map(lgNomeCli).join(', ') });
         });
       }
     }
@@ -25167,8 +24325,8 @@ function lgBannerHtml(){
   try{
     var papel = esS && esS.eu ? esS.eu.papel : '';
     if (papel === 'advogado') return '';
-    var r = lgRevCalcular(), n = r.sem.length + r.semCli.length + r.dif.length; if (!n) return '';
-    var p = []; if (r.sem.length) p.push('<b>' + r.sem.length + '</b> sem processo cadastrado'); if (r.semCli.length) p.push('<b>' + r.semCli.length + '</b> sem cliente'); if (r.dif.length) p.push('<b>' + r.dif.length + '</b> com cliente diferente');
+    var r = lgRevCalcular(), n = r.sem.length + r.dif.length; if (!n) return '';
+    var p = []; if (r.sem.length) p.push('<b>' + r.sem.length + '</b> sem processo cadastrado'); if (r.dif.length) p.push('<b>' + r.dif.length + '</b> com cliente diferente');
     return '<div class="saldo-data" style="margin:0 0 8px">Ligações a revisar: ' + p.join(' · ') + '. <button type="button" class="es-lk" data-lgr="abrir">Revisar</button></div>';
   }catch(e){ console.error('ligações', e); return ''; }
 }
@@ -25184,20 +24342,13 @@ function lgAbrirRev(aba){
 }
 function lgRevDesenhar(){
   var el = qs('overlayLgRevC'), R = lgS.rev; if (!el || !R) return;
-  var d = lgRevCalcular(), abas = [['sem', 'Sem processo', d.sem.length], ['semcli', 'Sem cliente', d.semCli.length], ['dif', 'Cliente diferente', d.dif.length]];
+  var d = lgRevCalcular(), abas = [['sem', 'Sem processo', d.sem.length], ['dif', 'Cliente diferente', d.dif.length]];
   var h = '<div class="es-abas">' + abas.map(function(a){ return '<button type="button" class="es-aba' + (R.aba === a[0] ? ' on' : '') + '" data-lgr="aba" data-k="' + a[0] + '">' + a[1] + ' ' + a[2] + '</button>'; }).join('') + '</div>';
   var n = Object.keys(R.sel).length;
   if (R.aba === 'sem'){
     h += '<div class="pb-aviso">Estes números aparecem em Iniciais, Acordos, Alvarás ou na Agenda, mas o processo não está cadastrado. Cadastrar leva o cliente, as partes e os advogados dos atos.</div>';
     h += d.sem.length ? d.sem.map(function(x){ return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b><br><span class="saldo-data">' + escapeHtml(x.numero) + ' · em: ' + escapeHtml(x.atos) + '</span></span></label>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os números têm processo cadastrado.</div>';
     if (d.sem.length) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar todos</button><button type="button" class="btn btn-primary pb-b" data-lgr="cadastrar"' + (R.ocupado || !n ? ' disabled' : '') + '>Cadastrar' + (n ? ' ' + n + (n === 1 ? ' processo' : ' processos') : '') + '</button></div>';
-  } else if (R.aba === 'semcli'){
-    h += '<div class="pb-aviso">Processos sem cliente não aparecem no perfil de ninguém. A sugestão vem dos atos do mesmo número ou do nome das partes; sem sugestão, abra o processo e escolha o cliente.</div>';
-    h += d.semCli.length ? d.semCli.map(function(x){
-      var sug = x.sug ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(x.sug.map(nomeCliente).join(', ')) + '</span>' : '';
-      return '<label class="ad-it es-it"><input type="checkbox" data-lgr="marca" data-k="' + escapeHtml(x.num) + '"' + (R.sel[x.num] ? ' checked' : '') + (x.sug ? '' : ' disabled') + '><span class="ad-t"><b>' + escapeHtml(x.titulo) + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(x.numero) + (x.motivo ? ' · ' + escapeHtml(x.motivo) : '') + '</span></span><button type="button" class="es-lk" data-lgr="abrir-proc" data-k="' + escapeHtml(x.num) + '">Abrir</button></label>';
-    }).join('') : '<div class="saldo-data" style="padding:10px 4px">Todos os processos têm cliente.</div>';
-    if (d.semCli.some(function(x){ return x.sug; })) h += '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="todos">Marcar os que têm sugestão</button><button type="button" class="btn btn-primary pb-b" data-lgr="vincular"' + (R.ocupado || !n ? ' disabled' : '') + '>Vincular o cliente sugerido' + (n ? ' (' + n + ')' : '') + '</button></div>';
   } else {
     h += '<div class="pb-aviso">O cliente do ato é diferente do cliente do processo de mesmo número. Confira qual está certo.</div>';
     h += d.dif.length ? d.dif.map(function(x, i){ return '<div class="pb-card" style="--pb-bar:#C98500;margin:6px 0"><div class="pb-l1"><span><b>' + escapeHtml(x.titulo) + '</b></span><span class="pb-tg">' + LG_PR[x.tipo] + '</span></div><div class="pb-proc">' + escapeHtml(x.numero) + '</div><div class="pb-proc">Cliente no ' + LG_PR[x.tipo].toLowerCase() + ': <b>' + escapeHtml(x.doAto) + '</b><br>Cliente no processo: <b>' + escapeHtml(x.doProc) + '</b></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-ato" data-k="' + i + '">Usar o do processo no ' + LG_PR[x.tipo].toLowerCase() + '</button><button type="button" class="btn btn-ghost pb-b" data-lgr="ajusta-proc" data-k="' + i + '">Usar o do ' + LG_PR[x.tipo].toLowerCase() + ' no processo</button></div></div>'; }).join('') : '<div class="saldo-data" style="padding:10px 4px">Nenhuma divergência.</div>';
@@ -25210,7 +24361,7 @@ function lgRevClique(a, k){
   if (a === 'abrir'){ lgAbrirRev('sem'); return; }
   if (a === 'aba'){ R.aba = k; R.sel = {}; lgRevDesenhar(); return; }
   var d = lgRevCalcular();
-  if (a === 'todos'){ (R.aba === 'sem' ? d.sem : d.semCli.filter(function(x){ return x.sug; })).forEach(function(x){ R.sel[x.num] = 1; }); lgRevDesenhar(); return; }
+  if (a === 'todos'){ d.sem.forEach(function(x){ R.sel[x.num] = 1; }); lgRevDesenhar(); return; }
   if (a === 'abrir-proc'){ qs('overlayLgRev').classList.remove('show'); prAbrir(k); return; }
   if (R.ocupado) return;
   if (a === 'cadastrar'){
@@ -25220,18 +24371,11 @@ function lgRevClique(a, k){
       if (r){ var atos = r.links.filter(function(l){ return !l.doc.arquivado; }); return lgCriarProcesso(r.numero, { partes: prPartes(r), cliente: prPartes(r), clienteIds: prClienteIds(r), advogados: lgUnirAdvogados(atos, null) }); }
       return lgCriarProcesso(x.numero, { partes: x.titulo, clienteIds: [] });
     }); }, Promise.resolve()).then(function(){ lgRevFim(lista.length + (lista.length === 1 ? ' processo cadastrado.' : ' processos cadastrados.')); }).catch(function(e){ lgRevFim(); toast('Não consegui cadastrar: ' + e.message); });
-  } else if (a === 'vincular'){
-    var lst = d.semCli.filter(function(x){ return R.sel[x.num] && x.sug; }); R.ocupado = true; lgRevDesenhar();
-    lst.reduce(function(p, x){ return p.then(function(){
-      var doc = prDocs.filter(function(y){ return y.id === x.id; })[0]; if (!doc) return null;
-      var novo = Object.assign({}, doc, { clienteIds: x.sug.slice() }); delete novo.id;
-      return pbApi('/api/db/processos/' + encodeURIComponent(doc.id), 'PUT', novo).then(function(){ doc.clienteIds = x.sug.slice(); });
-    }); }, Promise.resolve()).then(function(){ lgRevFim(lst.length + (lst.length === 1 ? ' processo vinculado a um cliente.' : ' processos vinculados a clientes.')); }).catch(function(e){ lgRevFim(); toast('Não consegui vincular: ' + e.message); });
   } else if (a === 'ajusta-ato' || a === 'ajusta-proc'){
     var x = d.dif[Number(k)]; if (!x) return; R.ocupado = true;
     var p;
-    if (a === 'ajusta-ato') p = Promise.resolve(persistPatchDoc(x.tipo, x.doc, { clienteIds: idsValidos(x.proc.clienteIds).slice() }));
-    else { var novo = Object.assign({}, x.proc, { clienteIds: idsValidos(x.doc.clienteIds).slice() }); delete novo.id; p = pbApi('/api/db/processos/' + encodeURIComponent(x.proc.id), 'PUT', novo).then(function(){ x.proc.clienteIds = novo.clienteIds; }); }
+    if (a === 'ajusta-ato') p = Promise.resolve(persistPatchDoc(x.tipo, x.doc, { clienteIds: lgIdsReais(x.proc.clienteIds).slice() }));
+    else { var novo = Object.assign({}, x.proc, { clienteIds: lgIdsReais(x.doc.clienteIds).slice() }); delete novo.id; p = pbApi('/api/db/processos/' + encodeURIComponent(x.proc.id), 'PUT', novo).then(function(){ x.proc.clienteIds = novo.clienteIds; }); }
     p.then(function(){ lgRevFim('Ajustado.'); }).catch(function(e){ lgRevFim(); toast('Não consegui ajustar: ' + e.message); });
   }
 }
@@ -29678,6 +28822,60 @@ document.addEventListener('change', function(ev){
 })();
 
 /*PV-FIM*/
+/*BP-INICIO*/
+/* PADRÃO — todo botão de ação é um cartão (20/11, decisão do proprietário; vale para o app inteiro e para tudo que for criado daqui para frente).
+   Cartão = 36 px de altura, cantos de 9 px, texto de 12 px em negrito, uma linha só (sem quebra), nunca maior que o cartão que o contém.
+   Cor pela função: ouro = criar (Adicionar, Novo, Lançar, Cadastrar); verde = pagar / registrar entrada / confirmar; vermelho = excluir; cinza = o resto
+   (Editar, Anexar, Ver, links "ver … ›"). Editar e Excluir que vêm em fila com outros botões (Construção) viram quadrados de 36 px com ícone.
+   As classes antigas de "botão só de texto" (btn-text, md-link, es-lk) já nascem como cartão; as linhas clicáveis dos resumos (md-fase, md-at) também.
+   Botão novo: use `class="btn btn-ghost"` (ou btn-text/md-link, que agora são cartão). Nunca crie um botão com fundo e borda transparentes.
+   Teste que impede o erro de voltar: test/botoes-guarda.test.mjs. */
+(function(){
+  var st = document.createElement('style');
+  var T = 'button.btn-text,button.md-link,button.es-lk,button.btn-pagas';
+  st.textContent =
+    ':root{--bp-ouro-bg:rgba(201,133,0,.17);--bp-ouro-fg:#7A4E00;--bp-ouro-bd:rgba(201,133,0,.42);--bp-verde-bg:rgba(23,137,90,.14);--bp-verde-fg:#0F6B46;--bp-verde-bd:rgba(23,137,90,.38);--bp-verm-bg:rgba(217,59,59,.10);--bp-verm-fg:#B42323;--bp-verm-bd:rgba(217,59,59,.32)}' +
+    ':root[data-theme="dark"]{--bp-ouro-bg:rgba(242,176,30,.18);--bp-ouro-fg:#F2C260;--bp-ouro-bd:rgba(242,176,30,.45);--bp-verde-bg:rgba(34,197,94,.16);--bp-verde-fg:#6FDBA8;--bp-verde-bd:rgba(34,197,94,.42);--bp-verm-bg:rgba(239,68,68,.16);--bp-verm-fg:#FCA5A5;--bp-verm-bd:rgba(239,68,68,.4)}' +
+    T + '{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;min-height:36px;box-sizing:border-box;padding:0 12px!important;border-radius:9px!important;font-family:inherit;font-size:12px!important;font-weight:700!important;line-height:1;white-space:nowrap;background:var(--surface-2)!important;color:var(--ink)!important;border:1px solid var(--border)!important;cursor:pointer;width:auto;max-width:100%;flex:0 0 auto;text-decoration:none}' +
+    T.split(',').map(function(x){ return x + ':hover'; }).join(',') + '{border-color:var(--ink-soft)!important}' +
+    'button.bp-ouro{background:var(--bp-ouro-bg)!important;color:var(--bp-ouro-fg)!important;border-color:var(--bp-ouro-bd)!important}' +
+    'button.bp-verde{background:var(--bp-verde-bg)!important;color:var(--bp-verde-fg)!important;border-color:var(--bp-verde-bd)!important}' +
+    'button.bp-verm{background:var(--bp-verm-bg)!important;color:var(--bp-verm-fg)!important;border-color:var(--bp-verm-bd)!important}' +
+    'button.bp-quad{width:36px;min-width:36px;padding:0!important}button.bp-quad svg{width:16px;height:16px}' +
+    /* linhas de ações: uma linha só, alinhadas à direita, sem passar do cartão (só quebram em tela muito estreita) */
+    '#bodyObra .ob-etapa-acoes,#bodyObra .ob-gasto-val>span,#bodyObra .ob-mo-acoes,#bodyObra .ob-edit{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;min-width:0}' +
+    '#bodyObra .ob-gasto-val>span,#bodyObra .ob-edit{justify-content:flex-end}#bodyObra .ob-gasto-val{min-width:0;max-width:100%}' +
+    '@media (max-width:340px){#bodyObra .ob-etapa-acoes,#bodyObra .ob-gasto-val>span{flex-wrap:wrap}}' +
+    /* linhas clicáveis dos resumos viram cartão cinza com a seta ›, em todas as abas */
+    '.md-fase{grid-template-columns:minmax(0,1.3fr) minmax(40px,1fr) auto 12px!important;background:var(--surface-2)!important;border:1px solid var(--border)!important;margin:4px 0!important;padding:8px 10px!important;box-sizing:border-box!important;border-radius:10px!important}' +
+    'button.md-at,button.md-at:first-of-type{background:var(--surface-2)!important;border:1px solid var(--border)!important;border-radius:10px!important;padding:8px 10px!important;margin:4px 0;box-sizing:border-box}' +
+    '.md-fase::after,button.md-at::after{content:"›";color:var(--ink-soft);font-weight:800;flex:none;margin-left:2px}' +
+    '.md-fase:hover,button.md-at:hover{border-color:var(--ink-soft)!important}';
+  document.head.appendChild(st);
+
+  var PAPEIS = [[/^(excluir|remover|apagar|descartar|desfazer tudo)/i, 'verm'], [/^(adicionar|nov[oa]\b|lan[çc]ar|cadastrar|criar|\+)/i, 'ouro'], [/^(pagar|registrar (pagamento|libera[çc][ãa]o|repasse|recebimento)|marcar (como )?recebid|confirmar|vincular)/i, 'verde']];
+  function classificar(b){
+    if (b.getAttribute('data-bp')) return;
+    var t = (b.innerText || b.textContent || b.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(), papel = '';
+    if (b.classList.contains('acao-excluir') || b.classList.contains('btn-danger-text')) papel = 'verm';
+    else if (b.classList.contains('acao-pagar')) papel = 'verde';
+    else for (var i = 0; i < PAPEIS.length; i++) if (PAPEIS[i][0].test(t)){ papel = PAPEIS[i][1]; break; }
+    b.setAttribute('data-bp', papel || 'cinza');
+    if (papel) b.classList.add('bp-' + papel);
+    /* Construção: Editar e Excluir em fila com outros botões viram quadrados com ícone */
+    if (b.closest && b.closest('#bodyObra') && (t === 'Editar' || t === 'Excluir') && typeof ico === 'function'){
+      b.classList.add('bp-quad'); b.setAttribute('aria-label', t); b.setAttribute('title', t); b.innerHTML = ico(t === 'Editar' ? 'pencil' : 'trash-2', 16);
+    }
+  }
+  var SEL = 'button.btn-text:not([data-bp]),button.md-link:not([data-bp]),button.es-lk:not([data-bp]),button.btn-pagas:not([data-bp])', timer = null;
+  function varrer(){ timer = null; try{ Array.prototype.forEach.call(document.querySelectorAll(SEL), classificar); }catch(e){ console.error('botões', e); } }
+  function agendar(){ if (!timer) timer = setTimeout(varrer, 20); }
+  try{ new MutationObserver(agendar).observe(document.body, { childList: true, subtree: true }); }catch(e){}
+  varrer();
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { bpVarrer: varrer });
+})();
+
+/*BP-FIM*/
 
 /* ---------- adiar parcela (só o vencimento de uma parcela; as outras não mudam) ---------- */
 function adPodeAdiar(u){

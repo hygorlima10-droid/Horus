@@ -42,7 +42,7 @@ await f('PUT', '/api/db/config/importacaoAuto', { ativo: false, desde: agora });
 await f('PUT', '/api/db/config/processosIgnorados', { numeros: { [dig(num(6))]: agora } });
 await f('PUT', '/api/db/clientes/cl1', { nome: 'Complem', apelidos: ['Cooperativa Mista dos Produtores de Leite de Morrinhos - Complem'], pagador: 'cliente', vinculoAuto: true, criadoEm: agora });
 await f('PUT', '/api/db/clientes/cl2', { nome: 'Vinícius César Ferreira Messias', pagador: 'cliente', criadoEm: agora });
-await f('PUT', '/api/db/processos/ja5', { numero: num(5), partes: 'Luiz x Banco Sigma', orgao: 'TJGO', clienteIds: [], honorarios: 'sem', arquivado: false, origem: 'manual', criadoEm: agora });
+await f('PUT', '/api/db/processos/ja5', { numero: num(5), partes: 'Luiz x Banco Sigma', orgao: 'TJGO', clienteIds: ['cl1'], honorarios: 'sem', arquivado: false, origem: 'manual', criadoEm: agora });
 const est = (await f('GET', '/api/djen/estado')).j;
 await f('PUT', '/api/djen/oabs', { oabs: est.oabs.filter(o => o.numero === '60456').concat([{ id: '', nome: 'Murilo Falone', numero: '49308', uf: 'GO', ativo: true, escopo: 'tudo', avisar: true }]) });
 check((await f('GET', '/api/djen/estado')).j.importarAuto === false, 'o servidor de teste informa que o cadastro automático começa desligado (IMPORTAR_AUTO=0)');
@@ -98,7 +98,7 @@ check((await f('GET', '/api/djen/lista?dias=90')).j.pubs.length === pubsAntes, '
 // 4) revisão
 await foto('3-resultado');
 await page.click('[data-imp="revisar"]'); await page.waitForTimeout(800); await foto('4-revisao');
-check(/Mostrando só os 3 processos/.test(await t('#prAvisoVinc')) && (await page.$$('#prLista .pr-card')).length === 3, 'a lista abre só com os 3 da revisão, com um cartão explicando e “Voltar à lista completa”');
+check(/Faltam\s+3\s+processos/.test(await t('#prAvisoVinc')) && (await page.$$('#prLista .pr-card')).length === 3, 'a lista abre só com os 3 da revisão, com um cartão explicando e “Voltar à lista completa” — ' + (await t('#prAvisoVinc')).replace(/\n/g, ' ').slice(0, 120) + ' | cartões: ' + (await page.$$('#prLista .pr-card')).length);
 const cartao = k => page.evaluate(n => { const c = document.querySelector('#prLista [data-pr-card="' + n + '"]'); return c ? c.innerText : ''; }, dig(num(k)));
 const cB = await cartao(2), cC = await cartao(3);
 check(/Vincular a Vin/.test(cB) && /Escolher outro cliente/.test(cB) && /Cadastrar cliente novo/.test(cB) && /Excluir processo/.test(cB), 'cartão com cliente parecido: Vincular, Escolher outro cliente, Cadastrar cliente novo e Excluir processo');
@@ -112,7 +112,7 @@ let pB = (await docs('processos')).find(d => dig(d.numero) === dig(num(2)));
 check(pB.clienteIds[0] === 'cl2' && !pB.revisar, 'o processo foi vinculado e saiu da revisão');
 await page.click('[data-impp="0"]'); await page.waitForTimeout(700);
 check((await docs('clientes')).find(c => c.id === 'cl2').vinculoAuto === true, 'responder Sim marca o cliente como vínculo automático');
-check(/Mostrando só os 2 processos/.test(await t('#prAvisoVinc')), 'a revisão ficou com 2');
+check(/Faltam\s+2\s+processos/.test(await t('#prAvisoVinc')), 'a revisão ficou com 2');
 // cliente novo para o sem-cliente (Zélia)
 await page.click('#prLista [data-pr-card="' + dig(num(3)) + '"] [data-pr="rev-novo"]'); await page.waitForTimeout(600);
 check(await visivel('#overlayClienteEdit.show') && /Zélia/i.test(await page.inputValue('#cliNomeInput')), 'Cadastrar cliente novo abre o cadastro já com o nome da parte');
@@ -137,7 +137,7 @@ check(restantes.length === 0, 'não restou processo na revisão');
 await f('PUT', '/api/db/processos/xdel', { numero: num(9), partes: 'Fulano x Beltrano', orgao: 'TJGO', clienteIds: [], honorarios: 'sem', arquivado: false, origem: 'diario', revisar: 'sem-cliente', parteNome: 'FULANO', criadoEm: agora, importadoEm: agora });
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="processos"]').click()); await page.waitForTimeout(800);
-await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); check(/1 processo importado espera o cliente/i.test(await t('#overlayPendC')) && await visivel('#overlayPendC [data-pdl="imp"]'), 'o selo Pendências avisa dos importados, com o botão Revisar');
+await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitForTimeout(900); await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); check(/1 processo sem cliente/i.test(await t('#overlayPendC')) && await visivel('#overlayPendC [data-pdl="imp"]'), 'o selo Pendências avisa dos importados, com o botão Revisar');
 await page.click('#overlayPendC [data-pdl="imp"]'); await page.waitForTimeout(500);
 await page.click('#prLista [data-pr-card="' + dig(num(9)) + '"] [data-pr="rev-del"]'); await page.waitForTimeout(500);
 check(await visivel('#overlayImpPerg.show') && /Excluir este processo/.test(await t('#overlayImpPerg')), 'Excluir processo pede confirmação');

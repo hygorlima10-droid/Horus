@@ -30,7 +30,7 @@ const clicaKpi = async (mod, re) => { await page.evaluate(([mod, re]) => Array.f
 await entrar();
 // ---- Processos
 await aba('processos');
-check(await on('#prSub') === 'Resumo' && /Resumo\s*Lista\s*Análises/.test((await t('#prSub')).replace(/\n/g, ' ')), 'Processos: sub-abas Resumo, Lista e Análises; abre no Resumo');
+check(await on('#prSub') === 'Resumo' && /Resumo\s*Lista\s*(Revisar\s*\d*\s*)?Análises/.test((await t('#prSub')).replace(/\n/g, ' ')), 'Processos: sub-abas Resumo, Lista, Revisar (só quando há processo sem cliente) e Análises; abre no Resumo');
 check(await kpi('processos', 'Em andamento') === '3' && await kpi('processos', 'Com prazo aberto') === '2' && await kpi('processos', 'Sem próxima providência') === '2', 'Processos: 3 em andamento, 2 com prazo aberto, 2 sem próxima providência');
 let tx = await t('.md-painel[data-mj="processos"]');
 check(/POR ÁREA DO DIREITO/i.test(tx) && /NOVOS × ARQUIVADOS/i.test(tx) && /Sem cliente vinculado/.test(tx), 'Processos: gráficos por área e novos × arquivados, e a área de atenção');
