@@ -7,7 +7,7 @@ description: Cria e revisa o site institucional do escritório Falone Advogados 
 
 ## 1. Contexto fixo (não perguntar de novo)
 - Escritório em Goiás; clientes vêm de indicação e de relacionamento com cooperativas. Áreas a destacar: **agronegócio, direito agrário e cível**. Estrutura física grande e advogados que atuam em várias áreas.
-- O site novo **substitui** o de faloneadvogados.com.br (WordPress da agência). Quando pronto: domínio novo próprio, hospedagem em Cloudflare (arquivos estáticos). Nesta fase **não** há WhatsApp integrado, CRM nem formulário que grave dados: só contato por telefone, e-mail, endereço e link comum de WhatsApp.
+- O site novo **substitui** o de faloneadvogados.com.br (WordPress da agência). Quando pronto: domínio novo próprio, hospedagem em Cloudflare (arquivos estáticos). Nesta fase **não** há CRM nem ligação do WhatsApp ou do formulário com o Horus: botão de WhatsApp comum, com mensagem pré-escrita por área ou advogado, e formulário só como desenho. Tudo fica dentro do artefato até o proprietário publicar fora.
 - A lista da equipe (nomes, OAB, fotos) será informada pelo proprietário depois; até lá, usar campos marcados como "a definir" e **nunca inventar nomes**.
 - Quem escreve e revisa artigos: **somente advogados**. Todo artigo sai assinado por advogado com nome e número da OAB.
 - Quem aprova é o proprietário (advogado, leigo em design). Explicar em português simples, sem jargão técnico.
@@ -18,18 +18,20 @@ description: Cria e revisa o site institucional do escritório Falone Advogados 
 3. Entregar por etapas pequenas (início → áreas → equipe → artigos → contato), cada uma com captura de tela em 390 px (celular) e 1280 px (computador).
 4. Informação que falta (nomes, OAB, endereço, fotos, textos de áreas): **perguntar; nunca inventar** nem usar texto de enchimento ("lorem ipsum") ou foto de banco de imagens.
 
-## 3. Regras da OAB (Provimento 205/2021) — bloqueantes
-**Nunca escrever nem mostrar:**
-- resultados, decisões ganhas, valores obtidos, casos concretos, nomes ou logos de clientes (inclui cooperativas atendidas);
-- honorários, preços, gratuidade ("primeira consulta grátis"), descontos, parcelamento;
-- autoelogio e comparação: "referência", "líder", "o melhor", "excelência garantida", "maior", "tradição de X anos" como argumento de venda, "temos a maior estrutura";
-- "especialista"/"especializado" (só com título certificado); usar **"atuação em"** / **"áreas de atuação"**;
-- promessa de resultado, apelo ao litígio ("processe", "receba seus direitos"), urgência artificial;
-- símbolo ou logomarca da OAB; prêmio/ranking pago; ostentação (carros, viagens);
-- depoimentos e avaliações de clientes; chatbot que responda dúvida jurídica a quem não é cliente.
-**Pode:** áreas de atuação descritas com sobriedade; equipe (foto, nome, nº OAB, formação, títulos verdadeiros e comprováveis); fotos reais do escritório e da equipe; **galeria de fotos da estrutura sem legendas que falem de tamanho, números ou qualidade** (ex.: "Recepção", "Sala de reuniões", nunca "o maior escritório da região"); artigos técnicos e informativos; endereço, telefones, e-mail e link de WhatsApp.
-**Tom:** informativo, sóbrio, discreto. Frases curtas, voz do escritório ("atuamos em…"), sem adjetivos de superioridade.
-**Antes de entregar, conferir** com busca de palavras: gratuit, grátis, desconto, honorár, melhor, líder, referência, maior, especialista, garant, resultado, vitória, ganhamos, cliente(s) citados, % e R$.
+## 3. Regras da OAB (Provimento 205/2021) — diretrizes, com as decisões do proprietário (20/11)
+O proprietário **assume a responsabilidade** pelas escolhas de redação dele e prefere não seguir a norma "ao pé da letra". Siga as escolhas abaixo; não reabra a discussão nem sugira trocar o que ele decidiu. Quando houver dúvida real, avise **uma vez**, em uma frase, e siga a decisão dele.
+**Decisões que prevalecem (o proprietário escolheu):**
+- "Especializada", "especialidades", "equipe especializada em cada área": **pode usar** (o escritório tem certificados). Para **um advogado específico** ("Dr. X é especialista em Y"), só com o título informado por ele (pedir a lista de títulos/certificados).
+- Lema do hero: **"Estratégia jurídica, proximidade e compromisso com seus interesses."**
+- "Atendimento personalizado" e "profissionais dedicados" **podem**.
+- Texto da seção "O escritório" (do PDF): "O Falone Advogados está localizado em Morrinhos, Goiás, no Edifício Luiz Falone. Nossa estrutura foi pensada para proporcionar um ambiente profissional, organizado e adequado ao atendimento individualizado de pessoas, empresas e cooperativas." **Usar como está** (não trocar por texto genérico).
+- Galeria com fotos da estrutura (fachada enviada por ele, recepção, gabinete, salas).
+- **Sem revisão ética/checklist do Provimento 205** como etapa do trabalho; não propor.
+- **Nada de "Sociedade de Advogados"** nem de registro de sociedade: o escritório não tem; rodapé só "Falone Advogados".
+- Formulário de contato: só o desenho por enquanto (a ligação ao Horus fica para depois); **sem** aviso do tipo "não envie documentos/detalhes do processo".
+- Medição de visitas, cookies/analytics, domínio e hospedagem: **só no fim**, quando ele publicar fora do artefato. Por ora tudo fica dentro do artefato.
+**Continua valendo por boa prática (sem sermão):** não inventar resultados, casos, valores, clientes ou depoimentos; não prometer resultado; não citar honorários ou gratuidade; não usar símbolo da OAB; sem logos de clientes; legendas de foto neutras.
+**Tom:** institucional, sóbrio, próximo. Frases claras, voz do escritório.
 
 ## 4. Referências de design (pesquisa de 20/11/2026)
 Vistas por captura de tela: **Demarest, Lefosse, BMA, Felsberg**. Não abriram: Pitta & Baione, Machado Meyer, Mattos Filho. Padrões úteis:
