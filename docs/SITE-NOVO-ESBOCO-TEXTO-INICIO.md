@@ -86,3 +86,12 @@ Logotipo completo menor, razão social "Falone Sociedade de Advogados", registro
 6. Aprovar as 8 áreas agrupadas e a lista de temas dos primeiros artigos.
 7. Envio das fotos novas da equipe.
 8. Nome do prédio ("Edifício Luiz Falone") aparece no endereço?
+
+## 5. Atualização de 20/11 (respostas do proprietário) — dados confirmados
+- **Contatos oficiais** (cartaz antigolpe do escritório): Escritório Falone (64) 3003-6763; Dr. Murilo Falone (64) 99627-8080; Dr. Hygor Andrade (64) 99207-2442; Dr. Hitallo Renato (64) 99201-4603; Dra. Nathanny Freitas (64) 9330-6886 (conferir: tem um dígito a menos que um celular). O (64) 3513-1414 **não é mais usado**.
+- **E-mail** faloneadv00@gmail.com (em uso). **Instagram** @faloneadv. **Facebook** "Falone Advogados" (endereço do link a informar).
+- **Endereço:** Av. Gumercindo Otero, Lt. I, Qd. 119, **Edifício Luiz Falone**, Setor Central, Morrinhos-GO, CEP 75.650-070.
+- **Equipe:** Murilo Falone Rocha OAB/GO 49.308; Hygor Lima Andrade OAB/GO 60.456; Camilla Cintra Correia Miranda OAB/GO 28.510 (dois "l"); Hitallo Renato (Dr.) e Nathanny Freitas (Dra.). OAB do Hitallo (65.729) e da Nathanny (74.506) vieram do Horus. Áreas por advogado: as do site atual, confirmadas.
+- **Murilo:** "dez anos de vivência na gestão de cooperativas" (antes 7).
+- **Estilo:** primeira tela = logotipo grande no alto, abaixo o texto com a foto do gabinete ao lado; sem a frase "Escritório de advocacia em Morrinhos, Goiás". Fachada: usar somente a foto enviada pelo proprietário, nunca a imagem de projeto.
+- **Texto da primeira tela (atual):** "Assessoria jurídica consultiva e contenciosa para pessoas, empresas e cooperativas, com advogados dedicados a cada área de atuação." (evita "full service" e "equipe especializada": "especializada" só vale com título certificado, art. 3º III do Provimento 205).
