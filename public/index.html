@@ -1917,6 +1917,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4924,6 +4927,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     if (typeof ob7Avisos === 'function'){
       try{ ob7Avisos().forEach(function(a){ itens.push({ origem: 'obra', ordem: 1, dataOrdenacao: a.d, atrasado: !!a.atraso, a: a }); }); }catch(e){ console.error('avisos da obra', e); }
     }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
+    try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
+    try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
     try{ if (typeof dgTFixasAtencao === 'function') dgTFixasAtencao().forEach(function(it){ itens.push({ origem:'tfixa', ordem:1, dataOrdenacao: it.data, atrasado: it.atrasada, it: it }); }); }catch(e){ console.error('tarefas fixas', e); }
     try{ if (typeof dgFixasAtencao === 'function') dgFixasAtencao().forEach(function(it){ itens.push({ origem:'fixa', ordem:1, dataOrdenacao: it.data, atrasado: it.data < hoje, it: it }); }); }catch(e){ console.error('contas fixas', e); }
@@ -10537,6 +10546,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
     qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
+    qs('bodyDelegadas').style.display = (tab === 'delegadas') ? '' : 'none';
+    qs('bodyProcessos').style.display = (tab === 'processos') ? '' : 'none';
     qs('bodyConfig').style.display = (tab === 'configuracoes') ? '' : 'none';
     qs('headFinanceiro').style.display = (tab === 'financeiro') ? '' : 'none';
     qs('bodyPeticoes').style.display = (tab === 'peticoes') ? '' : 'none';
@@ -10778,6 +10793,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (tab === 'processos') prRender();
     else if (tab === 'delegadas') dgAbrir();
     else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
+    else if (tab === 'delegadas') dgAbrir();
+    else if (tab === 'processos') prRender();
     else if (tab === 'configuracoes') cfRender();
     else renderFinanceiro();
   }
@@ -10785,7 +10806,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ============================================================
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
-  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
+  var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
   var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
@@ -10799,6 +10820,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     else if (activeTab === 'extratos') qs('subtitle').textContent = 'Leitura dos extratos do Drive · você confere antes de lançar';
     else if (activeTab === 'publicacoes') qs('subtitle').textContent = 'Diário Oficial (DJEN) · leitura automática todo dia às 10:00';
     else if (activeTab === 'agenda') qs('subtitle').textContent = 'Prazos, audiências e tarefas · feriados do TJGO';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
+    else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
+    else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
     else if (activeTab === 'processos') qs('subtitle').textContent = 'Todos os processos, com ou sem honorários';
     else if (activeTab === 'delegadas') qs('subtitle').textContent = 'Tarefas delegadas da equipe · todos veem, lançam e concluem';
@@ -17909,8 +17936,7 @@ function ntDesenhar(){
 (function(){
   var st = document.createElement('style');
   st.textContent = '.nt-lista{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:2px 12px}.nt-op{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border);cursor:pointer}.nt-op:first-child{border-top:0}' +
-    '.nt-tx{display:flex;flex-direction:column;gap:2px;min-width:0}.nt-tx small{font-size:var(--t2);color:var(--ink-soft);font-weight:400}.nt-sw{appearance:none;-webkit-appearance:none;flex:none;width:42px;height:25px;border-radius:99px;background:var(--border);position:relative;cursor:pointer;transition:background .15s;border:0}' +
-    '.nt-sw::after{content:"";position:absolute;left:3px;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}.nt-sw:checked{background:#17895A}.nt-sw:checked::after{transform:translateX(17px)}';
+    '.nt-tx{display:flex;flex-direction:column;gap:2px;min-width:0}.nt-tx small{font-size:var(--t2);color:var(--ink-soft);font-weight:400}';   /* a chave (.nt-sw) é do padrão visual: cliente/padrao-visual.js */
   document.head.appendChild(st);
 })();
 function ntAbrir(){ ntMontar(); ntDesenhar(); qs('overlayLembretes').classList.add('show'); ntCarregar().then(ntDesenhar); }
@@ -18715,13 +18741,19 @@ function pbVinculo(proc){ return prVinculo(proc); }
 function pbOabDe(id){ for (var i = 0; i < pbS.oabs.length; i++) if (pbS.oabs[i].id === id) return pbS.oabs[i]; return null; }
 function pbPrimeiroNome(o){ return o ? String(o.nome || '').split(' ')[0] : ''; }
 /* o que aparece: de OABs ativas; as de "só processos em conjunto" só mostram processo cadastrado ou que também vem pela sua OAB */
+/* a OAB da própria pessoa nunca é escondida na tela dela: o "só processos em conjunto" vale para as OABs dos outros (advogado: todas as que ele recebe são dele) */
+function pbOabMinha(o){
+  var eu = (typeof esS !== 'undefined' && esS.eu) || null; if (!eu) return false;
+  if (eu.papel === 'advogado') return true;
+  return (eu.oabs || []).indexOf(String(o.numero || '').replace(/\D/g, '').replace(/^0+/, '') + '/' + String(o.uf || '').toUpperCase()) >= 0;
+}
 function pbVisiveis(){
   var meus = {};
   pbS.pubs.forEach(function(p){ if (p.processo && p.oabs.some(function(id){ var o = pbOabDe(id); return o && o.ativo && o.escopo === 'tudo'; })) meus[p.processo] = 1; });
   return pbS.pubs.filter(function(p){
     return p.oabs.some(function(id){
       var o = pbOabDe(id); if (!o || !o.ativo) return false;
-      return o.escopo === 'tudo' || !!meus[p.processo] || !!pbVinculo(p.processo);
+      return o.escopo === 'tudo' || pbOabMinha(o) || !!meus[p.processo] || !!pbVinculo(p.processo);
     });
   });
 }
@@ -18751,7 +18783,7 @@ function pbCarregar(silencioso){
   if (!window.__SERVIDOR) return Promise.resolve();
   pbS.carregando = true;
   return Promise.all([pbApi('/api/djen/estado'), pbApi('/api/djen/lista?dias=90' + ((window.__horusEscopo && window.__horusEscopo.ativo && window.__horusEscopo.pub === 'minhas') ? '&escopo=meus' : ''))]).then(function(r){
-    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbAgrupaTodos(); pbS.carregado = true;
+    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbS.fora = r[1].fora || 0; pbAgrupaTodos(); pbS.carregado = true;
   }).catch(function(e){ pbS.erro = e.message; pbS.carregado = true; }).then(function(){
     pbS.carregando = false; pbAtualizarBadge(); if (!silencioso && activeTab === 'publicacoes') pbRender();
   });
@@ -18791,6 +18823,7 @@ function pbMontarTela(){
     if (a !== 'cm' && pbS.cm){ pbS.cm = null; if (a === 'lida' || a === 'cadastrar' || a === 'reabrir-proc') setTimeout(function(){ if (activeTab === 'publicacoes') pbRenderLista(); }, 0); }
     if (a === 'filtro'){ var fv = b.getAttribute('data-v'); mdLembrar('publicacoes', fv); if (fv === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = fv; } pbS.mais = 1; pbRender(); }
     else if (a === 'buscar') pbBuscarAgora();
+    else if (a === 'ver-esc') esMudarModo('todas');
     else if (a === 'oabs') pbAbrirOabs();
     else if (a === 'mais'){ pbS.mais++; pbRenderLista(); }
     else if (a === 'painel'){ pbS.fAberto = !pbS.fAberto; pbRender(); }
@@ -18830,7 +18863,7 @@ function pbAgrupaTodos(){
   pbS.pubs.forEach(function(p){ p._g = null; p._rep = null; });
   pbS.pubs.forEach(function(p){
     if (!p.processo){ p._g = [p]; p._rep = p; return; }
-    var k = [p.processo, p.data, p.th || ((p.tipo || '') + '|' + (p.orgao || ''))].join('|');   /* mesmo processo, dia e texto = uma publicação (mesmo com tipos ou ids diferentes) */
+    var k = [p.processo, p.data, p.tipo || '', p.th || (p.orgao || '')].join('|');   /* mesmo processo, dia, tipo e texto = uma publicação; tipos diferentes (ex.: Decisão e Outros com o aviso padrão de segredo de justiça) nunca viram um cartão só */
     (m[k] = m[k] || []).push(p);
   });
   Object.keys(m).forEach(function(k){ var g = m[k]; g.forEach(function(x){ x._rep = g[0]; }); g[0]._g = g; });
@@ -19091,7 +19124,7 @@ function pbRender(){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
     h += pbBarraHtml(true, vis, naoLidas, aDefinir);
     if (pbS.mAberto) h += pbMenuHtml(vis);
-    h += pbAvisoLeitura();
+    h += pbAvisoLeitura(); h += pbSeloFora();
     try{ h += mjPainel('publicacoes', mjPublicacoes()); }catch(e){ console.error('resumo de publicações', e); h += '<div class="financeiro-vazio">Não consegui montar o resumo. As outras sub-abas continuam funcionando.</div>'; }
     w.innerHTML = h; return;
   }
@@ -19100,7 +19133,7 @@ function pbRender(){
   if (pbS.mAberto) h += pbMenuHtml(vis);
   h += '</div>';
   if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
-  h += pbAvisoLeitura();
+  h += pbAvisoLeitura(); h += pbSeloFora();
   if (!pbS.oabs.some(function(o){ return o.ativo; })) h += '<div class="financeiro-vazio">Nenhuma OAB ativa. Abra ⋯ e escolha “OABs monitoradas” para cadastrar.</div>';
   h += '<div id="pbListaBox" class="pb-lista">' + pbListaHtml() + '</div>';
   w.innerHTML = h;
@@ -19123,6 +19156,11 @@ function pbAvisoLeitura(){
   else if (parada) msg = pbS.ultima ? 'A leitura automática não roda desde ' + pbQuandoAtualizou() + '. Pode haver publicação que você ainda não viu.' : 'A leitura automática do Diário Oficial ainda não rodou.';
   if (comErro.length && /\b(403|429|5\d\d)\b/.test(comErro[0].erro)) msg += ' A leitura feita daqui do app costuma funcionar: o app tenta sozinho ao ser aberto, e o servidor tenta de novo de 2 em 2 horas, até as 18h.';
   return msg ? '<div class="aviso-sis" id="pbAvisoLeitura"><span class="as-txt">' + escapeHtml(msg) + ' Toque em ⟳ (Buscar agora).</span></div>' : '';
+}
+/* selo de segurança do proprietário em "Minhas": publicações do escritório que ninguém abriu ainda e que estão fora da lista dele */
+function pbSeloFora(){
+  var e = window.__horusEscopo; if (!pbS.fora || !(e && e.ativo && e.pub === 'minhas')) return '';
+  return '<div class="aviso-sis" id="pbSeloFora"><span class="as-txt"><b>' + pbS.fora + '</b> ' + (pbS.fora === 1 ? 'publicação do escritório fora da sua visão' : 'publicações do escritório fora da sua visão') + ', que ninguém abriu ainda.</span><span class="as-acoes"><button type="button" class="btn btn-ghost" data-pb="ver-esc">Ver as do escritório</button></span></div>';
 }
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){
@@ -19557,6 +19595,13 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
     pbCarregar(true).then(pbLeituraAutomatica); pbCarregarAprend();
     document.addEventListener('visibilitychange', function(){ if (!document.hidden){ pbCarregar(true).then(pbLeituraAutomatica); } });
   }
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, {
+    pbVisiveisIds: function(){ return pbGrupos(pbVisiveis()).map(function(p){ return p.id; }).sort().join(','); },
+    pbNaoLidasN: function(){ return pbContaNaoLidas(); },
+    pbAgruparTeste: function(lista){ pbS.pubs = lista; pbAgrupaTodos(); return lista.map(function(p){ return pbMembros(p).length; }); },
+    pbSeloTeste: function(n){ pbS.fora = n; window.__horusEscopo.ativo = true; window.__horusEscopo.pub = 'minhas'; pbRender(); var e = document.getElementById('pbSeloFora'); return e ? e.innerText.replace(/\s+/g, ' ') : ''; },
+    pbSeloExiste: function(){ return !!document.getElementById('pbSeloFora'); }
+  });
 })();
 
 /*PB-FIM*/
@@ -23753,7 +23798,6 @@ function plAvisoSemNome(chaves){
     '.pl-previa{background:var(--surface-2);border-radius:12px;padding:10px 12px;margin-top:8px}.pl-amostra{padding:6px 0;border-top:1px solid var(--border);font-size:var(--t2)}.pl-amostra small{display:block;color:var(--ink-soft);font-size:var(--t1)}' +
     '.pl-ok{display:inline-flex;align-items:center;gap:4px;color:var(--success);font-weight:700;font-size:var(--t2)}.pl-ck{display:flex;gap:8px;align-items:flex-start;min-height:28px;font-size:var(--t3);color:var(--success)}.pl-ck.off{color:var(--ink-soft)}.pl-ol{margin:0;padding-left:20px;font-size:var(--t3);line-height:1.6}.f-add.pl-perigo{color:var(--urgente)}' +
     '.pl-lig{display:flex;align-items:center;gap:12px;background:rgba(42,120,214,.10);border:1px solid rgba(42,120,214,.35);border-radius:16px;padding:12px 14px;color:var(--info);cursor:pointer}.pl-lig b{display:block;font-size:var(--t3)}.pl-lig small{display:block;font-size:var(--t2);color:var(--ink-soft);font-weight:400}.pl-lig>div{flex:1;min-width:0}.pl-fixo{cursor:default}' +
-    'input.pl-sw{appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:99px;background:var(--border);position:relative;flex:none;border:0;cursor:pointer;transition:background .15s}input.pl-sw:checked{background:var(--info)}input.pl-sw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}input.pl-sw:checked::after{transform:translateX(20px)}' +
     '.pb-tg.pl{background:rgba(42,120,214,.13);color:var(--info);display:inline-flex;align-items:center;gap:4px}';
   document.head.appendChild(st);
   if (window.__SERVIDOR) plCarregarLigada();
@@ -29595,6 +29639,35 @@ document.addEventListener('change', function(ev){
 })();
 
 /*FB-FIM*/
+/*PV-INICIO*/
+/* Padrão visual: chave liga/desliga igual à do iPhone + três reparos de layout vistos no celular (20/11).
+   Só CSS: nada muda de lugar nem de função.
+   CHAVE (switch): trilho 51×31 px, bolinha de 27 px com sombra, verde suave (#64ac6c, medido na foto de referência) e bolinha cinza-clara (#e3e3e1) quando ligada, cinza quando desligada, sem encolher e sem
+   herdar largura/altura dos campos. Vale para toda chave do app: `.nt-sw` (Lembretes no iPhone), `.pl-sw` (Também na planilha) e a classe
+   genérica `input.sw` — qualquer chave nova usa `<input type="checkbox" class="sw">` e já nasce no padrão. */
+(function(){
+  var st = document.createElement('style');
+  st.textContent =
+    ':root{--sw-on:#64ac6c;--sw-off:#c4c4c9;--sw-knob:#e3e3e1}' +
+    ':root[data-theme="dark"]{--sw-on:#6fbf78;--sw-off:#48484d;--sw-knob:#ececea}' +
+    'input.sw,input.nt-sw,input.pl-sw{-webkit-appearance:none;appearance:none;box-sizing:border-box;flex:none;position:relative;display:inline-block;width:51px!important;min-width:51px!important;max-width:51px!important;height:31px!important;min-height:31px!important;margin:0;padding:0;border:0;border-radius:999px;background:var(--sw-off);cursor:pointer;vertical-align:middle;transition:background .2s ease;-webkit-tap-highlight-color:transparent;outline-offset:2px}' +
+    'input.sw::after,input.nt-sw::after,input.pl-sw::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:var(--sw-knob);box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16),0 3px 1px rgba(0,0,0,.10);transition:transform .2s ease}' +
+    'input.sw:checked,input.nt-sw:checked,input.pl-sw:checked{background:var(--sw-on)}' +
+    'input.sw:checked::after,input.nt-sw:checked::after,input.pl-sw:checked::after{transform:translateX(20px)}' +
+    'input.sw:disabled,input.nt-sw:disabled,input.pl-sw:disabled{opacity:.45;cursor:not-allowed}' +
+    'input.sw:focus-visible,input.nt-sw:focus-visible,input.pl-sw:focus-visible{outline:2px solid var(--info,#2a78d6)}' +
+    /* Construção › Dinheiro da obra: a frase "veio de um recebimento…" quebra a linha dentro do cartão em vez de passar da borda */
+    '.ob-gasto-val{min-width:0;max-width:100%}.ob-gasto-val .saldo-data{white-space:normal;overflow-wrap:anywhere;text-align:right;line-height:1.35}' +
+    '@media (max-width:640px){.ob-gasto-val .saldo-data{text-align:left}}' +
+    /* Extratos: o campo de data respeita a largura do cartão e os cartões de cada mês têm espaço entre si, com o mês numa linha e o resumo na de baixo */
+    '.field input[type=date],#impCorte{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}' +
+    '.ext-dd{margin:0 0 10px;min-width:0}.ext-dd>summary{display:block!important;padding-right:20px;line-height:1.45;overflow-wrap:anywhere}' +
+    '.ext-dd>summary>b{display:block;font-size:var(--t4);margin-bottom:2px}' +
+    '.ext-dd .plan-linha{min-width:0;gap:10px}.ext-dd .plan-linha>span{min-width:0;overflow-wrap:anywhere}';
+  document.head.appendChild(st);
+})();
+
+/*PV-FIM*/
 
 /* ---------- adiar parcela (só o vencimento de uma parcela; as outras não mudam) ---------- */
 function adPodeAdiar(u){

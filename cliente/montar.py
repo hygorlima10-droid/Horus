@@ -215,6 +215,13 @@ if '/*FB-INICIO*/' in s:
 else:
     assert s.count('/*RV-FIM*/\n') == 1
     s = s.replace('/*RV-FIM*/\n', '/*RV-FIM*/\n' + bloco_fb)
+pv_js = open(R + 'cliente/padrao-visual.js', encoding='utf-8').read()
+bloco_pv = '/*PV-INICIO*/\n' + pv_js + '\n/*PV-FIM*/\n'
+if '/*PV-INICIO*/' in s:
+    s = re.sub(r'/\*PV-INICIO\*/.*?/\*PV-FIM\*/\n', lambda m: bloco_pv, s, flags=re.S)
+else:
+    assert s.count('/*FB-FIM*/\n') == 1
+    s = s.replace('/*FB-FIM*/\n', '/*FB-FIM*/\n' + bloco_pv)
 def repm(marcador, old, new):
     if marcador in s: return
     rep(old, new)

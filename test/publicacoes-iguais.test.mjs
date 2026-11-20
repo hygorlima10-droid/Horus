@@ -35,9 +35,9 @@ await page.evaluate(() => document.querySelector('#drawer [data-tab="publicacoes
 await page.click('[data-pb="filtro"][data-v="todas"]'); await page.waitForTimeout(500);
 const cards = await page.evaluate(() => Array.from(document.querySelectorAll('.pb-card')).map(c => c.innerText));
 const doProc = k => cards.filter(c => c.includes(num(k)));
-check(cards.length === 7, 'na tela são 7 cartões (e não 10): ' + cards.length);
+check(cards.length === 8, 'na tela são 8 cartões (e não 10): ' + cards.length);
 check(doProc(1).length === 1 && /via OAB Hygor/.test(doProc(1)[0]) && /via OAB Murilo/.test(doProc(1)[0]), 'a publicação vista pelas duas OABs é um cartão só, marcado com as duas OABs');
-check(doProc(2).length === 1 && /2 publicações idênticas reunidas/.test(doProc(2)[0]), 'mesmo texto no mesmo dia, com tipo diferente entre as OABs ("Decisão" e "Outros"): um cartão só');
+check(doProc(2).length === 2, 'mesmo texto no mesmo dia, mas tipo diferente ("Decisão" e "Outros"): dois cartões (tipos diferentes nunca viram um cartão só)');
 check(doProc(3).length === 2, 'mesmo texto em dias diferentes: dois cartões (são atos diferentes)');
 check(doProc(4).length === 2, 'textos diferentes no mesmo dia: dois cartões');
 check(doProc(5).length === 1 && /3 publicações idênticas reunidas/.test(doProc(5)[0]), 'o mesmo ato para três destinatários continua um cartão só');

@@ -62,13 +62,19 @@ function pbVinculo(proc){ return prVinculo(proc); }
 function pbOabDe(id){ for (var i = 0; i < pbS.oabs.length; i++) if (pbS.oabs[i].id === id) return pbS.oabs[i]; return null; }
 function pbPrimeiroNome(o){ return o ? String(o.nome || '').split(' ')[0] : ''; }
 /* o que aparece: de OABs ativas; as de "só processos em conjunto" só mostram processo cadastrado ou que também vem pela sua OAB */
+/* a OAB da própria pessoa nunca é escondida na tela dela: o "só processos em conjunto" vale para as OABs dos outros (advogado: todas as que ele recebe são dele) */
+function pbOabMinha(o){
+  var eu = (typeof esS !== 'undefined' && esS.eu) || null; if (!eu) return false;
+  if (eu.papel === 'advogado') return true;
+  return (eu.oabs || []).indexOf(String(o.numero || '').replace(/\D/g, '').replace(/^0+/, '') + '/' + String(o.uf || '').toUpperCase()) >= 0;
+}
 function pbVisiveis(){
   var meus = {};
   pbS.pubs.forEach(function(p){ if (p.processo && p.oabs.some(function(id){ var o = pbOabDe(id); return o && o.ativo && o.escopo === 'tudo'; })) meus[p.processo] = 1; });
   return pbS.pubs.filter(function(p){
     return p.oabs.some(function(id){
       var o = pbOabDe(id); if (!o || !o.ativo) return false;
-      return o.escopo === 'tudo' || !!meus[p.processo] || !!pbVinculo(p.processo);
+      return o.escopo === 'tudo' || pbOabMinha(o) || !!meus[p.processo] || !!pbVinculo(p.processo);
     });
   });
 }
@@ -98,7 +104,7 @@ function pbCarregar(silencioso){
   if (!window.__SERVIDOR) return Promise.resolve();
   pbS.carregando = true;
   return Promise.all([pbApi('/api/djen/estado'), pbApi('/api/djen/lista?dias=90' + ((window.__horusEscopo && window.__horusEscopo.ativo && window.__horusEscopo.pub === 'minhas') ? '&escopo=meus' : ''))]).then(function(r){
-    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbAgrupaTodos(); pbS.carregado = true;
+    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbS.fora = r[1].fora || 0; pbAgrupaTodos(); pbS.carregado = true;
   }).catch(function(e){ pbS.erro = e.message; pbS.carregado = true; }).then(function(){
     pbS.carregando = false; pbAtualizarBadge(); if (!silencioso && activeTab === 'publicacoes') pbRender();
   });
@@ -138,6 +144,7 @@ function pbMontarTela(){
     if (a !== 'cm' && pbS.cm){ pbS.cm = null; if (a === 'lida' || a === 'cadastrar' || a === 'reabrir-proc') setTimeout(function(){ if (activeTab === 'publicacoes') pbRenderLista(); }, 0); }
     if (a === 'filtro'){ var fv = b.getAttribute('data-v'); mdLembrar('publicacoes', fv); if (fv === 'resumo') pbS.sub = 'resumo'; else { pbS.sub = 'lista'; pbS.filtro = fv; } pbS.mais = 1; pbRender(); }
     else if (a === 'buscar') pbBuscarAgora();
+    else if (a === 'ver-esc') esMudarModo('todas');
     else if (a === 'oabs') pbAbrirOabs();
     else if (a === 'mais'){ pbS.mais++; pbRenderLista(); }
     else if (a === 'painel'){ pbS.fAberto = !pbS.fAberto; pbRender(); }
@@ -177,7 +184,7 @@ function pbAgrupaTodos(){
   pbS.pubs.forEach(function(p){ p._g = null; p._rep = null; });
   pbS.pubs.forEach(function(p){
     if (!p.processo){ p._g = [p]; p._rep = p; return; }
-    var k = [p.processo, p.data, p.th || ((p.tipo || '') + '|' + (p.orgao || ''))].join('|');   /* mesmo processo, dia e texto = uma publicação (mesmo com tipos ou ids diferentes) */
+    var k = [p.processo, p.data, p.tipo || '', p.th || (p.orgao || '')].join('|');   /* mesmo processo, dia, tipo e texto = uma publicação; tipos diferentes (ex.: Decisão e Outros com o aviso padrão de segredo de justiça) nunca viram um cartão só */
     (m[k] = m[k] || []).push(p);
   });
   Object.keys(m).forEach(function(k){ var g = m[k]; g.forEach(function(x){ x._rep = g[0]; }); g[0]._g = g; });
@@ -438,7 +445,7 @@ function pbRender(){
     if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
     h += pbBarraHtml(true, vis, naoLidas, aDefinir);
     if (pbS.mAberto) h += pbMenuHtml(vis);
-    h += pbAvisoLeitura();
+    h += pbAvisoLeitura(); h += pbSeloFora();
     try{ h += mjPainel('publicacoes', mjPublicacoes()); }catch(e){ console.error('resumo de publicações', e); h += '<div class="financeiro-vazio">Não consegui montar o resumo. As outras sub-abas continuam funcionando.</div>'; }
     w.innerHTML = h; return;
   }
@@ -447,7 +454,7 @@ function pbRender(){
   if (pbS.mAberto) h += pbMenuHtml(vis);
   h += '</div>';
   if (pbS.erro) h += '<div class="aviso-sis"><span class="as-txt">Não consegui carregar: ' + escapeHtml(pbS.erro) + '</span></div>';
-  h += pbAvisoLeitura();
+  h += pbAvisoLeitura(); h += pbSeloFora();
   if (!pbS.oabs.some(function(o){ return o.ativo; })) h += '<div class="financeiro-vazio">Nenhuma OAB ativa. Abra ⋯ e escolha “OABs monitoradas” para cadastrar.</div>';
   h += '<div id="pbListaBox" class="pb-lista">' + pbListaHtml() + '</div>';
   w.innerHTML = h;
@@ -470,6 +477,11 @@ function pbAvisoLeitura(){
   else if (parada) msg = pbS.ultima ? 'A leitura automática não roda desde ' + pbQuandoAtualizou() + '. Pode haver publicação que você ainda não viu.' : 'A leitura automática do Diário Oficial ainda não rodou.';
   if (comErro.length && /\b(403|429|5\d\d)\b/.test(comErro[0].erro)) msg += ' A leitura feita daqui do app costuma funcionar: o app tenta sozinho ao ser aberto, e o servidor tenta de novo de 2 em 2 horas, até as 18h.';
   return msg ? '<div class="aviso-sis" id="pbAvisoLeitura"><span class="as-txt">' + escapeHtml(msg) + ' Toque em ⟳ (Buscar agora).</span></div>' : '';
+}
+/* selo de segurança do proprietário em "Minhas": publicações do escritório que ninguém abriu ainda e que estão fora da lista dele */
+function pbSeloFora(){
+  var e = window.__horusEscopo; if (!pbS.fora || !(e && e.ativo && e.pub === 'minhas')) return '';
+  return '<div class="aviso-sis" id="pbSeloFora"><span class="as-txt"><b>' + pbS.fora + '</b> ' + (pbS.fora === 1 ? 'publicação do escritório fora da sua visão' : 'publicações do escritório fora da sua visão') + ', que ninguém abriu ainda.</span><span class="as-acoes"><button type="button" class="btn btn-ghost" data-pb="ver-esc">Ver as do escritório</button></span></div>';
 }
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){
@@ -904,4 +916,11 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
     pbCarregar(true).then(pbLeituraAutomatica); pbCarregarAprend();
     document.addEventListener('visibilitychange', function(){ if (!document.hidden){ pbCarregar(true).then(pbLeituraAutomatica); } });
   }
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, {
+    pbVisiveisIds: function(){ return pbGrupos(pbVisiveis()).map(function(p){ return p.id; }).sort().join(','); },
+    pbNaoLidasN: function(){ return pbContaNaoLidas(); },
+    pbAgruparTeste: function(lista){ pbS.pubs = lista; pbAgrupaTodos(); return lista.map(function(p){ return pbMembros(p).length; }); },
+    pbSeloTeste: function(n){ pbS.fora = n; window.__horusEscopo.ativo = true; window.__horusEscopo.pub = 'minhas'; pbRender(); var e = document.getElementById('pbSeloFora'); return e ? e.innerText.replace(/\s+/g, ' ') : ''; },
+    pbSeloExiste: function(){ return !!document.getElementById('pbSeloFora'); }
+  });
 })();

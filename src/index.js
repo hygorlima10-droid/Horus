@@ -3,7 +3,7 @@
    - A API imita o "banco" que o app já usava dentro do Claude. */
 
 import { gerarChavesVapid, enviarPush } from './push.js';
-import { djenRotas, lerDjen, relerSePreciso, pubsParaAvisar, pubsDaPessoa, marcarAvisadas } from './djen.js';
+import { djenRotas, lerDjen, relerSePreciso, pubsParaAvisar, pubsDaPessoa, pubsDoProprietario, marcarAvisadas } from './djen.js';
 import { datajudRotas } from './datajud.js';
 import { loteRotas } from './lote.js';
 import { checarColecao, resolverColecao, ehProprietario, doCofre, ehCofre, baseDoCofre, ehAdvogadoAuth, PESSOAL } from './colecoes.js';
@@ -358,16 +358,17 @@ export async function enviarResumoDiario(env, opcoes = {}) {
   for (const p of pessoas) {
     const s = sfx(p.uid, p.dono), config = await lerReservado(env, 'config' + s, {}), enviados = await lerReservado(env, 'enviados' + s, { alertas: {} });
     enviados.alertas = enviados.alertas || {};
-    if (!opcoes.forcar && enviados.dia === hoje) { ultimoMotivo = 'já enviado hoje'; continue; }
+    if (!opcoes.forcar && !opcoes.soPublicacoes && enviados.dia === hoje) { ultimoMotivo = 'já enviado hoje'; continue; }
     const subs = await inscricoes(env, p.uid); if (!subs.length) { ultimoMotivo = 'sem aparelhos inscritos'; continue; }
     algumAparelho = true;
     const resumo = await lerReservado(env, 'resumo' + s, { itens: [], alertas: [] });
     let pubs = [];
     if (!opcoes.teste) {
-      if (p.dono) pubs = todasPubs;
+      if (p.dono) pubs = await pubsDoProprietario(env, todasPubs).catch(() => todasPubs);
       else { const u = p.u || (await usuariosAtivos(env)).find((x) => x.id === p.uid); pubs = u ? await pubsDaPessoa(env, todasPubs, u.norm.oabs, u.norm.papel === 'estagiario' && u.norm.permissoes.verPublicacoes) : []; }
     }
-    const lista = opcoes.teste ? [{ tag: 'teste', titulo: 'Notificação de teste', corpo: 'Se você está lendo isto, as notificações do Horus estão funcionando.', url: '/' }] : montarNotificacoes(resumo, { ...cfgDono, ...config, esconder: config.esconder }, enviados, hoje, mes, pubs, prefsDe(config));
+    let lista = opcoes.teste ? [{ tag: 'teste', titulo: 'Notificação de teste', corpo: 'Se você está lendo isto, as notificações do Horus estão funcionando.', url: '/' }] : montarNotificacoes(resumo, { ...cfgDono, ...config, esconder: config.esconder }, enviados, hoje, mes, pubs, prefsDe(config));
+    if (opcoes.soPublicacoes) lista = lista.filter((n) => String(n.tag).startsWith('pub-')).map((n) => ({ ...n, tag: n.tag + '-' + new Date().getUTCHours() }));   // releitura da tarde: só as publicações novas, sem repetir o resumo do dia
     notificacoes += lista.length;
     for (const n of lista) {
       for (const sub of subs) {
@@ -383,7 +384,7 @@ export async function enviarResumoDiario(env, opcoes = {}) {
       }
       if (n.chaveAlerta && !opcoes.teste) enviados.alertas[n.chaveAlerta] = mes;
     }
-    if (!opcoes.teste) {
+    if (!opcoes.teste && !opcoes.soPublicacoes) {
       Object.keys(enviados.alertas).forEach((k) => { if (enviados.alertas[k] < mes) delete enviados.alertas[k]; });   // guarda só o mês atual
       enviados.dia = hoje; await gravarReservado(env, 'enviados' + s, enviados);
     }
@@ -575,7 +576,7 @@ async function enviarSemanal(env) {
 }
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(event.cron === '0 13 * * *' ? (async () => { try { await lerDjen(env); } catch (e) { console.error('leitura do DJEN', e); } try { await limparSeguranca(env); } catch (e) { console.error('limpeza', e); } try { await buscarIndices(env); } catch (e) { console.error('índices da construção', e); } await enviarResumoDiario(env); })() : (event.cron === '0 15,17,19,21 * * *' ? relerSePreciso(env).catch((e) => console.error('releitura do DJEN', e)) : (async () => { try { await fazerBackup(env); } catch (e) { console.error('backup', e); } try { await enviarSemanal(env); } catch (e) { console.error('resumo semanal', e); } })()));
+    ctx.waitUntil(event.cron === '0 13 * * *' ? (async () => { try { await lerDjen(env); } catch (e) { console.error('leitura do DJEN', e); } try { await limparSeguranca(env); } catch (e) { console.error('limpeza', e); } try { await buscarIndices(env); } catch (e) { console.error('índices da construção', e); } await enviarResumoDiario(env); })() : (event.cron === '0 15,17,19,21 * * *' ? (async () => { try { const r = await relerSePreciso(env, { sempre: [17, 21].includes(new Date(event.scheduledTime).getUTCHours()) }); if (r && r.novas) await enviarResumoDiario(env, { soPublicacoes: true }); } catch (e) { console.error('releitura do DJEN', e); } })() : (async () => { try { await fazerBackup(env); } catch (e) { console.error('backup', e); } try { await enviarSemanal(env); } catch (e) { console.error('resumo semanal', e); } })()));
   },
   async fetch(request, env, ctx) {
     return comSeguranca(await tratar(request, env, ctx));

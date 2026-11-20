@@ -131,6 +131,15 @@ srv2.close();
   mem.set('_djen|config', JSON.stringify({ oabs: [{ id: 'o1', nome: 'Hygor', numero: '60456', uf: 'GO', ativo: true, escopo: 'tudo', avisar: true, ultima: somar(hojeBR, -1), erro: 'O DJEN respondeu 403' }], ultimaLeitura: null, advsOk: true }));
   const rr = await relerSePreciso(e3);
   check(rr && pedidos >= 1 && !rr.porOab[0].erro && JSON.parse(mem.get('_djen|config')).oabs[0].ultima === hojeBR, 'releitura: se a leitura das 10h falhou, lê de novo e marca como lida hoje');
+  // 14h e 18h: lê sempre, mesmo que a leitura anterior tenha dado certo
+  pedidos = 0; mem.set('_djen|config', JSON.stringify({ oabs: [{ id: 'o1', nome: 'Hygor', numero: '60456', uf: 'GO', ativo: true, escopo: 'tudo', avisar: true, ultima: hojeBR }], ultimaLeitura: null, advsOk: true }));
+  const rs = await relerSePreciso(e3, { sempre: true });
+  check(rs && pedidos >= 1, 'releitura das 14h e 18h: lê sempre, mesmo com a leitura da manhã sem erro');
+  // o aviso de uma publicação nova não depende do "avisar" da OAB (esse vale só para o aparelho do proprietário)
+  mem.clear(); mem.set('_djen|config', JSON.stringify({ oabs: [{ id: 'o7', nome: 'Sócio', numero: '11111', uf: 'GO', ativo: true, escopo: 'tudo', avisar: false, ultima: somar(hojeBR, -1) }], ultimaLeitura: null, advsOk: true }));
+  await lerDjen(e3);
+  const nova = [...mem.entries()].filter(([k]) => k.startsWith('_pub|')).map(([, v]) => JSON.parse(v));
+  check(nova.length === 1 && nova[0].notificada === false, 'publicação nova de uma OAB com "avisar" desligado também entra no aviso de quem a vê (notificada = false)');
   srv3.close();
 }
 // "possivelmente encerrado": o que a publicação diz sobre o fim do processo

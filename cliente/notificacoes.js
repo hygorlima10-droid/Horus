@@ -145,8 +145,7 @@ function ntDesenhar(){
 (function(){
   var st = document.createElement('style');
   st.textContent = '.nt-lista{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:2px 12px}.nt-op{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border);cursor:pointer}.nt-op:first-child{border-top:0}' +
-    '.nt-tx{display:flex;flex-direction:column;gap:2px;min-width:0}.nt-tx small{font-size:var(--t2);color:var(--ink-soft);font-weight:400}.nt-sw{appearance:none;-webkit-appearance:none;flex:none;width:42px;height:25px;border-radius:99px;background:var(--border);position:relative;cursor:pointer;transition:background .15s;border:0}' +
-    '.nt-sw::after{content:"";position:absolute;left:3px;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}.nt-sw:checked{background:#17895A}.nt-sw:checked::after{transform:translateX(17px)}';
+    '.nt-tx{display:flex;flex-direction:column;gap:2px;min-width:0}.nt-tx small{font-size:var(--t2);color:var(--ink-soft);font-weight:400}';   /* a chave (.nt-sw) é do padrão visual: cliente/padrao-visual.js */
   document.head.appendChild(st);
 })();
 function ntAbrir(){ ntMontar(); ntDesenhar(); qs('overlayLembretes').classList.add('show'); ntCarregar().then(ntDesenhar); }

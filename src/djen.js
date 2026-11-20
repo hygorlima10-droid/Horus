@@ -8,6 +8,7 @@ import { completarAdvogados, chaveOab } from './advogados.js';
 import { ehDono, normalizarUsuario, escopoDoAdvogado } from './politica.js';
 import { sugerirPecas } from './pecas.js';
 import { registrar } from './auditoria.js';
+import { COL_USU } from './acesso.js';
 export const DJEN = 'https://comunicaapi.pje.jus.br/api/v1/comunicacao';
 let BASE = DJEN;   // os testes apontam DJEN_URL para um servidor de mentira
 let ESPERA = 1500;   // pausa entre as tentativas (os testes zeram com DJEN_ESPERA_MS)
@@ -246,7 +247,7 @@ export async function lerDjen(env, opcoes = {}) {
           if (mudou) gravacoes.push(gravar(env, COL_PUB, id, ex));
           continue;
         }
-        d.notificada = !(o.avisar && !primeira && d.data >= recente);   // a primeira leitura de uma OAB (histórico) não vira aviso
+        d.notificada = !(!primeira && d.data >= recente);   // toda publicação nova (não a primeira leitura de uma OAB, que é histórico) entra no aviso de quem a vê; o "avisar" da OAB só vale para o aparelho do proprietário (pubsDoProprietario)
         gravacoes.push(gravar(env, COL_PUB, id, d)); novas++;
       }
       for (let k = 0; k < gravacoes.length; k += 50) await env.DB.batch(gravacoes.slice(k, k + 50));
@@ -270,17 +271,24 @@ export async function lerDjen(env, opcoes = {}) {
   return resumo;
 }
 
-/* releitura das 12h, 14h, 16h e 18h: só lê de novo se a leitura das 10h falhou (alguma OAB ativa não leu hoje) */
-export async function relerSePreciso(env) {
+/* releitura das 12h, 14h, 16h e 18h: às 14h e às 18h (opcoes.sempre) lê sempre, para pegar o que o DJEN indexa depois da leitura da manhã;
+   às 12h e 16h só lê de novo se a leitura anterior falhou (alguma OAB ativa não leu hoje) */
+export async function relerSePreciso(env, opcoes = {}) {
   usar(env);
   const cfg = await lerCfg(env), ativas = cfg.oabs.filter((o) => o.ativo), hoje = hojeBR();
-  if (!ativas.length || ativas.every((o) => !o.erro && o.ultima === hoje)) return null;
+  if (!ativas.length) return null;
+  if (!opcoes.sempre && ativas.every((o) => !o.erro && o.ultima === hoje)) return null;
   return lerDjen(env);
 }
 /* publicações novas que ainda não viraram notificação (o resumo das 10h manda e marca) */
 export async function pubsParaAvisar(env) {
   const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.notificada') = 0 LIMIT 200").bind(COL_PUB).all();
   return results.map((r) => ({ id: r.id, ...JSON.parse(r.dados) }));
+}
+/* no aparelho do proprietário só entram as publicações das OABs com "avisar" ligado (as demais ele vê na lista e no selo) */
+export async function pubsDoProprietario(env, pubs) {
+  const cfg = await lerCfg(env), avisa = new Set(cfg.oabs.filter((o) => o.avisar !== false).map((o) => o.id));
+  return pubs.filter((d) => (d.oabs || []).some((id) => avisa.has(id)));
 }
 /* das publicações a avisar, as que interessam a uma pessoa: as das OABs dela (todas, se `todas`) */
 export async function pubsDaPessoa(env, pubs, oabs, todas) {
@@ -362,10 +370,17 @@ export function estadoDaPessoa(d, uid, papel) {
   const emOutros = [...Object.keys(d.lidaEm || {}).filter((k) => k !== uid && lp[k] === true).map((k) => d.lidaEm[k]), ...trat.map((t) => t.em)].filter(Boolean).sort();   // quando foi resolvida por outra pessoa (a aba "Resolvidas por outros" mostra os últimos 30 dias)
   return { lida, semPrazo, lidaAuto: lida && explicita === undefined, resolvidaEm: emOutros.length ? emOutros[emOutros.length - 1] : null, tratadas: trat.map((t) => ({ nome: primeiroNome(t.nome), papel: t.papel, em: t.em, como: t.como, meu: t.uid === uid })), leuPor };
 }
+/* chaves das OABs lidas pelo Horus que não pertencem a nenhum usuário ativo (ex.: sócio sem login): o proprietário é a segunda rede de segurança delas */
+async function oabsSemLogin(env, cfg) {
+  const { results } = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ?').bind(COL_USU).all();
+  const com = new Set();
+  for (const r of results) { const u = JSON.parse(r.dados); if (u.ativo !== false) for (const k of normalizarUsuario({ ...u, id: r.id }).oabs) com.add(k); }
+  return cfg.oabs.filter((o) => o.ativo && !o.principal && !com.has(chaveOab(o.numero, o.uf))).map((o) => chaveOab(o.numero, o.uf));   // a principal é a do próprio proprietário
+}
 async function visaoDePubs(env, auth, cfg, escopo) {
   const dono = ehDono(auth), u = normalizarUsuario(auth && auth.usuario), porId = new Map(cfg.oabs.map((o) => [o.id, chaveOab(o.numero, o.uf)])), papel = papelDe(auth), uid = uidDe(auth);
   let todas = dono || u.papel === 'estagiario', meus = new Set(u.oabs);
-  if (dono && escopo === 'meus') { todas = false; if (!meus.size) for (const o of cfg.oabs) if (o.principal) meus.add(chaveOab(o.numero, o.uf)); }   // proprietário sem OAB indicada: a principal
+  if (dono && escopo === 'meus') { todas = false; if (!meus.size) for (const o of cfg.oabs) if (o.principal) meus.add(chaveOab(o.numero, o.uf)); for (const k of await oabsSemLogin(env, cfg)) meus.add(k); }   // proprietário sem OAB indicada: a principal
   const doProcesso = !todas && papel === 'advogado' ? (await escopoDoAdvogado(env, auth)).processos : new Set();   // processos em que o advogado está cadastrado (Iniciais, Acordos, Alvarás, Processos)
   return {
     todas, meus, uid, papel, porId,
@@ -407,8 +422,11 @@ export async function djenRotas(request, env, partes, auth) {
     const dias = Math.min(Math.max(parseInt(u.searchParams.get('dias') || '60', 10) || 60, 1), MAX_DIAS_LISTA);
     const escopo = u.searchParams.get('escopo') === 'meus' ? 'meus' : '';
     const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.data') >= ? ORDER BY json_extract(dados, '$.data') DESC, id DESC LIMIT " + (ehDono(auth) && !escopo ? 1500 : 8000)).bind(COL_PUB, somarDiasISO(hojeBR(), -dias)).all();
-    const v = await visaoDePubs(env, auth, await lerCfg(env), escopo);
-    return json({ pubs: results.map((r) => JSON.parse(r.dados)).filter(v.ve).slice(0, 1500).map(v.como) });
+    const v = await visaoDePubs(env, auth, await lerCfg(env), escopo), todas = results.map((r) => JSON.parse(r.dados));
+    /* "fora da sua visão": no modo Minhas, publicações do escritório que ninguém abriu, tratou ou marcou "não é prazo" ainda (selo de segurança do proprietário) */
+    const ninguemViu = (d) => !d.lida && !d.semPrazo && !(Array.isArray(d.tratadas) && d.tratadas.length) && !Object.values(d.lidaPor || {}).some((x) => x === true) && !Object.values(d.semPrazoPor || {}).some((x) => x === true);
+    const fora = ehDono(auth) && escopo ? todas.filter((d) => !v.ve(d) && ninguemViu(d)).length : 0;
+    return json({ pubs: todas.filter(v.ve).slice(0, 1500).map(v.como), fora });
   }
   if (acao === 'buscar' && m === 'POST') {
     const b = await request.json().catch(() => ({}));
