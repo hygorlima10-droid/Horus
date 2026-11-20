@@ -8,7 +8,7 @@ let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA 
 const api = (m, p, b) => fetch(B + '/api/db/' + p, { method: m, headers: { cookie: 'sessao=' + TOK, 'content-type': 'application/json' }, body: b !== undefined ? JSON.stringify(b) : undefined }).then(r => r.status);
 const dia = (n) => new Date(Date.now() - 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10), agora = new Date().toISOString();
 // dados de exemplo para as telas terem botões: obra completa e processos sem cliente (revisão)
-await api('PUT', 'config/backup', { ultimoEm: agora });
+/* (não mexe em config/backup: o aviso de backup também tem botões, e outros testes do grupo contam com ele aparecendo) */
 await api('PUT', 'config/obra', { nome: 'Casa', orcamentoTotal: 400000, criadoEm: agora,
   financiamento: { status: 'aprovado', valor: 300000, banco: 'Caixa', taxaAnual: 12, sistema: 'sac', prazoMeses: 360, inicioObra: dia(-60).slice(0, 8) + '01', prazoObraMeses: 10, contrapartida: 100000 },
   etapas: [{ id: 'e1', nome: 'Fundação', orcado: 100000, status: 'concluida', ordem: 1 }, { id: 'e2', nome: 'Alvenaria', orcado: 150000, status: 'andamento', ordem: 2 }],
