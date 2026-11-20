@@ -39,13 +39,26 @@ Vistas por captura de tela: **Demarest, Lefosse, BMA, Felsberg**. Não abriram: 
 - **Boas práticas de guias 2026 (blogs de agências, tratar como orientação)**: dizer em segundos o que o escritório faz, onde e como falar; uma página por área, escrita a partir da dúvida do cliente; foto real e equipe como pessoas; conteúdo como prova de autoridade; FAQ; celular primeiro; carregar rápido; política de privacidade (LGPD); evitar pop-ups e sliders automáticos.
 - **Escritório de Brasil Salomão e Matthes (2026)** encomendou fotografia própria no escritório com a equipe: foto real vale mais que qualquer ilustração.
 
-## 5. Direção visual para o Falone
-- **Sensação:** sério, regional, de campo e de confiança — não "balança e martelo". Elegante e limpo, muito espaço em branco.
-- **Cores (propostas, validar com esboço):** fundo off-white quente; texto grafite; **uma cor principal** profunda (verde-musgo ou azul-marinho) e **um acento** dourado/bronze usado só em botão e detalhes. Contraste mínimo AA (4,5:1).
-- **Tipografia:** títulos em serifa editorial (ex.: Playfair Display, Cormorant ou Source Serif), texto em sem serifa legível (Inter, Source Sans). Texto mínimo 16 px no celular; títulos grandes.
-- **Imagens:** fotos reais (equipe, recepção, salas, fachada, paisagem local sem identificar clientes); tratamento uniforme (mesma luz/tom); nada de banco de imagens genérico.
+## 5. Identidade visual oficial do Falone (vale como lei; não inventar cores nem logotipo)
+Fonte: `Falone.pdf` (logotipo para fundo escuro), `Falone-Fundo-Branco.pdf` (para fundo claro), `Falone-sem-fundo.png` e `paleta_falone.html`, enviados pelo proprietário. Os PDFs são vetoriais (Illustrator), então viram SVG sem perda.
+- **Logotipo:** "F" dourado com folha verde, "FALONE" em serifada clássica de alto contraste e "ADVOGADOS" em sem serifa espaçada, entre dois filetes, com um pequeno detalhe em V embaixo; tudo em degradê dourado (de #DCBF66 a #B48543). Nunca recolorir, esticar, sombrear nem colocar sobre foto movimentada. Usar a versão sem fundo sobre o verde institucional e a de fundo branco sobre áreas claras; dar respiro em volta equivalente à altura do "F".
+- **Paleta oficial** (HEX; RGB/CMYK no arquivo da paleta):
+  - Verde Institucional (primária) **#183629**
+  - Ouro Envelhecido (secundária) **#C5A059**
+  - Cinza Grafite (apoio e texto) **#333333**
+  - Off-White (fundos e telas) **#F8F9FA**
+  - Folha do logotipo: verde mais vivo (≈ #2A9437), **só dentro do logotipo**, nunca como cor de interface.
+- **Contraste medido (mínimo AA = 4,5:1 para texto):** branco/off-white sobre verde 12–13:1 ✔; **ouro sobre verde 5,35:1 ✔**; grafite sobre off-white 12:1 ✔; verde sobre off-white 12,5:1 ✔; **ouro sobre off-white só 2,3:1 ✘** → ouro **não** serve para texto ou link em fundo claro (só filetes, ícones grandes e detalhes). Em fundo claro, links e botões usam o verde. Botão principal: fundo ouro com texto verde, ou fundo verde com texto off-white. A folha do logotipo sobre o verde tem contraste baixo (≈ 3,4:1): testar o logotipo no cabeçalho verde no esboço antes de aprovar.
+- **Tipografia:** títulos em serifada clássica de alto contraste, como o "FALONE" do logotipo (sugestão: Cormorant Garamond ou Playfair Display); texto e menus em Montserrat (a mesma família do "ADVOGADOS"). Tamanho mínimo 16 px no celular.
+- **Sensação:** sério, regional, de campo e de confiança, elegante e com muito espaço em branco — não "balança e martelo". Telas alternando faixas verde-escuro e off-white, filetes dourados finos, poucos elementos por tela.
 - **Componentes:** cabeçalho simples (Início, Áreas de atuação, Equipe, Artigos, Contato + telefone), um botão principal por tela, cartões de área, cartões de equipe, lista de artigos com data/área/autor, galeria em grade com ampliação, rodapé com endereço, telefones e OAB.
-- **Evitar:** slider automático, pop-up, animação pesada, emoji, ícone de balança, texto sobre foto sem contraste, rolagem lateral.
+- **Evitar:** slider automático, pop-up, animação pesada, emoji, ícone de balança, texto sobre foto sem contraste, rolagem lateral, qualquer cor fora da paleta.
+
+## 5b. Fotos (pastas do Drive: "Escritório - salas Falone" e "inauguração - Falone")
+- **Podem entrar na galeria:** fotos de ambientes sem pessoas — gabinete com a parede do logotipo e poltronas de couro, recepção com painel de mármore verde e luminárias circulares, sala com parede de pedra e estantes iluminadas (pasta "salas", cerca de 15 fotos; as demais da inauguração que mostrem só fachada/ambiente, sem gente).
+- **Não usar:** fotos com pessoas (convidados, clientes, comida e bebida da inauguração) sem **autorização de imagem por escrito** de cada pessoa retratada; foto com marca de terceiros ou de cliente visível (ex.: caderno da Sicoob na mesa, IMG_2906) e foto com reflexo de pessoa; fotos escuras ou desfocadas. Fotos de advogados da casa: só com consentimento e em retrato padronizado.
+- **Legendas neutras:** "Recepção", "Sala de reuniões", "Gabinete". Nada de metros quadrados, número de salas, "amplo", "moderno", "sofisticado" nem comparação.
+- **Tratamento técnico:** originais têm 3–6 MB (até 5712×4284); gerar WebP em 800 e 1600 px de largura, com `width`/`height`, carregamento preguiçoso e cor uniforme (mesma temperatura); remover metadados (EXIF/GPS). Escolher 8 a 12 fotos para a galeria, e 1 horizontal forte para a primeira tela.
 
 ## 6. Estrutura de páginas
 1. **Início**: frase curta do que o escritório faz e onde; 3 áreas principais; últimos artigos; equipe em destaque; endereço e contato.
