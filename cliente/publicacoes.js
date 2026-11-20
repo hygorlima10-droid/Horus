@@ -104,7 +104,7 @@ function pbCarregar(silencioso){
   if (!window.__SERVIDOR) return Promise.resolve();
   pbS.carregando = true;
   return Promise.all([pbApi('/api/djen/estado'), pbApi('/api/djen/lista?dias=90' + ((window.__horusEscopo && window.__horusEscopo.ativo && window.__horusEscopo.pub === 'minhas') ? '&escopo=meus' : ''))]).then(function(r){
-    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbS.fora = r[1].fora || 0; pbAgrupaTodos(); pbS.carregado = true;
+    pbS.oabs = r[0].oabs || []; pbS.ultima = r[0].ultimaLeitura; pbS.pubs = r[1].pubs || []; pbS.fora = r[1].fora || 0; pbS.truncado = !!r[1].truncado; pbAgrupaTodos(); pbS.carregado = true;
   }).catch(function(e){ pbS.erro = e.message; pbS.carregado = true; }).then(function(){
     pbS.carregando = false; pbAtualizarBadge(); if (!silencioso && activeTab === 'publicacoes') pbRender();
   });
@@ -480,8 +480,9 @@ function pbAvisoLeitura(){
 }
 /* selo de segurança do proprietário em "Minhas": publicações do escritório que ninguém abriu ainda e que estão fora da lista dele */
 function pbSeloFora(){
-  var e = window.__horusEscopo; if (!pbS.fora || !(e && e.ativo && e.pub === 'minhas')) return '';
-  return '<div class="aviso-sis" id="pbSeloFora"><span class="as-txt"><b>' + pbS.fora + '</b> ' + (pbS.fora === 1 ? 'publicação do escritório fora da sua visão' : 'publicações do escritório fora da sua visão') + ', que ninguém abriu ainda.</span><span class="as-acoes"><button type="button" class="btn btn-ghost" data-pb="ver-esc">Ver as do escritório</button></span></div>';
+  var e = window.__horusEscopo, corte = pbS.truncado ? '<div class="aviso-sis critico" id="pbAvisoCorte"><span class="as-txt">Há publicações antigas que não cabem na lista (limite de 3.000). Use os filtros de data para ver as mais velhas.</span></div>' : '';
+  if (!pbS.fora || !(e && e.ativo && e.pub === 'minhas')) return corte;
+  return corte + '<div class="aviso-sis" id="pbSeloFora"><span class="as-txt"><b>' + pbS.fora + '</b> ' + (pbS.fora === 1 ? 'publicação do escritório fora da sua visão' : 'publicações do escritório fora da sua visão') + ', que ninguém abriu ainda.</span><span class="as-acoes"><button type="button" class="btn btn-ghost" data-pb="ver-esc">Ver as do escritório</button></span></div>';
 }
 /* menu "☰": o que não é de uso toda hora (peças e prazos, relatório, marcar tudo como lido) */
 function pbMenuHtml(vis){

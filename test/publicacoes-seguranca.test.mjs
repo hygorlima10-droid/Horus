@@ -2,10 +2,11 @@
 // e o selo "fora da sua visão" do proprietário. Banco semeado do grupo 'permissoes':  node test/rodar.mjs publicacoes-seguranca
 import { createRequire } from 'node:module';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
-const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = { dono: 'tok-dono-0000000000000000000000000001', ana: 'tok-adv-ana-00000000000000000000000002', caio: 'tok-est-caio-0000000000000000000000004' };
+const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = { dono: 'tok-dono-0000000000000000000000000001', ana: 'tok-adv-ana-00000000000000000000000002', caio: 'tok-est-caio-0000000000000000000000004', bruno: 'tok-adv-bruno-000000000000000000000003', dani: 'tok-est-dani-0000000000000000000000005', edu: 'tok-est-edu-00000000000000000000000000006' };
 let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
 const api = async (n, m, pth, b) => { const x = await fetch(B + pth, { method: m, headers: { cookie: 'sessao=' + TOK[n], 'content-type': 'application/json' }, body: b !== undefined ? JSON.stringify(b) : undefined }); let j = null; try { j = await x.json(); } catch (e) { /* sem corpo */ } return { s: x.status, j }; };
-for (const n of ['dono', 'ana', 'caio']) await api(n, 'POST', '/api/djen/marcar', { ids: ['100', '101', '102', '103', '104'], lida: null, semPrazo: null, tratada: false });
+for (const n of ['dono', 'ana', 'bruno', 'caio', 'dani', 'edu']) await api(n, 'POST', '/api/djen/marcar', { ids: ['100', '101', '102', '103', '104'], lida: null, semPrazo: null, tratada: false });
+const oabsDono0 = (await api('dono', 'GET', '/api/eu')).j.oabs || [];
 await api('dono', 'PUT', '/api/usuarios/u1', { oabs: [] });   // testes anteriores do grupo indicaram outra OAB para o proprietário: volta ao ponto de partida (vale a principal)
 const orig = (await api('dono', 'GET', '/api/djen/estado')).j.oabs;
 const escopar = (e) => api('dono', 'PUT', '/api/djen/oabs', { oabs: orig.map(o => ({ id: o.id, nome: o.nome, numero: o.numero, uf: o.uf, ativo: o.ativo, escopo: o.numero === '11111' ? e : o.escopo, avisar: o.avisar, principal: o.principal })) });
@@ -37,5 +38,6 @@ const g = await page.evaluate(() => {
 check(g[0] === 2 && g[1] === 1 && g[2] === 2, 'mesmo texto e dia: duas "Decisão" juntam; a "Outros" fica separada: ' + g);
 await br.close();
 await escopar('tudo');   // volta ao escopo original da semente
+if (oabsDono0.length) await api('dono', 'PUT', '/api/usuarios/u1', { oabs: oabsDono0 });   // e à OAB que o proprietário tinha indicado (os testes seguintes do grupo contam com ela)
 check((await api('dono', 'GET', '/api/djen/estado')).j.oabs.find(o => o.numero === '11111').escopo === 'tudo', 'escopo da OAB da Ana restaurado');
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);

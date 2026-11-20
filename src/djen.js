@@ -17,7 +17,7 @@ const FUSO_MS = -3 * 3600e3, DIA = 864e5;
 const hojeBR = () => new Date(Date.now() + FUSO_MS).toISOString().slice(0, 10);
 const somarDiasISO = (iso, n) => new Date(Date.parse(iso + 'T12:00:00Z') + n * DIA).toISOString().slice(0, 10);
 const COL_PUB = '_pub', COL_CFG = '_djen';
-const MAX_DIAS_LISTA = 400, MAX_OABS = 10, ORCAMENTO_BUSCAS = 36;
+const MAX_DIAS_LISTA = 400, MAX_OABS = 10, ORCAMENTO_BUSCAS = 36, MAX_LISTA = 3000;
 
 /* ---------- texto das publicações ---------- */
 const ENTIDADES = {};
@@ -421,12 +421,17 @@ export async function djenRotas(request, env, partes, auth) {
   if (acao === 'lista' && m === 'GET') {
     const dias = Math.min(Math.max(parseInt(u.searchParams.get('dias') || '60', 10) || 60, 1), MAX_DIAS_LISTA);
     const escopo = u.searchParams.get('escopo') === 'meus' ? 'meus' : '';
-    const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.data') >= ? ORDER BY json_extract(dados, '$.data') DESC, id DESC LIMIT " + (ehDono(auth) && !escopo ? 1500 : 8000)).bind(COL_PUB, somarDiasISO(hojeBR(), -dias)).all();
-    const v = await visaoDePubs(env, auth, await lerCfg(env), escopo), todas = results.map((r) => JSON.parse(r.dados));
+    const ini = somarDiasISO(hojeBR(), -dias), limite = ehDono(auth) && !escopo ? MAX_LISTA : 8000;
+    const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.data') >= ? ORDER BY json_extract(dados, '$.data') DESC, id DESC LIMIT " + limite).bind(COL_PUB, ini).all();
+    const v = await visaoDePubs(env, auth, await lerCfg(env), escopo), janela = results.map((r) => JSON.parse(r.dados));
+    /* publicações mais antigas que a janela (até os 400 dias guardados) que ainda não foram resolvidas por ninguém: entram sempre, para uma pendência velha não sumir da tela só por ser velha */
+    const antigas = (await env.DB.prepare("SELECT dados FROM docs WHERE colecao = ? AND json_extract(dados, '$.data') < ? AND coalesce(json_extract(dados, '$.lida'), 0) = 0 AND json_extract(dados, '$.tratadas') IS NULL ORDER BY json_extract(dados, '$.data') DESC LIMIT 2000").bind(COL_PUB, ini).all()).results.map((r) => JSON.parse(r.dados)).filter((d) => v.ve(d) && !estadoDaPessoa(d, v.uid, v.papel).lida);
+    const todas = janela.concat(antigas);
     /* "fora da sua visão": no modo Minhas, publicações do escritório que ninguém abriu, tratou ou marcou "não é prazo" ainda (selo de segurança do proprietário) */
     const ninguemViu = (d) => !d.lida && !d.semPrazo && !(Array.isArray(d.tratadas) && d.tratadas.length) && !Object.values(d.lidaPor || {}).some((x) => x === true) && !Object.values(d.semPrazoPor || {}).some((x) => x === true);
-    const fora = ehDono(auth) && escopo ? todas.filter((d) => !v.ve(d) && ninguemViu(d)).length : 0;
-    return json({ pubs: todas.filter(v.ve).slice(0, 1500).map(v.como), fora });
+    const fora = ehDono(auth) && escopo ? janela.filter((d) => !v.ve(d) && ninguemViu(d)).length : 0;
+    const visiveis = todas.filter(v.ve);
+    return json({ pubs: visiveis.slice(0, MAX_LISTA + antigas.length).map(v.como), fora, truncado: results.length >= limite || visiveis.length > MAX_LISTA + antigas.length, antigas: antigas.length });
   }
   if (acao === 'buscar' && m === 'POST') {
     const b = await request.json().catch(() => ({}));
