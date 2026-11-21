@@ -1,6 +1,8 @@
 # Site novo: fontes e conferência dos 3 artigos do esboço (21/11/2026)
 
-Os três textos (leilão de imóvel rural, direitos do cooperado, inventário) são **textos-modelo**. Foram escritos com base em fontes reais, mas **precisam de revisão de um advogado antes de publicar**. Os artigos autorais virão depois.
+Os três textos (leilão de imóvel rural, direitos do cooperado, inventário) foram escritos com base em fontes reais. **Por decisão do proprietário (21/11), aparecem no site como "Publicado e conferido por Dr. Hygor Lima Andrade"**; a conferência dos itens "a conferir" abaixo (que eu não consegui fazer na fonte oficial) fica a cargo dele. Os artigos autorais virão depois.
+
+**Regra para os próximos artigos (inclusive os que vierem pelo Horus):** cada artigo terá **autor** e **quem conferiu**, e o site mostra os dois (hoje: campos `autor` e `conferido` de cada artigo; só aparecem quando preenchidos).
 
 ## Como as fontes foram conferidas
 - Os sites oficiais (Planalto, Câmara, Senado) **não abriram** pela rede da sessão (bloqueio de rede, mesmo depois de liberados), então o texto das leis **não foi lido direto da fonte oficial**.
@@ -47,9 +49,10 @@ Os três textos (leilão de imóvel rural, direitos do cooperado, inventário) s
 | Resolução CNJ nº 35/2007 e nº 571/2024 (ampliação do inventário em cartório) | conhecimento | **a conferir** (principalmente a 571/2024 e as hipóteses com testamento e incapazes) |
 | Resolução do Senado nº 9/1992 (alíquota máxima de 8%); CF art. 155, I | conhecimento | **a conferir** |
 | Lei 6.858/1980 (valores sem inventário) | conhecimento | **a conferir** |
+| ITCMD em Goiás: alíquota de 2% a 8%, conforme o valor do quinhão recebido | informado pelo proprietário (advogado em Goiás); sem número de artigo no texto | informado; **conferir no Código Tributário do Estado de Goiás (Lei 11.651/1991)** |
+| Multa do ITCMD por atraso | removida do artigo a pedido do proprietário | não citada |
 | Lista de documentos | prática comum de cartórios e juízos | informativa; **ver exigências de Goiás e do cartório escolhido** |
 
 ## Pendências para fechar a conferência
 1. Liberar acesso ao Planalto/Câmara/Senado numa sessão em que o bloqueio de rede não ocorra, ou um advogado do escritório conferir os itens "a conferir".
-2. Confirmar a multa e a alíquota do ITCMD em **Goiás** e se o prazo do art. 611 do CPC é cobrado no inventário em cartório.
-3. Escolher o advogado revisor e o autor de cada artigo (hoje os textos aparecem como "Texto-modelo em revisão", sem nome de autor).
+2. Informar o **autor** de cada um dos três artigos (hoje só aparece quem conferiu: Dr. Hygor Lima Andrade).
