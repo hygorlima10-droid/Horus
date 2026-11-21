@@ -1927,6 +1927,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -13099,9 +13100,9 @@ var EX = (function(){
   function ehDoc(s){ return /^(\d{2,3}\.\d{3}\.\d{3}[\/ -]?\d{0,4}-?\d{2}|\*{3}\.\d{3}\.\d{3}-\*{2})$/.test(String(s).trim()); }
 
   /* PDF -> linhas de texto, pela posição de cada pedaço (pdf.js) */
-  async function pdfLinhas(pdfjsLib, bytes){
-    var doc = await pdfjsLib.getDocument({ data: bytes }).promise;
-    var out = [];
+  async function pdfLinhas(pdfjsLib, bytes, senha){
+    var doc = await pdfjsLib.getDocument({ data: bytes, password: senha || undefined }).promise;
+    var out = []; out.x = [];
     for (var p = 1; p <= doc.numPages; p++){
       var page = await doc.getPage(p), tc = await page.getTextContent();
       var its = tc.items.filter(function(i){ return i.str && i.str.trim(); }).map(function(i){ return { s: i.str, x: i.transform[4], y: Math.round(i.transform[5]), w: i.width }; });
@@ -13112,7 +13113,7 @@ var EX = (function(){
         r.its.sort(function(a, b){ return a.x - b.x; });
         var s = '', last = null;
         r.its.forEach(function(it){ if (last !== null){ var g = it.x - last; s += g > 12 ? '   ' : (g > 1 ? ' ' : ''); } s += it.s; last = it.x + (it.w || 0); });
-        out.push(s.trim());
+        out.push(s.trim()); out.x.push(Math.round(r.its[0].x));
       });
     }
     return out;
@@ -13120,6 +13121,8 @@ var EX = (function(){
 
   function detectar(L){
     var t = L.join('\n');
+    if (/Extrato personalizado/i.test(t) && /C6 Bank/i.test(t) && /(CNPJ|CPF):\s*[\d./-]+/.test(t) && /Per[ií]odo da Exporta[çc][ãa]o/i.test(t)) return 'c6PJ';
+    if (/(CPF|CNPJ):\s*[\d./-]+\s+ag[êe]ncia:\s*\d+\s+conta:/i.test(t) && /Valor \(R\$\)\s+Saldo \(R\$\)/i.test(t) && /ita[úu]/i.test(t)) return 'itauWeb';
     if (/SICOOB/.test(t) && /HIST[ÓO]RICO DE MOVIMENTA/.test(t)) return 'sicoob';
     if (/extrato conta \/ lan[çc]amentos/i.test(t)) return 'itauPF';
     if (/SALDO TOTAL DISPON/.test(t) && /Lan[çc]amentos do per[ií]odo/i.test(t)) return 'itauPJ';
@@ -13249,7 +13252,102 @@ var EX = (function(){
     return r;
   }
 
-  var LEIT = { itauPF: lerItauPF, itauPJ: lerItauPJ, sicoob: lerSicoob };
+  function docFmt(d, rot){
+    var x = String(d || '').replace(/\D/g, '');
+    if (/cpf/i.test(rot || '') && x.length > 11) x = x.slice(-11);
+    if (x.length === 11) return x.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    if (x.length === 14) return x.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    return String(d || '');
+  }
+  var NUMP = '\\d{1,3}(?:\\.\\d{3})*,\\d{2}';
+
+  /* Itaú, layout novo (extrato do site/app, "Extrato conta corrente"): colunas Data | Lançamentos | Descrição | Valor | Saldo.
+     A linha só com data e valor é o saldo do fim do dia; textos que quebram de linha continuam o lançamento de cima
+     (começando na coluna do tipo ou na da descrição). */
+  function lerItauWeb(L){
+    var r = { banco: 'Itaú', tipoConta: 'pf', lanc: [], saldos: {}, saldoAtual: null, titular: {} };
+    var X = L.x || [], cur = null, m, i;
+    for (i = 0; i < L.length; i++){
+      var ln = L[i], x = X[i] === undefined ? 40 : X[i];
+      if ((m = ln.match(/^(CPF|CNPJ):\s*([\d./-]+)\s+ag[êe]ncia:\s*(\d+)\s+conta:\s*([\d-]+)/i))){
+        r.tipoConta = /cnpj/i.test(m[1]) ? 'pj' : 'pf';
+        r.titular = { nome: (L[i - 1] || '').trim(), doc: docFmt(m[2], m[1]) }; r.ag = m[3];
+        var pc = m[4].split('-');
+        r.cc = (r.tipoConta === 'pf' ? ('000000' + pc[0]).slice(-6) : pc[0]) + (pc[1] ? '-' + pc[1] : '');
+        cur = null; continue;
+      }
+      if ((m = ln.match(/Per[ií]odo de visualiza[çc][ãa]o:\s*(\d{2}\/\d{2}\/\d{4}) at[ée] (\d{2}\/\d{2}\/\d{4})/i))){ r.de = iso(m[1]); r.ate = iso(m[2]); }
+      if ((m = ln.match(/Emitido em:\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})/i))) r.emitido = iso(m[1]) + 'T' + m[2];
+      if (/^Saldo em conta$/i.test(ln) && L[i + 1]){ var ms = L[i + 1].match(new RegExp('R\\$\\s*(' + NUM + ')')); if (ms) r.saldoAtual = cents(ms[1]); cur = null; continue; }
+      m = ln.match(/^(\d{2}\/\d{2}\/\d{4})\s+(.*)$/);
+      if (m){
+        var rest = m[2].trim();
+        if (new RegExp('^' + NUM + '$').test(rest)){ r.saldos[iso(m[1])] = cents(rest); cur = null; continue; }
+        var mv = rest.match(new RegExp('(?:^|\\s)(' + NUM + ')\\s*$'));
+        var cols = mv ? rest.slice(0, mv.index).trim().split(/\s{3,}/).filter(Boolean) : [];
+        if (!mv || !cols.length){ cur = null; continue; }
+        cur = { data: iso(m[1]), desc: cols[0], nome: cols.slice(1).join(' '), doc: '', valor: cents(mv[1]) };
+        r.lanc.push(cur); continue;
+      }
+      if (cur && x >= 80){
+        var partes = ln.split(/\s{3,}/);
+        if (x < 180){ cur.desc = (cur.desc + ' ' + partes[0]).trim(); if (partes.length > 1) cur.nome = (cur.nome + ' ' + partes.slice(1).join(' ')).trim(); }
+        else cur.nome = (cur.nome + ' ' + ln).trim();
+        continue;
+      }
+      cur = null;
+    }
+    r.conf = conferir(r.lanc, r.saldos, null);
+    return r;
+  }
+
+  /* C6 Bank, "Extrato personalizado" (PDF exportado pelo app): Data lançamento | Data contábil | Tipo | Descrição | Valor.
+     Datas vêm só com dia/mês; o ano vem do título de cada mês ("Novembro 2026 ( ... )"). Não traz saldo; a conferência usa
+     os totais "Entradas/Saídas" de cada mês. */
+  function lerC6PJ(L){
+    var r = { banco: 'C6 Bank', tipoConta: 'pj', lanc: [], saldos: {}, saldoAtual: null, titular: {} };
+    var X = L.x || [], cur = null, sec = null, secs = [], m, i, anoRef = null;
+    for (i = 0; i < L.length; i++){
+      var ln = L[i], x = X[i] === undefined ? 36 : X[i];
+      if ((m = ln.match(/^(.+?)\s+•\s+(CNPJ|CPF):\s*([\d./-]+)/))){ r.titular = { nome: m[1].trim(), doc: m[3] }; r.tipoConta = /cnpj/i.test(m[2]) ? 'pj' : 'pf'; cur = null; continue; }
+      if ((m = ln.match(/Ag[êe]ncia:\s*(\d+)\s+•\s+Conta:\s*([\d-]+)/i))){ r.ag = m[1]; r.cc = m[2]; cur = null; continue; }
+      if ((m = ln.match(/Exportado em\s+(\d{2})\/(\d{2})\/(\d{2,4})\s+às\s+(\d{2}:\d{2})/i))){ r.emitido = (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + m[2] + '-' + m[1] + 'T' + m[4] + ':00'; cur = null; continue; }
+      if ((m = ln.match(/^(\d{2}\/\d{2}\/\d{4})\s+a\s+(\d{2}\/\d{2}\/\d{4})$/))){ r.de = iso(m[1]); r.ate = iso(m[2]); anoRef = +m[2].slice(6); cur = null; continue; }
+      if ((m = ln.match(new RegExp('^[A-Za-zÀ-ú]+\\s+(\\d{4})\\s*\\(\\s*(\\d{2}/\\d{2}/\\d{4})\\s*-\\s*(\\d{2}/\\d{2}/\\d{4})\\s*\\)\\s*(?:Entradas:\\s*R\\$\\s*(' + NUMP + ')\\s*•?\\s*Sa[ií]das:\\s*R\\$\\s*(' + NUMP + '))?')))){
+        if (sec) secs.push(sec);
+        sec = { ano: +m[1], de: iso(m[2]), ate: iso(m[3]), ent: m[4] ? cents(m[4]) : null, sai: m[5] ? cents(m[5]) : null, somaE: 0, somaS: 0 };
+        cur = null; continue;
+      }
+      m = ln.match(/^(\d{2})\/(\d{2})\s+\d{2}\/\d{2}\s+(.*)$/);
+      if (m){
+        var rest = m[3].trim(), mv = rest.match(new RegExp('(-)?\\s*R\\$\\s*(-)?\\s*(' + NUMP + ')\\s*$'));
+        if (!mv){ cur = null; continue; }
+        var corpo = rest.slice(0, mv.index).trim(), cols = corpo.split(/\s{3,}/).filter(Boolean), tipo = '', descr = corpo;
+        if (cols.length >= 2){ tipo = cols[0]; descr = cols.slice(1).join(' '); }
+        else { var mt = corpo.match(/^((?:Entrada|Sa[ií]da)\s+\S+)\s+(.*)$/i); if (mt){ tipo = mt[1]; descr = mt[2]; } }
+        var neg = !!(mv[1] || mv[2]) || /^Sa[ií]da/i.test(tipo), v = cents(mv[3]) * (neg ? -1 : 1);
+        var ano = sec ? sec.ano : (anoRef || new Date().getFullYear());
+        var mp = descr.match(/^(Pix (?:recebido|enviado)(?: c6)?|Transfer[êe]ncia(?: recebida| enviada)?|TED(?: recebida| enviada)?|DOC(?: recebido| enviado)?)\s+(?:de|para)\s+(.+)$/i);
+        cur = { data: ano + '-' + m[2] + '-' + m[1], desc: mp ? mp[1] : descr, nome: mp ? mp[2] : '', doc: '', valor: v };
+        r.lanc.push(cur);
+        if (sec){ if (v > 0) sec.somaE += v; else sec.somaS += -v; }
+        continue;
+      }
+      if (cur && x > 100){ if (cur.nome) cur.nome = (cur.nome + ' ' + ln).trim(); else cur.desc = (cur.desc + ' ' + ln).trim(); continue; }
+      cur = null;
+    }
+    if (sec) secs.push(sec);
+    var conf = { conferidos: 0, divergencias: [] };
+    secs.forEach(function(s){
+      if (s.ent === null || s.sai === null) return;
+      if (s.ent === s.somaE && s.sai === s.somaS) conf.conferidos++;
+      else conf.divergencias.push({ de: s.de, ate: s.ate, esperado: s.ent - s.sai, obtido: s.somaE - s.somaS });
+    });
+    r.conf = conf;
+    return r;
+  }
+
+  var LEIT = { itauPF: lerItauPF, itauPJ: lerItauPJ, sicoob: lerSicoob, itauWeb: lerItauWeb, c6PJ: lerC6PJ };
 
   /* impressão digital de cada linha: data + valor + texto + ordem entre linhas idênticas */
   function fnv(s){ var h = 0x811c9dc5; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); }
@@ -13266,7 +13364,7 @@ var EX = (function(){
     if (!t) return null;
     var r = LEIT[t](L);
     r.formato = t;
-    r.chave = (t === 'sicoob' ? 'sicoob' : 'itau') + '-' + String(r.ag || '?') + '-' + String(r.cc || '?').replace(/[^0-9A-Za-z-]/g, '');
+    r.chave = (t === 'sicoob' ? 'sicoob' : (t === 'c6PJ' ? 'c6' : 'itau')) + '-' + String(r.ag || '?') + '-' + String(r.cc || '?').replace(/[^0-9A-Za-z-]/g, '');
     marcarHashes(r);
     return r;
   }
@@ -14298,7 +14396,7 @@ function extReclassificar(cc){
 
 
 /* ---------- Extratos por arquivo do celular (PDF do Itaú/Sicoob ou OFX) e arquivos recebidos pelo Compartilhar ---------- */
-var impEstado = { rodando: false, info: '', erro: '', recebidos: [], carregou: false, tentados: {} };
+var impEstado = { rodando: false, info: '', erro: '', recebidos: [], carregou: false, tentados: {}, senha: '', auto: false };
 function impBytesParaTexto(buf){
   var u = new Uint8Array(buf);
   try{ var t = new TextDecoder('utf-8', { fatal: true }).decode(u); return t; }catch(e){ return new TextDecoder('windows-1252').decode(u); }
@@ -14312,8 +14410,8 @@ function ofxCentavos(v){ var x = String(v).replace(/\s/g, ''); if (x.indexOf(','
 function ofxLer(txt){
   if (!/<OFX>/i.test(txt) && !/<STMTTRN>/i.test(txt)) return null;
   var bankId = ofxTag(txt, 'BANKID').replace(/^0+/, ''), ag = ofxTag(txt, 'BRANCHID').replace(/[^0-9A-Za-z-]/g, ''), cc = ofxTag(txt, 'ACCTID').replace(/[^0-9A-Za-z-]/g, '');
-  var banco = bankId === '341' ? 'Itaú' : (bankId === '756' ? 'Sicoob' : (ofxTag(txt, 'ORG') || ('Banco ' + (bankId || '?'))));
-  var chaveBanco = bankId === '341' ? 'itau' : (bankId === '756' ? 'sicoob' : ('b' + (bankId || 'x')));
+  var banco = bankId === '341' ? 'Itaú' : (bankId === '756' ? 'Sicoob' : (bankId === '336' ? 'C6 Bank' : (ofxTag(txt, 'ORG') || ('Banco ' + (bankId || '?')))));
+  var chaveBanco = bankId === '341' ? 'itau' : (bankId === '756' ? 'sicoob' : (bankId === '336' ? 'c6' : ('b' + (bankId || 'x'))));
   var chave = chaveBanco + '-' + (ag || '?') + '-' + (cc || '?');
   var r = { banco: banco, tipoConta: 'pf', ag: ag, cc: cc, titular: {}, lanc: [], saldos: {}, saldoAtual: null, formato: 'ofx', chave: chave, conf: { conferidos: 0, divergencias: [] } };
   var vistos = {};
@@ -14333,20 +14431,122 @@ function ofxLer(txt){
   if (!r.emitido) r.emitido = new Date().toISOString().slice(0, 19);
   return r;
 }
+/* ---------- senha e zip (o C6 manda o OFX dentro de um zip com senha; o PDF do C6 PJ também vem com senha) ---------- */
+/* a senha digitada fica só na memória, até fechar o app; nunca é gravada */
+var IMP_CRC = (function(){ var tb = [], c, n, k; for (n = 0; n < 256; n++){ c = n; for (k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); tb[n] = c >>> 0; } return tb; })();
+function impCrc32(u){ var c = 0xFFFFFFFF; for (var i = 0; i < u.length; i++) c = IMP_CRC[(c ^ u[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function impEhZip(buf){ var u = new Uint8Array(buf); return u.length > 4 && u[0] === 0x50 && u[1] === 0x4B && u[2] === 3 && u[3] === 4; }
+function impErroSenha(){ var e = new Error('senha'); e.senhaErrada = true; return e; }
+function impPedirSenha(msg, errada){
+  return new Promise(function(res){
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="impSenhaT" style="background:#fff;color:#111;border-radius:18px;padding:20px;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25)">' +
+      '<div id="impSenhaT" style="font-weight:700;font-size:17px;margin-bottom:6px">' + escapeHtml(msg) + '</div>' +
+      '<div style="font-size:13.5px;color:#555;margin-bottom:12px;line-height:1.45">' + (errada ? '<b style="color:#c0392b">Senha incorreta.</b> ' : '') + 'No C6 PJ costuma ser os 6 primeiros dígitos do CNPJ. A senha não fica guardada: vale só até fechar o app.</div>' +
+      '<input type="password" id="impSenhaIn" autocomplete="off" autocapitalize="off" style="width:100%;box-sizing:border-box;font-size:17px;padding:12px;border:1px solid #ccc;border-radius:12px;margin-bottom:14px">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn btn-ghost" id="impSenhaNao">Cancelar</button><button type="button" class="btn btn-primary" id="impSenhaOk">Abrir</button></div></div>';
+    document.body.appendChild(ov);
+    var inp = ov.querySelector('#impSenhaIn');
+    function fim(v){ if (ov.parentNode) ov.parentNode.removeChild(ov); res(v); }
+    ov.querySelector('#impSenhaOk').onclick = function(){ fim(inp.value.trim()); };
+    ov.querySelector('#impSenhaNao').onclick = function(){ fim(null); };
+    inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') fim(inp.value.trim()); if (e.key === 'Escape') fim(null); });
+    setTimeout(function(){ inp.focus(); }, 60);
+  });
+}
+/* tenta a senha lembrada; se não servir (ou não houver), pergunta. Na leitura automática não pergunta: deixa o arquivo na lista. */
+function impComSenha(msg, fn){
+  var tent = 0;
+  function passo(){
+    var obter = (tent === 0 && impEstado.senha) ? Promise.resolve(impEstado.senha) : (impEstado.auto ? Promise.resolve(null) : impPedirSenha(msg, tent > 0));
+    return obter.then(function(s){
+      if (!s) throw new Error('Arquivo com senha. Toque em "Ler os recebidos" (ou escolha o arquivo de novo) para informar a senha.');
+      return fn(s).then(function(r){ impEstado.senha = s; return r; }, function(e){
+        if (e && e.senhaErrada && tent < 3){ tent++; impEstado.senha = ''; return passo(); }
+        if (e && e.senhaErrada) throw new Error('Senha incorreta.');
+        throw e;
+      });
+    });
+  }
+  return passo();
+}
+function impZipEntradas(buf){
+  var u = new Uint8Array(buf), dv = new DataView(buf), i, fim = -1;
+  for (i = u.length - 22; i >= Math.max(0, u.length - 65557); i--){ if (dv.getUint32(i, true) === 0x06054b50){ fim = i; break; } }
+  if (fim < 0) throw new Error('Não consegui abrir este zip.');
+  var n = dv.getUint16(fim + 10, true), off = dv.getUint32(fim + 16, true), out = [];
+  for (var k = 0; k < n; k++){
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    var nl = dv.getUint16(off + 28, true), el = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true);
+    out.push({ nome: new TextDecoder('utf-8').decode(u.subarray(off + 46, off + 46 + nl)), flags: dv.getUint16(off + 8, true), metodo: dv.getUint16(off + 10, true), crc: dv.getUint32(off + 16, true), cs: dv.getUint32(off + 20, true), lo: dv.getUint32(off + 42, true) });
+    off += 46 + nl + el + cl;
+  }
+  return out;
+}
+/* criptografia tradicional do zip (ZipCrypto), a mesma que o C6 usa */
+function impZipDecifrar(d, senha){
+  var k0 = 0x12345678, k1 = 0x23456789, k2 = 0x34567890, i;
+  function upd(b){ k0 = (IMP_CRC[(k0 ^ b) & 0xFF] ^ (k0 >>> 8)) >>> 0; k1 = (Math.imul((k1 + (k0 & 0xFF)) >>> 0, 134775813) + 1) >>> 0; k2 = (IMP_CRC[(k2 ^ (k1 >>> 24)) & 0xFF] ^ (k2 >>> 8)) >>> 0; }
+  var sb = new TextEncoder().encode(senha);
+  for (i = 0; i < sb.length; i++) upd(sb[i]);
+  var out = new Uint8Array(d.length);
+  for (i = 0; i < d.length; i++){ var tmp = (k2 | 2) & 0xFFFF, c = d[i] ^ (((tmp * (tmp ^ 1)) >>> 8) & 0xFF); upd(c); out[i] = c; }
+  return out.subarray(12);
+}
+function impInflar(u){
+  if (typeof DecompressionStream === 'undefined') return Promise.reject(new Error('Este navegador não abre zip. Extraia o arquivo e envie o .ofx ou o PDF solto.'));
+  var ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter();
+  w.write(u).catch(function(){}); w.close().catch(function(){});
+  return new Response(ds.readable).arrayBuffer().then(function(b){ return new Uint8Array(b); });
+}
+function impZipEntrada(buf, e, senha){
+  var dv = new DataView(buf), u = new Uint8Array(buf), nl = dv.getUint16(e.lo + 26, true), el = dv.getUint16(e.lo + 28, true), ini = e.lo + 30 + nl + el;
+  var d = u.subarray(ini, ini + e.cs);
+  if (e.flags & 1) d = impZipDecifrar(d, senha);
+  var p = e.metodo === 0 ? Promise.resolve(d) : (e.metodo === 8 ? impInflar(d) : Promise.reject(new Error('Este zip usa um formato de compactação que o app não abre.')));
+  return p.then(function(x){ if (impCrc32(x) !== e.crc) throw impErroSenha(); return x; }, function(err){ if (e.flags & 1) throw impErroSenha(); throw err; });
+}
+function impAbrirZip(buf){
+  var es = impZipEntradas(buf).filter(function(e){ return /\.(ofx|pdf)$/i.test(e.nome); });
+  if (!es.length) return Promise.reject(new Error('O zip não tem extrato (.ofx ou .pdf) dentro.'));
+  if (es.some(function(e){ return e.metodo === 99; })) return Promise.reject(new Error('Este zip usa criptografia AES, que o app ainda não abre. Extraia o arquivo no celular e envie o .ofx solto.'));
+  function abrirTodos(senha){
+    return es.reduce(function(p, e){ return p.then(function(acc){ return impZipEntrada(buf, e, senha).then(function(x){ acc.push({ nome: e.nome.split('/').pop(), buf: x.buffer.slice(x.byteOffset, x.byteOffset + x.byteLength) }); return acc; }); }); }, Promise.resolve([]));
+  }
+  if (!es.some(function(e){ return e.flags & 1; })) return abrirTodos('');
+  return impComSenha('Este zip tem senha.', abrirTodos);
+}
+
 function impLerBytes(nome, buf){
   var u = new Uint8Array(buf), ehPdf = u.length > 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
   if (ehPdf){
-    return extCarregarPdfJs().then(function(pdfjs){ return EX.pdfLinhas(pdfjs, new Uint8Array(buf.slice(0))); }).then(function(L){
+    var abrir = function(senha){ return extCarregarPdfJs().then(function(pdfjs){ return EX.pdfLinhas(pdfjs, new Uint8Array(buf.slice(0)), senha); }); };
+    return abrir().catch(function(e){
+      if (!(e && e.name === 'PasswordException')) throw e;
+      return impComSenha('Este PDF tem senha.', function(s){ return abrir(s).catch(function(e2){ if (e2 && e2.name === 'PasswordException') throw impErroSenha(); throw e2; }); });
+    }).then(function(L){
       var r = EX.ler(L);
-      if (!r) throw new Error('Não reconheci o formato deste PDF (por enquanto: extratos do Itaú PF/PJ e do Sicoob).');
+      if (!r) throw new Error('Não reconheci o formato deste PDF (por enquanto: extratos do Itaú PF/PJ, do Sicoob e do C6 PJ). Se puder, envie o OFX.');
       return { r: r, sig: EX.fnv(L.join('\n')) };
     });
   }
   var txt = impBytesParaTexto(buf), r = ofxLer(txt);
-  if (!r) throw new Error('Formato não suportado. Envie o PDF do extrato (Itaú ou Sicoob) ou um arquivo OFX.');
+  if (!r) throw new Error('Formato não suportado. Envie o PDF do extrato (Itaú, Sicoob ou C6), um arquivo OFX ou o zip do C6.');
   return Promise.resolve({ r: r, sig: EX.fnv(txt) });
 }
 function impProcessar(nome, buf){
+  if (impEhZip(buf)){
+    return impAbrirZip(buf).then(function(itens){
+      var res = [], cadeia = Promise.resolve();
+      itens.forEach(function(it){ cadeia = cadeia.then(function(){ return impProcessar(it.nome, it.buf); }).then(function(x){ res.push(x); }); });
+      return cadeia.then(function(){
+        var ok = res.filter(function(x){ return x.ok; });
+        if (ok.length) return { ok: true, nome: nome, linhas: ok.reduce(function(a, x){ return a + (x.linhas || 0); }, 0) };
+        return { jaLido: true, nome: nome };
+      });
+    });
+  }
   return impLerBytes(nome, buf).then(function(x){
     var id = 'imp_' + x.sig;
     if (extDocPorId('arq_' + id)) return { jaLido: true, nome: nome };
@@ -14386,7 +14586,7 @@ function impAutoLer0(n){
 function impLerRecebidos(auto){
   var lista = (impEstado.recebidos || []).filter(function(it){ return auto !== true || !impEstado.tentados[it.id]; });
   if (impEstado.rodando || !lista.length) return Promise.resolve();
-  impEstado.rodando = true; impEstado.erro = ''; impEstado.info = 'Lendo os arquivos recebidos…'; renderExtratos();
+  impEstado.rodando = true; impEstado.erro = ''; impEstado.info = 'Lendo os arquivos recebidos…'; impEstado.auto = auto === true; renderExtratos();
   var res = [], falhas = [], cadeia = Promise.resolve();
   lista.forEach(function(it){
     impEstado.tentados[it.id] = 1;
@@ -14396,7 +14596,7 @@ function impLerRecebidos(auto){
       .then(function(x){ res.push(x); return fetch('/api/recebidos/' + encodeURIComponent(it.id), { method: 'DELETE', credentials: 'same-origin' }); },
             function(e){ falhas.push((it.nome || 'arquivo') + ': ' + ((e && e.message) || 'não consegui ler') + ' (continua na lista; apague-o abaixo se não servir)'); });
   });
-  return cadeia.then(function(){ return persistExtCfg({ ultimaLeitura: new Date().toISOString(), iniciado: true }); }).then(function(){ impResumir(res, falhas); return impVerRecebidos(); }).then(function(){ impEstado.rodando = false; renderExtratos(); renderInicioExtratos(); renderPainelAtencao(); if (auto === true){ var okn = res.filter(function(x){ return x && x.ok; }).length; if (okn) toast('Li ' + okn + ' extrato(s) recebido(s) do celular. Confira em Extratos.'); } });
+  return cadeia.then(function(){ impEstado.auto = false; return persistExtCfg({ ultimaLeitura: new Date().toISOString(), iniciado: true }); }).then(function(){ impResumir(res, falhas); return impVerRecebidos(); }).then(function(){ impEstado.rodando = false; renderExtratos(); renderInicioExtratos(); renderPainelAtencao(); if (auto === true){ var okn = res.filter(function(x){ return x && x.ok; }).length; if (okn) toast('Li ' + okn + ' extrato(s) recebido(s) do celular. Confira em Extratos.'); } });
 }
 function impApagarRecebido(id){
   return fetch('/api/recebidos/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'same-origin' }).then(function(){ return impVerRecebidos(); });
@@ -14405,8 +14605,8 @@ function impTopoHtml(cfg){
   var corte = extDataCorte() || '';
   var rec = impEstado.recebidos || [];
   return '<div class="ext-topo-tit">Extratos do banco</div>' +
-    '<div class="parcela-sum">Escolha os extratos que estão no celular (PDF do Itaú ou do Sicoob, ou arquivo OFX). O app lê, mostra o que entendeu e só lança o que você confirmar.</div>' +
-    '<input type="file" id="impArq" accept=".pdf,.ofx,application/pdf,application/x-ofx,text/plain,application/octet-stream" multiple style="display:none">' +
+    '<div class="parcela-sum">Escolha os extratos que estão no celular (PDF do Itaú, do Sicoob ou do C6; arquivo OFX; ou o zip do C6, que pede a senha). O app lê, mostra o que entendeu e só lança o que você confirmar.</div>' +
+    '<input type="file" id="impArq" accept=".pdf,.ofx,.zip,application/pdf,application/x-ofx,application/zip,application/x-zip-compressed,text/plain,application/octet-stream" multiple style="display:none">' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" id="impEscolher"' + (impEstado.rodando ? ' disabled' : '') + '>' + (impEstado.rodando ? 'Lendo…' : 'Escolher extratos') + '</button><button type="button" class="btn btn-ghost" id="extContas">Contas</button></div>' +
     (impEstado.info ? '<div class="saldo-data" role="status">' + escapeHtml(impEstado.info) + '</div>' : '') +
     (impEstado.erro ? '<div class="aviso-sis critico"><span class="as-txt">' + escapeHtml(impEstado.erro) + '</span></div>' : '') +
@@ -28817,7 +29017,9 @@ document.addEventListener('change', function(ev){
     '.field input[type=date],#impCorte{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}' +
     '.ext-dd{margin:0 0 10px;min-width:0}.ext-dd>summary{display:block!important;padding-right:20px;line-height:1.45;overflow-wrap:anywhere}' +
     '.ext-dd>summary>b{display:block;font-size:var(--t4);margin-bottom:2px}' +
-    '.ext-dd .plan-linha{min-width:0;gap:10px}.ext-dd .plan-linha>span{min-width:0;overflow-wrap:anywhere}';
+    '.ext-dd .plan-linha{min-width:0;gap:10px}.ext-dd .plan-linha>span{min-width:0;overflow-wrap:anywhere}' +
+    /* Extratos > Recebidos pelo Compartilhar: nome comprido do arquivo quebra de linha e o botão Apagar não sai do cartão */
+    '#extTopo .plan-linha{min-width:0;align-items:center}#extTopo .plan-linha>span{min-width:0;overflow-wrap:anywhere}#extTopo .plan-linha>button{flex:none}';
   document.head.appendChild(st);
 })();
 

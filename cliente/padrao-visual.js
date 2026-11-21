@@ -21,6 +21,8 @@
     '.field input[type=date],#impCorte{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box}' +
     '.ext-dd{margin:0 0 10px;min-width:0}.ext-dd>summary{display:block!important;padding-right:20px;line-height:1.45;overflow-wrap:anywhere}' +
     '.ext-dd>summary>b{display:block;font-size:var(--t4);margin-bottom:2px}' +
-    '.ext-dd .plan-linha{min-width:0;gap:10px}.ext-dd .plan-linha>span{min-width:0;overflow-wrap:anywhere}';
+    '.ext-dd .plan-linha{min-width:0;gap:10px}.ext-dd .plan-linha>span{min-width:0;overflow-wrap:anywhere}' +
+    /* Extratos > Recebidos pelo Compartilhar: nome comprido do arquivo quebra de linha e o botão Apagar não sai do cartão */
+    '#extTopo .plan-linha{min-width:0;align-items:center}#extTopo .plan-linha>span{min-width:0;overflow-wrap:anywhere}#extTopo .plan-linha>button{flex:none}';
   document.head.appendChild(st);
 })();
