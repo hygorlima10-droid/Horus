@@ -71,3 +71,9 @@ Para cada advogado — Murilo, Hygor, Camilla, Hitallo, Nathanny:
 - **Dias de atendimento:** segunda a sexta (aplicado).
 - **Do lado do proprietário, falta:** formação acadêmica de Murilo e Camilla; experiência profissional de Hygor, Camilla, Hitallo e Nathanny; advogados responsáveis por Empresarial/societário e Bancário; revisão dos textos das 8 áreas; link permanente do Facebook; artigos reais; (opcional) títulos/certificados por área, nome das fontes oficiais e logotipo horizontal.
 - **Do meu lado, falta construir no esboço:** página de Artigos (lista com filtro por área e busca, e modelo de artigo), página "O escritório" com a galeria completa, busca por assunto/problema nas áreas, página de privacidade (quando o proprietário quiser).
+
+## Atualização de 21/11 (esboço v8)
+- **Feito no esboço:** Murilo e Hygor ligados a Empresarial/societário e Bancário; página "O escritório" (texto novo + galeria de 12 fotos); busca por assunto ou problema; página de privacidade e cookies (texto-modelo).
+- **Para você revisar:** (1) o texto da página "O escritório"; (2) a **lista de assuntos da busca** (nomes dos temas e a área de cada um); (3) a **política de privacidade** (modelo), em especial o prazo de guarda das mensagens (sugeri 12 meses); (4) as legendas das fotos (Fachada, Recepção, Área de espera, Sala de espera, Gabinete, Sala, Detalhe) e se alguma foto não deve entrar.
+- **Ainda falta do seu lado:** formação de Murilo e Camilla; experiência profissional de Hygor, Camilla, Hitallo e Nathanny; revisão dos textos das 8 áreas; link permanente do Facebook; artigos reais; (opcional) títulos/certificados por área, fontes oficiais da marca e logotipo horizontal.
+- **Do meu lado, ainda falta no esboço:** página de Artigos (lista com filtro por área e busca, e modelo de artigo).
