@@ -55,3 +55,13 @@ Para cada advogado — Murilo, Hygor, Camilla, Hitallo, Nathanny:
 - Formulário gravando no Horus (com aviso no celular).
 - Perfil da Empresa no Google, Search Console e redirecionamentos do site antigo.
 - Painel para os advogados publicarem artigos (aba "Artigos" no Horus).
+
+## Atualização de 21/11 (o que já chegou e entrou no esboço v5)
+- **Fotos dos 5 advogados: recebidas e aplicadas** (cartões da equipe e páginas de perfil). As fotos da Nathanny e do Hitallo vieram com legenda de arte; foram **recortadas** para ficar só o rosto e o busto (sem texto). Se quiser versões melhores, é só mandar. A do Murilo no gabinete é também a foto da primeira tela.
+- **Foto da equipe reunida (sem a Camilla):** aplicada em "Nossa história". Falta uma foto em que a Camilla apareça junto, se existir.
+- **Formação acadêmica:** feitas as de Hitallo, Hygor e Nathanny. **Faltam Murilo e Camilla.**
+- **Experiência profissional:** só a do Murilo (dez anos de gestão de cooperativas). Faltam as dos outros quatro.
+- **Horário de atendimento (09:00 às 17:30):** aplicado em "O escritório" e em "Contato". Se atendem em todos os dias úteis, posso acrescentar os dias.
+- **Breve história:** aplicada em "Quem somos / Nossa história", com o texto enviado.
+- **Instagram (@faloneadv) e Facebook:** com os ícones de cada rede. O Facebook segue com o link de compartilhamento (vale trocar pelo endereço permanente da página, quando tiver).
+- **Ainda pendentes:** títulos e certificados por área; cargo dos demais; advogados de Empresarial e Bancário; revisão dos textos das 8 áreas; fonte oficial da marca; logotipo horizontal; artigos reais.
