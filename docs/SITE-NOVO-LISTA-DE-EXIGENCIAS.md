@@ -65,3 +65,9 @@ Para cada advogado — Murilo, Hygor, Camilla, Hitallo, Nathanny:
 - **Breve história:** aplicada em "Quem somos / Nossa história", com o texto enviado.
 - **Instagram (@faloneadv) e Facebook:** com os ícones de cada rede. O Facebook segue com o link de compartilhamento (vale trocar pelo endereço permanente da página, quando tiver).
 - **Ainda pendentes:** títulos e certificados por área; cargo dos demais; advogados de Empresarial e Bancário; revisão dos textos das 8 áreas; fonte oficial da marca; logotipo horizontal; artigos reais.
+
+## Atualização de 21/11 (noite)
+- **Foto com a Camilla:** não existe; a foto da equipe reunida continua sem ela. Sem pendência.
+- **Dias de atendimento:** segunda a sexta (aplicado).
+- **Do lado do proprietário, falta:** formação acadêmica de Murilo e Camilla; experiência profissional de Hygor, Camilla, Hitallo e Nathanny; advogados responsáveis por Empresarial/societário e Bancário; revisão dos textos das 8 áreas; link permanente do Facebook; artigos reais; (opcional) títulos/certificados por área, nome das fontes oficiais e logotipo horizontal.
+- **Do meu lado, falta construir no esboço:** página de Artigos (lista com filtro por área e busca, e modelo de artigo), página "O escritório" com a galeria completa, busca por assunto/problema nas áreas, página de privacidade (quando o proprietário quiser).
