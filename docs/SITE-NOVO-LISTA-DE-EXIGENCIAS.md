@@ -77,3 +77,9 @@ Para cada advogado — Murilo, Hygor, Camilla, Hitallo, Nathanny:
 - **Para você revisar:** (1) o texto da página "O escritório"; (2) a **lista de assuntos da busca** (nomes dos temas e a área de cada um); (3) a **política de privacidade** (modelo), em especial o prazo de guarda das mensagens (sugeri 12 meses); (4) as legendas das fotos (Fachada, Recepção, Área de espera, Sala de espera, Gabinete, Sala, Detalhe) e se alguma foto não deve entrar.
 - **Ainda falta do seu lado:** formação de Murilo e Camilla; experiência profissional de Hygor, Camilla, Hitallo e Nathanny; revisão dos textos das 8 áreas; link permanente do Facebook; artigos reais; (opcional) títulos/certificados por área, fontes oficiais da marca e logotipo horizontal.
 - **Do meu lado, ainda falta no esboço:** página de Artigos (lista com filtro por área e busca, e modelo de artigo).
+
+## Atualização de 23/11 (esboço v16)
+- **Recebido e aplicado:** experiência profissional de Hygor, Hitallo e Nathanny (os três como advogados titulares); Camilla sem formação e sem experiência no perfil; artigos dela só se houver publicação.
+- **Aprovado pelo proprietário:** textos do site, nomes das salas, links das redes sociais. Logotipo horizontal: não existe.
+- **Ainda falta do seu lado:** formação do Murilo (virá em seguida); autor dos três artigos publicados (hoje só consta quem conferiu: Dr. Hygor); revisão final da política de privacidade (prazo de guarda das mensagens), se ainda não revisou; (opcional) títulos/certificados por área e nome das fontes oficiais.
+- **Adiado (etapa final):** domínio e hospedagem, formulário no Horus, medição de visitas, Perfil da Empresa no Google, painel de artigos no Horus (com autor e conferência).
