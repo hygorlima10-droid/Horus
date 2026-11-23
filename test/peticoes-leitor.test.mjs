@@ -23,6 +23,7 @@ let t = await folhaTxt(bruno);
 check(/AÇÃO DE COBRANÇA/.test(t) && /Repetição em dobro/.test(t) && /DOS FATOS/.test(t), 'o texto da petição aparece no Horus (títulos e tabela)');
 check(await bruno.evaluate(() => document.querySelectorAll('.lei-tb td').length >= 6), 'a tabela foi desenhada');
 check(await bruno.evaluate(() => !!document.querySelector('.lei-topo a[download]')), 'há "Baixar o original"');
+check(await bruno.evaluate(() => { const m = document.querySelector('#overlayPetLeitor .modal').getBoundingClientRect(), r = document.querySelector('.lei-rod').getBoundingClientRect(), l = document.getElementById('leiLeitura').getBoundingClientRect(); return m.bottom - r.bottom <= 24 && l.height >= m.height * 0.6; }), 'os botões ficam rente à base da tela e o texto ocupa o espaço (sem vão)');
 await comentar(bruno, 'R$ 45.000,00', 'Conferir o valor da causa.');
 await comentar(bruno, 'A repetição do indébito é devida em dobro', 'Faltou fundamentar o art. 300 do CPC.');
 check(await bruno.evaluate(() => document.querySelectorAll('.lei-card').length === 2 && document.querySelectorAll('.lei-m[data-n]').length === 2), 'dois comentários, cada um marcado no texto com número');
