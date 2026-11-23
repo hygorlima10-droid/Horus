@@ -60,4 +60,4 @@ Cada etapa com testes e teste seu no aparelho antes da próxima.
 
 ## 9. Andamento (23/11)
 
-Decisões do proprietário: só o revisor comenta; autor propõe e revisor confirma o "resolvido"; aprovar com comentário aberto só avisa; PDF escaneado com comentário da página; nível 3 depois (talvez nunca); sem sugestão de redação por ora. **Etapas A e B implementadas** (leitor de Word com os estilos do escritório, comentário no trecho, reencontro na v2, resolvido/reaberto). **Etapa C (PDF) pendente.** Validado com o modelo real "Inicial – Modelo – Falone".
+Decisões do proprietário: só o revisor comenta; autor propõe e revisor confirma o "resolvido"; aprovar com comentário aberto só avisa; PDF escaneado com comentário da página; nível 3 depois (talvez nunca); sem sugestão de redação por ora. **Etapas A e B implementadas** (leitor de Word com os estilos do escritório, comentário no trecho, reencontro na v2, resolvido/reaberto). **Etapa C (PDF) implementada em seguida (pdf.js, comentário no trecho e comentário da página para PDF escaneado).** Validado com o modelo real "Inicial – Modelo – Falone".

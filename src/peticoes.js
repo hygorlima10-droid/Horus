@@ -140,6 +140,7 @@ function limparAncora(a) {
   if (p === null || ini === null || fim === null || fim <= ini || !quote.trim()) return null;
   const o = { p, ini, fim, quote, antes: String(a.antes || '').slice(0, 40), depois: String(a.depois || '').slice(0, 40), paragrafo: String(a.paragrafo || '').slice(0, 1500) };
   if (Number.isInteger(a.pag) && a.pag >= 1 && a.pag <= 5000) o.pag = a.pag;   // PDF: página
+  if (a.pagina === true) o.pagina = true;   // comentário da página inteira (PDF escaneado)
   return o;
 }
 

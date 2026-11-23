@@ -1938,6 +1938,11 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -24529,10 +24534,11 @@ function leiDice(a, b){
 }
 function leiAncoraDe(doc, pi, ini, fim){
   var par = doc.pars[pi]; if (!par) return null;
-  return { p: pi, ini: ini, fim: fim, quote: par.txt.slice(ini, fim), antes: par.txt.slice(Math.max(0, ini - 20), ini), depois: par.txt.slice(fim, fim + 20), paragrafo: par.txt.slice(0, 1500) };
+  return { p: pi, pag: doc.tipo === 'pdf' ? pi + 1 : undefined, ini: ini, fim: fim, quote: par.txt.slice(ini, fim), antes: par.txt.slice(Math.max(0, ini - 20), ini), depois: par.txt.slice(fim, fim + 20), paragrafo: par.txt.slice(0, 1500) };
 }
 /* devolve { como: 'igual'|'mesmo'|'moveu'|'alterado'|'perdido', p, ini, fim } */
 function leiReancorar(a, doc){
+  if (a.pagina) return doc.pars[a.p] ? { como: 'igual', p: a.p, ini: 0, fim: 0, pagina: true } : { como: 'perdido' };
   var par = doc.pars[a.p];
   if (par && par.txt.slice(a.ini, a.fim) === a.quote) return { como: 'igual', p: a.p, ini: a.ini, fim: a.fim };
   if (par){ var k = par.txt.indexOf(a.quote); if (k >= 0) return { como: 'mesmo', p: a.p, ini: k, fim: k + a.quote.length }; }
@@ -24564,8 +24570,122 @@ var LEI_CSS = '.lei-folha{background:#fff;color:#000;margin:0 auto;box-sizing:bo
   '.lei-m{background:#FFEFB0;border-bottom:2px solid #D9A400;cursor:pointer}.lei-m[data-n]::after{content:attr(data-n);font:700 10px/1 system-ui,sans-serif;background:#D9A400;color:#fff;border-radius:8px;padding:2px 5px;margin-left:2px;vertical-align:super}' +
   '.lei-m.lei-alt{background:#FFE3C2;border-bottom:2px dashed #E07B00}.lei-m.lei-alt[data-n]::after{background:#E07B00}.lei-m.lei-ok{background:#DDF3E5;border-bottom:2px solid #1F8A4C}.lei-m.lei-ok[data-n]::after{background:#1F8A4C}.lei-m.lei-foco{outline:3px solid #4453D6}';
 function leiInjetarCss(){ if (document.getElementById('leiCss')) return; var st = document.createElement('style'); st.id = 'leiCss'; st.textContent = LEI_CSS; document.head.appendChild(st); }
+
+/* ---------- PDF (pdf.js, o mesmo dos extratos): página fiel + texto selecionável ---------- */
+function leiLerPdf(buf){
+  return extCarregarPdfJs().then(function(lib){
+    return lib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise.then(function(pdf){
+      var doc = { tipo: 'pdf', lib: lib, pdf: pdf, n: pdf.numPages, pars: [], largura: 0, imagens: {} }, seq = Promise.resolve();
+      for (var n = 1; n <= pdf.numPages; n++) (function(n){
+        seq = seq.then(function(){ return pdf.getPage(n); }).then(function(pg){ return pg.getTextContent(); }).then(function(tc){
+          var txt = tc.items.filter(function(i){ return i.str !== undefined; }).map(function(i){ return i.str; }).join('');
+          doc.pars.push({ i: n - 1, txt: txt, vazio: txt.replace(/\s/g, '').length < 15 });
+        });
+      })(n);
+      return seq.then(function(){ return doc; });
+    });
+  });
+}
+function leiDesenharPdf(el, cs){
+  var key = leiChave(), p = leiPet(), pode = p && leiPodeComentar(p);
+  if (!leiS.pdfNo || leiS.pdfKey !== key){
+    var raiz = document.createElement('div'); raiz.className = 'lei-pdf'; leiS.pdfNo = raiz; leiS.pdfKey = key;
+    var cw = Math.max(260, Math.min(900, el.clientWidth - 24));
+    leiS.doc.pdf.getPage(1).then(function(pg1){
+      var esc = cw / pg1.getViewport({ scale: 1 }).width, h1 = pg1.getViewport({ scale: esc }).height;
+      for (var n = 1; n <= leiS.doc.n; n++){
+        var w = document.createElement('div'); w.className = 'lei-pg'; w.setAttribute('data-pg', n); w.style.width = cw + 'px'; w.setAttribute('data-esc', esc);
+        w.innerHTML = '<div class="lei-pgh"><span>Página ' + n + ' de ' + leiS.doc.n + (leiS.doc.pars[n - 1].vazio ? ' · sem texto selecionável (escaneada)' : '') + '</span><span class="lei-pgx"></span></div><div class="lei-pgc" style="height:' + Math.round(h1) + 'px"></div>';
+        raiz.appendChild(w);
+      }
+      leiPdfDecorar(); leiPdfRender(el);
+    });
+  }
+  if (!el.contains(leiS.pdfNo)) el.appendChild(leiS.pdfNo);
+  leiS.marcasPdf = cs.marcados; leiS.podePdf = !!pode; leiPdfDecorar();
+  if (!el.getAttribute('data-rol')){ el.setAttribute('data-rol', '1'); }
+  el.onscroll = function(){ if (!leiS.rolando){ leiS.rolando = true; requestAnimationFrame(function(){ leiS.rolando = false; leiPdfRender(el); }); } };
+  setTimeout(function(){ leiPdfRender(el); }, 60);
+}
+/* botão "Comentar a página" e selos dos comentários de página; refaz as marcas do texto */
+function leiPdfDecorar(){
+  if (!leiS.pdfNo) return;
+  Array.prototype.forEach.call(leiS.pdfNo.querySelectorAll('.lei-pg'), function(w){
+    var n = Number(w.getAttribute('data-pg')), x = w.querySelector('.lei-pgx'), h = '';
+    (leiS.marcasPdf || []).forEach(function(o){ if (o.pos && o.pos.pagina && o.pos.p === n - 1) h += '<button type="button" class="lei-pgb" data-cid="' + o.c.id + '">' + o.n + '</button>'; });
+    if (leiS.podePdf) h += '<button type="button" class="lei-pgbt" data-lei="pagina" data-pg="' + n + '">＋ Comentar a página</button>';
+    x.innerHTML = h; leiMarcarPdf(w);
+  });
+}
+function leiPdfRender(el){
+  if (!leiS.pdfNo) return;
+  var r = el.getBoundingClientRect();
+  Array.prototype.forEach.call(leiS.pdfNo.querySelectorAll('.lei-pg'), function(w){
+    if (w.getAttribute('data-ok')) return;
+    var b = w.getBoundingClientRect(); if (b.bottom < r.top - 900 || b.top > r.bottom + 900) return;
+    w.setAttribute('data-ok', '1'); leiPdfPagina(w);
+  });
+}
+function leiPdfPagina(w){
+  var doc = leiS.doc, n = Number(w.getAttribute('data-pg')), box = w.querySelector('.lei-pgc'), esc = Number(w.getAttribute('data-esc'));
+  doc.pdf.getPage(n).then(function(pg){
+    var vp = pg.getViewport({ scale: esc }), dpr = Math.min(2, window.devicePixelRatio || 1), cv = document.createElement('canvas');
+    cv.width = Math.round(vp.width * dpr); cv.height = Math.round(vp.height * dpr); cv.style.width = Math.round(vp.width) + 'px'; cv.style.height = Math.round(vp.height) + 'px';
+    box.style.height = Math.round(vp.height) + 'px'; box.appendChild(cv);
+    var tl = document.createElement('div'); tl.className = 'lei-tl'; tl.style.width = Math.round(vp.width) + 'px'; tl.style.height = Math.round(vp.height) + 'px'; tl.style.setProperty('--scale-factor', vp.scale); box.appendChild(tl);
+    var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return pg.render({ canvasContext: ctx, viewport: vp }).promise.then(function(){ return pg.getTextContent(); }).then(function(tc){
+      var divs = [], strs = [];
+      return doc.lib.renderTextLayer({ textContentSource: tc, container: tl, viewport: vp, textDivs: divs, textContentItemsStr: strs }).promise.then(function(){ w._divs = divs; w._strs = strs; w.setAttribute('data-tl', '1'); leiMarcarPdf(w); });
+    });
+  }).catch(function(e){ w.removeAttribute('data-ok'); console.error('página do PDF', e); });
+}
+function leiMarcarPdf(w){
+  var divs = w._divs, strs = w._strs; if (!divs) return;
+  divs.forEach(function(d, i){ d.classList.remove('lei-pm', 'lei-ok', 'lei-alt'); d.removeAttribute('data-cid'); d.removeAttribute('data-n'); if (d.getAttribute('data-sp')){ d.textContent = strs[i]; d.removeAttribute('data-sp'); } });
+  var n = Number(w.getAttribute('data-pg')), ini = [], t = 0; strs.forEach(function(s){ ini.push(t); t += s.length; });
+  (leiS.marcasPdf || []).forEach(function(o){
+    if (!o.pos || o.pos.pagina || o.pos.p !== n - 1) return;
+    var primeiro = true, cls = 'lei-pm' + (o.estado === 'resolvido' ? ' lei-ok' : (o.como === 'alterado' ? ' lei-alt' : ''));
+    divs.forEach(function(d, i){
+      var a = ini[i], b = a + strs[i].length; if (b <= o.pos.ini || a >= o.pos.fim || !strs[i] || d.getAttribute('data-sp')) return;
+      var x = Math.max(o.pos.ini - a, 0), y = Math.min(o.pos.fim - a, strs[i].length), alvo = d;
+      if (x > 0 || y < strs[i].length){   /* marca só o pedaço do trecho (o texto da linha continua igual) */
+        d.textContent = ''; d.setAttribute('data-sp', '1');
+        if (x > 0) d.appendChild(document.createTextNode(strs[i].slice(0, x)));
+        alvo = document.createElement('mark'); alvo.textContent = strs[i].slice(x, y); d.appendChild(alvo);
+        if (y < strs[i].length) d.appendChild(document.createTextNode(strs[i].slice(y)));
+      }
+      alvo.className = cls; alvo.setAttribute('data-cid', o.c.id); if (primeiro){ alvo.setAttribute('data-n', o.n); primeiro = false; }
+    });
+  });
+}
+/* seleção do navegador numa página do PDF → { p: índice da página, ini, fim } nos textos da camada de texto */
+function leiSelecaoPdf(raiz){
+  var sel = window.getSelection(); if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+  var r = sel.getRangeAt(0); if (!raiz.contains(r.commonAncestorContainer)) return null;
+  var pgDe = function(nd){ nd = nd.nodeType === 3 ? nd.parentNode : nd; return nd.closest ? nd.closest('.lei-pg') : null; };
+  var wa = pgDe(r.startContainer), wb = pgDe(r.endContainer); if (!wa || !wa._divs) return null;
+  var strs = wa._strs, divs = wa._divs, ini = [], t = 0; strs.forEach(function(s){ ini.push(t); t += s.length; });
+  var pos = function(no, off){
+    var el = no.nodeType === 3 ? no.parentNode : no, i = divs.indexOf(el);
+    while (i < 0 && el && el !== wa){ el = el.parentNode; i = divs.indexOf(el); }
+    if (i < 0) return null;
+    if (el === no) return ini[i] + (off > 0 ? strs[i].length : 0);
+    var rg = document.createRange(); rg.selectNodeContents(el); rg.setEnd(no, off);
+    return ini[i] + rg.toString().length;
+  };
+  var a = pos(r.startContainer, r.startOffset), b = wb === wa ? pos(r.endContainer, r.endOffset) : t;
+  if (a === null || b === null || b <= a) return null;
+  return { p: Number(wa.getAttribute('data-pg')) - 1, ini: a, fim: b, vario: wb !== wa };
+}
+
 /* ---------- tela do leitor ---------- */
 var leiS = { petId: null, ver: null, docs: {}, doc: null, sel: null, compor: null, pet: null, foco: null };
+var LEI_CSS3 = '.lei-pdf{margin:0 auto;max-width:900px}.lei-pg{margin:0 auto 14px;background:#fff;border-radius:4px;box-shadow:0 1px 8px #0002;overflow:hidden}.lei-pgh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 10px;background:#F4F6FC;font:600 12px system-ui,sans-serif;color:#6C7593}.lei-pgx{display:flex;gap:6px;align-items:center}' +
+  '.lei-pgbt{border:1px solid #DEE3F2;background:#fff;color:#12172A;border-radius:8px;padding:3px 9px;font:700 11px system-ui,sans-serif;cursor:pointer}.lei-pgb{background:#D9A400;color:#fff;border:0;border-radius:9px;padding:0 7px;font:700 11px/18px system-ui,sans-serif;cursor:pointer}' +
+  '.lei-pgc{position:relative;line-height:0}.lei-pgc canvas{display:block}.lei-tl{position:absolute;left:0;top:0;overflow:hidden;line-height:1}.lei-tl span,.lei-tl br{position:absolute;white-space:pre;color:transparent;cursor:text;transform-origin:0 0}.lei-tl span::selection{background:#4453D655}' +
+  '.lei-tl mark{background:none;color:transparent;position:relative}.lei-tl .lei-pm{background:rgba(255,215,64,.4);border-bottom:2px solid #D9A400;cursor:pointer}.lei-tl .lei-pm.lei-alt{background:rgba(255,160,64,.4);border-bottom:2px dashed #E07B00}.lei-tl .lei-pm.lei-ok{background:rgba(31,138,76,.25);border-bottom:2px solid #1F8A4C}.lei-tl .lei-pm[data-n]::before{content:attr(data-n);position:absolute;left:-2px;top:-12px;font:700 10px/1 system-ui,sans-serif;background:#D9A400;color:#fff;border-radius:8px;padding:2px 5px}';
 var LEI_CSS2 = '#overlayPetLeitor .modal{max-width:1260px;width:97vw;height:94vh;display:flex;flex-direction:column}#overlayPetLeitor .modal-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px 14px}' +
   '.lei-topo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:var(--t2)}.lei-topo select{max-width:100%;border:1px solid var(--border);border-radius:9px;padding:6px 8px;font:inherit;background:var(--surface);color:var(--ink)}.lei-aviso{color:var(--ink-soft);font-size:var(--t1)}' +
   '.lei-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px}.lei-leitura{position:relative;overflow:auto;background:#E9ECF8;border-radius:12px;padding:12px;min-height:0}.lei-lado{overflow:auto;min-height:0;padding-right:2px}' +
@@ -24581,7 +24701,7 @@ var LEI_CSS2 = '#overlayPetLeitor .modal{max-width:1260px;width:97vw;height:94vh
 function leiChave(){ return leiS.petId + ':' + leiS.ver; }
 function leiPet(){ return ptS.itens.filter(function(p){ return p.id === leiS.petId; })[0] || null; }
 function leiAbrir(petId){
-  leiInjetarCss(); if (!document.getElementById('leiCss2')){ var st = document.createElement('style'); st.id = 'leiCss2'; st.textContent = LEI_CSS2; document.head.appendChild(st); }
+  leiInjetarCss(); if (!document.getElementById('leiCss2')){ var st = document.createElement('style'); st.id = 'leiCss2'; st.textContent = LEI_CSS2 + LEI_CSS3; document.head.appendChild(st); }
   var p = ptS.itens.filter(function(x){ return x.id === petId; })[0]; if (!p) return;
   leiS.petId = petId; leiS.ver = p.versoes[p.versoes.length - 1].n; leiS.sel = null; leiS.compor = null;
   var ov = sgMontar('overlayPetLeitor', 'Ler e comentar o texto');
@@ -24601,10 +24721,10 @@ function leiCarregar(){
   var p = leiPet(), v = p && p.versoes.filter(function(x){ return x.n === leiS.ver; })[0]; if (!v) return;
   var k = leiChave();
   if (leiS.docs[k]){ leiS.doc = leiS.docs[k]; return leiDesenharTudo(); }
-  if (v.tipo !== 'docx'){ leiS.doc = null; return leiDesenharTudo('Esta versão é um PDF: a leitura de PDF no Horus ainda não está disponível. Baixe o original para ler e comente pela tela da petição.'); }
+  var ler = v.tipo === 'pdf' ? leiLerPdf : leiLerDocx;
   leiS.doc = null; qs('overlayPetLeitorC').innerHTML = '<div class="lei-msg">Abrindo o texto…</div>';
   fetch('/api/peticoes/' + p.id + '/arquivo?v=' + v.n, { credentials: 'same-origin', cache: 'no-store' }).then(function(r){ if (!r.ok) throw new Error('Não consegui baixar o arquivo.'); return r.arrayBuffer(); })
-    .then(leiLerDocx).then(function(d){ leiS.docs[k] = d; leiS.doc = d; leiDesenharTudo(); })
+    .then(ler).then(function(d){ leiS.docs[k] = d; leiS.doc = d; leiDesenharTudo(); })
     .catch(function(e){ leiDesenharTudo('Não consegui ler este arquivo (' + e.message + '). Baixe o original.'); });
 }
 /* comentários com posição nesta versão (ordenados pela posição) + os gerais */
@@ -24624,17 +24744,20 @@ function leiPodeComentar(p){ return p.estado === 'a_corrigir' && p.souRevisor &&
 function leiDesenharTudo(msg){
   var p = leiPet(), c = qs('overlayPetLeitorC'); if (!p || !c) return;
   var h = '<div class="lei-topo"><span><label>Versão <select id="leiVer">' + p.versoes.slice().reverse().map(function(v){ return '<option value="' + v.n + '"' + (v.n === leiS.ver ? ' selected' : '') + '>v' + v.n + ' · ' + escapeHtml(v.nome) + '</option>'; }).join('') + '</select></label> <a class="pt-baixar" href="/api/peticoes/' + p.id + '/arquivo?v=' + leiS.ver + '" download>Baixar o original</a></span>' +
-    '<span class="lei-aviso">Leitura simplificada: o arquivo original é a versão oficial.</span></div>';
+    '<span class="lei-aviso">' + (leiS.doc && leiS.doc.tipo === 'pdf' ? 'Página do PDF como foi enviada; selecione o texto para comentar.' : 'Leitura simplificada: o arquivo original é a versão oficial.') + '</span></div>';
   if (msg){ c.innerHTML = h + '<div class="lei-msg">' + escapeHtml(msg) + '</div>'; return; }
   var cs = leiComentarios(p), podeC = leiPodeComentar(p), souAutor = p.souAutor && !p.souRevisor;
   h += '<div class="lei-grid"><div class="lei-leitura" id="leiLeitura"></div><div class="lei-lado" id="leiLado"></div></div>';
   var abertos = p.comentarios.filter(function(x){ return (x.estado || 'aberto') !== 'resolvido'; }).length;
   if (p.souRevisor && p.estado === 'a_corrigir') h += '<div class="lei-rod"><button type="button" class="pt-bt pt-ouro" data-lei="devolver">Devolver para ajustes' + (p.comentarios.filter(function(x){ return x.papel === 'revisor' && x.v === p.versoes[p.versoes.length - 1].n; }).length ? '' : '') + '</button><button type="button" class="pt-bt" data-lei="aprovar">Aprovar' + (abertos ? ' (' + abertos + ' em aberto)' : '') + '</button></div>';
+  var rolagem = qs('leiLeitura') ? qs('leiLeitura').scrollTop : 0;
   c.innerHTML = h;
   leiDesenharLeitura(cs); leiDesenharLado(p, cs, podeC);
+  if (rolagem && qs('leiLeitura')) qs('leiLeitura').scrollTop = rolagem;
 }
 function leiDesenharLeitura(cs){
   var el = qs('leiLeitura'); if (!el || !leiS.doc) return;
+  if (leiS.doc.tipo === 'pdf') return leiDesenharPdf(el, cs);
   var marcas = cs.marcados.map(function(o){ return { p: o.pos.p, ini: o.pos.ini, fim: o.pos.fim, cid: o.c.id, n: o.n, cls: o.estado === 'resolvido' ? 'lei-ok' : (o.como === 'alterado' ? 'lei-alt' : '') }; });
   var topo = el.scrollTop; el.innerHTML = ''; el.appendChild(leiDesenharDoc(leiS.doc, marcas, Math.max(280, el.clientWidth - 24))); el.scrollTop = topo;
 }
@@ -24673,7 +24796,7 @@ function leiAoSelecionar(){
   var ov = qs('overlayPetLeitor'), raiz = qs('leiLeitura'); if (!ov || !ov.classList.contains('show') || !raiz || leiS.compor) return;
   var b = raiz.querySelector('.lei-bolha'); if (b) b.remove(); leiS.sel = null;
   var p = leiPet(); if (!p || !leiPodeComentar(p)) return;
-  var s = leiSelecao(raiz); if (!s) return;
+  var s = leiS.doc.tipo === 'pdf' ? leiSelecaoPdf(raiz) : leiSelecao(raiz); if (!s) return;
   var a = leiAncoraDe(leiS.doc, s.p, s.ini, s.fim); if (!a || !a.quote.trim()) return;
   leiS.sel = a;
   var rg = window.getSelection().getRangeAt(0), rb = rg.getBoundingClientRect(), rr = raiz.getBoundingClientRect();
@@ -24687,14 +24810,15 @@ function leiAtualizarDepois(){ ptS.sig = ''; return ptRelerCasos(true).then(ptCa
 function leiClique(e){
   var a = e.target.closest ? e.target.closest('[data-lei]') : null, p = leiPet();
   if (!a){
-    var m = e.target.closest ? e.target.closest('.lei-m') : null;
+    var m = e.target.closest ? e.target.closest('.lei-m, .lei-pm, .lei-pgb') : null;
     if (m){ var cd = m.getAttribute('data-cid'); var c = leiIrPara('[data-cardid="' + cd + '"]'); leiPiscar(c); return; }
     var cardEl = e.target.closest ? e.target.closest('.lei-card') : null;
-    if (cardEl){ var mk = qs('overlayPetLeitorC').querySelector('.lei-m[data-cid="' + cardEl.getAttribute('data-cardid') + '"]'); if (mk){ mk.scrollIntoView({ block: 'center', behavior: 'smooth' }); leiPiscar(mk); } }
+    if (cardEl){ var mk = qs('overlayPetLeitorC').querySelector('.lei-m[data-cid="' + cardEl.getAttribute('data-cardid') + '"], .lei-pm[data-cid="' + cardEl.getAttribute('data-cardid') + '"], .lei-pgb[data-cid="' + cardEl.getAttribute('data-cardid') + '"]'); if (mk){ mk.scrollIntoView({ block: 'center', behavior: 'smooth' }); leiPiscar(mk); } }
     return;
   }
   if (!p) return; var k = a.getAttribute('data-lei'), cid = a.getAttribute('data-cid');
   var rodar = function(url, corpo, ok){ return esJson(url, 'POST', corpo).then(function(){ if (ok) toast(ok); return leiAtualizarDepois(); }).catch(function(er){ toast(er.message); }); };
+  if (k === 'pagina'){ var pg = Number(a.getAttribute('data-pg')); if (!leiPodeComentar(p)) return; leiS.compor = { p: pg - 1, pag: pg, ini: 0, fim: 1, quote: 'Página ' + pg, antes: '', depois: '', paragrafo: '', pagina: true }; leiDesenharLado(p, leiComentarios(p), true); var l2 = qs('leiLado'); if (l2 && l2.scrollIntoView) l2.scrollIntoView({ block: 'nearest' }); return; }
   if (k === 'comentar'){ leiS.compor = leiS.sel; leiS.sel = null; var bo = qs('leiLeitura') && qs('leiLeitura').querySelector('.lei-bolha'); if (bo) bo.remove(); try{ window.getSelection().removeAllRanges(); }catch(x){} leiDesenharLado(p, leiComentarios(p), true); var lado = qs('leiLado'); if (lado && lado.scrollIntoView) lado.scrollIntoView({ block: 'nearest' }); return; }
   if (k === 'cancelar'){ leiS.compor = null; leiDesenharTudo(); return; }
   if (k === 'salvar'){
@@ -24713,7 +24837,7 @@ function leiClique(e){
     return esJson('/api/peticoes/' + p.id + '/aprovar', 'POST', {}).then(function(){ toast('Aprovada.'); qs('overlayPetLeitor').classList.remove('show'); return ptRecarregarFolha('Aprovada. A Inicial está em "Aguardando protocolo".'); }).catch(function(er){ toast(er.message); });
   }
 }
-(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { leiLerDocx: leiLerDocx, leiReancorar: leiReancorar, leiAbrir: leiAbrir, leiS: leiS }); })();
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { leiLerPdf: leiLerPdf, leiLerDocx: leiLerDocx, leiReancorar: leiReancorar, leiAbrir: leiAbrir, leiS: leiS }); })();
 
 /* ============================================================
    CATÁLOGO ÚNICO DE CATEGORIAS DE DESPESA (prefixo cat)
