@@ -42,15 +42,20 @@ check(/Recebidos pelo Compartilhar \(1\)/.test(ext) && /extrato c6\.pdf/.test(ex
 await abrirAtalho(ana);
 check(/1 arquivo/.test(await txt(ana)) && /extrato c6\.pdf/.test(await txt(ana)), 'a tela do atalho mostra o último envio e 1 arquivo esperando');
 
+await ana.click('[data-atla="prompt"]'); await ana.waitForTimeout(500);
+const prAna = await ana.evaluate(() => navigator.clipboard.readText());
+check(prAna.includes('Authorization: Bearer ' + cod2) && !/Pergunta ao importar/.test(prAna) && /apenas uma notificação/.test(prAna) && !/Abrir URL/.test(prAna.replace('Não abrir URL', '')), 'instruções da Ana: já com o código dela, terminando só com a notificação (sem abrir o Horus)');
+check(await ana.evaluate(() => !!document.querySelector('a[href="shortcuts://create-shortcut"]')) && /Enviar as instruções/.test(await txt(ana)), 'há "Abrir o app Atalhos" e "Enviar as instruções…"');
 // proprietário: link, pessoas, instruções
 const dono = await abrir('dono'); await abrirAtalho(dono);
 t = await txt(dono);
 check(/Link do atalho/i.test(t) && /Pessoas com atalho/i.test(t) && /Ana Advogada/.test(t) && /ativo/.test(t) && /Caio Estagiario/.test(t) && /não usa/.test(t), 'o proprietário vê o link e a lista de pessoas (a estagiária "não usa")');
 await dono.fill('#atlLink', 'https://www.icloud.com/shortcuts/teste123'); await dono.click('[data-atla="link"]'); await dono.waitForTimeout(1500);
 check(/Link salvo/.test(await txt(dono)) && await dono.evaluate(() => !!document.querySelector('a.atl-azul[href*="icloud.com/shortcuts/teste123"]')), 'o link salvo vira o botão "Adicionar o atalho ao iPhone"');
-await dono.click('[data-atla="prompt"]'); await dono.waitForTimeout(500);
-const pr = await dono.evaluate(() => navigator.clipboard.readText());
-check(/api\/enviar/.test(pr) && /Authorization: Bearer/.test(pr) && /25 MB/.test(pr), 'as instruções para montar o atalho foram copiadas');
+await dono.click('[data-atla="promptc"]'); await dono.waitForTimeout(500);
+const prc = await dono.evaluate(() => navigator.clipboard.readText());
+check(/api\/enviar/.test(prc) && /Authorization: Bearer \{CÓDIGO_DA_PESSOA\}/.test(prc) && /Pergunta ao importar/.test(prc) && /25 MB/.test(prc), 'instruções do atalho compartilhável: sem código, com pergunta ao importar');
+await dono.click('[data-atla="gerar"]').catch(() => {}); await dono.waitForTimeout(300);
 await dono.click('[data-atla="desligar"]'); dono.on('dialog', (d) => d.accept()); await dono.waitForTimeout(300);
 await ana.click('[data-atla="atualizar"]'); await ana.waitForTimeout(1200);
 check(await ana.evaluate(() => !!document.querySelector('a.atl-azul[href*="icloud.com/shortcuts/teste123"]')), 'a Ana vê o botão com o link cadastrado');
