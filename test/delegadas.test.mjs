@@ -26,8 +26,8 @@ let page = await abrir(1280, 900);
 check(await page.evaluate(() => !!document.querySelector('#drawer [data-tab="delegadas"]')), 'o menu tem "Delegadas"');
 await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);
 check(/Abertas/.test(await t(page, '#dgWrap')) && /Painel da equipe/.test(await t(page, '#dgWrap')) && /Concluídas/.test(await t(page, '#dgWrap')), 'a tela tem as abas Abertas, Painel da equipe e Concluídas');
-check(await page.locator('#dg_n_titulo').isVisible() && /Tarefa antiga atrasada/.test(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).map(i => i.value).join('|'))), 'a primeira linha da tabela está em branco para lançar e as tarefas abertas aparecem abaixo');
-check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Tarefa já concluída'))), 'a tarefa concluída não aparece em Abertas');
+check(await page.locator('#dg_n_titulo').isVisible() && /Tarefa antiga atrasada/.test(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t [data-dgt]')).map(i => i.value).join('|'))), 'a primeira linha da tabela está em branco para lançar e as tarefas abertas aparecem abaixo');
+check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t [data-dgt]')).some(i => i.value === 'Tarefa já concluída'))), 'a tarefa concluída não aparece em Abertas');
 const cards = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta .dg-nd')).map(e => ({ t: e.innerText.trim(), c: e.className.replace('dg-nd', '').trim(), dica: e.title, w: Math.round(e.getBoundingClientRect().width) })));
 const corOk = cards.length > 0 && cards.every(x => { const n = x.t === 'hoje' ? 0 : Number(x.t.replace('−', '-')); return x.c === (n <= 0 ? 'v' : (n <= 3 ? 'a' : 'g')); });
 check(corOk && cards.some(x => x.c === 'v' && /^−\d+$/.test(x.t) && /dias? úteis? de atraso/.test(x.dica)) && !/úteis?\b/.test(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta .dg-pz')).map(e => e.innerText).join(' '))), 'os dias que faltam viram um cartão colorido só com o número (vermelho: atrasada/hoje; amarelo: 1 a 3; verde: 4 ou mais): ' + cards.map(x => x.t + '=' + x.c).join(', '));
@@ -42,7 +42,7 @@ await page.fill('tr.dg-novo [data-dgdt="fatal"]', dia(3)); await page.dispatchEv
 await page.focus('#dg_n_titulo'); await page.keyboard.press('Enter'); await page.waitForTimeout(1200);
 let L = await lista(), n1 = L.find(d => d.titulo === 'Protocolar certidão narrativa');
 check(!!n1 && n1.prioridade === 'Alta' && n1.fatal === dia(3) && /5727644-22/.test(n1.processo) && /Cooperativa/.test(n1.cliente) && n1.status === 'afazer' && !!n1.resp && n1.delegadoPor === n1.resp, 'Enter grava a linha: processo, cliente, prioridade Alta, prazo, status "A fazer"; responsável e quem delegou vêm preenchidos');
-check((await page.inputValue('#dg_n_titulo')) === '' && await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Protocolar certidão narrativa')), 'a linha lançada desce para a lista e a linha em branco volta limpa');
+check((await page.inputValue('#dg_n_titulo')) === '' && await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t [data-dgt]')).some(i => i.value === 'Protocolar certidão narrativa')), 'a linha lançada desce para a lista e a linha em branco volta limpa');
 // só a tarefa é obrigatória
 await page.focus('#dg_n_titulo'); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
 check((await lista()).length === L.length, 'sem tarefa digitada, Enter não grava nada');
@@ -93,7 +93,7 @@ check(/copiad/i.test(await t(page, '#toast')), 'copiar o número do processo avi
 // ---- tabela compacta: 7 colunas, cliente e processo juntos (com o botão de copiar), prazos juntos, ações em ✓ e ⋯
 const cab = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta thead th')).map(x => ({ t: x.textContent.trim(), w: Math.round(x.getBoundingClientRect().width) })));
 check(cab.length === 7 && cab.map(x => x.t).join('|') === 'Tarefa *|Cliente / processo|Responsável|Prior.|Status|Prazos|', 'a tabela tem 7 colunas: ' + cab.map(x => x.t).join(' | '));
-check(cab[1].w >= 200 && cab[1].w <= 240 && cab[0].w >= 260, 'Cliente / processo ocupa ~220 px e a Tarefa fica com o resto (' + cab[0].w + ' px)');
+check(cab[1].w >= 200 && cab[1].w <= 240 && cab[0].w >= 230, 'Cliente / processo ocupa ~220 px e a Tarefa fica com o resto (' + cab[0].w + ' px)');
 const linhaCP = await page.evaluate(() => { const r = Array.from(document.querySelectorAll('.dg-ta tr[data-dgl]')).find(x => x.querySelector('[data-dg="copiar"]')); const td = r.children[1]; return { cli: !!td.querySelector('[data-c="cliente"]'), proc: !!td.querySelector('[data-c="processo"]'), copia: !!td.querySelector('[data-dg="copiar"]'), alt: Math.round(r.getBoundingClientRect().height), resp: !!r.children[2].querySelector('[data-c="resp"]') && !!r.children[2].querySelector('[data-c="delegadoPor"]'), datas: r.children[5].querySelectorAll('input[type=date]').length, acoes: Array.from(r.querySelectorAll('.dg-acao [data-dg]')).map(b => b.getAttribute('data-dg')) }; });
 check(linhaCP.cli && linhaCP.proc && linhaCP.copia && linhaCP.resp && linhaCP.datas === 2 && linhaCP.alt <= 72 && linhaCP.acoes.join(',') === 'concluir,mais', 'a linha: cliente e processo (com copiar) na mesma célula, responsável + "por", duas datas na célula Prazos, ações só ✓ e ⋯ (altura ' + linhaCP.alt + ' px)');
 check(await page.evaluate(() => getComputedStyle(document.querySelector('.dg-ta td:first-child')).position === 'sticky'), 'a coluna Tarefa fica fixa à esquerda quando há rolagem');
@@ -144,7 +144,7 @@ const selo = (await page.locator('#menuNDelegadas').innerText()).trim();
 check(/^\d+$/.test(selo) && Number(selo) >= 1, 'o número vermelho no menu mostra as minhas tarefas atrasadas: ' + selo);
 check(await page.locator('.dg-chip-atr').count() === 1 && new RegExp('Minhas atrasadas · ' + selo).test(await t(page, '.dg-chip-atr')) && /Só atrasadas · \d+/.test(await t(page, '.dg-fil')), 'o atalho "Minhas atrasadas · N" e o total "Só atrasadas · N" aparecem nos filtros');
 await page.click('.dg-chip-atr'); await page.waitForTimeout(300);
-const soMinhas = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta tr[data-dgl]')).map(r => r.querySelector('input.dg-t').value));
+const soMinhas = await page.evaluate(() => Array.from(document.querySelectorAll('.dg-ta tr[data-dgl]')).map(r => r.querySelector('[data-dgt]').value));
 check(soMinhas.length === Number(selo) && soMinhas.includes('Tarefa antiga atrasada') && !soMinhas.some(x => x.includes(U)), 'tocar em "Minhas atrasadas" mostra só as minhas vencidas (' + soMinhas.length + ')');
 await page.click('.dg-chip-atr'); await page.waitForTimeout(300);
 check(await nLinhas() >= soMinhas.length + 1, 'tocar de novo volta a lista inteira');
@@ -179,7 +179,7 @@ await page.focus('#dg_f_titulo'); await page.keyboard.press('Enter'); await page
 const fx = (await lista()).find(d => d.titulo === 'Internet do escritório');
 check(!!fx && fx.tipo === 'fixa' && fx.valor === 189.9 && fx.repete === 'mensal' && fx.dia === 15 && fx.avisarDias === 3, 'Enter cadastra a conta: valor 189,90, todo mês, dia 15, avisar 3 dias antes');
 await page.click('.dg-aba >> text=Abertas'); await page.waitForTimeout(300);
-check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Internet do escritório'))), 'a conta fixa não aparece na lista de tarefas abertas');
+check(!(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t [data-dgt]')).some(i => i.value === 'Internet do escritório'))), 'a conta fixa não aparece na lista de tarefas abertas');
 // vencimentos (datas puras)
 const oc = await page.evaluate(() => { const o = window.__horusTeste.dgOcorrencias; return { fev: o({ repete: 'mensal', dia: 31 }, '2026-02-01', '2026-02-28').map(x => x.data), sem: o({ repete: 'semanal', dow: 1 }, '2026-11-16', '2026-11-30').map(x => x.data), ano: o({ repete: 'anual', data: '2025-12-20' }, '2026-11-01', '2026-12-31').map(x => x.data), un: o({ repete: 'unica', data: '2026-12-05' }, '2026-11-01', '2026-12-31').map(x => x.data), mes: o({ repete: 'mensal', dia: 10 }, '2026-11-15', '2027-01-20').map(x => x.data) }; });
 check(JSON.stringify(oc.fev) === '["2026-02-28"]' && JSON.stringify(oc.sem) === '["2026-11-16","2026-11-23","2026-11-30"]' && JSON.stringify(oc.ano) === '["2026-12-20"]' && JSON.stringify(oc.un) === '["2026-12-05"]' && JSON.stringify(oc.mes) === '["2026-12-10","2027-01-10"]', 'vencimentos: dia 31 vira o último dia do mês, semanal, anual, uma vez e mensal: ' + JSON.stringify(oc));

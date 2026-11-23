@@ -80,6 +80,6 @@ check(/Toque de novo para confirmar/i.test(await t('[data-pl="migrar"]')) && (aw
 await page.click('[data-pl="migrar"]'); await page.waitForTimeout(1800);
 check(/as tarefas agora vivem em Delegadas/i.test(await t('#overlayPlanilhaC')) && (await f('GET', '/api/db/delegadas')).j.docs.length >= 1, 'o segundo toque importa, desliga o Google e mostra "Migrado para o app"');
 await page.click('[data-pl="abrirdelegadas"]'); await page.waitForTimeout(1200);
-check(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t input.dg-t')).some(i => i.value === 'Delegada pelo app')), 'as tarefas importadas aparecem na área Delegadas (Abertas)');
+check(await page.evaluate(() => Array.from(document.querySelectorAll('.dg-t [data-dgt]')).some(i => i.value === 'Delegada pelo app')), 'as tarefas importadas aparecem na área Delegadas (Abertas)');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

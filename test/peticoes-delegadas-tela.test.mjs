@@ -34,6 +34,20 @@ const cent = await caio.evaluate(() => (document.getElementById('atencaoLista') 
 check(!/Petição de Cliente da Estagiária/.test(cent), 'a Central de atenção da estagiária não repete o ajuste (ele está em Delegadas)');
 check(await caio.evaluate(() => /Devolvida para ajustes/i.test(document.getElementById('kanbanPeticoes') ? document.getElementById('kanbanPeticoes').innerText : '')) || true, 'o cartão continua na coluna "Devolvida para ajustes" do quadro');
 
+// título comprido quebra em linhas (linhas comuns da planilha)
+const longo = 'Protocolar certidão narrativa no cartório para averbação de existência da ação nas matrículas dos imóveis rurais da Fazenda Bom Jardim dos Dias';
+const dgId = (await api('caio', 'POST', '/api/db/delegadas', { titulo: longo, cliente: 'Cliente Longo', resp: 'u:x', prioridade: 'Média', status: 'afazer' })).j.id;
+await caio.reload(); await caio.waitForTimeout(2500);
+await caio.evaluate(() => document.querySelector('[data-tab="delegadas"]').click()); await caio.waitForSelector('textarea.dg-tx', { timeout: 8000 }); await caio.waitForTimeout(600);
+const Q = await caio.evaluate((tit) => { const t = [...document.querySelectorAll('textarea.dg-tx')].find((e) => e.value === tit); return t ? { h: t.getBoundingClientRect().height, cabe: t.scrollHeight <= t.clientHeight + 2, linhas: Math.round(t.getBoundingClientRect().height / 22) } : null; }, longo);
+check(Q && Q.h > 50 && Q.cabe, 'o título comprido quebra em linhas e aparece inteiro (altura ' + (Q && Math.round(Q.h)) + ' px)');
+const curto = await caio.evaluate(() => { const t = [...document.querySelectorAll('textarea.dg-tx')].find((e) => e.value.length < 40); return t ? t.getBoundingClientRect().height : 0; });
+check(!curto || curto < 50, 'título curto continua em uma linha');
+const tx = caio.locator('textarea.dg-tx', { hasText: 'Protocolar certidão' }).first();
+await tx.click(); await caio.keyboard.press('Control+End'); await caio.keyboard.type(' XYZ'); await caio.keyboard.press('Enter'); await caio.waitForTimeout(1200);
+const salvo = ((await api('caio', 'GET', '/api/db/delegadas')).j.docs.find((d) => d.id === dgId) || { data: {} }).data.titulo;
+check(salvo === longo + ' XYZ' && !/\n/.test(salvo), 'Enter grava o título editado e não insere quebra de linha');
+
 // advogada: Central de atenção como antes, e nada em Delegadas
 const ana = await abrir('ana');
 const centA = await ana.evaluate(() => (document.getElementById('atencaoLista') || { innerText: '' }).innerText.replace(/\s+/g, ' '));

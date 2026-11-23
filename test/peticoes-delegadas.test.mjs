@@ -32,6 +32,18 @@ await dono('PUT', '/api/db/casos/' + c1, { tipo: 'inicial', cliente: 'Maria Esta
 await dono('GET', '/api/peticoes');
 t = await tarefas(pid); check(t.find((x) => x.etapa === 'protocolo').status === 'concluida', 'ao protocolar a Inicial, a linha de protocolo é concluída');
 
+// --- petição que já estava devolvida antes das linhas automáticas (caso do Alexandre): a linha aparece na primeira leitura ---
+const c0 = await caso('Antiga Devolvida');
+r = await caio('POST', '/api/peticoes/enviar/' + c0 + '?nome=o.docx&revisor=' + bId, undefined, docx('v1')); const pid0 = r.j.peticao.id;
+await bruno('POST', '/api/peticoes/' + pid0 + '/comentar', { texto: 'Antigo.' }); await bruno('POST', '/api/peticoes/' + pid0 + '/devolver', {});
+for (const x of await tarefas(pid0)) await dono('DELETE', '/api/db/delegadas/' + x.id);   // como se a devolução fosse de antes da novidade
+check((await tarefas(pid0)).length === 0, 'simulação: petição devolvida sem linha em Delegadas');
+await caio('GET', '/api/peticoes');
+t = await tarefas(pid0); check(t.length === 1 && t[0].etapa === 'ajuste' && t[0].status === 'afazer' && t[0].resp === 'u:' + caioId, 'na primeira leitura a linha que faltava é criada para a estagiária');
+await caio('GET', '/api/peticoes'); await caio('GET', '/api/peticoes'); check((await tarefas(pid0)).length === 1, 'e não duplica nas leituras seguintes');
+await dono('PUT', '/api/db/delegadas/' + t[0].id + '?mesclar=1', { status: 'concluida', concluidoEm: '2026-11-24' });
+await caio('GET', '/api/peticoes'); check((await tarefas(pid0)).length === 1 && (await tarefas(pid0))[0].status === 'concluida', 'linha concluída pela própria pessoa não reabre sozinha');
+
 // --- autora advogada: nada em Delegadas ---
 const c2 = await caso('João Advogada');
 r = await ana('POST', '/api/peticoes/enviar/' + c2 + '?nome=b.docx&revisor=' + bId, undefined, docx('v1')); const pid2 = r.j.peticao.id;

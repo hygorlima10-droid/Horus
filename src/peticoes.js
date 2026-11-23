@@ -92,6 +92,16 @@ async function concluirTarefas(env, petId, etapa) {
     await env.DB.prepare('UPDATE docs SET dados = ?, atualizado = ? WHERE colecao = ? AND id = ?').bind(JSON.stringify(d), Date.now(), 'delegadas', t.id).run();
   }
 }
+/* petições que já estavam devolvidas/aprovadas antes das linhas automáticas (ou cuja linha faltou): cria a que falta, uma vez só */
+async function sincronizarTarefas(env, lista) {
+  const pend = lista.filter((p) => p.estado === 'devolvida' || p.estado === 'aprovada'); if (!pend.length) return;
+  const { results } = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = 'delegadas' AND json_extract(dados, '$.peticaoId') IS NOT NULL").all();
+  const tem = new Set(results.map((r) => { const d = JSON.parse(r.dados); return d.peticaoId + '|' + d.etapa; }));
+  for (const p of pend) {
+    if (p.estado === 'devolvida' && !tem.has(p.id + '|ajuste')) await abrirTarefa(env, p, 'ajuste');
+    if (p.estado === 'aprovada' && !tem.has(p.id + '|protocolo')) await abrirTarefa(env, p, 'protocolo');
+  }
+}
 async function apagarTarefasAuto(env, petId) {
   for (const t of await tarefasDaPeticao(env, petId)) if (t.d.auto === true) await env.DB.prepare("DELETE FROM docs WHERE colecao = 'delegadas' AND id = ?").bind(t.id).run();
 }
@@ -185,6 +195,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
   const m = request.method, sub = partes[1] || '';
   if (sub === '' && m === 'GET') {
     const lista = await todas(env); await fecharProtocoladas(env, lista);
+    try { await sincronizarTarefas(env, lista); } catch (e) { console.error('tarefas das petições', e); }
     const vis = []; for (const p of lista) if (await podeVerPet(env, auth, p)) vis.push(vista(p, auth));
     vis.sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
     return json({ itens: vis, uso: calcularUso(lista, await lerUso(env)) });
