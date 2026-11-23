@@ -44,18 +44,18 @@ check(/1 arquivo/.test(await txt(ana)) && /extrato c6\.pdf/.test(await txt(ana))
 
 await ana.click('[data-atla="prompt"]'); await ana.waitForTimeout(500);
 const prAna = await ana.evaluate(() => navigator.clipboard.readText());
-check(prAna.includes('Authorization: Bearer ' + cod2) && !/Pergunta ao importar/.test(prAna) && /apenas uma notificação/.test(prAna) && !/Abrir URL/.test(prAna.replace('Não abrir URL', '')), 'instruções da Ana: já com o código dela, terminando só com a notificação (sem abrir o Horus)');
-check(await ana.evaluate(() => !!document.querySelector('a[href="shortcuts://create-shortcut"]')) && /Enviar as instruções/.test(await txt(ana)), 'há "Abrir o app Atalhos" e "Enviar as instruções…"');
+check(prAna.includes('Bearer ' + cod2) && /^Crie um atalho chamado "Enviar extrato ao Horus"/.test(prAna) && /api\/enviar/.test(prAna) && /apenas uma notificação/.test(prAna) && /Não abra nenhum app nem site/.test(prAna) && prAna.length < 1600, 'descrição da Ana: pronta para o "Descrever um atalho", com o código dela, curta (' + prAna.length + ' caracteres) e terminando só com a notificação');
+check(await ana.evaluate(() => !!document.querySelector('a[href="shortcuts://create-shortcut"]')) && /Descrever um atalho/.test(await txt(ana)) && /Conferir antes de salvar/.test(await txt(ana)), 'há "Abrir o app Atalhos", a instrução de colar em "Descrever um atalho" e a lista para conferir');
 // proprietário: link, pessoas, instruções
 const dono = await abrir('dono'); await abrirAtalho(dono);
 t = await txt(dono);
 check(/Pessoas com atalho/i.test(t) && /Ana Advogada/.test(t) && /ativo/.test(t) && /Caio Estagiario/.test(t) && /não usa/.test(t), 'o proprietário vê a lista de pessoas (a estagiária "não usa")');
-check(!(await dono.evaluate(() => !!document.getElementById('atlLink'))) && !/compartilhável/.test(await txt(dono)), 'não há mais link nem "atalho compartilhável": todos usam as instruções com o próprio código');
+check(!(await dono.evaluate(() => !!document.getElementById('atlLink'))) && !/compartilhável/.test(await txt(dono)), 'todos usam a descrição com o próprio código (sem link nem atalho compartilhável)');
 await dono.click('[data-atla="gerar"]'); await dono.waitForTimeout(1500);
 const codDono = await dono.evaluate(() => document.getElementById('atlCod').innerText);
 await dono.click('[data-atla="prompt"]'); await dono.waitForTimeout(500);
 const prDono = await dono.evaluate(() => navigator.clipboard.readText());
-check(prDono.includes('Authorization: Bearer ' + codDono) && prDono.includes('CÓDIGO DESTA PESSOA') && !/\{CÓDIGO/.test(prDono) && /25 MB/.test(prDono), 'o proprietário também recebe as instruções completas, com o código dele: ' + codDono);
+check(prDono.includes('Bearer ' + codDono) && !/\{CÓDIGO/.test(prDono) && /25 MB/.test(prDono), 'o proprietário também recebe a descrição completa, com o código dele: ' + codDono);
 check(prDono !== prAna && !prDono.includes(cod2) && !prAna.includes(codDono), 'cada pessoa recebe só o próprio código');
 await dono.click('[data-atla="desligar"]'); dono.on('dialog', (d) => d.accept()); await dono.waitForTimeout(300);
 

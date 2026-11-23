@@ -1949,6 +1949,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -24340,17 +24341,14 @@ function atlCopiar(txt){
   return Promise.resolve(atlCopiarVelho(txt));
 }
 function atlCopiarVelho(txt){ try{ var t = document.createElement('textarea'); t.value = txt; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); var ok = document.execCommand('copy'); t.remove(); return ok; }catch(e){ return false; } }
-/* Texto para um assistente (ChatGPT, Claude…) explicar como montar o atalho no app Atalhos. Sai completo e JÁ COM O CÓDIGO DA PRÓPRIA PESSOA,
-   para ninguém errar ao digitar ou colar o código no atalho. */
+/* Texto para colar em "Descrever um atalho" no app Atalhos (a IA do próprio iPhone monta o atalho). Curto e direto, JÁ COM O CÓDIGO DA PESSOA,
+   para ninguém errar ao digitar ou colar o código. */
 function atlPrompt(codigo){
   var url = location.origin + '/api/enviar';
-  return 'Você é especialista no app Atalhos (Shortcuts) do iPhone, em português. Escreva o passo a passo, ação por ação, para criar um atalho chamado "Enviar extrato ao Horus", usando os nomes das ações como aparecem no Atalhos em português (não invente ações).\n\n' +
-    'Objetivo: a pessoa compartilha o extrato do banco (PDF, OFX ou ZIP) pela Folha de Compartilhamento e o arquivo é enviado ao meu app (Horus), que lê e monta a conferência. O atalho só envia o arquivo e avisa se deu certo; não abre nenhum app nem site.\n\n' +
-    'CÓDIGO DESTA PESSOA (use exatamente estes caracteres, com os traços, tudo minúsculo, sem espaços antes ou depois): ' + codigo + '\n\n' +
-    'Servidor: POST ' + url + ' · cabeçalho Authorization: Bearer ' + codigo + ' (a palavra Bearer, um espaço e o código) · cabeçalho X-Nome: nome do arquivo codificado para URL · corpo: o próprio Arquivo. Sucesso: JSON com "ok": true. Erros: 401 (código inválido), 413 (arquivo acima de 25 MB), 429 (muitos arquivos esperando, ou 5 tentativas erradas: aguardar 15 minutos).\n\n' +
-    'Comportamento: (1) aceitar Arquivos na folha de compartilhamento (se não houver entrada, pedir para escolher um arquivo); (2) guardar o código ' + codigo + ' numa ação Texto no início do atalho, já preenchida com ele (a pessoa não precisa digitar nada), e usar essa ação no cabeçalho Authorization; o código nunca aparece em mensagens ou notificações; (3) Repetir com cada item: obter Nome e Tamanho; se maior que 25 MB, avisar e pular; senão Obter conteúdo do URL (POST, cabeçalhos, corpo = Arquivo) e ler "ok" da resposta; se falhar, mostrar error.message com o nome do arquivo; (4) no fim, apenas uma notificação "N extrato(s) enviado(s) ao Horus." (e, se algum falhou, quais). Não abrir URL nem outro app ao terminar.\n\n' +
-    'Inclua: tratamento de falta de conexão, como testar, como trocar o código depois (Editar atalho › ação Texto), como adicionar à tela de início, e uma frase simples explicando por que o código é pessoal e não deve ser repassado.\n\n' +
-    'Formato: lista numerada de ações (nome da ação + o que preencher), depois "Como testar" e "Erros comuns (401, 413, 429)".';
+  return 'Crie um atalho chamado "Enviar extrato ao Horus". Ele deve aparecer na Folha de Compartilhamento e receber arquivos (PDF, OFX ou ZIP). ' +
+    'Para cada arquivo recebido: use a ação "Obter conteúdo do URL" no endereço ' + url + ' com método POST, cabeçalho Authorization com o valor Bearer ' + codigo + ' (a palavra Bearer, um espaço e o código, exatamente assim, em minúsculas e com os traços), cabeçalho X-Nome com o nome do arquivo codificado para URL, e corpo da requisição do tipo Arquivo (o próprio arquivo recebido). ' +
+    'Se o arquivo tiver mais de 25 MB, mostre um alerta com o nome dele e pule para o próximo. Se a resposta do servidor não tiver "ok" verdadeiro, mostre um alerta com o nome do arquivo e a mensagem de erro. ' +
+    'Ao terminar, mostre apenas uma notificação: "N extrato(s) enviado(s) ao Horus." (N = quantos deram certo). Não abra nenhum app nem site.';
 }
 function atlAbrir(){
   var ov = sgMontar('overlayAtalho', 'Atalho do iPhone');
@@ -24382,13 +24380,13 @@ function atlDesenhar(){
       '<button type="button" class="atl-bt atl-perigo" data-atla="novo">Gerar novo código</button><div class="atl-peq">O código atual deixa de valer na hora. No iPhone, cole o novo no atalho (Atalhos › Editar).</div>';
   }
   h += '</div>';
-  /* 2. montar o atalho */
-  h += '<div class="atl-sec"><div class="atl-t"><span class="atl-n">2</span>Montar o atalho no iPhone</div>' +
-    '<ol class="atl-passos"><li>Toque em <b>Copiar as instruções</b>: o texto já leva o <b>seu código</b>, sem você digitar nada.</li><li>Cole num assistente (ChatGPT, Claude…): ele devolve o passo a passo.</li><li>Abra o app <b>Atalhos</b> e siga os passos para criar o atalho.</li></ol>' +
-    '<button type="button" class="atl-bt atl-azul" data-atla="prompt"' + (i.tem ? '' : ' disabled') + '>Copiar as instruções (já com o meu código)</button>' +
-    '<div class="atl-duo"><button type="button" class="atl-bt" data-atla="compartilhar"' + (i.tem ? '' : ' disabled') + '>Enviar as instruções…</button><a class="atl-bt" href="shortcuts://create-shortcut">Abrir o app Atalhos</a></div>' +
-    (i.tem ? '' : '<div class="atl-peq">Gere o seu código no passo 1 para liberar as instruções.</div>') +
-    '<div class="atl-peq">O iPhone não deixa um app colar texto dentro do Atalhos; por isso o caminho é copiar, colar no assistente e montar. Use só um assistente de confiança: o texto contém o seu código. Se achar que vazou, gere um novo código.</div></div>';
+  /* 2. criar o atalho (a IA do próprio app Atalhos monta, a partir da descrição) */
+  h += '<div class="atl-sec"><div class="atl-t"><span class="atl-n">2</span>Criar o atalho no iPhone</div>' +
+    '<ol class="atl-passos"><li>Toque em <b>Copiar a descrição do atalho</b>: o texto já leva o <b>seu código</b>, sem você digitar nada.</li><li>Toque em <b>Abrir o app Atalhos</b>, crie um atalho novo e <b>cole</b> o texto em <b>“Descrever um atalho”</b>. O iPhone monta o atalho sozinho.</li><li><b>Confira antes de salvar</b> (abaixo) e toque em concluir.</li></ol>' +
+    '<button type="button" class="atl-bt atl-azul" data-atla="prompt"' + (i.tem ? '' : ' disabled') + '>Copiar a descrição do atalho (já com o meu código)</button>' +
+    '<a class="atl-bt" href="shortcuts://create-shortcut">Abrir o app Atalhos</a>' +
+    (i.tem ? '' : '<div class="atl-peq">Gere o seu código no passo 1 para liberar a descrição.</div>') +
+    '<div class="atl-conf"><b>Conferir antes de salvar:</b><ul><li>O atalho aparece na <b>Folha de Compartilhamento</b> e aceita arquivos.</li><li>Ação <b>Obter conteúdo do URL</b>: método <b>POST</b>, corpo <b>Arquivo</b>.</li><li>Cabeçalho <b>Authorization</b> = <b>Bearer</b> + o seu código (toque em Mostrar acima para comparar).</li><li>Cabeçalho <b>X-Nome</b> = nome do arquivo.</li><li>No fim, só uma <b>notificação</b>.</li></ul><div class="atl-peq">Se o iPhone errar algum ponto, corrija à mão ou descreva de novo. O texto contém o seu código: se achar que vazou, gere um novo.</div></div></div>';
   /* 3. testar */
   h += '<div class="atl-sec"><div class="atl-t"><span class="atl-n">3</span>Testar</div>' +
     '<div class="atl-lin"><span>Último envio</span><span>' + (i.ultimo ? '<b>' + escapeHtml(atlQuando(i.ultimo.em)) + '</b> · ' + escapeHtml(i.ultimo.nome) : 'nenhum ainda') + '</span></div>' +
@@ -24415,8 +24413,7 @@ function atlAcao(a, bt){
   if (a === 'novo'){ if (!confirm('Gerar um novo código e desligar o atual? O atalho do iPhone vai parar de enviar até você colar o novo código nele.')) return; return gerar(); }
   if (a === 'mostrar'){ atlS.mostrar = !atlS.mostrar; return atlDesenhar(); }
   if (a === 'copiar') return atlCopiar(i.codigo).then(function(ok){ toast(ok ? 'Código copiado.' : 'Não consegui copiar: toque em Mostrar e copie à mão.'); });
-  if (a === 'prompt'){ if (!i.tem){ toast('Gere o seu código primeiro.'); return; } return atlCopiar(atlPrompt(i.codigo)).then(function(ok){ toast(ok ? 'Instruções copiadas, já com o seu código. Cole num assistente.' : 'Não consegui copiar. Use “Enviar as instruções…”.'); }); }
-  if (a === 'compartilhar'){ if (!i.tem){ toast('Gere o seu código primeiro.'); return; } var tx = atlPrompt(i.codigo); if (navigator.share) return navigator.share({ title: 'Instruções do atalho do Horus', text: tx }).catch(function(){}); return atlCopiar(tx).then(function(ok){ toast(ok ? 'Este aparelho não tem “Compartilhar”: copiei as instruções.' : 'Não consegui copiar.'); }); }
+  if (a === 'prompt'){ if (!i.tem){ toast('Gere o seu código primeiro.'); return; } return atlCopiar(atlPrompt(i.codigo)).then(function(ok){ toast(ok ? 'Descrição copiada, já com o seu código. Cole em “Descrever um atalho”.' : 'Não consegui copiar.'); }); }
   if (a === 'atualizar'){ atlS.nota = ''; return atlCarregar(); }
   if (a === 'extratos'){ qs('overlayAtalho').classList.remove('show'); try{ setActiveTab('extratos'); }catch(e){} return; }
   if (a === 'desligar'){ var uid = bt.getAttribute('data-uid'), nome = bt.getAttribute('data-nome'); if (!confirm('Desligar o código de ' + nome + '? O atalho dela para de enviar até ela gerar outro.')) return; return esJson('/api/atalho/desligar', 'POST', { uid: uid }).then(function(){ atlS.nota = 'Código de ' + nome + ' desligado.'; return atlCarregar(); }).catch(function(e){ toast(e.message); }); }
@@ -24430,7 +24427,7 @@ function atlAcao(a, bt){
     '.atl-nota{border-radius:10px;padding:9px 11px;font-size:var(--t2);margin:8px 0;line-height:1.4;background:#FBEFD2;color:#6B4509}.atl-verm{background:#FDE3E3;color:#8E1B1B}.atl-ok{background:#DDF3E5;color:#16683A}.atl-peq{color:var(--ink-soft);font-size:var(--t1);margin-top:6px}.atl-vazio{color:var(--ink-soft);font-size:var(--t2)}' +
     '.atl-lin{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:var(--t2)}.atl-t+.atl-lin{border-top:0}.atl-tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:10.5px;font-weight:800}' +
     '.atl-er{background:#FDE3E3;color:#B42323}.atl-av{background:#FBEFD2;color:#8A5A0B}.atl-cz{background:#EAEEFB;color:#5b6488}.atl-ok2{background:#DDF3E5;color:#16683A}.atl-l{display:block;font-size:var(--t1);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:10px 0 4px}' +
-    '.atl-in{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;font-size:var(--t3);background:var(--bg);color:var(--ink)}.atl-passos{margin:0 0 6px;padding-left:20px;font-size:var(--t2);line-height:1.5}.atl-bt[disabled]{opacity:.5}a.atl-bt{box-sizing:border-box}.atl-mini{border:1px solid var(--border);background:var(--surface);color:var(--urgente);border-radius:8px;padding:3px 9px;font:700 11px system-ui,sans-serif;cursor:pointer;margin-top:4px}';
+    '.atl-in{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;font-size:var(--t3);background:var(--bg);color:var(--ink)}.atl-conf{margin-top:10px;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:var(--t2)}.atl-conf ul{margin:6px 0 0;padding-left:18px;line-height:1.5}.atl-passos{margin:0 0 6px;padding-left:20px;font-size:var(--t2);line-height:1.5}.atl-bt[disabled]{opacity:.5}a.atl-bt{box-sizing:border-box}.atl-mini{border:1px solid var(--border);background:var(--surface);color:var(--urgente);border-radius:8px;padding:3px 9px;font:700 11px system-ui,sans-serif;cursor:pointer;margin-top:4px}';
   document.head.appendChild(st);
   if (typeof CF_LINHAS !== 'undefined') CF_LINHAS.splice(1, 0, { id: 'atalho', ic: 'file-up', t: 'Atalho do iPhone', s: 'mande o extrato do banco direto do celular', go: function(){ atlAbrir(); } });
   /* advogado: a lista simplificada de Minha conta ganha a linha do atalho */
