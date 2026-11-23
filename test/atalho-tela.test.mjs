@@ -16,7 +16,7 @@ const ana = await abrir('ana'); await irConfig(ana);
 check(await ana.evaluate(() => !!document.querySelector('[data-cf="atalho"]')), 'a advogada vê "Atalho do iPhone" em Minha conta');
 await abrirAtalho(ana);
 let t = await txt(ana);
-check(/Seu código pessoal/i.test(t) && /Gerar meu código/.test(t) && /ainda não foi cadastrado/.test(t), 'sem código ainda, e o link do atalho ainda não foi cadastrado');
+check(/Seu código pessoal/i.test(t) && /Gerar meu código/.test(t) && /Gere o seu código no passo 1/.test(t) && await ana.evaluate(() => document.querySelector('[data-atla="prompt"]').disabled), 'sem código ainda: as instruções ficam desligadas até gerar o código');
 await ana.click('[data-atla="gerar"]'); await ana.waitForTimeout(1500);
 let cod = await ana.evaluate(() => document.getElementById('atlCod').innerText);
 check(/^[a-z0-9]{4}(-[a-z0-9]{4}){3}$/.test(cod), 'o código aparece depois de gerar: ' + cod);
@@ -49,16 +49,15 @@ check(await ana.evaluate(() => !!document.querySelector('a[href="shortcuts://cre
 // proprietário: link, pessoas, instruções
 const dono = await abrir('dono'); await abrirAtalho(dono);
 t = await txt(dono);
-check(/Link do atalho/i.test(t) && /Pessoas com atalho/i.test(t) && /Ana Advogada/.test(t) && /ativo/.test(t) && /Caio Estagiario/.test(t) && /não usa/.test(t), 'o proprietário vê o link e a lista de pessoas (a estagiária "não usa")');
-await dono.fill('#atlLink', 'https://www.icloud.com/shortcuts/teste123'); await dono.click('[data-atla="link"]'); await dono.waitForTimeout(1500);
-check(/Link salvo/.test(await txt(dono)) && await dono.evaluate(() => !!document.querySelector('a.atl-azul[href*="icloud.com/shortcuts/teste123"]')), 'o link salvo vira o botão "Adicionar o atalho ao iPhone"');
-await dono.click('[data-atla="promptc"]'); await dono.waitForTimeout(500);
-const prc = await dono.evaluate(() => navigator.clipboard.readText());
-check(/api\/enviar/.test(prc) && /Authorization: Bearer \{CÓDIGO_DA_PESSOA\}/.test(prc) && /Pergunta ao importar/.test(prc) && /25 MB/.test(prc), 'instruções do atalho compartilhável: sem código, com pergunta ao importar');
-await dono.click('[data-atla="gerar"]').catch(() => {}); await dono.waitForTimeout(300);
+check(/Pessoas com atalho/i.test(t) && /Ana Advogada/.test(t) && /ativo/.test(t) && /Caio Estagiario/.test(t) && /não usa/.test(t), 'o proprietário vê a lista de pessoas (a estagiária "não usa")');
+check(!(await dono.evaluate(() => !!document.getElementById('atlLink'))) && !/compartilhável/.test(await txt(dono)), 'não há mais link nem "atalho compartilhável": todos usam as instruções com o próprio código');
+await dono.click('[data-atla="gerar"]'); await dono.waitForTimeout(1500);
+const codDono = await dono.evaluate(() => document.getElementById('atlCod').innerText);
+await dono.click('[data-atla="prompt"]'); await dono.waitForTimeout(500);
+const prDono = await dono.evaluate(() => navigator.clipboard.readText());
+check(prDono.includes('Authorization: Bearer ' + codDono) && prDono.includes('CÓDIGO DESTA PESSOA') && !/\{CÓDIGO/.test(prDono) && /25 MB/.test(prDono), 'o proprietário também recebe as instruções completas, com o código dele: ' + codDono);
+check(prDono !== prAna && !prDono.includes(cod2) && !prAna.includes(codDono), 'cada pessoa recebe só o próprio código');
 await dono.click('[data-atla="desligar"]'); dono.on('dialog', (d) => d.accept()); await dono.waitForTimeout(300);
-await ana.click('[data-atla="atualizar"]'); await ana.waitForTimeout(1200);
-check(await ana.evaluate(() => !!document.querySelector('a.atl-azul[href*="icloud.com/shortcuts/teste123"]')), 'a Ana vê o botão com o link cadastrado');
 
 // estagiária não vê
 const caio = await abrir('caio'); await irConfig(caio);

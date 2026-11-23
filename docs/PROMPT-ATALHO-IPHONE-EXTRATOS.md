@@ -1,6 +1,6 @@
 # Prompt: atalho do iPhone para enviar extratos ao Horus
 
-**Situação (23/11):** cada pessoa (proprietário e advogados) tem o seu código e a sua caixa de entrada: Configurações › **Atalho do iPhone** gera o código (botão Mostrar), guarda o link do atalho e o botão "Copiar as instruções para montar o atalho" copia este mesmo prompt já com o endereço do app. Limite de arquivo: **25 MB**. Onde diz `{TOKEN_DA_PESSOA}`/`{CÓDIGO_DA_PESSOA}`, vai o código de cada um.
+**Situação (23/11):** cada pessoa (proprietário e advogados) tem o seu código e a sua caixa de entrada: Configurações › **Atalho do iPhone** gera o código (botão Mostrar) e o botão **"Copiar as instruções (já com o meu código)"** copia este prompt **completo, já com o endereço do app e o código exato da própria pessoa**, para ninguém errar ao salvar o atalho. Limite de arquivo: **25 MB**. Neste arquivo o código aparece como `{TOKEN_DA_PESSOA}`/`{CÓDIGO_DA_PESSOA}`; no app, ele já sai preenchido.
 
 ---
 
