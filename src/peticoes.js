@@ -13,7 +13,8 @@
      GET    /api/peticoes/revisores            quem pode ser escolhido como revisor
      POST   /api/peticoes/enviar/<casoId>?nome=&revisor=&prazo=&recado=   corpo = o arquivo (.docx ou .pdf, até 25 MB): cria a petição ou manda nova versão
      GET    /api/peticoes/<id>/arquivo?v=<n>   baixa a versão
-     POST   /api/peticoes/<id>/comentar        { texto }
+     POST   /api/peticoes/<id>/comentar        { texto, ancora? }   (só o revisor; ancora = trecho do texto)
+     POST   /api/peticoes/<id>/resolver        { comentario, acao: propor | resolver | reabrir }   (autor propõe, revisor confirma)
      POST   /api/peticoes/<id>/devolver        { texto? }       (revisor)
      POST   /api/peticoes/<id>/aprovar         (revisor)
      POST   /api/peticoes/<id>/reencaminhar    { revisor }      (quem fez a Inicial)
@@ -131,6 +132,17 @@ async function fecharProtocoladas(env, lista) {
   }
 }
 
+/* âncora de um comentário no texto: só números e textos curtos, nada além do necessário */
+function limparAncora(a) {
+  if (!a || typeof a !== 'object') return null;
+  const inteiro = (x, max) => (Number.isInteger(x) && x >= 0 && x <= max ? x : null);
+  const p = inteiro(a.p, 20000), ini = inteiro(a.ini, 100000), fim = inteiro(a.fim, 100000), quote = typeof a.quote === 'string' ? a.quote.slice(0, 600) : '';
+  if (p === null || ini === null || fim === null || fim <= ini || !quote.trim()) return null;
+  const o = { p, ini, fim, quote, antes: String(a.antes || '').slice(0, 40), depois: String(a.depois || '').slice(0, 40), paragrafo: String(a.paragrafo || '').slice(0, 1500) };
+  if (Number.isInteger(a.pag) && a.pag >= 1 && a.pag <= 5000) o.pag = a.pag;   // PDF: página
+  return o;
+}
+
 export async function peticoesRotas(request, env, partes, auth, deps) {
   if (!env.ARQUIVOS) return erro(503, 'sem_r2', 'O armazenamento de arquivos (R2) ainda não está ligado.');
   const m = request.method, sub = partes[1] || '';
@@ -209,12 +221,36 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     return new Response(obj.body, { headers: { 'content-type': MIME[v.tipo] || 'application/octet-stream', 'content-length': String(v.tam), 'cache-control': 'no-store', 'content-disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(v.nome), 'x-content-type-options': 'nosniff' } });
   }
   if (acao === 'comentar' && m === 'POST') {
-    if (!['a_corrigir', 'devolvida'].includes(p.estado)) return erro(409, 'state', 'Esta petição não aceita mais comentários.');
-    if (!souAutor(auth, p) && !souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o autor e o revisor comentam.');
+    if (p.estado !== 'a_corrigir') return erro(409, 'state', 'A petição precisa estar com o revisor para receber comentários.');
+    if (!souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o revisor comenta.');
     const b = await request.json().catch(() => null) || {}, texto = String(b.texto || '').trim().slice(0, 2000);
     if (!texto) return erro(400, 'invalid', 'Escreva o comentário.');
-    const v = p.versoes[p.versoes.length - 1].n;
-    p.comentarios.push({ id: aleat(), por: a, papel: souRevisor(auth, p) && !mesmo(p.criadoPor, a.id) ? 'revisor' : 'autor', texto, em: agora, v });
+    const v = p.versoes[p.versoes.length - 1].n, ancora = limparAncora(b.ancora);
+    if (b.ancora && !ancora) return erro(400, 'invalid', 'Trecho inválido.');
+    const com = { id: aleat(), por: a, papel: 'revisor', texto, em: agora, v, estado: 'aberto' };
+    if (ancora) com.ancora = ancora;
+    p.comentarios.push(com);
+    p.atualizadoEm = agora; await stmtPet(env, p).run();
+    return json({ ok: true, peticao: vista(p, auth), comentario: com.id });
+  }
+  if (acao === 'resolver' && m === 'POST') {
+    if (!['a_corrigir', 'devolvida'].includes(p.estado)) return erro(409, 'state', 'Esta petição não aceita mais mudanças nos comentários.');
+    const b = await request.json().catch(() => null) || {}, c = p.comentarios.find((x) => x.id === b.comentario);
+    if (!c) return erro(404, 'not_found', 'Comentário não encontrado.');
+    const est = c.estado || 'aberto';
+    if (b.acao === 'propor') {   // quem fez a Inicial diz que corrigiu; o revisor confirma
+      if (!souAutor(auth, p)) return erro(403, 'forbidden', 'Só quem fez a Inicial propõe como resolvido.');
+      if (est !== 'aberto') return erro(409, 'state', 'O comentário já foi tratado.');
+      c.estado = 'proposto'; c.propostoPor = a; c.propostoEm = agora;
+    } else if (b.acao === 'resolver') {
+      if (!souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o revisor confirma que está resolvido.');
+      if (est === 'resolvido') return erro(409, 'state', 'O comentário já está resolvido.');
+      c.estado = 'resolvido'; c.resolvidoPor = a; c.resolvidoEm = agora;
+    } else if (b.acao === 'reabrir') {
+      if (!souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o revisor reabre.');
+      if (est === 'aberto') return erro(409, 'state', 'O comentário já está aberto.');
+      c.estado = 'aberto'; delete c.resolvidoPor; delete c.resolvidoEm; delete c.propostoPor; delete c.propostoEm;
+    } else return erro(400, 'invalid', 'Ação desconhecida.');
     p.atualizadoEm = agora; await stmtPet(env, p).run();
     return json({ ok: true, peticao: vista(p, auth) });
   }
@@ -222,7 +258,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (p.estado !== 'a_corrigir') return erro(409, 'state', 'A petição não está com o revisor.');
     if (!souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o revisor devolve a petição.');
     const b = await request.json().catch(() => null) || {}, texto = String(b.texto || '').trim().slice(0, 2000), v = p.versoes[p.versoes.length - 1].n;
-    if (texto) p.comentarios.push({ id: aleat(), por: a, papel: 'revisor', texto, em: agora, v });
+    if (texto) p.comentarios.push({ id: aleat(), por: a, papel: 'revisor', texto, em: agora, v, estado: 'aberto' });
     if (!p.comentarios.some((c) => c.v === v && c.papel === 'revisor')) return erro(400, 'invalid', 'Escreva ao menos um comentário antes de devolver.');
     p.estado = 'devolvida'; p.atualizadoEm = agora; evento(p, auth, 'Devolveu para ajustes.');
     await stmtPet(env, p).run(); await garantirColunas(env); await moverCaso(env, p.casoId, 'devolvida', auth);

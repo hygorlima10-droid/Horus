@@ -57,3 +57,7 @@ Cada etapa com testes e teste seu no aparelho antes da próxima.
 4. **PDF escaneado:** comentário só da página serve?
 5. **Nível 3** (ler os comentários feitos dentro do Word) entra junto ou depois? *Sugestão: depois, com a etapa C pronta.*
 6. Para validar com segurança, peço **uma petição real do escritório (.docx e o PDF dela), sem dados de cliente**, para testar a leitura antes de implementar.
+
+## 9. Andamento (23/11)
+
+Decisões do proprietário: só o revisor comenta; autor propõe e revisor confirma o "resolvido"; aprovar com comentário aberto só avisa; PDF escaneado com comentário da página; nível 3 depois (talvez nunca); sem sugestão de redação por ora. **Etapas A e B implementadas** (leitor de Word com os estilos do escritório, comentário no trecho, reencontro na v2, resolvido/reaberto). **Etapa C (PDF) pendente.** Validado com o modelo real "Inicial – Modelo – Falone".

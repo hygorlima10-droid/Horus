@@ -138,13 +138,13 @@ function ptDesenhar(){
   } else {
     h += '<div class="pt-sec"><div class="pt-t">Petição · <span class="pt-chip pt-e-' + p.estado + '">' + PT_ROTULO[p.estado] + '</span></div>' +
       '<div class="pt-linha">Feita por <b>' + escapeHtml(p.criadoPor.nome) + '</b> · revisor <b>' + escapeHtml(p.revisor.nome) + '</b>' + (p.prazo ? ' · prazo ' + fmtData(p.prazo) : '') + '</div></div>';
-    h += ptVersoesHtml(p) + ptComentariosHtml(p);
+    h += ptVersoesHtml(p) + '<div class="pt-sec"><button type="button" class="pt-bt pt-escuro" data-pta="ler" style="margin-top:0">Ler e comentar no texto</button></div>' + ptComentariosHtml(p);
     if (p.estado === 'a_corrigir' && p.souRevisor){
       var q = p.comentarios.filter(function(x){ return x.papel === 'revisor' && x.v === p.versoes[p.versoes.length - 1].n; }).length;
       h += '<div class="pt-sec"><div class="pt-t">Sua revisão</div><textarea id="ptCom" class="pt-in" rows="3" maxlength="2000" placeholder="Escreva o comentário (um por vez)…"></textarea>' +
         '<button type="button" class="pt-bt" data-pta="comentar">Adicionar comentário</button>' +
         '<button type="button" class="pt-bt pt-ouro" data-pta="devolver">Devolver para ajustes' + (q ? ' · ' + q + (q === 1 ? ' comentário' : ' comentários') : '') + '</button>' +
-        '<button type="button" class="pt-bt" data-pta="aprovar">Aprovar sem alterações</button></div>';
+        '<button type="button" class="pt-bt" data-pta="aprovar">Aprovar</button></div>';
     }
     if (p.estado === 'a_corrigir' && p.souAutor && !p.souRevisor){
       h += '<div class="pt-sec"><div class="pt-t">Passar para outro revisor</div>' + ptSelRevisor('ptRev2', p.revisor.id) + '<button type="button" class="pt-bt" data-pta="reencaminhar">Passar a revisão</button></div>';
@@ -183,10 +183,11 @@ function ptAcao(a, bt){
   if (a === 'enviar') return ptEnviar(p);
   if (a === 'comentar'){ var t = (qs('ptCom') || {}).value || ''; if (!t.trim()){ toast('Escreva o comentário.'); return; } return enc('comentar', { texto: t }, 'Comentário adicionado.'); }
   if (a === 'devolver'){ var t2 = (qs('ptCom') || {}).value || ''; return enc('devolver', { texto: t2 }, 'Devolvida para ajustes. A Inicial voltou para quem a fez.'); }
-  if (a === 'aprovar'){ if (!confirm('Aprovar a petição sem alterações? A Inicial vai para "Aguardando protocolo".')) return; return enc('aprovar', {}, 'Aprovada. A Inicial está em "Aguardando protocolo".'); }
+  if (a === 'aprovar'){ var ab = p.comentarios.filter(function(x){ return (x.estado || 'aberto') !== 'resolvido'; }).length; if (!confirm(ab ? 'Há ' + ab + (ab === 1 ? ' comentário' : ' comentários') + ' ainda não resolvido(s). Aprovar mesmo assim? A Inicial vai para "Aguardando protocolo".' : 'Aprovar a petição? A Inicial vai para "Aguardando protocolo".')) return; return enc('aprovar', {}, 'Aprovada. A Inicial está em "Aguardando protocolo".'); }
   if (a === 'reencaminhar'){ var r = (qs('ptRev2') || {}).value; if (!r){ toast('Escolha o revisor.'); return; } return enc('reencaminhar', { revisor: r }, 'Revisão passada para outro revisor.'); }
   if (a === 'apagar'){ if (!confirm('Apagar a petição e os arquivos enviados? Isso não pode ser desfeito.')) return; return esJson('/api/peticoes/' + id, 'DELETE').then(function(){ ptS.sig = ''; return ptCarregar(); }).then(function(){ qs('overlayPet').classList.remove('show'); toast('Petição apagada.'); }).catch(function(e){ toast(e.message); }); }
   if (a === 'protocolar'){ qs('overlayPet').classList.remove('show'); var col = ptStatusProtocolado(); try{ mudarStatusCaso(ptS.casoId, col); }catch(e){ toast('Abra a Inicial e mova para "Protocolado".'); } setTimeout(ptCarregar, 3000); return; }
+  if (a === 'ler') return leiAbrir(p.id);
   if (a === 'delegar') return ptDelegarAbrir();
   if (a === 'delegarok') return ptDelegarGravar();
   if (a === 'uso') return ptUsoAbrir();

@@ -44,10 +44,26 @@ check((await caio('POST', '/api/peticoes/' + pid + '/comentar', { texto: 'oi' })
 check((await bruno('POST', '/api/peticoes/' + pid + '/devolver', {})).s === 400, 'não devolve sem nenhum comentário');
 r = await bruno('POST', '/api/peticoes/' + pid + '/comentar', { texto: 'Falta o endereço do herdeiro.' });
 check(r.s === 200 && r.j.peticao.comentarios.length === 1, 'o revisor comenta');
+const anc = { p: 3, ini: 10, fim: 22, quote: 'um trecho aqui', antes: 'antes ', depois: ' depois', paragrafo: 'texto do paragrafo' };
+check((await bruno('POST', '/api/peticoes/' + pid + '/comentar', { texto: 'x', ancora: { p: 1, ini: 5, fim: 2, quote: 'a' } })).s === 400, 'âncora inválida (fim antes do início) é recusada');
+r = await bruno('POST', '/api/peticoes/' + pid + '/comentar', { texto: 'Comentário no trecho.', ancora: anc });
+const cTrecho = r.j.comentario;
+check(r.s === 200 && r.j.peticao.comentarios.some((c) => c.id === cTrecho && c.ancora && c.ancora.quote === 'um trecho aqui' && c.estado === 'aberto'), 'comentário no trecho guarda a âncora e nasce "aberto"');
+check((await ana('POST', '/api/peticoes/' + pid + '/comentar', { texto: 'eu também' })).s === 403, 'quem fez a Inicial não comenta (só o revisor)');
 r = await bruno('POST', '/api/peticoes/' + pid + '/devolver', { texto: 'Ajuste também o pedido de tutela.' });
-check(r.s === 200 && r.j.peticao.estado === 'devolvida' && r.j.peticao.comentarios.length === 2, 'o revisor devolve para ajustes');
+check(r.s === 200 && r.j.peticao.estado === 'devolvida' && r.j.peticao.comentarios.length === 3, 'o revisor devolve para ajustes');
 check((await status(cid)) === 'devolvida', 'a Inicial foi para "Devolvida para ajustes"');
 check((await bruno('POST', '/api/peticoes/enviar/' + cid + '?nome=y.docx', undefined, docx('x'))).s === 403, 'o revisor não manda versão enquanto está com o autor');
+
+// resolver: o autor propõe, o revisor confirma
+const res = (q, acao, id2) => q('POST', '/api/peticoes/' + pid + '/resolver', { comentario: id2 || cTrecho, acao });
+check((await bruno('POST', '/api/peticoes/' + pid + '/resolver', { comentario: cTrecho, acao: 'propor' })).s === 403, 'o revisor não "propõe" (isso é do autor)');
+check((await res(ana, 'resolver')).s === 403, 'o autor não confirma como resolvido');
+r = await res(ana, 'propor'); check(r.s === 200 && r.j.peticao.comentarios.find((c) => c.id === cTrecho).estado === 'proposto', 'o autor propõe o comentário como resolvido');
+check((await res(ana, 'propor')).s === 409, 'não propõe duas vezes');
+r = await res(bruno, 'reabrir'); check(r.s === 200 && r.j.peticao.comentarios.find((c) => c.id === cTrecho).estado === 'aberto', 'o revisor reabre');
+await res(ana, 'propor'); r = await res(bruno, 'resolver'); check(r.s === 200 && r.j.peticao.comentarios.find((c) => c.id === cTrecho).estado === 'resolvido', 'o revisor confirma: resolvido');
+check((await res(caio, 'propor')).s === 403, 'a estagiária não mexe no estado dos comentários');
 
 // correção e reenvio a outro revisor
 r = await ana('POST', '/api/peticoes/enviar/' + cid + '?nome=' + encodeURIComponent('Inicial Maria v2.docx') + '&revisor=' + dId, undefined, docx('versao dois'));

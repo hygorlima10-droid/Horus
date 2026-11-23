@@ -48,7 +48,7 @@ const cent = await bruno.evaluate(() => (document.getElementById('atencaoLista')
 check(/Petição de Maria Tela/.test(cent) && /Revisar/.test(cent), 'o revisor vê "Revisar" na Central de atenção: ' + cent.slice(0, 120));
 await bruno.evaluate(() => document.querySelector('#atencaoLista [data-pt-abrir]').click()); await bruno.waitForTimeout(1500);
 t = await folha(bruno);
-check(/Sua revisão/i.test(t) && /Aprovar sem alterações/.test(t) && /Baixar/.test(t), 'a folha do revisor tem comentar, devolver e aprovar');
+check(/Sua revisão/i.test(t) && /Aprovar/.test(t) && /Baixar/.test(t), 'a folha do revisor tem comentar, devolver e aprovar');
 await bruno.click('[data-pta="devolver"]'); await bruno.waitForTimeout(800);
 check(/Escreva ao menos um comentário/.test(await bruno.evaluate(() => document.getElementById('toast').innerText)), 'não devolve sem comentário');
 await bruno.fill('#ptCom', 'Faltou fundamentar o art. 300 do CPC.'); await bruno.click('[data-pta="comentar"]'); await bruno.waitForTimeout(1500);
