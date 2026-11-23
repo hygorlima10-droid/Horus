@@ -44,3 +44,46 @@ Só estudo e esboço; nada foi alterado no app. Esboço: `docs/esboco-iniciais-p
 
 ## 7. Decisões que dependem do proprietário
 Limite de 10 MB (opção A) ou ativar o R2 já; só a coluna "A corrigir" ou também "Pronta para protocolar"; quem corrige por padrão; manter ou apagar versões antigas ao protocolar; se a estagiária vê as petições de outras estagiárias.
+
+---
+# Atualização (23/11/2026): R2 ativado, comentários e alerta de armazenamento
+Esboço novo: `docs/esboco-iniciais-peticao-revisao-v2.png` (substitui o desenho do passo 4 da primeira versão).
+
+## A. Reavaliação com o R2
+- O R2 agora responde na conta (a Cloudflare não pede mais para ativar). **Ainda não há nenhum bucket**; será criado na hora de implementar (nome sugerido `horus-peticoes`, privado, sem endereço público) e ligado ao Worker em `wrangler.jsonc`.
+- **Os arquivos saem do banco e vão para o R2** (a opção A, em partes no banco, fica descartada). No banco ficam só os dados leves: versões, comentários, histórico e a chave do arquivo no R2.
+- **Limite por arquivo: proposta de 25 MB** (.docx ou .pdf). O Worker aceita até 100 MB por envio, então 25 MB sobra para petição com muitos anexos digitalizados. Dá para subir depois sem mudar o desenho.
+- **Faixa gratuita do R2 (por mês):** 10 GB guardados (por mês de uso), 1 milhão de gravações (Class A) e 10 milhões de leituras (Class B); a saída de dados (baixar) é gratuita. Um envio = 1 gravação; baixar ou visualizar = 1 leitura; apagar não conta.
+- **Conta de padaria:** 10 GB cabem ≈ 33 mil petições de 300 KB ou ≈ 2 mil de 5 MB. Com 10 petições por mês e 3 versões, levaria muitos anos; o espaço só vira problema com PDFs digitalizados grandes em volume.
+- **Acesso e segurança:** o bucket é privado; só o Worker lê e grava. O download passa por rota autenticada que confere se a pessoa vê aquela Inicial (as mesmas regras de hoje), com `Content-Disposition: attachment`, tipo conferido pelo começo do arquivo e nome higienizado. Cada envio e download entra no rastro.
+- O que **muda no backup:** o arquivo no R2 não entra nos backups semanais (que cobrem o banco). Opção futura: cópia semanal dos arquivos para um segundo bucket.
+
+## B. Alerta de limite gratuito (a criar junto com o envio de arquivos)
+- **Contagem:** como todo envio/download passa pelo Worker, o app conta no banco: bytes guardados (soma das versões), gravações do mês e leituras do mês (zera todo mês). Não depende de chave de API da Cloudflare.
+- **Faixas:** **80%** (amarelo) e **95%** (vermelho) de **qualquer** dos três limites (espaço, gravações, leituras).
+- **Onde aparece (só para o proprietário):** linha na **Central de atenção** do Início; tela **Configurações › Armazenamento de petições** com as três barras de uso; **aviso no celular** uma vez por faixa, a cada mês.
+- **Trava preventiva (opção):** ao chegar em **100%**, o app **bloqueia só os envios novos** (baixar, ver e comentar continuam), para não gerar cobrança no R2 se houver cartão cadastrado; o proprietário pode liberar ou apagar versões antigas. A confirmar se você quer a trava ligada.
+- Observação: o limite de espaço do R2 é "10 GB-mês" (média do mês); o app usa o espaço guardado no momento como medida, que é conservadora.
+
+## C. Comentários e devolução ao autor (viável, em três níveis)
+Ciclo desejado: **revisor comenta → petição volta para quem criou → autor ajusta e envia nova versão → reenvia para o mesmo revisor ou outro → repete até aprovar.**
+
+**Nível 1 (base, recomendado já na primeira entrega):** comentários no Horus, ligados à versão: texto livre, **trecho citado** (colado ou digitado) e, para PDF, **o número da página**; cada comentário tem autor, data e estado (**aberto / resolvido**). Botões do revisor: **Devolver ao autor** (com N comentários) e **Aprovar**. O autor vê a lista, marca cada um como resolvido, envia a nova versão e **Reenvia para revisão** (escolhe o revisor; o padrão é quem revisou antes). Avisa se houver comentário aberto antes de reenviar. É simples e seguro.
+
+**Nível 2 (segunda etapa): ler e comentar sobre o próprio texto, dentro do Horus.**
+- **PDF:** o app já carrega o leitor de PDF (pdf.js); dá para mostrar a página e selecionar o trecho para comentar (âncora: página + trecho).
+- **Word:** converter o .docx em texto na tela com uma biblioteca de leitura de Word (ex.: mammoth.js, carregada como o leitor de PDF hoje) e comentar selecionando o trecho. A tela mostra o **texto**, não a formatação exata do Word (margens, numeração de página); para ver o layout fiel, baixa-se o arquivo.
+- Pontos a validar na implementação: se a biblioteca é aceita no navegador do iPhone e a leitura de documentos longos.
+
+**Nível 3 (opcional): ler os comentários feitos dentro do próprio Word.** O .docx é um arquivo zip com `word/comments.xml`; o app já tem leitura de zip no navegador (usada nos extratos). Dá para **trazer para a lista do Horus** os comentários que o revisor fez no Word (autor, data, texto e trecho). Escrever comentários **dentro** do arquivo Word pelo Horus (gravar no .docx) é possível, mas bem mais trabalhoso e frágil; **não recomendo**.
+
+**Mudanças no desenho do quadro:** além de "A corrigir" e "Pronta para protocolar", entra a coluna **"Devolvida para ajustes"** (quem espera é o autor). As colunas continuam editáveis em "Editar colunas".
+**Estados da petição:** enviada → em revisão → (comentários) devolvida ao autor → nova versão reenviada → … → aprovada/pronta para protocolar → protocolada. Cada passo grava quem e quando.
+**Lembretes:** em cada passo a pessoa da vez recebe a pendência (Central de atenção, selo ⚑ e aviso no celular); a pendência do outro lado some.
+
+## D. Dados e etapas de trabalho
+- **Banco:** nova coleção `peticoes` (um registro por Inicial) com versões (chave do R2, nome, tamanho, autor, data), comentários (versão, trecho, página, texto, autor, data, resolvido), estado, revisor atual e histórico; regras de acesso iguais às da Inicial. Coleção de uso `armazenamento` (contadores do mês).
+- **Etapas:** (1) bucket + endpoint de arquivos (envio, download, limites, tipos, permissões, contadores) + testes; (2) bloco Petição na ficha, envio e versões; (3) colunas, estados, pendências, avisos e Agenda; (4) comentários (nível 1) e devolução/reenvio; (5) alerta e tela de armazenamento; (6) protocolar/delegar (Delegadas); (7) segunda etapa: leitura com comentário sobre o texto (nível 2) e leitura de comentários do Word (nível 3).
+
+## E. Decisões que dependem do proprietário
+Limite de 25 MB; trava em 100% do limite gratuito (sim/não); revisor padrão = advogado da Inicial; ao protocolar, manter todas as versões ou só a final; colunas novas (A corrigir, Devolvida para ajustes, Pronta para protocolar); se a estagiária vê as petições de outras estagiárias; se o nível 2 e o nível 3 entram na primeira entrega ou depois.
