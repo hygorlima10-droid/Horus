@@ -53,7 +53,7 @@ function ptAtencao(){
   var eu = ptEu(), l = [];
   ptS.itens.forEach(function(p){
     var meu = eu.id && ((p.estado === 'a_corrigir' && p.revisor.id === eu.id) || ((p.estado === 'devolvida' || p.estado === 'aprovada') && p.criadoPor.id === eu.id));
-    if (meu) l.push(p);
+    if (meu && !(eu.papel === 'estagiario' && (p.estado === 'devolvida' || p.estado === 'aprovada'))) l.push(p);   /* estagiária: os ajustes e o protocolo vão para Delegadas */
   });
   return l;
 }
@@ -203,8 +203,14 @@ function ptDelegarGravar(){
   var r = (qs('ptDelResp') || {}).value; if (!r){ toast('Escolha quem vai protocolar.'); return; }
   var caso = casos.filter(function(x){ return x.id === ptS.casoId; })[0] || {}, p = ptDoCaso(ptS.casoId) || {}, me = typeof dgMe === 'function' ? dgMe() : '';
   var d = { titulo: 'Protocolar: ' + (caso.cliente || '') + (caso.nomeAcao ? ' — ' + caso.nomeAcao : ''), cliente: caso.cliente || '', clienteId: (caso.clienteIds && caso.clienteIds[0]) || '', processo: caso.numeroProcesso || '', resp: r, delegadoPor: me, prioridade: 'Alta', status: 'afazer', trabalhar: '', fatal: p.prazo || '',
-    obs: 'Petição aprovada por ' + ((p.revisor || {}).nome || 'revisor') + '. Baixe o arquivo final na aba Iniciais › cartão › Petição para revisão. Ao protocolar, mova a Inicial para Protocolado (informando o número do processo).', peticaoId: p.id || '', criadoPor: ptEu().id || '', criadoEm: new Date().toISOString() };
-  dgGravar(d).then(function(){ toast('Tarefa criada em Delegadas.'); var b = qs('ptDelBox'); if (b) b.innerHTML = '<div class="pt-nota">Tarefa de protocolo criada para ' + escapeHtml(dgNome(r)) + '.</div>'; }).catch(function(e){ toast('Não consegui criar a tarefa: ' + e.message); });
+    obs: 'Petição aprovada por ' + ((p.revisor || {}).nome || 'revisor') + '. Baixe o arquivo final pelo botão "Abrir petição". Ao protocolar, mova a Inicial para Protocolado (informando o número do processo).', peticaoId: p.id || '', casoId: ptS.casoId, etapa: 'protocolo', criadoPor: ptEu().id || '', criadoEm: new Date().toISOString() };
+  /* se a linha de protocolo já existe (criada pelo Horus para estagiária ou por uma delegação anterior), só troca a pessoa: não duplica */
+  var carregar = (typeof dgS !== 'undefined' && !dgS.ok && typeof dgCarregar === 'function') ? dgCarregar(true) : null;
+  Promise.resolve(carregar).then(function(){
+    var ex = (dgS.docs || []).filter(function(x){ return x.peticaoId === p.id && x.etapa === 'protocolo'; })[0];
+    var grava = ex ? dgSalvarCampos(ex.id, { resp: r, delegadoPor: me || ex.delegadoPor, status: 'afazer' }, false, { semRender: true }) : dgGravar(d);
+    return Promise.resolve(grava).then(function(){ toast(ex ? 'Protocolo delegado a ' + dgNome(r) + '.' : 'Tarefa criada em Delegadas.'); var b = qs('ptDelBox'); if (b) b.innerHTML = '<div class="pt-nota">Tarefa de protocolo ' + (ex ? 'passou' : 'criada') + ' para ' + escapeHtml(dgNome(r)) + '.</div>'; });
+  }).catch(function(e){ toast('Não consegui criar a tarefa: ' + e.message); });
 }
 /* ---------- armazenamento (só o proprietário) ---------- */
 function ptBarra(rot, usado, lim, txt){ var pc = Math.min(100, usado / lim * 100); return '<div class="pt-bar"><div class="pt-bar-t"><span>' + rot + '</span><span>' + txt + '</span></div><div class="pt-bar-f"><i style="width:' + Math.max(pc, usado > 0 ? 1 : 0) + '%" class="' + (pc >= 95 ? 'pt-b-verm' : (pc >= 80 ? 'pt-b-ouro' : '')) + '"></i></div></div>'; }

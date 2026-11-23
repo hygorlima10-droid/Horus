@@ -62,6 +62,40 @@ export function calcularUso(lista, uso) {
   return { mes: uso.mes, bytes, arquivos, limiteBytes: LIM.bytes, classeA: uso.classeA || 0, limiteA: LIM.classeA, classeB: uso.classeB || 0, limiteB: LIM.classeB, pct: Math.round(maior * 1000) / 10, nivel, qual, bloqueado: nivel === 'bloqueado', maxArquivo: MAX_ARQUIVO };
 }
 
+
+/* ---------- tarefas em Delegadas (só quando quem fez a Inicial é ESTAGIÁRIO; advogado e proprietário usam a Central de atenção) ----------
+   Uma linha por petição e por etapa (id fixo): "ajuste" (devolvida para ajustes) e "protocolo" (aprovada). Conclui sozinha ao reenviar a versão,
+   ao aprovar (o ajuste), ao protocolar a Inicial (o protocolo); some se a petição é apagada. */
+const hojeISO = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+async function usuarioDe(env, id) { if (!id) return null; const r = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(COL_USU, id).first(); return r ? { id, ...JSON.parse(r.dados) } : null; }
+const chaveDe = (u) => { const n = normalizarUsuario(u); return n.papel === 'estagiario' ? 'u:' + u.id : (n.oabs[0] || 'n:' + String(u.nome || '').slice(0, 60)); };
+const primeiroNome = (n) => String(n || '').replace(/^(dr|dra)\.?\s+/i, '').split(/\s+/)[0] || 'o revisor';
+const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+async function tarefasDaPeticao(env, petId, etapa) {
+  const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = 'delegadas' AND json_extract(dados, '$.peticaoId') = ?").bind(petId).all();
+  return results.map((r) => ({ id: r.id, d: JSON.parse(r.dados) })).filter((x) => !etapa || x.d.etapa === etapa);
+}
+async function abrirTarefa(env, p, etapa) {
+  const autor = await usuarioDe(env, p.criadoPor.id); if (!autor || normalizarUsuario(autor).papel !== 'estagiario') return;
+  const rev = await usuarioDe(env, p.revisor.id), caso = await lerCaso(env, p.casoId) || {}, nomeRev = primeiroNome(p.revisor.nome);
+  const v = p.versoes[p.versoes.length - 1].n, nCom = p.comentarios.filter((c) => c.papel === 'revisor' && c.v === v).length;
+  const titulo = etapa === 'ajuste' ? 'Ajustar petição (' + plural(nCom, 'comentário', 'comentários') + ' de ' + nomeRev + ')' : 'Protocolar petição aprovada (' + nomeRev + ' aprovou)';
+  const obs = (etapa === 'ajuste' ? p.revisor.nome + ' revisou a petição e devolveu com ' + plural(nCom, 'comentário', 'comentários') + '. ' : p.revisor.nome + ' aprovou a petição. ') + 'Abra o botão "Abrir petição" (ou Iniciais › cartão › Petição para revisão).' + (etapa === 'protocolo' ? ' Ao protocolar, mova a Inicial para Protocolado informando o número do processo.' : '');
+  const id = (etapa === 'ajuste' ? 'pt-aj-' : 'pt-pr-') + p.id, antes = (await tarefasDaPeticao(env, p.id, etapa)).find((x) => x.id === id), agora = new Date().toISOString();
+  const doc = { ...(antes ? antes.d : {}), titulo, cliente: p.cliente, clienteId: (caso.clienteIds && caso.clienteIds[0]) || '', processo: caso.numeroProcesso || '', resp: (antes && antes.d.resp) || 'u:' + p.criadoPor.id, delegadoPor: rev ? chaveDe(rev) : '', prioridade: (antes && antes.d.prioridade) || 'Alta', status: 'afazer', trabalhar: '', fatal: p.prazo || '', obs, peticaoId: p.id, casoId: p.casoId, etapa, auto: true, concluidoEm: '', concluidoPor: '', criadoPor: (antes && antes.d.criadoPor) || p.revisor.id, criadoEm: (antes && antes.d.criadoEm) || agora, atualizadoEm: agora };
+  await env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?) ON CONFLICT(colecao,id) DO UPDATE SET dados=excluded.dados, atualizado=excluded.atualizado').bind('delegadas', id, JSON.stringify(doc), Date.now()).run();
+}
+async function concluirTarefas(env, petId, etapa) {
+  for (const t of await tarefasDaPeticao(env, petId, etapa)) {
+    if (t.d.status === 'concluida' || t.d.status === 'protocolada') continue;
+    const d = { ...t.d, status: 'concluida', concluidoEm: hojeISO(), concluidoPor: t.d.resp || '', atualizadoEm: new Date().toISOString() };
+    await env.DB.prepare('UPDATE docs SET dados = ?, atualizado = ? WHERE colecao = ? AND id = ?').bind(JSON.stringify(d), Date.now(), 'delegadas', t.id).run();
+  }
+}
+async function apagarTarefasAuto(env, petId) {
+  for (const t of await tarefasDaPeticao(env, petId)) if (t.d.auto === true) await env.DB.prepare("DELETE FROM docs WHERE colecao = 'delegadas' AND id = ?").bind(t.id).run();
+}
+
 /* ---------- colunas do quadro de Iniciais ---------- */
 async function lerConfigPers(env) { const r = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = 'config' AND id = 'personalizacao'").first(); return r ? JSON.parse(r.dados) : {}; }
 /* garante "A corrigir" e "Devolvida para ajustes" no quadro, antes de "Aguardando protocolo" (ou de "Protocolado") */
@@ -130,7 +164,7 @@ async function fecharProtocoladas(env, lista) {
     if (antigas.length) { await env.ARQUIVOS.delete(antigas.map((v) => v.chave)); await somarOp(env, 'classeA', antigas.length); }
     p.versoes = [ult]; p.estado = 'protocolada'; p.atualizadoEm = new Date().toISOString();
     (p.eventos = p.eventos || []).push({ em: p.atualizadoEm, por: 'Horus', txt: 'Inicial protocolada: ficou guardada só a versão final.' });
-    await stmtPet(env, p).run();
+    await stmtPet(env, p).run(); await concluirTarefas(env, p.id, 'protocolo');
   }
 }
 
@@ -173,7 +207,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (bytes.byteLength > MAX_ARQUIVO) return erro(413, 'quota_exceeded', 'O arquivo passa de 25 MB.');
     const tipo = tipoDe(nome, bytes); if (!tipo) return erro(400, 'invalid', 'Envie um arquivo .docx ou .pdf válido.');
     const a = eu(auth), agora = new Date().toISOString();
-    let p = lista.find((x) => x.casoId === String(casoId) && x.estado !== 'protocolada');
+    let p = lista.find((x) => x.casoId === String(casoId) && x.estado !== 'protocolada'), reenvio = false;
     const revId = url.searchParams.get('revisor') || '';
     let rev = null;
     if (revId) { rev = (await revisoresValidos(env)).find((r) => r.id === revId); if (!rev) return erro(400, 'invalid', 'Escolha um revisor da equipe.'); }
@@ -185,7 +219,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
       if (p.estado === 'aprovada') return erro(409, 'state', 'A petição já foi aprovada. Peça ao revisor para reabrir ou comece outra.');
       if (p.estado === 'devolvida' && !autor) return erro(403, 'forbidden', 'A petição está com quem fez a Inicial.');
       if (p.estado === 'a_corrigir' && !revisor && !autor) return erro(403, 'forbidden', 'Só o autor ou o revisor enviam nova versão.');
-      if (p.estado === 'devolvida') { if (!rev) rev = p.revisor; p.revisor = { id: rev.id, nome: rev.nome }; p.estado = 'a_corrigir'; p.enviadaEm = agora; }
+      if (p.estado === 'devolvida') { if (!rev) rev = p.revisor; p.revisor = { id: rev.id, nome: rev.nome }; p.estado = 'a_corrigir'; p.enviadaEm = agora; reenvio = true; }
     }
     const n = (p.versoes.length ? p.versoes[p.versoes.length - 1].n : 0) + 1;
     const chave = `pet/${p.id}/v${n}-${aleat()}.${tipo}`;
@@ -196,6 +230,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (recado) p.comentarios.push({ id: aleat(), por: a, papel: 'autor', texto: recado, em: agora, v: n });
     p.atualizadoEm = agora; evento(p, auth, n === 1 ? 'Enviou a petição para ' + p.revisor.nome + '.' : 'Enviou a versão ' + n + (p.estado === 'a_corrigir' ? ' para ' + p.revisor.nome + '.' : '.'));
     await stmtPet(env, p).run();
+    if (reenvio) await concluirTarefas(env, p.id, 'ajuste');   // quem fez a Inicial mandou a versão ajustada: a linha em Delegadas se conclui
     const u2 = await somarOp(env, 'classeA');
     const cols = await garantirColunas(env);
     await moverCaso(env, casoId, 'a_corrigir', auth);
@@ -264,7 +299,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (texto) p.comentarios.push({ id: aleat(), por: a, papel: 'revisor', texto, em: agora, v, estado: 'aberto' });
     if (!p.comentarios.some((c) => c.v === v && c.papel === 'revisor')) return erro(400, 'invalid', 'Escreva ao menos um comentário antes de devolver.');
     p.estado = 'devolvida'; p.atualizadoEm = agora; evento(p, auth, 'Devolveu para ajustes.');
-    await stmtPet(env, p).run(); await garantirColunas(env); await moverCaso(env, p.casoId, 'devolvida', auth);
+    await stmtPet(env, p).run(); await garantirColunas(env); await moverCaso(env, p.casoId, 'devolvida', auth); await abrirTarefa(env, p, 'ajuste');
     if (!mesmo(p.criadoPor, a.id)) await aviso(env, deps, p.criadoPor.id, 'Petição devolvida para ajustes', a.nome + ' comentou "' + p.titulo + '" (' + p.cliente + ') e devolveu para você.', 'pet-' + p.id);
     return json({ ok: true, peticao: vista(p, auth) });
   }
@@ -274,6 +309,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     p.estado = 'aprovada'; p.atualizadoEm = agora; evento(p, auth, 'Aprovou a petição.');
     await stmtPet(env, p).run();
     const col = colunaProtocolo(await garantirColunas(env)); if (col) await moverCaso(env, p.casoId, col, auth);
+    await concluirTarefas(env, p.id, 'ajuste'); await abrirTarefa(env, p, 'protocolo');
     if (!mesmo(p.criadoPor, a.id)) await aviso(env, deps, p.criadoPor.id, 'Petição aprovada', a.nome + ' aprovou "' + p.titulo + '" (' + p.cliente + '). Já pode protocolar.', 'pet-' + p.id);
     return json({ ok: true, peticao: vista(p, auth) });
   }
@@ -292,7 +328,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (!souAutor(auth, p)) return erro(403, 'forbidden', 'Só quem fez a Inicial ou o proprietário apaga.');
     if (p.estado === 'protocolada') return erro(409, 'state', 'A petição protocolada fica guardada com a Inicial.');
     if (p.versoes.length) { await env.ARQUIVOS.delete(p.versoes.map((v) => v.chave)); await somarOp(env, 'classeA', p.versoes.length); }
-    await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL, p.id).run();
+    await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL, p.id).run(); await apagarTarefasAuto(env, p.id);
     return json({ ok: true });
   }
   return erro(405, 'method', 'Método não permitido.');
