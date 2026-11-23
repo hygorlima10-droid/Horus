@@ -1,6 +1,6 @@
 # Prompt: atalho do iPhone para enviar extratos ao Horus
 
-**Atenção antes de usar (ver `docs/DECISOES.md`):** hoje o envio por Atalho é de uma pessoa só. Existe **um único token** (`ENVIO_TOKEN`) e todo arquivo cai na **caixa de entrada do proprietário**, que é quem lê e confere. Se outra pessoa usar este atalho com o token atual, o extrato dela vai parar na caixa do proprietário. Para os outros usuários, é preciso primeiro ter **token individual** e **caixa de entrada por pessoa** (alteração no servidor e no app, ainda não feita). O prompt abaixo já está escrito para esse cenário: onde diz `{TOKEN_DA_PESSOA}`, vai o token individual de cada um.
+**Situação (23/11):** cada pessoa (proprietário e advogados) tem o seu código e a sua caixa de entrada: Configurações › **Atalho do iPhone** gera o código (botão Mostrar), guarda o link do atalho e o botão "Copiar as instruções para montar o atalho" copia este mesmo prompt já com o endereço do app. Limite de arquivo: **25 MB**. Onde diz `{TOKEN_DA_PESSOA}`/`{CÓDIGO_DA_PESSOA}`, vai o código de cada um.
 
 ---
 
@@ -16,15 +16,15 @@ Você é especialista no app **Atalhos** (Shortcuts) do iPhone, em português. E
 - Cabeçalho `Authorization`: `Bearer {TOKEN_DA_PESSOA}` (cada pessoa tem o seu token; ele fica guardado só neste atalho)
 - Cabeçalho `X-Nome`: o nome do arquivo, **codificado para URL** (acentos e espaços)
 - Corpo da requisição: **Arquivo** (o próprio arquivo, sem converter), com o tipo original (PDF, OFX ou ZIP)
-- Resposta de sucesso: JSON com `"ok": true`. Erros: **401** (token inválido), **413** (arquivo grande demais), **429** (muitos arquivos esperando no Horus, ou muitas tentativas erradas: aguardar 15 minutos).
-- Limite de tamanho: **cerca de 600 KB por arquivo**. Acima disso o servidor recusa.
+- Resposta de sucesso: JSON com `"ok": true`. Erros: **401** (token inválido), **413** (arquivo acima de 25 MB), **429** (muitos arquivos esperando no Horus, ou muitas tentativas erradas: aguardar 15 minutos).
+- Limite de tamanho: **25 MB por arquivo**. Acima disso o servidor recusa.
 
 **Comportamento esperado do atalho:**
 1. **Aparecer na Folha de Compartilhamento** (Mostrar na folha de compartilhamento), aceitando **Arquivos** (PDF, OFX, ZIP e qualquer arquivo). Se não houver entrada, pedir para **escolher um arquivo** em Arquivos.
 2. **Pergunta de importação** ("Pergunta ao importar") para o token: o texto da pergunta deve ser "Cole o seu código do Horus (Configurações › Atalho do iPhone)". O valor vai numa ação **Texto** no começo do atalho, usada no cabeçalho `Authorization`. O token **nunca** aparece em mensagens ou notificações.
 3. **Repetir com cada item** da entrada (a pessoa pode compartilhar vários extratos de uma vez), com estes passos:
    - Obter o **Nome** e o **Tamanho do arquivo**.
-   - **Se o tamanho for maior que 600 KB:** mostrar o alerta "O arquivo [nome] é grande demais para o atalho. Abra o Horus e use *Escolher extratos*." e **pular** este arquivo (não enviar).
+   - **Se o tamanho for maior que 25 MB:** mostrar o alerta "O arquivo [nome] passa de 25 MB. Abra o Horus e use *Escolher extratos*." e **pular** este arquivo (não enviar).
    - Senão: **Obter conteúdo do URL** (POST, cabeçalhos acima, corpo = Arquivo) e guardar a resposta.
    - Ler o campo `ok` do **dicionário** da resposta. Se `ok` for verdadeiro, contar um envio bem-sucedido. Senão, ler a mensagem de erro (`error.message`) e mostrar num alerta com o nome do arquivo.
 4. No final, mostrar **uma notificação**: "N extrato(s) enviado(s) ao Horus. Abra o app para conferir." Se algum falhou, dizer quais.

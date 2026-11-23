@@ -25,6 +25,7 @@ const GRUPOS = {
   auditoria: { porta: 8816, vars: { SENHA, IMPORTAR_AUTO: '0' }, semente: 'test/semente-permissoes.sql', testes: ['auditoria-final', 'auditoria-honorarios', 'auditoria-compartilhadas'] },   // varredura de layout por papel (não faz parte da regressão normal)
   'permissoes-planilha': { porta: 8817, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['planilha-avisos', 'delegadas-acesso'] },   // banco novo só para ele: cria itens da agenda e aparelhos e mexe nos usuários que os testes de permissões esperam intactos
   peticoes: { porta: 8818, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['peticoes', 'peticoes-tela', 'peticoes-leitor', 'peticoes-leitor-pdf'] },
+  atalho: { porta: 8819, vars: { SENHA, IMPORTAR_AUTO: '0', ENVIO_TOKEN: 'token-de-teste-com-mais-de-24-caracteres' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['atalho', 'atalho-tela'] },
   configuracao: { porta: 8814, vars: BASE_ANTIGA, semente: 'test/semente-config.sql', testes: ['config-separada'] },
   notificacoes: { porta: 8804, vars: { SENHA, IMPORTAR_AUTO: '0', LOGIN_ANTIGO: '1' }, args: ['--test-scheduled'], testes: ['notif'] },
   'claude-ler': { porta: 8790, vars: { ...BASE_ANTIGA, ANTHROPIC_API_KEY: 'chave-falsa', ANTHROPIC_URL: 'http://127.0.0.1:9998/v1/messages' }, testes: ['ler'] },

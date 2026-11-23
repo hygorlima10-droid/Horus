@@ -45,11 +45,13 @@ async function lerCaso(env, id) { const r = await env.DB.prepare("SELECT dados F
 
 /* ---------- consumo do plano gratuito ---------- */
 async function lerUso(env) { const r = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(COL, ID_USO).first(); const u = r ? JSON.parse(r.dados) : {}; return u.mes === mesAtual() ? u : { mes: mesAtual(), classeA: 0, classeB: 0, avisos: {} }; }
-async function somarOp(env, campo, n = 1) {
+export async function somarOp(env, campo, n = 1) {
   const u = await lerUso(env); u[campo] = (u[campo] || 0) + n;
   await env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?) ON CONFLICT(colecao,id) DO UPDATE SET dados=excluded.dados, atualizado=excluded.atualizado').bind(COL, ID_USO, JSON.stringify(u), Date.now()).run();
   return u;
 }
+/* o limite gratuito do R2 foi atingido? (vale também para os extratos recebidos pelo Atalho) */
+export async function r2Bloqueado(env) { return calcularUso(await todas(env), await lerUso(env)).bloqueado; }
 export function calcularUso(lista, uso) {
   let bytes = 0, arquivos = 0;
   for (const p of lista) for (const v of p.versoes || []) { bytes += v.tam || 0; arquivos++; }

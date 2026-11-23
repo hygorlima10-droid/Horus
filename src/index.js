@@ -16,7 +16,8 @@ import { indicesRotas, buscarIndices } from './indices.js';
 import { calendarioRotas, calendarioFeed } from './calendario.js';
 import { planilhaRotas, planilhaSync } from './planilha.js';
 import { equipeRotas, semAdvogadoRotas, agendaRotas } from './responsaveis.js';
-import { peticoesRotas } from './peticoes.js';
+import { peticoesRotas, somarOp, r2Bloqueado } from './peticoes.js';
+import { atalhoRotas, resolverCodigo, registrarUso, MAX_ARQ_EXTRATO } from './atalho.js';
 import { paginasDeAcesso, autenticar, segurancaRotas, temProprietario, proprietario } from './acesso.js';
 import { auditoriaRotas, historicoRotas, lixeiraRotas, limparSeguranca, stmtRegistro, stmtLixeira, registraColecao, vaiParaLixeira, tituloDe, mudancas, autorDe } from './auditoria.js';
 
@@ -229,11 +230,13 @@ async function enviar(request, env) {
   const ip = request.headers.get('cf-connecting-ip') || 'sem-ip', chave = 'tent-env-' + ip.replace(/[^A-Za-z0-9:._-]/g, '_').slice(0, 60), agora = Date.now();
   const t = await lerTent(env, chave);
   if (t.n >= MAX_FALHAS && t.ate > agora) return erro(429, 'rate_limited', 'Muitas tentativas. Aguarde 15 minutos.');
-  if (!(await tokenConfere(env, request))) {
+  const quem = await resolverCodigo(env, request, () => tokenConfere(env, request));   // de quem é o código? (cada pessoa tem o seu; o antigo vale só para o proprietário)
+  if (!quem) {
     await gravarTent(env, chave, { n: (t.ate > agora ? t.n : 0) + 1, ate: agora + BLOQUEIO_MS });
-    return erro(401, 'not_granted', 'Token inválido.');
+    return erro(401, 'not_granted', 'Código inválido.');
   }
-  const ct = request.headers.get('content-type') || '';
+  const temR2 = !!env.ARQUIVOS, ct = request.headers.get('content-type') || '';
+  if (Number(request.headers.get('content-length') || 0) > (temR2 ? MAX_ARQ_EXTRATO + 4096 : MAX_B64)) return erro(413, 'quota_exceeded', temR2 ? 'Arquivo grande demais (limite de 25 MB).' : 'Arquivo grande demais (limite de uns 600 KB). Use "Escolher extratos" dentro do app.');
   let nome = '', tipo = ct.split(';')[0].trim() || 'application/octet-stream', bytes;
   try { nome = decodeURIComponent(request.headers.get('x-nome') || ''); } catch (e) { nome = request.headers.get('x-nome') || ''; }
   if (/multipart\/form-data/i.test(ct)) {
@@ -243,27 +246,53 @@ async function enviar(request, env) {
     bytes = await arq.arrayBuffer(); nome = nome || arq.name || 'arquivo'; tipo = arq.type || tipo;
   } else bytes = await request.arrayBuffer();
   if (!bytes.byteLength) return erro(400, 'invalid', 'Arquivo vazio.');
-  const b64 = paraB64(bytes);
-  if (b64.length > MAX_B64) return erro(413, 'quota_exceeded', 'Arquivo grande demais (limite de uns 600 KB). Use "Escolher extratos" dentro do app.');
-  const { results } = await env.DB.prepare("SELECT COUNT(*) AS n FROM docs WHERE colecao = '_recebidos'").all();
-  if (results[0].n >= MAX_RECEBIDOS) return erro(429, 'rate_limited', 'Há arquivos demais esperando no app. Abra Extratos e leia os recebidos.');
-  const id = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
-  await gravar(env, '_recebidos', id, { nome: String(nome || 'arquivo').slice(0, 120), tipo, tam: bytes.byteLength, em: new Date().toISOString(), b64 });
+  const uid = quem.uid || '';
+  const { results } = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = '_recebidos'").all();
+  const minhas = results.filter((r) => { const d = JSON.parse(r.dados); return (d.uid || '') === uid; }).length;
+  if (minhas >= MAX_RECEBIDOS) return erro(429, 'rate_limited', 'Há arquivos demais esperando no app. Abra Extratos e leia os recebidos.');
+  const id = crypto.randomUUID().replace(/-/g, '').slice(0, 20), reg = { nome: String(nome || 'arquivo').slice(0, 120), tipo, tam: bytes.byteLength, em: new Date().toISOString(), uid };
+  if (temR2) {
+    if (bytes.byteLength > MAX_ARQ_EXTRATO) return erro(413, 'quota_exceeded', 'Arquivo grande demais (limite de 25 MB).');
+    if (await r2Bloqueado(env)) return erro(507, 'limite_gratuito', 'O limite gratuito de armazenamento de arquivos foi atingido. Use "Escolher extratos" dentro do app.');
+    reg.r2 = `ext/${uid || 'dono'}/${id}`;
+    await env.ARQUIVOS.put(reg.r2, bytes, { httpMetadata: { contentType: tipo } }); await somarOp(env, 'classeA');
+  } else {
+    const b64 = paraB64(bytes);
+    if (b64.length > MAX_B64) return erro(413, 'quota_exceeded', 'Arquivo grande demais (limite de uns 600 KB). Use "Escolher extratos" dentro do app.');
+    reg.b64 = b64;
+  }
+  await gravar(env, '_recebidos', id, reg);
+  try { await registrarUso(env, uid, reg.nome); } catch (e) { console.error('uso do atalho', e); }
   return json({ ok: true, id, nome: nome || 'arquivo', recebido: true });
 }
-async function recebidos(request, env, partes) {
+/* caixa de entrada de cada pessoa: o proprietário e os advogados leem só os arquivos que chegaram com o código DELES (registro sem `uid` = do proprietário, de antes) */
+async function recebidos(request, env, partes, auth) {
+  if (auth && auth.usuario && normalizarUsuario(auth.usuario).papel === 'estagiario') return erro(403, 'forbidden', 'Estagiário não recebe extratos.');
+  const ehDonoR = !auth || !auth.usuario || auth.usuario.papel === 'proprietario', uid = auth && auth.usuario && auth.usuario.id ? auth.usuario.id : (await donoId(env)) || '';
+  const meu = (d) => (d.uid ? d.uid === uid : ehDonoR);
   const id = partes[1];
   if (!id && request.method === 'GET') {
     const { results } = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = '_recebidos' ORDER BY atualizado").all();
-    return json({ itens: results.map((r) => { const d = JSON.parse(r.dados); return { id: r.id, nome: d.nome, tam: d.tam, em: d.em }; }) });
+    return json({ itens: results.map((r) => ({ id: r.id, d: JSON.parse(r.dados) })).filter((x) => meu(x.d)).map((x) => ({ id: x.id, nome: x.d.nome, tam: x.d.tam, em: x.d.em })) });
   }
   if (id && !NOME.test(id)) return erro(400, 'invalid', 'Identificador inválido.');
+  const r = id ? await env.DB.prepare("SELECT dados FROM docs WHERE colecao = '_recebidos' AND id = ?").bind(id).first() : null;
+  const d = r ? JSON.parse(r.dados) : null;
+  if (id && (!d || !meu(d))) return erro(404, 'not_found', 'Arquivo não encontrado.');
   if (id && request.method === 'GET') {
-    const r = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = '_recebidos' AND id = ?").bind(id).first();
-    if (!r) return erro(404, 'not_found', 'Arquivo não encontrado.');
-    const d = JSON.parse(r.dados); return json({ nome: d.nome, tipo: d.tipo, b64: d.b64 });
+    if (d.r2) {
+      const o = await env.ARQUIVOS.get(d.r2); if (!o) return erro(404, 'not_found', 'O arquivo não está mais guardado.');
+      await somarOp(env, 'classeB');
+      if (new URL(request.url).searchParams.get('bin') === '1') return new Response(o.body, { headers: { 'content-type': 'application/octet-stream', 'content-length': String(d.tam), 'cache-control': 'no-store' } });
+      return json({ nome: d.nome, tipo: d.tipo, b64: paraB64(await o.arrayBuffer()) });
+    }
+    if (new URL(request.url).searchParams.get('bin') === '1') { const bin = atob(d.b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Response(u, { headers: { 'content-type': 'application/octet-stream', 'cache-control': 'no-store' } }); }
+    return json({ nome: d.nome, tipo: d.tipo, b64: d.b64 });
   }
-  if (id && request.method === 'DELETE') { await env.DB.prepare("DELETE FROM docs WHERE colecao = '_recebidos' AND id = ?").bind(id).run(); return json({ ok: true }); }
+  if (id && request.method === 'DELETE') {
+    if (d.r2) { await env.ARQUIVOS.delete(d.r2); await somarOp(env, 'classeA'); }
+    await env.DB.prepare("DELETE FROM docs WHERE colecao = '_recebidos' AND id = ?").bind(id).run(); return json({ ok: true });
+  }
   return erro(405, 'method', 'Método não permitido.');
 }
 
@@ -588,7 +617,7 @@ const ICONES = new Set(['/apple-touch-icon.png', '/icon-192.png', '/icon-512.png
 /* Tabela única de rotas da API: cada raiz declara quem pode usar ("sessao" = qualquer acesso logado; "proprietario" = só o proprietário).
    Raiz que não está aqui é recusada; /api/enviar é a única pública (tem token próprio). */
 const ROTAS = {
-  ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['proprietario', (r, e, p) => recebidos(r, e, p)], anexos: ['proprietario', (r, e, p) => anexos(r, e, p)],
+  ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['sessao', (r, e, p, a) => recebidos(r, e, p, a)], atalho: ['sessao', (r, e, p, a) => atalhoRotas(r, e, p, a)], anexos: ['proprietario', (r, e, p) => anexos(r, e, p)],
   notif: ['sessao', (r, e, p, a) => notif(r, e, p, a)], djen: ['sessao', (r, e, p, au) => checarRotaDjen(p, r.method, au) || djenRotas(r, e, p, au)], datajud: ['sessao', (r, e, p) => datajudRotas(r, e, p)],   // para os demais papéis só quando tiverem filtro próprio (etapa 5.3)
   db: ['sessao', (r, e, p, au) => api(r, e, p, au)],
   lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],

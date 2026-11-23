@@ -18,7 +18,7 @@ r = await env(0, { body: Buffer.from(OFX), headers: { authorization: 'Bearer ' +
 check(r.status === 200 && j.ok && j.nome === 'extrato outubro.ofx', 'enviar com token certo: recebe o arquivo e o nome');
 const fd = new FormData(); fd.append('arquivo', new Blob([OFX.replace('A1', 'B1').replace('A2', 'B2')], { type: 'application/x-ofx' }), 'segundo.ofx');
 r = await env(0, { body: fd, headers: { authorization: 'Bearer ' + TOKEN } }); j = await r.json(); check(r.status === 200 && j.nome === 'segundo.ofx', 'enviar em formato multipart também funciona');
-r = await env(0, { body: Buffer.alloc(700 * 1024, 65), headers: { authorization: 'Bearer ' + TOKEN } }); check(r.status === 413, 'arquivo grande demais: 413 com mensagem');
+r = await env(0, { body: Buffer.alloc(26 * 1024 * 1024, 65), headers: { authorization: 'Bearer ' + TOKEN } }); check(r.status === 413, 'arquivo acima de 25 MB: 413');
 r = await env(0, { body: Buffer.alloc(0), headers: { authorization: 'Bearer ' + TOKEN } }); check(r.status === 400, 'arquivo vazio: 400');
 for (let i = 0; i < 5; i++) await fetch(B + '/api/enviar', { method: 'POST', body: 'x', headers: { authorization: 'Bearer ruim' + i, 'cf-connecting-ip': '5.5.5.5' } });
 r = await fetch(B + '/api/enviar', { method: 'POST', body: 'x', headers: { authorization: 'Bearer ' + TOKEN, 'cf-connecting-ip': '5.5.5.5' } }); check(r.status === 429, 'depois de 5 tokens errados o IP é bloqueado');

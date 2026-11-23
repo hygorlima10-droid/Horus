@@ -114,6 +114,7 @@ es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/quadros.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/peticoes.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/atalho.js', encoding='utf-8').read()   # Configurações › Atalho do iPhone (código e caixa de entrada por pessoa)
 es = es + '\n' + open(R + 'cliente/peticoes-leitor.js', encoding='utf-8').read()   # leitor do texto da petição e comentários no trecho (nível 2)   # petição para correção/revisão (R2): precisa vir depois de quadros.js e delegadas.js
 es = es + '\n' + open(R + 'cliente/catalogo.js', encoding='utf-8').read()   # catálogo único de categorias de despesa (precisa vir depois de todos os módulos acima: no fim ele refaz a lista)
 bloco_es = '/*ES-INICIO*/\n' + es + '\n/*ES-FIM*/\n'
