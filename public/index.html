@@ -1928,6 +1928,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -14242,7 +14244,7 @@ function extLinhaExtra(v, i){
     }
     html = extSelectHtml('data-i="' + i + '" data-campo="desp"', [['', 'Escolha a despesa…']].concat(ds), s.desp || '');
   } else if (v.act === 'dia'){
-    html = (typeof catSelectHtml === 'function') ? catSelectHtml('data-i="' + i + '" data-campo="cat"', s.cat || 'Outros') : extSelectHtml('data-i="' + i + '" data-campo="cat"', EXT_CATS.map(function(c){ return [c, c]; }), s.cat || 'Outros');
+    html = (typeof catSelectHtml === 'function') ? catSelectHtml('data-i="' + i + '" data-campo="cat"', s.cat || 'Outros', v.coluna === 'pf' ? ['A', 'F'] : (v.coluna === 'pj' ? ['A', 'J'] : undefined)) : extSelectHtml('data-i="' + i + '" data-campo="cat"', EXT_CATS.map(function(c){ return [c, c]; }), s.cat || 'Outros');
   } else if (v.act === 'transf'){
     html = extSelectHtml('data-i="' + i + '" data-campo="tipo"', [['prolabore', 'Pró-labore'], ['distribuicao', 'Distribuição de lucros']], s.tipo || 'prolabore');
   } else if (v.act === 'obraGasto'){
@@ -24224,7 +24226,65 @@ function catOpcoesIdHtml(atualId, so){
   if (meus.length) h += '<optgroup label="Minhas categorias">' + meus.map(function(c){ return '<option value="' + escapeHtml(c.id) + '"' + (c.id === atualId ? ' selected' : '') + '>' + escapeHtml(c.label) + '</option>'; }).join('') + '</optgroup>';
   return h;
 }
-function catSelectHtml(attrs, atual, so){ return '<select class="ext-sel" ' + attrs + '>' + catOpcoesHtml(atual, so) + '</select>'; }
+/* Campo de categoria com busca: o <select> continua ali (escondido) guardando o valor e disparando "change", como antes; por cima fica um botão que abre o seletor com busca
+   (extratos, reclassificar em lote e regras que você ensinou). "so" (['A','F'] ou ['A','J']) mostra primeiro só as categorias daquele lado, com o atalho para as do outro. */
+function catPsBotaoHtml(label){
+  var v = catVisualDe(label), fam = v ? CAT_FAM[v.fam].nome : '';
+  return '<span class="cat-ic" style="background:' + (v ? v.cor : '#8A93AD') + '">' + catSvg(v ? v.lu : 'tag', 16) + '</span><span class="cat-pk-t"><b>' + escapeHtml(label) + '</b>' + (fam ? '<small>' + escapeHtml(fam) + '</small>' : '') + '</span><span class="cat-pk-seta">▾</span>';
+}
+function catSelectHtml(attrs, atual, so){
+  if (!CAT_PRONTO) return '<select class="ext-sel" ' + attrs + '>' + catOpcoesHtml(atual, so) + '</select>';
+  return '<span class="cat-ps"' + (so ? ' data-catps-so="' + so.join('') + '"' : '') + '><button type="button" class="cat-pk-btn" data-catps-btn aria-haspopup="dialog" aria-label="Escolher a categoria">' + catPsBotaoHtml(catNomeNovo(atual)) + '</button>' +
+    '<select class="ext-sel cat-oculto" ' + attrs + ' tabindex="-1" aria-hidden="true">' + catOpcoesHtml(atual, so) + '</select></span>';
+}
+var catPsS = { sel: null, wrap: null, q: '', todas: false, so: null };
+function catPsAtual(){ var s = catPsS.sel; return catNomeNovo((s && s.value) || 'Outros'); }
+function catPsLista(){
+  var S = catPsS, l = qs('catPsL'), rod = qs('catPsRod'); if (!l || !S.sel) return;
+  var atual = catPsAtual(), toks = catNormTxt(S.q).trim().split(' ').filter(Boolean), h = '', n = 0;
+  CAT_FAMILIAS.forEach(function(f){
+    var its = CAT_CATALOGO.filter(function(c){
+      if (c.fam !== f[0]) return false;
+      if (S.so && !S.todas && S.so.indexOf(c.esc) < 0 && c.label !== atual) return false;
+      var hay = catNormTxt(c.label + ' ' + f[1] + ' ' + c.pal.map(function(p){ return p.t; }).join(' '));
+      return toks.every(function(t){ return hay.indexOf(t) >= 0; });
+    });
+    if (!its.length) return;
+    h += '<div class="cat-pk-f"><span style="background:' + f[2] + '"></span>' + escapeHtml(f[1]) + '</div>';
+    its.forEach(function(c){ n++; h += '<button type="button" class="cat-pk-i' + (c.label === atual ? ' on' : '') + '" data-catps-it="' + escapeHtml(c.label) + '"><span class="cat-ic" style="background:' + f[2] + '">' + catSvg(c.ic, 15) + '</span><span>' + escapeHtml(c.label) + '</span></button>'; });
+  });
+  if (!n) h += '<div class="cat-pk-v">Nenhuma categoria com “' + escapeHtml(S.q) + '”.' + (S.so && !S.todas ? ' <button type="button" class="cat-pk-lk" data-catps-todas="1">Procurar nas do outro lado também</button>' : '') + '</div>';
+  l.innerHTML = h;
+  if (rod) rod.innerHTML = S.so ? '<button type="button" class="cat-pk-lk" data-catps-todas="1">' + (S.todas ? 'Mostrar só as da ' + (S.so.indexOf('F') >= 0 ? 'pessoa física' : 'PJ') : 'Mostrar também as do outro lado') + '</button>' : '';
+  if (rod) rod.style.display = S.so ? '' : 'none';
+}
+function catPsAjusta(){ var bg = qs('catPsBg'); if (!bg || !window.visualViewport) return; bg.style.top = window.visualViewport.offsetTop + 'px'; bg.style.height = window.visualViewport.height + 'px'; }
+function catPsAbrir(btn){
+  var w = btn.closest('.cat-ps'), sel = w && w.querySelector('select'); if (!sel) return;
+  var so = w.getAttribute('data-catps-so');
+  catPsS = { sel: sel, wrap: w, q: '', todas: false, so: so ? so.split('') : null };
+  var bg = qs('catPsBg');
+  if (!bg){
+    bg = document.createElement('div'); bg.id = 'catPsBg'; bg.className = 'cat-ps-bg';
+    bg.innerHTML = '<div class="cat-ps-pan" id="catPsPan" role="dialog" aria-label="Escolher a categoria"><input type="search" id="catPsQ" class="cat-pk-q" placeholder="Buscar categoria (uber, netflix, farmácia…)" autocomplete="off" autocapitalize="off"><div class="cat-pk-l" id="catPsL"></div><div class="cat-pk-rod" id="catPsRod"></div></div>';
+    document.body.appendChild(bg);
+    if (window.visualViewport){ window.visualViewport.addEventListener('resize', catPsAjusta); window.visualViewport.addEventListener('scroll', catPsAjusta); }
+  }
+  qs('catPsQ').value = '';
+  catPsLista(); bg.classList.add('show'); catPsAjusta();
+  var on = bg.querySelector('.cat-pk-i.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'center' });
+  try{ qs('catPsQ').focus(); }catch(e){}
+}
+function catPsFechar(){ var bg = qs('catPsBg'); if (bg) bg.classList.remove('show'); var b = catPsS.wrap && catPsS.wrap.querySelector('[data-catps-btn]'); catPsS.sel = null; if (b && b.focus) try{ b.focus(); }catch(e){} }
+function catPsEscolher(label){
+  var S = catPsS, sel = S.sel; if (!sel) return;
+  var tem = Array.prototype.some.call(sel.options, function(o){ return o.value === label; });
+  if (!tem) sel.appendChild(new Option(label, label));
+  var mudou = sel.value !== label; sel.value = label;
+  var b = S.wrap && S.wrap.querySelector('[data-catps-btn]'); if (b) b.innerHTML = catPsBotaoHtml(label);
+  catPsFechar();
+  if (mudou) sel.dispatchEvent(new Event('change', { bubbles: true }));
+}
 
 /* ---------- seletor de categoria da ficha de despesa (PJ e PF) ---------- */
 var catPickS = { aberto: false, q: '', todas: false };
@@ -24329,7 +24389,7 @@ function catRcDesenhar(){
   var el = qs('overlayCatRcC'), S = catRcS; if (!el || !S) return;
   var linha = function(x, i){
     return '<label class="cat-rc-it"><input type="checkbox" data-catrc-on="' + i + '"' + (x.on ? ' checked' : '') + '><span class="cat-rc-t"><b>' + escapeHtml(x.t) + '</b><small>' + (x.d ? escapeHtml(fmtData(String(x.d).slice(0, 10))) + ' · ' : '') + fmtMoeda(x.v) + '</small></span>' +
-      '<select class="ext-sel cat-rc-sel" data-catrc-cat="' + i + '" aria-label="Categoria sugerida">' + catOpcoesHtml(x.sug) + '</select></label>';
+      '<span class="cat-rc-sel">' + catSelectHtml('data-catrc-cat="' + i + '" aria-label="Categoria sugerida"', x.sug) + '</span></label>';
   };
   var desp = S.itens.map(function(x, i){ return x.k === 'desp' ? linha(x, i) : ''; }).join(''), dd = S.itens.map(function(x, i){ return x.k === 'dd' ? linha(x, i) : ''; }).join('');
   var h = '<div class="pb-aviso">O app olhou o nome de cada lançamento em “Outros” e sugeriu a categoria. Nada muda até você tocar em <b>Aplicar</b>; dá para desmarcar ou trocar a sugestão de cada um.</div>';
@@ -24398,6 +24458,10 @@ function catCss(){
     '.cat-pk-i{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;border:0;background:transparent;border-radius:10px;padding:4px 6px;font:inherit;font-size:var(--t3,14px);color:var(--ink);cursor:pointer;text-align:left}.cat-pk-i:hover{background:var(--surface-2)}.cat-pk-i.on{background:rgba(201,133,0,.14);font-weight:700}' +
     '.cat-pk-v{padding:12px 6px;color:var(--ink-soft);font-size:var(--t2)}.cat-pk-rod{border-top:1px solid var(--border);margin-top:6px;padding-top:4px}.cat-pk-lk{border:0;background:transparent;color:var(--accent);font:inherit;font-weight:700;font-size:var(--t2);cursor:pointer;min-height:36px;padding:0 4px}' +
     '@media(max-width:700px){.cat-pk-pop{position:fixed;left:8px;right:8px;top:auto;bottom:8px;max-height:72vh}}' +
+    '.cat-ps{flex:1 1 180px;min-width:0;display:block}.cat-ps .cat-pk-btn{min-height:44px}' +
+    '.cat-ps-bg{position:fixed;left:0;right:0;top:0;height:100%;z-index:950;background:var(--overlay);display:none;align-items:flex-end;justify-content:center;padding:8px}.cat-ps-bg.show{display:flex}' +
+    '.cat-ps-pan{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.28);padding:10px;width:100%;max-width:480px;max-height:100%;display:flex;flex-direction:column}' +
+    '@media(min-width:701px){.cat-ps-bg{align-items:center}.cat-ps-pan{max-height:min(560px,80%)}}' +
     '.cat-rc-g{font-size:var(--t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:12px 2px 4px}.cat-rc-it{display:grid;grid-template-columns:22px minmax(0,1fr) minmax(130px,46%);gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}.cat-rc-it input{width:18px;height:18px;accent-color:var(--accent)}' +
     '.cat-rc-t b{display:block;font-size:var(--t3,14px);overflow:hidden;text-overflow:ellipsis}.cat-rc-t small{color:var(--ink-soft);font-size:var(--t1)}.cat-rc-sel{width:100%;min-height:36px}.cat-rc-ac{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}' +
     '#overlayCatRcC>*{flex-shrink:0}@media(max-width:560px){.cat-rc-it{grid-template-columns:22px minmax(0,1fr)}.cat-rc-sel{grid-column:2}}' +
@@ -24409,12 +24473,18 @@ function catCss(){
   document.addEventListener('click', function(e){
     var t = e.target; if (!t || !t.closest) return;
     var btn = t.closest('#catPickBtn'); if (btn){ if (catPickS.aberto) catPickFechar(); else catPickAbrir(); return; }
+    var pb = t.closest('[data-catps-btn]'); if (pb){ e.preventDefault(); catPsAbrir(pb); return; }
+    var pi = t.closest('[data-catps-it]'); if (pi){ catPsEscolher(pi.getAttribute('data-catps-it')); return; }
+    if (t.closest('[data-catps-todas]')){ catPsS.todas = !catPsS.todas; catPsLista(); return; }
+    if (t.id === 'catPsBg'){ catPsFechar(); return; }
     var it = t.closest('[data-catpick]'); if (it){ catPickEscolher(it.getAttribute('data-catpick')); return; }
     if (t.closest('[data-catpick-todas]')){ catPickS.todas = !catPickS.todas; catPickDesenhar(); return; }
     var rc = t.closest('[data-cat-reclass]'); if (rc){ e.preventDefault(); catRcAbrir(); return; }
     if (catPickS.aberto && !t.closest('#catPickPop')) catPickFechar();
   });
+  document.addEventListener('input', function(e){ if (e.target && e.target.id === 'catPsQ'){ catPsS.q = e.target.value; catPsLista(); } });
   document.addEventListener('input', function(e){ if (e.target && e.target.id === 'catPickQ'){ catPickS.q = e.target.value; catPickDesenhar(); } });
+  document.addEventListener('keydown', function(e){ var bg = qs('catPsBg'); if (e.key === 'Escape' && bg && bg.classList.contains('show')){ e.stopPropagation(); catPsFechar(); } }, true);
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && catPickS.aberto){ e.stopPropagation(); catPickFechar(); } }, true);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { catClassificar: catClassificar, catNomeNovo: catNomeNovo, catRotNovo: catRotNovo, catRcColeta: catRcColeta, CAT_CATALOGO: CAT_CATALOGO });
   CAT_PRONTO = true;   /* daqui em diante as funções acima funcionam (as declarações são içadas e o app pode chamá-las antes deste ponto) */

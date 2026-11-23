@@ -57,6 +57,23 @@ const modal = await page.evaluate(() => ({ aberto: document.getElementById('over
 check(modal.aberto && modal.linhas === 4, 'o modal lista 4 sugestões (Uber, Netflix, DAS, iFood) e não lista o que não tem pista, a transferência nem a despesa que já tem categoria (linhas: ' + modal.linhas + ')');
 check(/Nada muda até você tocar em Aplicar/.test(modal.txt) && /2 lançamentos em “Outros” não têm sugestão|2 continuam|não têm sugestão/.test(modal.txt), 'avisa que nada muda sem aplicar e quantos ficam sem sugestão');
 check((await get('despesas', 'a1')).categoria === 'outros', 'antes de aplicar nada foi alterado');
+// busca no campo de categoria de cada sugestão (seletor com busca no lugar da lista do iPhone)
+check(await page.evaluate(() => document.querySelectorAll('#overlayCatRc .cat-rc-it .cat-ps .cat-pk-btn').length === 4 && document.querySelectorAll('#overlayCatRc .cat-rc-it select.cat-oculto').length === 4), 'cada sugestão mostra o botão de categoria (com o <select> escondido guardando o valor)');
+await page.evaluate(() => Array.from(document.querySelectorAll('#overlayCatRc .cat-rc-it')).find(l => /Netflix/i.test(l.innerText)).querySelector('.cat-pk-btn').click()); await page.waitForTimeout(250);
+check(await page.evaluate(() => document.getElementById('catPsBg').classList.contains('show') && document.activeElement && document.activeElement.id === 'catPsQ'), 'tocar no botão abre o seletor com a busca já ativa');
+check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 78 && !document.getElementById('catPsRod').innerText.trim()), 'sem filtro de lado: lista as 78 categorias e não mostra o atalho do outro lado');
+await page.fill('#catPsQ', 'farm'); await page.waitForTimeout(150);
+check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).map(x => x.innerText.trim()); return l.length >= 1 && l.includes('Farmácia e medicamentos') && l.length < 6; }), 'digitar "farm" acha "Farmácia e medicamentos"');
+await page.fill('#catPsQ', 'uber'); await page.waitForTimeout(150);
+check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).map(x => x.innerText.trim()); return l.includes('Aplicativos de transporte (Uber, 99)') && l.includes('Delivery (iFood e similares)'); }), 'a busca também acha pelas palavras do extrato ("uber" → Aplicativos de transporte e Delivery/Uber Eats)');
+await page.fill('#catPsQ', 'xyzxyz'); await page.waitForTimeout(150);
+check(await page.evaluate(() => /Nenhuma categoria com/.test(document.getElementById('catPsL').innerText)), 'busca sem resultado avisa "Nenhuma categoria com…"');
+await page.fill('#catPsQ', 'farm'); await page.waitForTimeout(150);
+await page.evaluate(() => Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).find(x => /Farmácia/.test(x.innerText)).click()); await page.waitForTimeout(250);
+check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#overlayCatRc .cat-rc-it')).find(x => /Netflix/i.test(x.innerText)); return !document.getElementById('catPsBg').classList.contains('show') && l.querySelector('select').value === 'Farmácia e medicamentos' && /Farmácia e medicamentos/.test(l.querySelector('.cat-pk-btn').innerText) && l.querySelector('input[type=checkbox]').checked; }), 'escolher fecha o seletor, troca o valor e o botão da linha, sem desmarcar a sugestão');
+await page.evaluate(() => Array.from(document.querySelectorAll('#overlayCatRc .cat-rc-it')).find(l => /Netflix/i.test(l.innerText)).querySelector('.cat-pk-btn').click()); await page.waitForTimeout(200);
+await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+check(await page.evaluate(() => !document.getElementById('catPsBg').classList.contains('show') && document.getElementById('overlayCatRc').classList.contains('show')), 'Esc fecha só o seletor (o modal de reclassificar continua aberto)');
 // desmarca a Netflix
 await page.evaluate(() => { const i = Array.from(document.querySelectorAll('#overlayCatRc .cat-rc-it')).find(l => /Netflix/i.test(l.innerText)).querySelector('input[type=checkbox]'); i.click(); }); await page.waitForTimeout(200);
 check(/Aplicar a 3 lançamentos/.test(await page.evaluate(() => document.querySelector('#overlayCatRc [data-catrc="aplicar"]').innerText)), 'desmarcar uma sugestão atualiza o botão (Aplicar a 3)');

@@ -18,7 +18,7 @@ const C = (extra) => Object.assign({ confirmada: true, titular: {} }, extra);
 await api('PUT', 'config/extratos', { pastaId: 'p', pastaNome: 'extratos', iniciado: true, dataCorte: dia(-60), configuradoEm: agora,
   contas: { 'itau-1': C({ coluna: 'pj', rotulo: 'Itaú · Hygor (PJ)', banco: 'Itaú', ultimoSaldo: { valor: 1420000, emitido } }), 'itau-2': C({ coluna: 'pf', rotulo: 'Itaú · Pessoa física', banco: 'Itaú', ultimoSaldo: { valor: 310000, emitido } }),
     'sicoob-1': C({ coluna: 'pf', rotulo: 'Sicoob · financiamento da obra', banco: 'Sicoob', obra: true, ultimoSaldo: { valor: 1188004, emitido } }), 'c6-1': C({ coluna: 'pf', rotulo: 'C6 Bank', banco: 'C6' }), 'nu-1': C({ coluna: 'pf', rotulo: 'Nubank', banco: 'Nubank' }) },
-  regras: { 'F:IMOBILIARIA XPTO': { t: 'desp', nome: 'Aluguel do escritório' }, 'F:JOSE R SILVA': { t: 'cli', cliente: 'José R Silva' } } });
+  regras: { 'F:IMOBILIARIA XPTO': { t: 'desp', nome: 'Aluguel do escritório' }, 'F:JOSE R SILVA': { t: 'cli', cliente: 'José R Silva' }, 'F:PADARIA DO ZE': 'Padaria e lanchonete' } });
 await api('PUT', 'despesas/al', { nome: 'Aluguel do escritório', coluna: 'pj', tipo: 'unica', valor: 1500, data: dia(-4).slice(0, 7) + '-28', mesReferencia: dia(-4).slice(0, 7), categoria: 'estrutura', pago: false, criadoEm: agora });
 await api('PUT', 'despesas/ca', { nome: 'Uniclass cartão', coluna: 'pf', tipo: 'unica', valor: 1000, data: dia(-6).slice(0, 7) + '-28', mesReferencia: dia(-6).slice(0, 7), categoria: 'outros', pago: false, criadoEm: agora });
 const caso = (id, cliente, v) => api('PUT', 'casos/' + id, { tipo: 'inicial', cliente, nomeAcao: 'Cobrança', origem: 'proprio', prioridade: 'normal', status: 'pendente', statusDesde: agora, modalidadeHonorario: 'fixo', formaPagamento: 'parcelado', valorHonorarios: v * 2, parcelas: [{ numero: 1, valor: v, data: dia(-1), pago: false }, { numero: 2, valor: v, data: dia(29), pago: false }], clienteIds: [], criadoEm: agora, atualizadoEm: agora });
@@ -60,6 +60,23 @@ check(/^Parecida/.test(n6) && /categoria sugerida/.test(n6) && /Supermercado/.te
 check(/^Sem correspondência/.test(n4) && /decidir/.test(n4), 'PIX de quem não aparece em nada: Sem correspondência (decidir) → ' + n4);
 check(/Exata 3/.test(t) && /Parecida 2/.test(t) && /Sem correspondência 1/.test(t) && /O app só sugere/.test(t), 'resumo dos 3 níveis no alto da conferência (3 exatas, 2 parecidas, 1 sem correspondência) e a frase "O app só sugere"');
 check(await page.evaluate(() => !!document.querySelector('#extCorpo .ext-arq-top .exc-logo img')), 'a conferência mostra o logo do banco no cabeçalho de cada extrato');
+// busca de categoria na linha "gasto do dia a dia" (supermercado no PF)
+const linSup = () => page.evaluate(() => { const l = Array.from(document.querySelectorAll('#extLinhas [data-lin]')).find(e => e.innerText.includes('SUPERMERCADO')); const w = l && l.querySelector('.cat-ps'); return w ? { btn: w.querySelector('.cat-pk-btn').innerText, val: w.querySelector('select').value, lado: w.getAttribute('data-catps-so'), idx: l.getAttribute('data-lin') } : null; });
+let ls = await linSup();
+check(ls && /Supermercado/.test(ls.btn) && ls.val === 'Supermercado' && ls.lado === 'AF', 'a linha do supermercado (PF) mostra o botão de categoria com "Supermercado" e o lado da conta (A+F)');
+await page.evaluate((i) => document.querySelector('#extLinhas [data-lin="' + i + '"] .cat-pk-btn').click(), ls.idx); await page.waitForTimeout(250);
+check(await page.evaluate(() => { const n = document.querySelectorAll('#catPsL .cat-pk-i').length, rod = document.getElementById('catPsRod').innerText; return n > 20 && n < 78 && /Mostrar também as do outro lado/.test(rod) && !Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).some(x => /Anuidade da OAB/.test(x.innerText)); }), 'no PF o seletor mostra só as categorias do lado pessoal e oferece "Mostrar também as do outro lado"');
+await page.click('#catPsRod [data-catps-todas]'); await page.waitForTimeout(150);
+check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 78 && /Mostrar só as da pessoa física/.test(document.getElementById('catPsRod').innerText)), 'o atalho abre as 78 categorias (e passa a oferecer voltar só às da pessoa física)');
+await page.fill('#catPsQ', 'uber'); await page.waitForTimeout(150);
+await page.evaluate(() => Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).find(x => /Aplicativos de transporte/.test(x.innerText)).click()); await page.waitForTimeout(250);
+ls = await linSup();
+check(ls && ls.val === 'Aplicativos de transporte (Uber, 99)' && /Aplicativos de transporte/.test(ls.btn), 'escolher "Aplicativos de transporte" troca o valor e o botão da linha');
+// o valor chegou ao estado da conferência: trocar a ação e voltar redesenha a linha com a categoria escolhida
+await page.selectOption('#extLinhas [data-lin="' + ls.idx + '"] [data-campo="act"]', 'ignorar'); await page.waitForTimeout(200);
+await page.selectOption('#extLinhas [data-lin="' + ls.idx + '"] [data-campo="act"]', 'dia'); await page.waitForTimeout(200);
+ls = await linSup();
+check(ls && ls.val === 'Aplicativos de transporte (Uber, 99)', 'a categoria escolhida pela busca ficou guardada na conferência (a linha, redesenhada, continua com ela)');
 if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT + 'ext-conferencia.png', fullPage: true });
 await page.click('#extGenCancelar').catch(() => { }); await page.evaluate(() => document.getElementById('extFechar') && document.getElementById('extFechar').click()); await page.waitForTimeout(300);
 // 3) aprender a regra
@@ -78,6 +95,13 @@ const nDesp = (await (await api('GET', 'despesas')).json()).docs.length;
 await page.click('[data-exr-del="F:JOSE R SILVA"]'); await page.waitForTimeout(800);
 rg = ((await (await api('GET', 'config')).json()).docs.find(d => d.id === 'extratos').data || {}).regras;
 check(!rg['F:JOSE R SILVA'] && !!rg['F:IMOBILIARIA XPTO'] && (await (await api('GET', 'despesas')).json()).docs.length === nDesp && (await (await api('GET', 'casos')).json()).docs.length === 2, 'apagar uma regra tira só a regra: nenhum lançamento é alterado');
+// regra de categoria: o mesmo seletor com busca (e a regra grava a escolha)
+check(await page.evaluate(() => { const w = document.querySelector('#extCorpo .exc-regra .cat-ps'); return !!w && /Padaria e lanchonete/.test(w.querySelector('.cat-pk-btn').innerText) && w.querySelector('select').getAttribute('data-exr-cat') === 'F:PADARIA DO ZE'; }), 'a regra de categoria mostra o botão com busca ("Padaria e lanchonete")');
+await page.evaluate(() => document.querySelector('#extCorpo [data-exr-cat="F:PADARIA DO ZE"]').closest('.cat-ps').querySelector('.cat-pk-btn').click()); await page.waitForTimeout(250);
+await page.fill('#catPsQ', 'netflix'); await page.waitForTimeout(150);
+await page.evaluate(() => Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).find(x => /Streaming/.test(x.innerText)).click()); await page.waitForTimeout(900);
+rg = ((await (await api('GET', 'config')).json()).docs.find(d => d.id === 'extratos').data || {}).regras;
+check(rg['F:PADARIA DO ZE'] === 'Streaming de vídeo e música', 'escolher outra categoria pela busca grava a regra');
 if (process.env.SHOT) { await page.screenshot({ path: process.env.SHOT + 'ext-regras.png' }); }
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros[0] : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTUDO CERTO'); process.exit(falhas ? 1 : 0);
