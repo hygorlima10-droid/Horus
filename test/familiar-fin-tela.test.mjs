@@ -11,7 +11,7 @@ const aba = async (p, k) => { await p.evaluate((x) => document.querySelector('#d
 const FOTO = process.env.FOTO;
 
 const p = await abrir('fam2');
-check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Fechamento do mês', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos + Fechamento (' + (await itensMenu(p)).join(' | ') + ')');
+check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Fechamento do mês', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos + Fechamento (' + (await itensMenu(p)).join(' | ') + ')');
 for (const k of ['resumo', 'geral', 'pf', 'patrimonio', 'orcamento']) {
   const t = await aba(p, k);
   check(!/\bPJ\b|pró-labore|Pró-labore|honorários|Recebi R\$/.test(t), 'aba ' + k + ' sem PJ, pró-labore nem honorários' + (/\bPJ\b|ró-labore|onorários/.test(t) ? ': ' + (t.match(/.{30}(\bPJ\b|ró-labore|onorários).{30}/) || [''])[0] : ''));

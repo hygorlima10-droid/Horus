@@ -12,9 +12,10 @@ const form = (p) => p.evaluate(() => document.getElementById('obraFormCorpo').in
 const visivel = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s); return !!e && e.offsetParent !== null; }, sel);
 
 const p = await abrir('fam');
-check(JSON.stringify(await itensMenu(p)) === '["Construção","Minha conta","Sair"]', 'o menu dele: só Construção, Minha conta e Sair (' + (await itensMenu(p)).join(' | ') + ')');
-check((await p.locator('#tituloTela').innerText()) === 'Construção', 'abre direto na Construção');
-check(!/Início|Iniciais|Agenda|Delegadas|Publicações|Clientes/.test((await itensMenu(p)).join(' ')), 'nenhuma aba do escritório no menu');
+check(JSON.stringify(await itensMenu(p)) === '["Início","Construção","Minha conta","Sair"]', 'o menu dele: Início, Construção, Minha conta e Sair (' + (await itensMenu(p)).join(' | ') + ')');
+check((await p.locator('#tituloTela').innerText()) === 'Início', 'abre no Início (saudação e central de atenção)');
+check(!/Iniciais|Agenda|Delegadas|Publicações|Clientes/.test((await itensMenu(p)).join(' ')), 'nenhuma aba do escritório no menu');
+await p.evaluate(() => document.querySelector('#drawer [data-tab="obra"]').click()); await p.waitForTimeout(900);
 
 // criar a obra (consórcio já contemplado)
 await p.click('button:has-text("Criar a obra")'); await p.waitForSelector('#of_ftipo');
@@ -64,7 +65,7 @@ check(p.erros.length === 0, 'sem erros de script' + (p.erros.length ? ': ' + p.e
 const cel = await abrir('fam', 390);
 check(await cel.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no celular a tela cabe na largura');
 const barra = await cel.evaluate(() => [...document.querySelectorAll('#btbar .bt-it')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim()));
-check(barra.join('|') === 'Construção|Mais', 'barra de baixo do celular: Construção e Mais (' + barra.join('|') + ')');
+check(barra.join('|') === 'Início|Construção|Mais', 'barra de baixo do celular: Início, Construção e Mais (' + barra.join('|') + ')');
 if (process.env.FOTO) await cel.screenshot({ path: process.env.FOTO + '/familiar-celular.png' });
 check(cel.erros.length === 0 && cel.recusados.length === 0, 'celular: sem erros nem pedidos recusados');
 
