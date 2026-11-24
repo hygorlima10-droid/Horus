@@ -52,6 +52,11 @@ check(await bruno.evaluate(() => document.querySelectorAll('.lei-m.lei-alt').len
 check(/54\.000,00/.test(await folhaTxt(bruno)), 'a v2 mostra o valor novo');
 await bruno.click('[data-lei="resolver"] >> nth=0'); await bruno.waitForTimeout(1800);
 check(await bruno.evaluate(() => document.querySelectorAll('.lei-m.lei-ok').length >= 1), 'o revisor confirmou: marca verde de resolvido');
+// botão único: "Marcar todos como resolvidos"
+check(await bruno.evaluate(() => !!document.querySelector('[data-lei="todos"][data-pta-todos="resolver_todos"]')), 'o revisor vê o botão "Marcar todos como resolvidos" quando ainda há comentário pendente');
+bruno.once('dialog', (d) => d.accept()); await bruno.click('[data-lei="todos"]'); await bruno.waitForTimeout(1800);
+check(await bruno.evaluate(() => document.querySelectorAll('#leiLado .lei-card:not(.lei-c-ok)').length === 0 && !document.querySelector('[data-lei="todos"]')), 'um toque resolveu todos os comentários e o botão sumiu');
+await bruno.click('[data-lei="reabrir"] >> nth=0'); await bruno.waitForTimeout(1500);   // reabre um para provar o aviso de aprovar com pendência
 let msg = ''; bruno.on('dialog', (d) => { msg = d.message(); d.accept(); });
 await bruno.click('[data-lei="aprovar"]'); await bruno.waitForTimeout(2500);
 check(/ainda não resolvido/.test(msg), 'aprovar com comentário aberto só avisa: "' + msg.slice(0, 60) + '…"');

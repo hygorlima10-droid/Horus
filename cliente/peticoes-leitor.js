@@ -457,6 +457,14 @@ function leiCardHtml(p, o){
     (c.ancora ? '<span class="lei-q">' + (o.n ? '<span class="lei-nb">' + o.n + '</span>' : '') + '“' + escapeHtml(c.ancora.quote) + '”</span>' : '') +
     '<div class="lei-t">' + escapeHtml(c.texto) + '</div><div class="lei-mt">' + escapeHtml(c.por.nome) + ' · ' + ptDataHora(c.em) + ' · v' + c.v + leiTagsCard(o) + '</div>' + (bts ? '<div class="lei-bts">' + bts + '</div>' : '') + '</div>';
 }
+/* botão único para resolver tudo: o revisor confirma todos; quem fez a Inicial diz que corrigiu todos os abertos */
+function leiTodosHtml(p){
+  if (p.estado !== 'a_corrigir' && p.estado !== 'devolvida') return '';
+  var pend = p.comentarios.filter(function(x){ return (x.estado || 'aberto') !== 'resolvido'; }).length, ab = p.comentarios.filter(function(x){ return (x.estado || 'aberto') === 'aberto'; }).length;
+  if (p.souRevisor && pend) return '<div class="lei-bts" style="margin:0 0 8px"><button type="button" data-lei="todos" data-pta-todos="resolver_todos">Marcar todos como resolvidos (' + pend + ')</button></div>';
+  if (p.souAutor && !p.souRevisor && ab) return '<div class="lei-bts" style="margin:0 0 8px"><button type="button" data-lei="todos" data-pta-todos="propor_todos">Já corrigi todos (' + ab + ')</button></div>';
+  return '';
+}
 function leiDesenharLado(p, cs, podeC){
   var el = qs('leiLado'); if (!el) return;
   var h = '';
@@ -464,7 +472,7 @@ function leiDesenharLado(p, cs, podeC){
     h += '<div class="lei-compor"><span class="lei-q" style="white-space:normal">“' + escapeHtml(leiS.compor.quote.slice(0, 220)) + '”</span><textarea id="leiTxt" rows="3" maxlength="2000" placeholder="Escreva o comentário sobre este trecho…"></textarea><div class="lei-bts"><button type="button" class="pt-escuro" style="color:#fff;background:#12172A" data-lei="salvar">Salvar comentário</button><button type="button" data-lei="cancelar">Cancelar</button></div></div>';
   } else if (podeC) h += '<p class="lei-dica">Selecione um trecho do texto e toque em “Comentar”.</p>';
   else if (p.estado === 'a_corrigir' && p.souRevisor) h += '<p class="lei-dica">Esta é uma versão anterior: só a versão mais recente recebe comentários novos.</p>';
-  h += '<div class="pt-t" style="margin:6px 0">Comentários (' + cs.todos.length + ')</div>';
+  h += '<div class="pt-t" style="margin:6px 0">Comentários (' + cs.todos.length + ')</div>' + leiTodosHtml(p);
   if (!cs.todos.length) h += '<div class="pt-vazio">Nenhum comentário ainda.</div>';
   cs.marcados.concat(cs.soltos).forEach(function(o){ h += leiCardHtml(p, o); });
   el.innerHTML = h;
@@ -504,6 +512,7 @@ function leiClique(e){
     var an = leiS.compor; leiS.compor = null; return rodar('/api/peticoes/' + p.id + '/comentar', { texto: t, ancora: an }, 'Comentário salvo.');
   }
   if (k === 'propor' || k === 'resolver' || k === 'reabrir') return rodar('/api/peticoes/' + p.id + '/resolver', { comentario: cid, acao: k });
+  if (k === 'todos'){ var at = a.getAttribute('data-pta-todos'), n = p.comentarios.filter(function(x){ return at === 'resolver_todos' ? (x.estado || 'aberto') !== 'resolvido' : (x.estado || 'aberto') === 'aberto'; }).length; if (!n) return; if (at === 'resolver_todos' && !confirm('Marcar ' + n + (n === 1 ? ' comentário' : ' comentários') + ' como resolvido' + (n === 1 ? '' : 's') + '?')) return; return rodar('/api/peticoes/' + p.id + '/resolver', { acao: at }, n + (n === 1 ? ' comentário' : ' comentários') + (at === 'resolver_todos' ? ' resolvido' + (n === 1 ? '' : 's') + '.' : ' marcado' + (n === 1 ? '' : 's') + ' como corrigido' + (n === 1 ? '' : 's') + '.')); }
   if (k === 'devolver'){
     var ab = p.comentarios.filter(function(x){ return x.papel === 'revisor' && x.v === p.versoes[p.versoes.length - 1].n; }).length;
     if (!ab){ toast('Escreva ao menos um comentário antes de devolver.'); return; }

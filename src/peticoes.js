@@ -15,6 +15,7 @@
      GET    /api/peticoes/<id>/arquivo?v=<n>   baixa a versão
      POST   /api/peticoes/<id>/comentar        { texto, ancora? }   (só o revisor; ancora = trecho do texto)
      POST   /api/peticoes/<id>/resolver        { comentario, acao: propor | resolver | reabrir }   (autor propõe, revisor confirma)
+                                               { acao: resolver_todos }  (revisor: todos de uma vez)  ·  { acao: propor_todos }  (autor: todos os abertos)
      POST   /api/peticoes/<id>/devolver        { texto? }       (revisor)
      POST   /api/peticoes/<id>/aprovar         (revisor)
      POST   /api/peticoes/<id>/reencaminhar    { revisor }      (quem fez a Inicial)
@@ -284,7 +285,25 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
   }
   if (acao === 'resolver' && m === 'POST') {
     if (!['a_corrigir', 'devolvida'].includes(p.estado)) return erro(409, 'state', 'Esta petição não aceita mais mudanças nos comentários.');
-    const b = await request.json().catch(() => null) || {}, c = p.comentarios.find((x) => x.id === b.comentario);
+    const b = await request.json().catch(() => null) || {};
+    if (b.acao === 'resolver_todos') {   // o revisor confirma todos de uma vez (os abertos e os propostos)
+      if (!souRevisor(auth, p)) return erro(403, 'forbidden', 'Só o revisor confirma que está resolvido.');
+      const pend = p.comentarios.filter((x) => (x.estado || 'aberto') !== 'resolvido');
+      if (!pend.length) return erro(409, 'state', 'Não há comentário a resolver.');
+      for (const x of pend) { x.estado = 'resolvido'; x.resolvidoPor = a; x.resolvidoEm = agora; }
+      evento(p, auth, 'Marcou ' + pend.length + (pend.length === 1 ? ' comentário' : ' comentários') + ' como resolvido' + (pend.length === 1 ? '.' : 's.'));
+      p.atualizadoEm = agora; await stmtPet(env, p).run();
+      return json({ ok: true, alterados: pend.length, peticao: vista(p, auth) });
+    }
+    if (b.acao === 'propor_todos') {   // quem fez a Inicial diz que corrigiu todos os que estão abertos; o revisor confirma
+      if (!souAutor(auth, p)) return erro(403, 'forbidden', 'Só quem fez a Inicial propõe como resolvido.');
+      const ab = p.comentarios.filter((x) => (x.estado || 'aberto') === 'aberto');
+      if (!ab.length) return erro(409, 'state', 'Não há comentário aberto.');
+      for (const x of ab) { x.estado = 'proposto'; x.propostoPor = a; x.propostoEm = agora; }
+      p.atualizadoEm = agora; await stmtPet(env, p).run();
+      return json({ ok: true, alterados: ab.length, peticao: vista(p, auth) });
+    }
+    const c = p.comentarios.find((x) => x.id === b.comentario);
     if (!c) return erro(404, 'not_found', 'Comentário não encontrado.');
     const est = c.estado || 'aberto';
     if (b.acao === 'propor') {   // quem fez a Inicial diz que corrigiu; o revisor confirma

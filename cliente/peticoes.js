@@ -111,7 +111,9 @@ function ptVersoesHtml(p){
 function ptComentariosHtml(p){
   var atual = p.versoes[p.versoes.length - 1].n;
   if (!p.comentarios.length) return '<div class="pt-sec"><div class="pt-t">Comentários</div><div class="pt-vazio">Nenhum comentário ainda.</div></div>';
-  return '<div class="pt-sec"><div class="pt-t">Comentários (' + p.comentarios.length + ')</div>' + p.comentarios.map(function(c){
+  var pendF = p.comentarios.filter(function(x){ return (x.estado || 'aberto') !== 'resolvido'; }).length, abF = p.comentarios.filter(function(x){ return (x.estado || 'aberto') === 'aberto'; }).length, podeTodos = p.estado === 'a_corrigir' || p.estado === 'devolvida';
+  var btTodos = !podeTodos ? '' : (p.souRevisor && pendF ? '<button type="button" class="pt-bt pt-escuro" data-pta="todos" data-pta-todos="resolver_todos" style="margin:0 0 6px">Marcar todos como resolvidos (' + pendF + ')</button>' : (p.souAutor && !p.souRevisor && abF ? '<button type="button" class="pt-bt pt-escuro" data-pta="todos" data-pta-todos="propor_todos" style="margin:0 0 6px">Já corrigi todos (' + abF + ')</button>' : ''));
+  return '<div class="pt-sec"><div class="pt-t">Comentários (' + p.comentarios.length + ')</div>' + btTodos + p.comentarios.map(function(c){
     return '<div class="pt-com pt-c-' + c.papel + '"><div class="pt-com-t">' + escapeHtml(c.texto) + '</div><div class="pt-com-m">' + escapeHtml(c.por.nome) + ' · ' + ptDataHora(c.em) + ' · v' + c.v + (c.v === atual ? '' : ' (versão anterior)') + '</div></div>';
   }).join('') + '</div>';
 }
@@ -188,6 +190,7 @@ function ptAcao(a, bt){
   if (a === 'apagar'){ if (!confirm('Apagar a petição e os arquivos enviados? Isso não pode ser desfeito.')) return; return esJson('/api/peticoes/' + id, 'DELETE').then(function(){ ptS.sig = ''; return ptCarregar(); }).then(function(){ qs('overlayPet').classList.remove('show'); toast('Petição apagada.'); }).catch(function(e){ toast(e.message); }); }
   if (a === 'protocolar'){ qs('overlayPet').classList.remove('show'); var col = ptStatusProtocolado(); try{ mudarStatusCaso(ptS.casoId, col); }catch(e){ toast('Abra a Inicial e mova para "Protocolado".'); } setTimeout(ptCarregar, 3000); return; }
   if (a === 'ler') return leiAbrir(p.id);
+  if (a === 'todos'){ var at = bt.getAttribute('data-pta-todos'), n = p.comentarios.filter(function(x){ return at === 'resolver_todos' ? (x.estado || 'aberto') !== 'resolvido' : (x.estado || 'aberto') === 'aberto'; }).length; if (!n) return; if (at === 'resolver_todos' && !confirm('Marcar ' + n + (n === 1 ? ' comentário' : ' comentários') + ' como resolvido' + (n === 1 ? '' : 's') + '?')) return; return enc('resolver', { acao: at }, n + (n === 1 ? ' comentário' : ' comentários') + (at === 'resolver_todos' ? ' resolvido' + (n === 1 ? '' : 's') + '.' : ' marcado' + (n === 1 ? '' : 's') + ' como corrigido' + (n === 1 ? '' : 's') + '.')); }
   if (a === 'delegar') return ptDelegarAbrir();
   if (a === 'delegarok') return ptDelegarGravar();
   if (a === 'uso') return ptUsoAbrir();

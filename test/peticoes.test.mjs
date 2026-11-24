@@ -64,6 +64,19 @@ check((await res(ana, 'propor')).s === 409, 'não propõe duas vezes');
 r = await res(bruno, 'reabrir'); check(r.s === 200 && r.j.peticao.comentarios.find((c) => c.id === cTrecho).estado === 'aberto', 'o revisor reabre');
 await res(ana, 'propor'); r = await res(bruno, 'resolver'); check(r.s === 200 && r.j.peticao.comentarios.find((c) => c.id === cTrecho).estado === 'resolvido', 'o revisor confirma: resolvido');
 check((await res(caio, 'propor')).s === 403, 'a estagiária não mexe no estado dos comentários');
+// em lote: o revisor resolve todos de uma vez; o autor propõe todos os abertos
+{
+  const lista = async () => (await dono('GET', '/api/peticoes')).j.itens.find((x) => x.id === pid).comentarios;
+  const antes = await lista(), pend = antes.filter((x) => (x.estado || 'aberto') !== 'resolvido').length, ab = antes.filter((x) => (x.estado || 'aberto') === 'aberto').length;
+  check(pend >= 1, 'há comentários pendentes para o teste em lote (' + pend + ')');
+  check((await caio('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'resolver_todos' })).s === 403, 'a estagiária não resolve todos');
+  check((await ana('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'resolver_todos' })).s === 403, 'o autor não resolve todos (só o revisor)');
+  check((await bruno('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'propor_todos' })).s === 403, 'o revisor não "propõe todos" (isso é do autor)');
+  if (ab) { r = await ana('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'propor_todos' }); check(r.s === 200 && r.j.alterados === ab && (await lista()).every((x) => (x.estado || 'aberto') !== 'aberto'), 'o autor propõe todos os abertos de uma vez (' + ab + ')'); }
+  r = await bruno('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'resolver_todos' });
+  check(r.s === 200 && r.j.alterados === pend && (await lista()).every((x) => x.estado === 'resolvido'), 'o revisor marca todos como resolvidos de uma vez (' + pend + ')');
+  check((await bruno('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'resolver_todos' })).s === 409 && (await ana('POST', '/api/peticoes/' + pid + '/resolver', { acao: 'propor_todos' })).s === 409, 'sem pendências, as ações em lote respondem "nada a fazer"');
+}
 
 // correção e reenvio a outro revisor
 r = await ana('POST', '/api/peticoes/enviar/' + cid + '?nome=' + encodeURIComponent('Inicial Maria v2.docx') + '&revisor=' + dId, undefined, docx('versao dois'));
