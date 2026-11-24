@@ -47,7 +47,7 @@ function dcmColar(texto){
 }
 
 /* ---------- foto ou print: OCR no próprio aparelho (Tesseract.js, carregado só na primeira vez) ---------- */
-var DCM_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', dcmOcrP = null;
+var DCM_OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', DCM_OCR_LANG = 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int', dcmOcrP = null;
 function dcmEhImagem(u){ return (u.length > 8 && u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4E && u[3] === 0x47) || (u.length > 3 && u[0] === 0xFF && u[1] === 0xD8 && u[2] === 0xFF) || (u.length > 12 && u[0] === 0x52 && u[1] === 0x49 && u[8] === 0x57 && u[9] === 0x45 && u[10] === 0x42); }
 function dcmOcrCarregar(){
   if (window.Tesseract) return Promise.resolve(window.Tesseract);
@@ -58,9 +58,9 @@ function dcmOcrCarregar(){
 function dcmLerImagem(nome, buf){
   var teste = window.__dcmOcrTeste;   /* os testes entram aqui com um texto pronto */
   var obter = teste ? Promise.resolve(teste(nome)) : dcmOcrCarregar().then(function(T){
-    impEstado.info = 'Lendo a foto (na primeira vez baixa o motor de leitura, cerca de 8 MB)…'; renderExtratos();
+    impEstado.info = 'Lendo a foto (na primeira vez baixa o motor de leitura, alguns MB; pode levar um pouco)…'; renderExtratos();
     var blob = new Blob([buf]);
-    var cfg = window.__dcmOcrCfg || {};
+    var cfg = Object.assign({ langPath: DCM_OCR_LANG }, window.__dcmOcrCfg || {});   /* idioma português, modelo compacto (cerca de 1,4 MB); o motor baixa uma vez e fica no cache do navegador */
     return T.recognize(blob, 'por', cfg).then(function(r){ return (r && r.data && r.data.text) || ''; });
   });
   return obter.then(function(texto){

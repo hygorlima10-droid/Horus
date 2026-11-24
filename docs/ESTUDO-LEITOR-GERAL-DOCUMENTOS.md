@@ -1,6 +1,6 @@
 # Estudo: leitor geral de documentos (extrato, boleto, comprovante) sem modelo por banco
 
-Data: 24/11/2026. Só estudo e esboço (`docs/esboco-leitor-geral.png`); nada foi implementado.
+Data: 24/11/2026. Estudo e esboço (`docs/esboco-leitor-geral.png`). **Status: etapas A a E implementadas no mesmo dia** (ver `docs/DECISOES.md`).
 
 ## 1. Resposta curta
 

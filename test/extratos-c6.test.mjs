@@ -7,7 +7,8 @@ const H = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf
 const fatia = (a, b) => { const i = H.indexOf(a), j = H.indexOf(b, i); if (i < 0 || j < 0) throw new Error('trecho não achado: ' + a.slice(0, 40)); return H.slice(i, j); };
 const EX = new Function(fatia('var EX = (function(){', "if (typeof module !== 'undefined' && module.exports) module.exports = EX;") + '; return EX;')();
 const estado = { senha: '', auto: true, rodando: false };
-const lib = new Function('EX', 'impEstado', 'escapeHtml', 'document', fatia('function ofxTag(', 'function impLerBytes(nome, buf){') + '; return { ofxLer: ofxLer, impAbrirZip: impAbrirZip, impEhZip: impEhZip };')(EX, estado, (s) => s, null);
+const LeitorGeral = new Function(fs.readFileSync(new URL('../cliente/leitor-geral.js', import.meta.url), 'utf8') + '\nreturn LeitorGeral;')();
+const lib = new Function('EX', 'impEstado', 'escapeHtml', 'document', 'LeitorGeral', fatia('function ofxTag(', 'function impLerBytes(nome, buf){') + '; return { ofxLer: ofxLer, impAbrirZip: impAbrirZip, impEhZip: impEhZip };')(EX, estado, (s) => s, null, LeitorGeral);
 const com = (linhas, xs) => { const L = linhas.slice(); L.x = xs; return L; };
 
 console.log('\n— C6 PJ: "Extrato personalizado"');
@@ -67,5 +68,13 @@ console.log('\n— OFX do C6 e zip com senha');
   estado.senha = '000000'; let msg = ''; try { await lib.impAbrirZip(ab); } catch (e) { msg = e.message; }
   check(/senha/i.test(msg), 'senha errada não abre (na leitura automática pede para tocar em "Ler os recebidos")');
   fs.rmSync(dir, { recursive: true, force: true });
+}
+console.log('\n— OFX de outros bancos (tabela do Banco Central: Nubank e Caixa)');
+{
+  const ofx = (id, ag, cc) => 'OFXHEADER:100\nDATA:OFXSGML\n\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKACCTFROM><BANKID>' + id + '<BRANCHID>' + ag + '<ACCTID>' + cc + '<ACCTTYPE>CHECKING</BANKACCTFROM><BANKTRANLIST><DTSTART>20261001<DTEND>20261031<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261005<TRNAMT>-50.00<FITID>X1<MEMO>Compra</STMTTRN></BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>';
+  const nu = lib.ofxLer(ofx('0260', '0001', '5992345-8')), cx = lib.ofxLer(ofx('104', '3596', '00018498-7')), zz = lib.ofxLer(ofx('999', '1', '2'));
+  check(nu.banco === 'Nubank' && nu.chave === 'nubank-0001-5992345-8', 'OFX do Nubank (260): nome e a mesma chave de conta do PDF lido pelo leitor geral');
+  check(cx.banco === 'Caixa' && cx.chave === 'caixa-3596-00018498-7', 'OFX da Caixa (104): nome e chave igual à do PDF');
+  check(/Banco 999/.test(zz.banco) && zz.chave === 'b999-1-2', 'banco fora da tabela continua com o código (b999)');
 }
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);

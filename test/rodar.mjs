@@ -27,7 +27,7 @@ const GRUPOS = {
   peticoes: { porta: 8818, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['peticoes', 'peticoes-delegadas', 'peticoes-delegadas-tela', 'peticoes-tela', 'peticoes-leitor', 'peticoes-leitor-pdf'] },
   atalho: { porta: 8819, vars: { SENHA, IMPORTAR_AUTO: '0', ENVIO_TOKEN: 'token-de-teste-com-mais-de-24-caracteres' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['atalho', 'atalho-tela'] },
   'estagiaria-inicial': { porta: 8821, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['estagiaria-cadastra-inicial'] },   // banco novo só para ele: cria registros
-  leitor: { porta: 8822, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['leitor-geral-tela'] },
+  leitor: { porta: 8822, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-permissoes.sql', testes: ['leitor-geral-tela', 'leitor-ocr-tela'] },
   familiar: { porta: 8820, vars: { SENHA, IMPORTAR_AUTO: '0' }, porTeste: true, semente: 'test/semente-familiar.sql', testes: ['familiar', 'familiar-tela', 'familiar-fin-tela'] },
   configuracao: { porta: 8814, vars: BASE_ANTIGA, semente: 'test/semente-config.sql', testes: ['config-separada'] },
   notificacoes: { porta: 8804, vars: { SENHA, IMPORTAR_AUTO: '0', LOGIN_ANTIGO: '1' }, args: ['--test-scheduled'], testes: ['notif'] },

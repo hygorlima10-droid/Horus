@@ -32,7 +32,7 @@ if (fs.existsSync(PDFJS + 'pdf.min.js')) { await page.route(/cdnjs.*pdf\.min\.js
 await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await page.click('button[type=submit]'); await page.waitForTimeout(5000);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="extratos"]').click()); await page.waitForTimeout(1200);
 const topo = () => page.evaluate(() => document.getElementById('extTopo').innerText);
-check(/Escolher extratos/.test(await topo()) && !/Drive/.test(await topo()), 'tela Extratos oferece "Escolher extratos" (sem pedir pasta do Drive)');
+check(/Enviar documentos/.test(await topo()) && !/Drive/.test(await topo()), 'tela Extratos oferece "Enviar documentos" (sem pedir pasta do Drive)');
 check(/Li 2 arquivo/.test(await topo()) && !/Recebidos pelo Compartilhar/.test(await topo()), 'os 2 arquivos que estavam esperando foram lidos sozinhos ao abrir o app (leitura automática) e saíram da lista de recebidos');
 let docs = await page.evaluate(async () => (await (await fetch('/api/db/extratos')).json()).docs.filter(d => d.data.tipo === 'arquivo').map(d => d.data));
 check(docs.length === 2 && docs.every(d => d.status === 'pendente' && d.banco === 'Itaú' && d.chave === 'itau-0123-45678-9'), 'OFX: 2 extratos pendentes do Itaú, conta itau-0123-45678-9');
