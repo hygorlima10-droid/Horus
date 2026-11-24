@@ -23,6 +23,7 @@ function dcmDeLinhas(linhas, itens){
   if (typeof LeitorGeral === 'undefined') return null;
   var c = LeitorGeral.classificar(linhas, itens), hoje = todayISO();
   if (c.tipo === 'boleto'){ var b = LeitorGeral.lerBoletoDoc(linhas, hoje); if (b) return { kind: 'boleto', dados: { beneficiario: b.beneficiario, beneficiarioDoc: b.beneficiarioDoc, pagador: b.pagador, banco: b.banco, bancoNome: b.bancoNome, valor: b.valorDocumento != null && b.valor == null ? b.valorDocumento : b.valor, vencimento: b.vencimento, semVencimento: b.semVencimento, linhaFmt: b.linhaFmt, tipo: b.tipo, selo: b.selo, provas: b.provas } }; }
+  if (c.tipo === 'contracheque' && typeof ccqAtivo === 'function' && ccqAtivo()){ var cc = LeitorGeral.lerContracheque(linhas); if (cc) return { kind: 'contracheque', dados: ccqCompacto(cc) }; }
   if (c.tipo === 'pix_copia_cola'){ var p = LeitorGeral.acharBRCode(linhas.join('\n')); if (p) return { kind: 'pix', dados: { valor: p.valor, nome: p.nome, cidade: p.cidade, chave: p.chave, txid: p.txid, descricao: p.descricao, dinamico: p.dinamico, selo: p.crcOk ? 'verde' : 'amarelo', provas: [p.crcOk ? 'CRC do Pix confere' : 'CRC do Pix não confere'] } }; }
   if (c.tipo === 'comprovante'){ var m = LeitorGeral.lerComprovante(linhas, hoje); return { kind: 'comprovante', dados: dcmCompactoComprovante(m) }; }
   return null;
@@ -122,7 +123,7 @@ function dcmCardComprovante(d){
 }
 function dcmHtml(){
   var l = dcmPendentes(); if (!l.length) return '';
-  return '<div class="financeiro-secao-head"><h4>Documentos para conferir (' + l.length + ')</h4></div>' + l.map(function(d){ return d.kind === 'boleto' ? dcmCardBoleto(d) : (d.kind === 'pix' ? dcmCardPix(d) : dcmCardComprovante(d)); }).join('');
+  return '<div class="financeiro-secao-head"><h4>Documentos para conferir (' + l.length + ')</h4></div>' + l.map(function(d){ return d.kind === 'boleto' ? dcmCardBoleto(d) : (d.kind === 'pix' ? dcmCardPix(d) : (d.kind === 'contracheque' ? ccqCardPendente(d) : dcmCardComprovante(d))); }).join('');
 }
 function dcmColarHtml(){
   return '<div class="field" style="margin-top:12px"><label class="field-label" for="dcmColar">Colar a linha digitável do boleto ou o Pix copia e cola</label><textarea id="dcmColar" rows="2" placeholder="00190.50095 40144.816069 …   ou   00020126…6304ABCD" style="width:100%">' + escapeHtml(dcmS.texto || '') + '</textarea></div><div class="ext-acoes"><button type="button" class="btn btn-ghost" data-dcm="colar">Ler o texto colado</button></div>';
