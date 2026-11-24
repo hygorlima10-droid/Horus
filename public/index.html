@@ -1995,6 +1995,18 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4554,6 +4566,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     delete novo.id;
     return persistAtualizaDespesa(despesa.id, novo);
   }
+  window.persistPatchDespesa = persistPatchDespesa;
 
   /* transferência PJ/PF = uma receita + uma despesa ligadas por transferenciaId: gravadas juntas, tudo ou nada (queda de conexão no meio não deixa só uma) */
   function persistNovaTransferencia(receita, despesa){
@@ -6115,6 +6128,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   }
 
   function despesaAplicaAoMes(d, mes){
+    if (d.faturaMeses && d.faturaMeses.indexOf(mes) >= 0) return false;   /* trocada pelo detalhe da fatura do cartão naquele mês */
     if (d.tipo === 'unica') return d.mesReferencia === mes;
     var criadoMes = (d.criadoEm||'').slice(0,7);
     if (criadoMes && mes < criadoMes) return false;
@@ -13190,7 +13204,7 @@ var EX = (function(){
       its.forEach(function(it){ if (!cur || Math.abs(cur.y - it.y) > tol){ cur = { y: it.y, its: [], n: 0 }; rows.push(cur); } cur.its.push(it); if (tolerante){ cur.n++; cur.y += (it.y - cur.y) / cur.n; } });
       rows.forEach(function(r){
         r.its.sort(function(a, b){ return a.x - b.x; });
-        (out.itens = out.itens || []).push(r.its.map(function(i){ return { s: i.s, x: i.x, w: i.w }; }));   /* posição de cada pedaço: o leitor geral acha as colunas por aí */
+        (out.itens = out.itens || []).push(r.its.map(function(i){ return { s: i.s, x: i.x, w: i.w }; })); (out.pag = out.pag || []).push(p);   /* posição de cada pedaço: o leitor geral acha as colunas por aí */
         var s = '', last = null;
         r.its.forEach(function(it){ if (last !== null){ var g = it.x - last; s += g > 12 ? '   ' : (g > 1 ? ' ' : ''); } s += it.s; last = it.x + (it.w || 0); });
         out.push(s.trim()); out.x.push(Math.round(r.its[0].x));
@@ -14627,10 +14641,11 @@ function impLerBytes(nome, buf){
       if (!(e && e.name === 'PasswordException')) throw e;
       return impComSenha('Este PDF tem senha.', function(s){ senhaUsada = s; return abrir(s).catch(function(e2){ if (e2 && e2.name === 'PasswordException') throw impErroSenha(); throw e2; }); });
     }).then(function(L){
-      if (window.__dcmDebug) console.log('DCM-PDF ' + JSON.stringify({ n: L.length, linhas: L.slice(0, 70) }));
+      if (window.__dcmDebug) console.log('DCM-PDF ' + JSON.stringify({ n: L.length, linhas: L.slice(0, 70), itens: (L.itens || []).map(function(r){ return r.map(function(c){ return c.s + '@' + Math.round(c.x); }).join(' | '); }) }));
       var pode = typeof dcmDeLinhas === 'function' && dcmPode();
       /* contracheque tem datas e valores como um extrato, mas não é extrato: lê por conta própria (texto do PDF, texto de OCR bagunçado ou a página como imagem) */
       if (pode && typeof LeitorGeral !== 'undefined' && LeitorGeral.pareceContracheque(L)) return dcmLerPdfContracheque(nome, buf, senhaUsada, L, abrir);
+      if (pode && typeof LeitorGeral !== 'undefined' && LeitorGeral.pareceFatura(L)){ var df = dcmDeLinhas(L, L.itens); if (df) return { doc: df, sig: EX.fnv(L.join('\n')) }; }   /* fatura de cartão tem datas e valores como um extrato: lê por conta própria */
       var r = EX.ler(L);
       if (!r){   /* não é extrato: pode ser boleto ou comprovante (leitor geral) */
         var dd = pode ? dcmDeLinhas(L, L.itens) : null;
@@ -14648,7 +14663,7 @@ function impLerBytes(nome, buf){
   }
   if (typeof dcmEhImagem === 'function' && dcmEhImagem(u) && dcmPode()) return dcmLerImagem(nome, buf);   /* foto ou print: leitura no aparelho (OCR) */
   var txt = impBytesParaTexto(buf), r = ofxLer(txt);
-  if (!r){ var dt = (typeof dcmDeTexto === 'function' && dcmPode()) ? dcmDeTexto(txt) : null; if (dt) return Promise.resolve({ doc: dt, sig: EX.fnv(txt) }); }
+  if (!r){ var dt = (typeof dcmDeTexto === 'function' && dcmPode()) ? dcmDeTexto(txt, nome) : null; if (dt) return Promise.resolve({ doc: dt, sig: EX.fnv(txt) }); }
   if (!r) throw new Error('Formato não suportado. Envie o PDF ou a foto do extrato, boleto ou comprovante, um arquivo OFX ou o zip do C6.');
   return Promise.resolve({ r: r, sig: EX.fnv(txt) });
 }
@@ -14725,7 +14740,7 @@ function impTopoHtml(cfg){
   var rec = impEstado.recebidos || [];
   return '<div class="ext-topo-tit">Documentos do banco</div>' +
     '<div class="parcela-sum">Envie extratos, boletos e comprovantes que estão no celular (PDF, foto ou arquivo OFX, de qualquer banco; o zip do C6 pede a senha). O app lê, mostra o que entendeu e só lança o que você confirmar.</div>' +
-    '<input type="file" id="impArq" accept=".pdf,.ofx,.zip,.png,.jpg,.jpeg,.webp,image/*,application/pdf,application/x-ofx,application/zip,application/x-zip-compressed,text/plain,application/octet-stream" multiple style="display:none">' +
+    '<input type="file" id="impArq" accept=".pdf,.ofx,.csv,.zip,.png,.jpg,.jpeg,.webp,image/*,text/csv,application/vnd.ms-excel,application/pdf,application/x-ofx,application/zip,application/x-zip-compressed,text/plain,application/octet-stream" multiple style="display:none">' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" id="impEscolher"' + (impEstado.rodando ? ' disabled' : '') + '>' + (impEstado.rodando ? 'Lendo…' : 'Enviar documentos') + '</button><button type="button" class="btn btn-ghost" id="extContas">Contas</button></div>' +
     (impEstado.info ? '<div class="saldo-data" role="status">' + escapeHtml(impEstado.info) + '</div>' : '') +
     (impEstado.erro ? '<div class="aviso-sis critico"><span class="as-txt">' + escapeHtml(impEstado.erro) + '</span></div>' : '') +
@@ -14876,7 +14891,7 @@ function anRecebidoMes(m){
 function anDiaADiaMes(m){
   var cats = {}, total = 0;
   extratos.forEach(function(d){
-    if (d.tipo !== 'diaadia' || d.mes !== m) return;
+    if (d.tipo !== 'diaadia' || d.mes !== m || (typeof fatOrigemOk === 'function' && !fatOrigemOk(d))) return;
     Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0, v = Number(d.cats[k0].v) || 0; cats[k] = r2((cats[k] || 0) + v); total += v; });
   });
   return { total: r2(total), cats: cats };
@@ -15677,6 +15692,7 @@ function renderAnalises(){
   var topo = listaCat.slice(0, 8), resto = listaCat.slice(8).reduce(function(a, x){ return a + x.v; }, 0);
   if (resto > 0.004) topo.push({ k: 'Outras (' + (listaCat.length - 8) + ')', v: r2(resto) });
   var segDesp = '<div class="segmented an-seg2" role="group" aria-label="Agrupar por">' + [['cat', 'Por categoria'], ['nome', 'Por despesa']].map(function(o){ return '<button type="button" data-an-visao="' + o[0] + '" class="seg-btn' + (anVisaoDesp === o[0] ? ' active' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  if (typeof fatOrigemSegHtml === 'function') segDesp += fatOrigemSegHtml();   /* Tudo / Só conta / Só cartão (quando há fatura lançada) */
   var ctRes = (!porNome && typeof ctCardHtml === 'function') ? ctCardHtml(meses) : null;
   h += anCard('Para onde o dinheiro vai', 'Despesas e dia a dia do período (' + fmtMoeda(totalCat) + ' no total).' + (ppFamiliar() ? '' : ' Transferências entre PF e PJ não entram.') + (ctRes ? ' Toque numa categoria para ver os lançamentos.' : ''),
     segDesp + (ctRes ? ctRes.html : topo.length ? '<div class="an-hbs">' + topo.map(function(x){ return anBarraHtml(x.k, x.v, topo[0].v, totalCat, S1); }).join('') + '</div>' + anTabela(['Categoria', 'Valor', '%'], listaCat.map(function(x){ return [escapeHtml(x.k), fmtMoeda(x.v), (totalCat > 0 ? Math.round(x.v / totalCat * 100) : 0) + '%']; }))
@@ -25088,6 +25104,7 @@ var LeitorGeral = (function(){
     if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
     var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
     if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (L.filter(function(l){ return !!ccLinhaItem(l); }).length >= 5 && !!ccTotaisPorConta(L)) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
+    if (pareceFatura(L)) return { tipo: 'fatura', pistas: ['fatura de cartão: vencimento e linhas de compra'] };
     var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
     var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
     if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
@@ -25228,7 +25245,172 @@ var LeitorGeral = (function(){
     return out;
   }
 
-  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, pareceContracheque: pareceContracheque, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
+
+  /* ============================================================
+     G. FATURA DO CARTÃO DE CRÉDITO (CSV ou PDF) — sem modelo por banco
+     CSV: acha o separador, a linha de títulos (data, descrição, valor, parcela, categoria) e o formato do número. PDF: acha as linhas "DD/MM  estabelecimento  [NN/MM]  valor"
+     por seção (compras, internacionais; ignora pagamentos e "próximas faturas"). O VENCIMENTO vem do campo "Vencimento"/"Data de vencimento" do documento (null = o app pergunta).
+     Prova: soma dos lançamentos = "Total dos lançamentos atuais" / "Total da fatura" (PDF). CSV não traz total: amarelo.
+     ============================================================ */
+  function fvCents(t){
+    var x = String(t == null ? '' : t).replace(/R\$|US\$/gi, '').replace(/\s+/g, ''); if (!x) return null;
+    var neg = /^-/.test(x) || /^\(.*\)$/.test(x); x = x.replace(/^[-+(]+|\)$/g, '');
+    if (/^\d{1,3}(\.\d{3})*,\d{1,2}$/.test(x) || /^\d+,\d{1,2}$/.test(x)) x = x.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(,\d{3})*\.\d{1,2}$/.test(x)) x = x.replace(/,/g, '');
+    else if (!/^\d+(\.\d{1,2})?$/.test(x)) return null;
+    var c = Math.round(parseFloat(x) * 100); return isNaN(c) ? null : (neg ? -c : c);
+  }
+  function fvData(t, ref){   /* ISO, DD/MM/AAAA, DD/MM/AA ou DD/MM (o ano sai da data de referência: nunca depois dela por mais de 31 dias) */
+    var x = String(t || '').trim(), m;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(x))) return m[1] + '-' + m[2] + '-' + m[3];
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(x))) return m[3] + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2);
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(x))) return '20' + m[3] + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2);
+    if ((m = /^(\d{1,2})\/(\d{1,2})$/.exec(x)) && ref){ var a = +ref.slice(0, 4), iso = a + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2); if (difDias(iso, ref) > 31) iso = (a - 1) + iso.slice(4); return iso; }
+    return null;
+  }
+  function fvParcela(t){
+    var m = /(?:^|\s)-?\s*parcela\s+(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})\s*$/i.exec(t) || /(?:^|\s)(\d{1,2})\/(\d{1,2})\s*$/.exec(t);
+    if (!m) return null; var n = +m[1], q = +m[2]; return (n >= 1 && q >= 2 && n <= q) ? { n: n, m: q, texto: m[0] } : null;
+  }
+  /* o que fecha a conta: pagamentos anteriores saem, IOF que se anula sai, parcelas e créditos ficam */
+  function fvFechar(itens, meta){
+    var provas = [], ign = [];
+    itens.forEach(function(it){
+      var n = norm(it.t);
+      if (it.v < 0 && /^PAGAMENTO|^PAGTO|PAGAMENTO (RECEBIDO|EFETUADO|VIA|EM CONTA|DA FATURA)|^OBRIGADO PELO PAGAMENTO/.test(n)){ it.ignorar = 'pagamento da fatura anterior'; }
+      else if (it.v < 0) it.tipo = 'credito';
+    });
+    var iofP = itens.filter(function(i){ return !i.ignorar && i.v > 0 && /^IOF/.test(norm(i.t)); }), iofN = itens.filter(function(i){ return !i.ignorar && i.v < 0 && /IOF/.test(norm(i.t)); });
+    iofN.forEach(function(neg){ var par = iofP.filter(function(p){ return !p.ignorar && p.v === -neg.v; })[0]; if (par){ par.ignorar = neg.ignorar = 'IOF que se anula'; } });
+    var uteis = itens.filter(function(i){ if (i.ignorar){ ign.push({ t: i.t, v: i.v, motivo: i.ignorar }); return false; } return true; });
+    var soma = uteis.reduce(function(t, i){ return t + i.v; }, 0);
+    /* competência: a data da compra; parcela que não é a primeira cai no mês em que a fatura fecha */
+    var datas = uteis.filter(function(i){ return !i.parcela || i.parcela.n === 1; }).map(function(i){ return i.dc; }).sort(), fim = datas.length ? datas[datas.length - 1] : (meta.vencimento || null);
+    uteis.forEach(function(i){ i.d = (i.parcela && i.parcela.n > 1 && fim) ? fim : i.dc; });
+    var ini = uteis.filter(function(i){ return !i.parcela || i.parcela.n === 1; }).map(function(i){ return i.dc; }).sort()[0];
+    meta.periodo = { de: ini || null, ate: fim };
+    return { uteis: uteis, ign: ign, soma: soma, provas: provas };
+  }
+  function fvCsvLinhas(txt){
+    var L = String(txt || '').replace(/^﻿/, '').split(/\r?\n/).filter(function(l){ return l.trim(); }); if (L.length < 2) return null;
+    var cont = { ',': 0, ';': 0, '\t': 0 };
+    L.slice(0, 6).forEach(function(l){ var q = false; for (var i = 0; i < l.length; i++){ var ch = l[i]; if (ch === '"') q = !q; else if (!q && cont[ch] !== undefined) cont[ch]++; } });
+    var d = ';'; if (cont[','] >= cont[';'] && cont[','] >= cont['\t']) d = ','; if (cont['\t'] > cont[d]) d = '\t';
+    if (!cont[d]) return null;
+    return L.map(function(l){ var out = [], cur = '', q = false; for (var i = 0; i < l.length; i++){ var ch = l[i]; if (ch === '"'){ if (q && l[i + 1] === '"'){ cur += '"'; i++; } else q = !q; } else if (ch === d && !q){ out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out.map(function(c){ return c.trim(); }); });
+  }
+  function lerFaturaCsv(txt, nomeArq, hoje){
+    var rows = fvCsvLinhas(txt); if (!rows) return null;
+    var h = -1, col = null;
+    for (var i = 0; i < Math.min(rows.length, 15) && h < 0; i++){
+      var cs = rows[i].map(norm), c = { d: -1, t: -1, v: -1, p: -1, c: -1, saldo: -1, cred: -1 };
+      cs.forEach(function(x, k){
+        if (c.d < 0 && /^(DATA|DATE|DATA DA COMPRA|DATA DE COMPRA|DATA DO LANCAMENTO|DATA LANCAMENTO|DT COMPRA)$/.test(x)) c.d = k;
+        else if (c.t < 0 && /^(TITLE|TITULO|DESCRICAO|DESCRICAO DA COMPRA|HISTORICO|LANCAMENTO|ESTABELECIMENTO|DESCRICAO DO LANCAMENTO)$/.test(x)) c.t = k;
+        else if (/^(AMOUNT|VALOR|VALOR \(EM R\$\)|VALOR EM R\$|VALOR \(R\$\)|VALOR R\$)$/.test(x) && (c.v < 0 || /R\$/.test(x))) c.v = k;
+        else if (c.p < 0 && /^PARCELA/.test(x)) c.p = k;
+        else if (c.c < 0 && /^CATEGORIA/.test(x)) c.c = k;
+        if (/^SALDO/.test(x)) c.saldo = k; if (/^(CREDITO|DEBITO)/.test(x)) c.cred = k;
+      });
+      if (c.d >= 0 && c.t >= 0 && c.v >= 0){ h = i; col = c; }
+    }
+    if (h < 0 || col.saldo >= 0 || col.cred >= 0) return null;   /* sem os três títulos, ou é extrato de conta (com saldo), não fatura */
+    var itens = [];
+    rows.slice(h + 1).forEach(function(r){
+      var d = fvData(r[col.d], hoje), v = fvCents(r[col.v]); if (!d || v === null || !r[col.t]) return;
+      var it = { dc: d, d: d, t: r[col.t].replace(/\s+/g, ' ').trim(), v: v, parcela: null, catBanco: col.c >= 0 ? (r[col.c] || '') : '', tipo: 'compra' };
+      var pc = col.p >= 0 ? /(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/.exec(r[col.p] || '') : null;
+      if (pc && +pc[2] >= 2) it.parcela = { n: +pc[1], m: +pc[2] }; else { var pt = fvParcela(it.t); if (pt){ it.parcela = { n: pt.n, m: pt.m }; it.t = it.t.replace(pt.texto, '').replace(/\s*-\s*$/, '').trim(); } }
+      itens.push(it);
+    });
+    if (itens.length < 3) return null;
+    var semPag = itens.filter(function(i){ return !/^PAGAMENTO|^PAGTO|PAGAMENTO (RECEBIDO|EFETUADO|VIA|EM CONTA|DA FATURA)/.test(norm(i.t)); });   /* o pagamento da fatura anterior não decide o sinal */
+    var pos = semPag.filter(function(i){ return i.v > 0; }).reduce(function(t, i){ return t + i.v; }, 0), neg = semPag.filter(function(i){ return i.v < 0; }).reduce(function(t, i){ return t - i.v; }, 0);
+    if (neg > pos) itens.forEach(function(i){ i.v = -i.v; });   /* banco que lança a compra como negativo */
+    var meta = { vencimento: null }, f = fvFechar(itens, meta);
+    var banco = bancoPorTexto(norm(nomeArq || '')) || '', dicaVenc = /(\d{4})-(\d{2})-(\d{2})/.exec(nomeArq || '');
+    var provas = ['o arquivo CSV não traz o total da fatura nem o vencimento: confira a soma (' + (f.soma / 100).toFixed(2).replace('.', ',') + ') com o total do aplicativo do banco'];
+    return { formato: 'csv', banco: banco, cartao: '', vencimento: null, dicaVencimento: dicaVenc ? dicaVenc[1] + '-' + dicaVenc[2] + '-' + dicaVenc[3] : null, total: null, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: [], total: 0 }, selo: 'amarelo', provas: provas };
+  }
+  function fvValorRotulo(L, rot){
+    for (var i = 0; i < L.length; i++){ if (!rot.test(norm(L[i]))) continue; var ms = L[i].match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g); if (ms) return fvCents(ms[ms.length - 1]); var nx = (L[i + 1] || '').match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g); if (nx) return fvCents(nx[0]); }
+    return null;
+  }
+  function fvAcharVencimento(L){
+    for (var i = 0; i < L.length; i++){
+      var n = norm(L[i]); if (!/VENCIMENTO/.test(n) || /FECHAMENTO|PROXIM|APOS O VENCIMENTO|ATE O VENCIMENTO|PAGUE|MULTA|JUROS/.test(n)) continue;
+      var m = /(\d{2}\/\d{2}\/\d{4})/.exec(L[i]) || (/^\s*(\d{2}\/\d{2}\/\d{4})\s*$/.exec(L[i + 1] || ''));
+      if (m) return fvData(m[1]);
+    }
+    return null;
+  }
+  /* PDF de duas colunas (compras à esquerda, internacionais e totais à direita): as células da mesma altura viram duas linhas; esquerda primeiro, depois direita, página por página */
+  function fvColunas(itens, pag, corteX){
+    var monta = function(cells){ var s = '', ult = null; cells.forEach(function(c){ if (ult !== null){ var g = c.x - ult; s += g > 12 ? '   ' : (g > 1 ? ' ' : ''); } s += c.s; ult = c.x + (c.w || 0); }); return s.trim(); };
+    var corte = corteX - 8, out = [], pgs = {}, ordem = [];
+    itens.forEach(function(r, i){ var p = pag[i]; if (!pgs[p]){ pgs[p] = []; ordem.push(p); } pgs[p].push(r); });
+    ordem.forEach(function(p){
+      var esq = [], dir = [];
+      pgs[p].forEach(function(r){ var e = r.filter(function(c){ return c.x < corte; }), d = r.filter(function(c){ return c.x >= corte; }); if (e.length) esq.push(monta(e)); if (d.length) dir.push(monta(d)); });
+      out = out.concat(esq, dir);
+    });
+    return out;
+  }
+  /* onde pode começar a coluna da direita: posições (x) em que várias células começam, com bastante texto à esquerda */
+  function fvCortes(itens){
+    var xs = {}, firsts = itens.map(function(r){ return r[0] ? r[0].x : 0; });
+    itens.forEach(function(r){ r.forEach(function(c){ if (c.x >= 250){ var k = Math.round(c.x / 6), o = xs[k] = xs[k] || { n: 0, min: c.x }; o.n++; if (c.x < o.min) o.min = c.x; } }); });
+    return Object.keys(xs).map(function(k){ return { x: xs[k].min, n: xs[k].n }; }).filter(function(c){ return c.n >= 6 && firsts.filter(function(f){ return f < c.x - 60; }).length >= 6; }).sort(function(a, b){ return b.n - a.n; }).slice(0, 3).map(function(c){ return c.x; });
+  }
+  function lerFaturaPdf(linhas, hoje, itens, pag){
+    var plano = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), r = fvPdfNucleo(plano, hoje);
+    if ((!r || r.selo !== 'verde') && itens && pag && itens.length >= 12){   /* não fechou: o PDF pode ter duas colunas (compras à esquerda, totais à direita): tenta separar */
+      fvCortes(itens).forEach(function(x){ if (r && r.selo === 'verde') return; var r2 = fvPdfNucleo(fvColunas(itens, pag, x), hoje); if (r2 && (!r || r2.selo === 'verde' || r2.itens.length > r.itens.length)) r = r2; });
+    }
+    return r;
+  }
+  function fvPdfNucleo(L, hoje){
+    var N = norm(L.join('\n'));
+    var venc = fvAcharVencimento(L), ref = venc || hoje, secao = 'compras', itens = [], futuras = [], ultimaIntl = null;
+    L.forEach(function(l, k){
+      var n = norm(l);
+      if (/^PAGAMENTOS EFETUADOS|^PAGAMENTOS E CREDITOS|^PAGAMENTOS$/.test(n)) { secao = 'pagamentos'; return; }
+      if (/LANCAMENTOS INTERNACIONAIS|COMPRAS INTERNACIONAIS/.test(n)) { secao = 'inter'; return; }
+      if (/COMPRAS E SAQUES|^LANCAMENTOS NO CARTAO$|LANCAMENTOS DO PERIODO|^LANCAMENTOS: /.test(n) && !/^TOTAL/.test(n)){ secao = 'compras'; return; }
+      if (/COMPRAS PARCELADAS ?- ?PROXIMAS FATURAS|PROXIMAS FATURAS$|PARCELAS FUTURAS/.test(n) && !/^TOTAL|^PROXIMA FATURA /.test(n)){ secao = 'futuras'; return; }
+      if (/^(TOTAL PARA PROXIMAS FATURAS|LIMITES? DE CREDITO|ENCARGOS COBRADOS|SIMULACAO)/.test(n)){ secao = 'fim'; return; }
+      var m = /^(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(.+?)\s+(-?\s?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s*[^\d\s]{1,2})?\s*$/.exec(l.trim()); if (!m) return;   /* um ponto ou letra solta depois do valor (ruído do PDF) não impede a leitura */
+      var data = fvData(m[1], ref), v = fvCents(m[3]), t = m[2].replace(/\s{2,}/g, ' ').trim(); if (!data || v === null) return;
+      var pc = fvParcela(t), cat = '', prox = (L[k + 1] || '').trim();
+      if (pc) t = t.slice(0, t.length - pc.texto.length).trim();
+      if (pc && pc.n > 1 && !/^\d{2}\/\d{2}\/\d/.test(m[1])){ var lim = addDias(ref, -20), a0 = +ref.slice(0, 4), alvo = a0 + data.slice(4); while (alvo > lim) alvo = (+alvo.slice(0, 4) - 1) + alvo.slice(4); data = alvo; }   /* parcela que não é a primeira: a data impressa é a da compra original, meses antes */
+      if (/^[a-zçãõáéíóúâêô]+\s{2}/i.test(prox) && !/^\d/.test(prox) && !/^(total|dolar|dólar)/i.test(prox)) cat = prox.split(/\s{2,}/)[0].trim().toLowerCase();
+      if (secao === 'futuras'){ futuras.push({ t: t, n: pc ? pc.n : null, m: pc ? pc.m : null, v: v }); return; }
+      if (secao === 'pagamentos' || secao === 'fim') return;
+      if (secao === 'inter') ultimaIntl = data;
+      itens.push({ dc: data, d: data, t: t, v: v, parcela: pc ? { n: pc.n, m: pc.m } : null, catBanco: cat, tipo: 'compra' });
+    });
+    var iof = fvValorRotulo(L, /^REPASSE DE IOF/); if (iof > 0) itens.push({ dc: ultimaIntl || ref, d: ultimaIntl || ref, t: 'IOF das compras internacionais', v: iof, parcela: null, catBanco: '', tipo: 'compra' });
+    if (itens.length < 3) return null;
+    var meta = { vencimento: venc }, f = fvFechar(itens, meta);
+    var totAtuais = fvValorRotulo(L, /TOTAL DOS LANCAMENTOS ATUAIS|TOTAL DE LANCAMENTOS ATUAIS|TOTAL DAS COMPRAS|TOTAL DE COMPRAS/), totFatura = fvValorRotulo(L, /TOTAL DESTA FATURA|TOTAL DA FATURA(?! ANTERIOR)|VALOR TOTAL DA FATURA|VALOR DA FATURA/), tcartao = fvValorRotulo(L, /^LANCAMENTOS NO CARTAO/);
+    var provas = [], selo = 'amarelo', fmt = function(c){ return (c / 100).toFixed(2).replace('.', ','); };
+    var refs = [['Total dos lançamentos atuais', totAtuais], ['Total da fatura', totFatura], ['Lançamentos no cartão', tcartao]].filter(function(x){ return x[1] != null; }), bate = refs.filter(function(x){ return x[1] === f.soma; })[0];
+    if (bate){ selo = 'verde'; provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') confere com "' + bate[0] + '"'); }
+    else if (refs.length) provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') não bate com "' + refs[0][0] + '" (' + fmt(refs[0][1]) + '): confira linha a linha');
+    else provas.push('não achei o total da fatura para conferir a soma (' + fmt(f.soma) + ')');
+    if (!venc) provas.push('não achei o campo "Vencimento" no documento: informe a data ao confirmar');
+    var cart = /CARTAO\s+(\d{4})[.\s]*[X*]{4}[.\s]*[X*]{4}[.\s]*(\d{4})/.exec(N) || /FINAL\s+(\d{4})/.exec(N);
+    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, selo: selo, provas: provas };
+  }
+  /* PDF que parece fatura de cartão: "fatura" + vencimento + várias linhas de compra (data, estabelecimento, valor) */
+  function pareceFatura(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), N = norm(L.join('\n'));
+    if (!/FATURA/.test(N) || !/VENCIMENTO/.test(N)) return false;
+    return L.filter(function(l){ return /^\d{2}\/\d{2}(\/\d{2,4})?\s+.+\s-?\d{1,3}(\.\d{3})*,\d{2}\s*$/.test(l.trim()); }).length >= 3 && /LANCAMENTOS|COMPRAS|ESTABELECIMENTO|TRANSACOES/.test(N);
+  }
+
+  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, pareceContracheque: pareceContracheque, lerFaturaCsv: lerFaturaCsv, lerFaturaPdf: lerFaturaPdf, pareceFatura: pareceFatura, fvCents: fvCents, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LeitorGeral;
 
@@ -25246,7 +25428,7 @@ function dcmDinheiro(c){ return fmtMoeda((c || 0) / 100); }
 function dcmCatId(label){ var l = (typeof CATEGORIAS_LISTA !== 'undefined' ? CATEGORIAS_LISTA : []).filter(function(c){ return c.label === label; })[0]; return l ? l.id : 'outros'; }
 function dcmCatDe(nome){ try{ return extCategoria({ s: nome || '', n: '' }, extCfg().regras); }catch(e){ return 'Outros'; } }
 function dcmPode(){ return ppDono() || ppPapel() === 'advogado' || (typeof ffnAtivo === 'function' && ffnAtivo()); }
-function dcmPendentes(){ return extratos.filter(function(d){ return d.tipo === 'documento' && d.status === 'pendente'; }).sort(function(a, b){ return String(b.lidoEm || '').localeCompare(String(a.lidoEm || '')); }); }
+function dcmPendentes(){ return extratos.filter(function(d){ return d.tipo === 'documento' && d.status === 'pendente' && d.kind !== 'fatura'; }).sort(function(a, b){ return String(b.lidoEm || '').localeCompare(String(a.lidoEm || '')); }); }
 
 /* ---------- ler: linhas de PDF, texto colado ou foto (OCR) → { kind, dados } ---------- */
 function dcmCompactoComprovante(c){
@@ -25258,11 +25440,13 @@ function dcmDeLinhas(linhas, itens){
   var c = LeitorGeral.classificar(linhas, itens), hoje = todayISO();
   if (c.tipo === 'boleto'){ var b = LeitorGeral.lerBoletoDoc(linhas, hoje); if (b) return { kind: 'boleto', dados: { beneficiario: b.beneficiario, beneficiarioDoc: b.beneficiarioDoc, pagador: b.pagador, banco: b.banco, bancoNome: b.bancoNome, valor: b.valorDocumento != null && b.valor == null ? b.valorDocumento : b.valor, vencimento: b.vencimento, semVencimento: b.semVencimento, linhaFmt: b.linhaFmt, tipo: b.tipo, selo: b.selo, provas: b.provas } }; }
   if (c.tipo === 'contracheque' && typeof ccqAtivo === 'function' && ccqAtivo()){ var cc = LeitorGeral.lerContracheque(linhas); if (cc) return { kind: 'contracheque', dados: ccqCompacto(cc) }; }
+  if (c.tipo === 'fatura'){ var ft = LeitorGeral.lerFaturaPdf(linhas, hoje, itens, linhas && linhas.pag); if (ft) return { kind: 'fatura', dados: ft }; }
   if (c.tipo === 'pix_copia_cola'){ var p = LeitorGeral.acharBRCode(linhas.join('\n')); if (p) return { kind: 'pix', dados: { valor: p.valor, nome: p.nome, cidade: p.cidade, chave: p.chave, txid: p.txid, descricao: p.descricao, dinamico: p.dinamico, selo: p.crcOk ? 'verde' : 'amarelo', provas: [p.crcOk ? 'CRC do Pix confere' : 'CRC do Pix não confere'] } }; }
   if (c.tipo === 'comprovante'){ var m = LeitorGeral.lerComprovante(linhas, hoje); return { kind: 'comprovante', dados: dcmCompactoComprovante(m) }; }
   return null;
 }
-function dcmDeTexto(txt){
+function dcmDeTexto(txt, nome){
+  if (typeof LeitorGeral !== 'undefined' && !/^\s*(OFXHEADER|<OFX)/i.test(String(txt))){ var fc = LeitorGeral.lerFaturaCsv(txt, nome || '', todayISO()); if (fc) return { kind: 'fatura', dados: fc }; }   /* CSV de fatura de cartão */
   var linhas = String(txt || '').split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
   var d = dcmDeLinhas(linhas, null); if (d) return d;
   var bs = typeof LeitorGeral !== 'undefined' ? LeitorGeral.acharBoletos(txt, todayISO()) : [];   /* só a linha digitável colada */
@@ -25272,7 +25456,7 @@ function dcmDeTexto(txt){
 function dcmRegistrar(nome, d, sig){
   var id = 'dcm_' + sig;
   if (extDocPorId(id)) return Promise.resolve({ jaLido: true, nome: nome });
-  return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ return { ok: true, nome: nome, linhas: 1, documento: true }; });
+  return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ if (d.kind === 'fatura' && typeof fatS !== 'undefined') fatS.aba = 'cartao'; return { ok: true, nome: nome, linhas: 1, documento: true }; });
 }
 function dcmColar(texto){
   texto = String(texto || '').trim(); if (!texto){ toast('Cole a linha digitável do boleto ou o Pix copia e cola.'); return Promise.resolve(); }
@@ -25661,6 +25845,178 @@ document.addEventListener('change', function(ev){ var t = ev.target; if (t && t.
 })();
 
 /* ============================================================
+   FATURA DO CARTÃO DE CRÉDITO (prefixo fat) — Extratos › aba "Cartão de crédito"
+   - CSV ou PDF de fatura (qualquer banco) lido pelo leitor geral; aqui: conferência, categorias com ícone, confirmação e as sub-abas de Extratos;
+   - cada fatura confirmada vira documentos "diaadia" (um por mês de competência) com origem "cartao": as Análises e o Orçamento já somam com o dia a dia da conta,
+     e o filtro Tudo / Só conta / Só cartão separa quando a pessoa quiser;
+   - a compra entra pela data da compra; parcela que não é a primeira cai no mês em que a fatura fecha; mostra o que falta das parcelas;
+   - o vencimento vem do campo "Vencimento" do documento; se não houver, o app pergunta (nunca pelo nome do arquivo).
+   ============================================================ */
+var fatS = { aba: 'conta', origem: 'tudo', sel: {}, lembrar: {}, troca: {}, rev: {}, info: '', erro: '' };
+function fatM(c){ return fmtMoeda(c / 100); }
+function fatOrigemOk(d){ var o = fatS.origem; if (o === 'tudo') return true; return o === 'cartao' ? d.origem === 'cartao' : d.origem !== 'cartao'; }
+function fatIc(label, t){ var v = (typeof catVisualDe === 'function') ? catVisualDe(label) : null; return '<span class="cat-ic" style="background:' + (v ? v.cor : '#8A93AD') + '">' + (typeof catSvg === 'function' ? catSvg(v ? v.lu : 'tag', t || 16) : '') + '</span>'; }
+function fatFaturas(status){ return extratos.filter(function(d){ return d.tipo === 'documento' && d.kind === 'fatura' && d.status === status; }).sort(function(a, b){ return String(b.lidoEm || '').localeCompare(String(a.lidoEm || '')); }); }
+function fatChave(t){ var k = (typeof extChaveRegra === 'function') ? extChaveRegra({ s: t }) : ''; return k || String(t).toLowerCase().slice(0, 20); }
+/* categorias do cartão: regras que a pessoa ensinou → catálogo; palavras que enganam (DAS em "Mundo das Utilidades", MORA em nome de pessoa, "Parcela 1/2" ≠ empréstimo) viram "decidir" */
+function fatSuspeita(label, it){
+  var N = (typeof EX !== 'undefined' ? EX.norm(it.t) : String(it.t).toUpperCase());
+  if (/^Empr[ée]stimos/.test(label) && it.parcela) return true;
+  if (/^Impostos e taxas/.test(label) && !/DARF|\bDAS\b.*(MEI|SIMPLES)|SIMPLES NACIONAL|\bISS\b|IPTU|IPVA|PREFEIT|RECEITA FED|SEFAZ|DETRAN/.test(N)) return true;
+  if (/^Juros, multas e IOF/.test(label) && !/\bIOF\b|JUROS DE MORA|MULTA|ENCARGOS|JUROS/.test(N)) return true;
+  return false;
+}
+function fatCatAuto(it){
+  var cfg = (typeof extCfg === 'function') ? extCfg() : { regras: {} };
+  var c = (typeof extCategoria === 'function') ? extCategoria({ s: it.t, n: '' }, cfg.regras || {}) : 'Outros';
+  var regra = cfg.regras && cfg.regras[fatChave(it.t)];
+  if (!regra && fatSuspeita(c, it)) return null;
+  return (c && c !== 'Outros') ? c : null;
+}
+function fatCats(d){
+  var x = d.dados, sel = fatS.sel[d.id] || {}, grupos = {}, pend = {}, cats = {};
+  x.itens.forEach(function(it, i){
+    var k = fatChave(it.t), esc = sel[k], auto = esc || fatCatAuto(it);
+    if (auto){ var c = cats[auto] = cats[auto] || { n: 0, v: 0 }; c.n++; c.v += it.v; }
+    else { var p = pend[k] = pend[k] || { k: k, t: it.t, n: 0, v: 0, idx: [] }; p.n++; p.v += it.v; p.idx.push(i); }
+  });
+  return { cats: cats, pend: pend };
+}
+function fatDespesasCartao(d){
+  var x = d.dados, venc = (qs('fat_' + d.id + '_venc') || {}).value || x.vencimento; if (!venc) return [];
+  var mes = venc.slice(0, 7), out = [], banco = x.banco ? (typeof EX !== 'undefined' ? EX.norm(x.banco) : '') : '';
+  try{ comMes(mes, function(){ getDespesasParaMes(dcmColunaDe(d)).forEach(function(it){ var n = EX.norm(it.despesa.nome); if (/CARTAO|FATURA/.test(n) || (banco && n.indexOf(banco) >= 0)) out.push({ d: it.despesa, mes: mes, v: it.previsto != null ? it.previsto : it.valor, pago: it.pago }); }); }); }catch(e){}
+  return out;
+}
+function fatCard(d){
+  var x = d.dados, id = d.id, g = fatCats(d), cats = Object.keys(g.cats).sort(function(a, b){ return g.cats[b].v - g.cats[a].v; }), pends = Object.keys(g.pend).map(function(k){ return g.pend[k]; }).sort(function(a, b){ return b.v - a.v; });
+  var nCompras = x.itens.filter(function(i){ return i.v > 0; }).length, venc = x.vencimento || '', soPend = pends.reduce(function(t, p){ return t + p.v; }, 0), nPend = pends.reduce(function(t, p){ return t + p.n; }, 0);
+  var h = '<div class="ini-card ext-card" data-fat-card="' + escapeHtml(id) + '"><div class="ext-card-top"><b>Fatura' + (x.banco ? ' · ' + escapeHtml(x.banco) : '') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b><span class="ext-chip ' + (x.selo === 'verde' ? 'ok' : 'bad') + '">' + (x.selo === 'verde' ? 'soma confere' : 'confira') + '</span></div>' +
+    '<div class="fat-kv"><div><b>' + fatM(x.soma) + '</b><span>total lido' + (x.total != null ? ' · fatura ' + fatM(x.total) : '') + '</span></div><div><b>' + nCompras + ' compras</b><span>' + (x.periodo && x.periodo.de ? fmtData(x.periodo.de) + ' a ' + fmtData(x.periodo.ate) : 'período não identificado') + '</span></div></div>' +
+    ((x.provas || []).length ? '<div class="saldo-data">' + escapeHtml(x.provas.join('; ')) + '</div>' : '') +
+    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
+    (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
+  h += '<div class="fat-t">Compras por categoria</div>' + cats.map(function(c){ return '<div class="fat-cat">' + fatIc(c) + '<span class="fat-cn">' + escapeHtml(c) + '<small>' + g.cats[c].n + (g.cats[c].n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(g.cats[c].v) + '</b></div>'; }).join('');
+  if (pends.length){
+    h += '<div class="fat-t fat-pt">Sem categoria — escolha (' + nPend + ' lançamentos · ' + fatM(soPend) + ')</div>' + pends.map(function(p){
+      return '<div class="fat-cat">' + '<span class="fat-cn">' + escapeHtml(p.t) + '<small>' + p.n + (p.n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(p.v) + '</b>' + catSelectHtml('data-fat-cat="' + escapeHtml(id) + '" data-fat-k="' + escapeHtml(p.k) + '"', 'Outros') + '</div>';
+    }).join('') + '<label class="fat-lembrar"><input type="checkbox" data-fat-lembrar="' + escapeHtml(id) + '"' + (fatS.lembrar[id] === false ? '' : ' checked') + '> Lembrar essas escolhas para as próximas faturas</label>';
+  }
+  /* a pessoa pode trocar também a categoria sugerida (a palavra do estabelecimento às vezes engana) */
+  var gr = {}; x.itens.forEach(function(it){ var k = fatChave(it.t), c = (fatS.sel[id] || {})[k] || fatCatAuto(it); if (!c) return; var o = gr[k] = gr[k] || { k: k, t: it.t, n: 0, v: 0, c: c }; o.n++; o.v += it.v; });
+  var grl = Object.keys(gr).map(function(k){ return gr[k]; }).sort(function(a, b){ return b.v - a.v; });
+  if (grl.length) h += '<div class="fat-t">Categorias sugeridas <button type="button" class="btn-text" data-fat="revisar" data-id="' + escapeHtml(id) + '">' + (fatS.rev[id] ? 'Fechar a revisão' : 'Revisar e trocar') + '</button></div>' + (fatS.rev[id] ? grl.map(function(o){ return '<div class="fat-cat"><span class="fat-cn">' + escapeHtml(o.t) + '<small>' + o.n + (o.n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(o.v) + '</b>' + catSelectHtml('data-fat-cat="' + escapeHtml(id) + '" data-fat-k="' + escapeHtml(o.k) + '"', o.c) + '</div>'; }).join('') : '');
+  var parc = x.itens.filter(function(i){ return i.parcela && i.parcela.m > i.parcela.n; });
+  if (parc.length || (x.futuras && x.futuras.lista && x.futuras.lista.length)){
+    var falta = parc.reduce(function(t, i){ return t + i.v * (i.parcela.m - i.parcela.n); }, 0);
+    h += '<div class="fat-t">Parcelas que ainda faltam</div>' + parc.slice(0, 8).map(function(i){ var k = i.parcela.m - i.parcela.n; return '<div class="fat-lin"><span>' + escapeHtml(i.t) + ' <small>(' + i.parcela.n + '/' + i.parcela.m + ')</small></span><b>falta' + (k > 1 ? 'm ' + k + ' × ' : ' 1 × ') + fatM(i.v) + '</b></div>'; }).join('') +
+      '<div class="saldo-data">Comprometido nas próximas faturas: <b>' + fatM(x.futuras && x.futuras.total > 0 ? x.futuras.total : falta) + '</b>' + (parc.length > 8 ? ' (mostrando 8 de ' + parc.length + ' parceladas)' : '') + '</div>';
+  }
+  if ((x.ignorados || []).length) h += '<div class="saldo-data">Não contam como gasto: ' + x.ignorados.map(function(i){ return escapeHtml(i.t) + ' (' + escapeHtml(i.motivo) + ')'; }).join('; ') + '.</div>';
+  var desp = fatDespesasCartao(d);
+  if (desp.length) h += '<label class="fat-lembrar"><input type="checkbox" data-fat-troca="' + escapeHtml(id) + '"' + (fatS.troca[id] === false ? '' : ' checked') + '> Trocar a despesa “' + escapeHtml(desp[0].d.nome) + '”' + (desp[0].v != null ? ' (' + fatM(desp[0].v * 100) + ')' : '') + ' pelo detalhe desta fatura <small>(recomendado: não conta duas vezes)</small></label>';
+  h += '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-fat="confirmar" data-id="' + escapeHtml(id) + '">Confirmar a fatura</button><button type="button" class="btn-text" data-fat="ignorar" data-id="' + escapeHtml(id) + '">Ignorar</button></div></div>';
+  return h;
+}
+function fatConfirmar(id){
+  var d = extDocPorId(id); if (!d) return Promise.resolve();
+  var x = d.dados, venc = dcmLer(id, 'venc') || x.vencimento || '';
+  if (!venc){ toast('Informe o vencimento da fatura.'); return Promise.resolve(); }
+  var coluna = dcmColunaDe(d), sel = fatS.sel[id] || {}, cfg = extCfg(), regras = Object.assign({}, cfg.regras || {}), mudouRegra = false, porMes = {};
+  x.itens.forEach(function(it, i){
+    var k = fatChave(it.t), esc = sel[k], cat = esc || fatCatAuto(it) || 'Outros';
+    if (esc && fatS.lembrar[id] !== false && k){ regras[k] = esc; mudouRegra = true; }
+    var mes = it.d.slice(0, 7), doc = porMes[mes] = porMes[mes] || { id: 'dd_' + mes + '_cartao_' + id.replace(/^dcm_/, ''), mes: mes, cats: {}, linhas: [] };
+    var v = r2(it.v / 100), c = doc.cats[cat] = doc.cats[cat] || { v: 0, n: 0 }; c.v = r2(c.v + v); c.n++;
+    doc.linhas.push({ id: uid(), d: it.d, t: String(it.t).slice(0, 80) + (it.parcela ? ' (' + it.parcela.n + '/' + it.parcela.m + ')' : ''), v: v, c: cat, h: '' });
+  });
+  var meses = Object.keys(porMes), cadeia = Promise.resolve();
+  meses.forEach(function(m){ var o = porMes[m]; cadeia = cadeia.then(function(){ return extGravar(o.id, { tipo: 'diaadia', mes: o.mes, conta: 'cartao:' + id, coluna: coluna, origem: 'cartao', fatura: id, cats: o.cats, linhas: o.linhas, atualizadoEm: new Date().toISOString() }); }); });
+  cadeia = cadeia.then(function(){ return mudouRegra ? persistExtCfg({ regras: regras }) : null; });
+  var tr = fatS.troca[id] !== false ? fatDespesasCartao(d)[0] : null;
+  if (tr && typeof persistPatchDespesa === 'function') cadeia = cadeia.then(function(){ return persistPatchDespesa(tr.d, { faturaMeses: (tr.d.faturaMeses || []).concat([tr.mes]) }); });
+  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc }) })); })
+    .then(function(){ toast('Fatura lançada: ' + x.itens.length + ' lançamentos em ' + meses.length + (meses.length === 1 ? ' mês' : ' meses') + '.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} })
+    .catch(function(e){ console.error('fatura', e); toast('Não consegui lançar a fatura. Tente de novo.'); });
+}
+function fatDesfazer(id){
+  var d = extDocPorId(id); if (!d) return Promise.resolve();
+  var ids = d.docsDD || [], cadeia = Promise.resolve();
+  ids.forEach(function(i){ cadeia = cadeia.then(function(){ return extApagar(i); }); });
+  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'pendente', concluidoEm: null, docsDD: [] })); }).then(function(){ toast('Fatura desfeita: voltou para conferir.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} });
+}
+/* aba "Cartão de crédito" */
+function fatAbaHtml(){
+  var l = fatFaturas('pendente'), ja = fatFaturas('concluido'), h = '';
+  h += '<div class="ext-acoes" style="margin:0 0 8px"><button type="button" class="btn btn-primary" data-fat="enviar">Enviar fatura (CSV ou PDF)</button></div>' + (fatS.info ? '<div class="saldo-data" role="status">' + escapeHtml(fatS.info) + '</div>' : '') + (fatS.erro ? '<div class="aviso-sis critico"><span class="as-txt">' + escapeHtml(fatS.erro) + '</span></div>' : '');
+  h += '<div class="financeiro-secao-head"><h4>Faturas para conferir' + (l.length ? ' (' + l.length + ')' : '') + '</h4></div>' + (l.length ? l.map(fatCard).join('') : '<div class="financeiro-vazio">Nenhuma fatura esperando. Envie o CSV ou o PDF da fatura em “Enviar documentos” (aba Conta bancária), ou compartilhe do celular.</div>');
+  /* compras por categoria do mês escolhido */
+  var por = {}, tot = 0, n = 0;
+  extratos.forEach(function(d){ if (d.tipo !== 'diaadia' || d.origem !== 'cartao' || d.mes !== mesSelecionado) return; Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0, c = d.cats[k0]; por[k] = por[k] || { v: 0, n: 0 }; por[k].v = r2(por[k].v + (Number(c.v) || 0)); por[k].n += c.n || 0; tot += Number(c.v) || 0; n += c.n || 0; }); });
+  var ks = Object.keys(por).sort(function(a, b){ return por[b].v - por[a].v; });
+  h += '<div class="financeiro-secao-head"><h4>Compras por categoria · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4></div>' + (ks.length ? '<div class="ini-card">' + ks.map(function(k){ return '<div class="fat-cat">' + fatIc(k) + '<span class="fat-cn">' + escapeHtml(k) + '<small>' + por[k].n + ' lançamentos</small></span><b>' + fmtMoeda(por[k].v) + '</b></div>'; }).join('') + '<div class="fat-lin"><span><b>Total do cartão no mês</b></span><b>' + fmtMoeda(r2(tot)) + '</b></div></div>' : '<div class="financeiro-vazio">Nenhuma compra de cartão lançada neste mês.</div>');
+  h += '<div class="financeiro-secao-head"><h4>Faturas lançadas' + (ja.length ? ' (' + ja.length + ')' : '') + '</h4></div>' + (ja.length ? ja.map(function(d){ var x = d.dados; return '<div class="ini-card fat-ja"><div class="fat-lin"><span><b>' + escapeHtml(x.banco || 'Cartão') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b> <small>vence ' + escapeHtml(fmtData(x.vencimento)) + ' · ' + x.itens.length + ' lançamentos</small></span><b>' + fatM(x.soma) + '</b></div><button type="button" class="btn-text" data-fat="desfazer" data-id="' + escapeHtml(d.id) + '">Desfazer</button></div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma fatura lançada ainda.</div>');
+  return h;
+}
+function fatAbasHtml(){
+  var n = fatFaturas('pendente').length;
+  return '<div class="fat-abas" id="fatAbas" role="tablist"><button type="button" role="tab" data-fat="aba" data-v="conta" class="' + (fatS.aba === 'conta' ? 'on' : '') + '">Conta bancária</button><button type="button" role="tab" data-fat="aba" data-v="cartao" class="' + (fatS.aba === 'cartao' ? 'on' : '') + '">Cartão de crédito' + (n ? ' <i>' + n + '</i>' : '') + '</button></div>';
+}
+function fatTemCartao(){ return extratos.some(function(d){ return d.tipo === 'diaadia' && d.origem === 'cartao'; }); }
+function fatOrigemSegHtml(){
+  if (!fatTemCartao()) return '';
+  return '<div class="segmented an-seg2" role="group" aria-label="Origem" style="margin-top:6px">' + [['tudo', 'Tudo'], ['conta', 'Só conta'], ['cartao', 'Só cartão']].map(function(o){ return '<button type="button" data-fat-origem="' + o[0] + '" class="seg-btn' + (fatS.origem === o[0] ? ' active' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>';
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.fat-abas{display:flex;background:var(--surface-2);border-radius:99px;padding:3px;width:fit-content;margin:0 0 10px}.fat-abas button{border:0;background:transparent;padding:8px 18px;border-radius:99px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.fat-abas button.on{background:#12172A;color:#fff}.fat-abas i{font-style:normal;background:#C98500;color:#fff;border-radius:99px;padding:0 7px;font-size:11px;margin-left:4px}' +
+    '.fat-kv{display:flex;gap:26px;flex-wrap:wrap;margin:6px 0 8px}.fat-kv b{display:block;font-size:var(--t5)}.fat-kv span{font-size:var(--t1);color:var(--ink-soft)}.fat-lin2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0 12px}' +
+    '.fat-t{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 4px}.fat-pt{color:#8A5A0B}.fat-cat{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);flex-wrap:wrap}.fat-cat .cat-ic{flex:none}.fat-cn{flex:1 1 140px;min-width:0;font-weight:600;overflow-wrap:anywhere}.fat-cn small{display:block;color:var(--ink-soft);font-weight:400;font-size:var(--t1)}.fat-cat>b{font-variant-numeric:tabular-nums}.fat-cat .cat-ps{flex:1 1 100%}' +
+    '.fat-lin{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:var(--t2)}.fat-lembrar{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);margin:10px 0 2px}.fat-ja .btn-text{margin-top:2px}' +
+    '@media(min-width:700px){.fat-cat .cat-ps{flex:0 0 260px}}';
+  document.head.appendChild(st);
+  if (typeof dcmHtml === 'function') { var oHtml = dcmHtml; dcmHtml = function(){ return fatS.aba === 'cartao' ? '' : oHtml.apply(this, arguments); }; }
+  if (typeof renderExtratos === 'function'){
+    var oR = renderExtratos;
+    renderExtratos = function(){
+      var r = oR.apply(this, arguments);
+      try{
+        if (activeTab !== 'extratos' || !dcmPode()) return r;
+        var wrap = document.querySelector('#bodyExtratos .ext-wrap'); if (!wrap) return r;
+        var barra = qs('fatAbas'), nova = fatAbasHtml();
+        if (!barra){ wrap.insertAdjacentHTML('afterbegin', nova); } else if (barra.outerHTML !== nova){ barra.outerHTML = nova; }
+        var cart = qs('fatCartao'); if (!cart){ cart = document.createElement('div'); cart.id = 'fatCartao'; wrap.appendChild(cart); }
+        var isC = fatS.aba === 'cartao';
+        ['extTopo', 'extPend', 'extDia', 'extJa', 'extHist'].forEach(function(i){ var e = qs(i); if (e) e.style.display = isC ? 'none' : ''; });
+        cart.style.display = isC ? '' : 'none';
+        if (isC){ try{ fatS.info = (impEstado && impEstado.info) || ''; fatS.erro = (impEstado && impEstado.erro) || ''; }catch(e){} var h = fatAbaHtml(); if (cart.getAttribute('data-h') !== h){ cart.innerHTML = h; cart.setAttribute('data-h', h); } }
+      }catch(e){ console.error('fatura', e); }
+      return r;
+    };
+  }
+  document.addEventListener('click', function(ev){
+    var og = ev.target.closest ? ev.target.closest('[data-fat-origem]') : null;
+    if (og){ fatS.origem = og.getAttribute('data-fat-origem'); try{ renderAnalises(); }catch(e){} try{ renderOrcamento && renderOrcamento(); }catch(e){} return; }
+    var b = ev.target.closest ? ev.target.closest('[data-fat]') : null; if (!b) return;
+    var a = b.getAttribute('data-fat'), id = b.getAttribute('data-id');
+    if (a === 'enviar'){ var f = qs('impArq'); if (f) f.click(); return; }
+    if (a === 'aba'){ fatS.aba = b.getAttribute('data-v'); return renderExtratos(); }
+    if (a === 'revisar'){ fatS.rev[id] = !fatS.rev[id]; return renderExtratos(); }
+    if (a === 'confirmar') return fatConfirmar(id);
+    if (a === 'ignorar'){ var d = extDocPorId(id); if (d) return extGravar(d.id, Object.assign({}, d, { status: 'ignorado' })).then(function(){ renderExtratos(); }); }
+    if (a === 'desfazer') return fatDesfazer(id);
+  });
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t || !t.getAttribute) return;
+    if (t.hasAttribute('data-fat-cat')){ var id = t.getAttribute('data-fat-cat'); (fatS.sel[id] = fatS.sel[id] || {})[t.getAttribute('data-fat-k')] = t.value; return renderExtratos(); }
+    if (t.hasAttribute('data-fat-lembrar')) fatS.lembrar[t.getAttribute('data-fat-lembrar')] = t.checked;
+    if (t.hasAttribute('data-fat-troca')) fatS.troca[t.getAttribute('data-fat-troca')] = t.checked;
+    if (t.id && /^dcm_.+_venc$/.test(t.id)) renderExtratos();   /* mudou o vencimento: refaz a procura da despesa "Cartão" do mês */
+  });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { fatFaturas: fatFaturas, fatS: fatS });
+})();
+
+/* ============================================================
    INÍCIO DO FAMILIAR (prefixo fmi) — tela enxuta: saudação + Central de atenção com os próximos vencimentos (esboço aprovado em 24/11).
    Entram só os módulos que o proprietário liberou:
      - Finanças: despesas pessoais a vencer (fixas e únicas em aberto, também as atrasadas) e o salário previsto ("a receber");
@@ -25774,7 +26130,7 @@ document.addEventListener('click', function(ev){
    Cada pessoa (proprietário e advogados) tem o SEU código e a SUA caixa de entrada: o extrato mandado pelo iPhone chega só para ela.
    O servidor (src/atalho.js) guarda o código e o arquivo (R2, até 25 MB); o app lê os recebidos na aba Extratos.
    ============================================================ */
-var atlS = { info: null, pessoas: null, mostrar: false, nota: '' };
+var atlS = { info: null, pessoas: null, mostrar: false, nota: '', aba: 'iphone' };
 function atlDono(){ return typeof ppDono === 'function' && ppDono(); }
 function atlQuando(iso){ if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; var h = new Date(), mesmo = d.toDateString() === h.toDateString(), ont = new Date(h.getTime() - 864e5).toDateString() === d.toDateString(); return (mesmo ? 'hoje' : (ont ? 'ontem' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'))) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function atlCopiar(txt){
@@ -25791,8 +26147,34 @@ function atlPrompt(codigo){
     'Se o arquivo tiver mais de 25 MB, mostre um alerta com o nome dele e pule para o próximo. Se a resposta do servidor não tiver "ok" verdadeiro, mostre um alerta com o nome do arquivo e a mensagem de erro. ' +
     'Ao terminar, mostre apenas uma notificação: "N extrato(s) enviado(s) ao Horus." (N = quantos deram certo). Não abra nenhum app nem site.';
 }
+/* texto para o app HTTP Shortcuts (Android), já com o código da pessoa */
+function atlPromptAndroid(codigo){
+  return 'No app HTTP Shortcuts (Android), crie um atalho chamado "Enviar ao Horus" que apareça no menu Compartilhar e aceite arquivos (ative a opção de receber arquivos compartilhados). ' +
+    'Ele deve fazer uma requisição POST para ' + location.origin + '/api/enviar com o cabeçalho Authorization com o valor Bearer ' + codigo + ' (a palavra Bearer, um espaço e o código, exatamente assim, em minúsculas e com os traços), o cabeçalho X-Nome com o nome do arquivo compartilhado e o corpo da requisição do tipo Arquivo (o próprio arquivo compartilhado). ' +
+    'Ao terminar mostre apenas uma notificação "Enviado ao Horus" se a resposta tiver "ok" verdadeiro, ou o erro se não tiver. Não abra nenhum app nem site.';
+}
+function atlInstalado(){ try{ return !!((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone); }catch(e){ return false; } }
+function atlCodigoHtml(i){
+  if (!i.tem) return '<div class="atl-vazio">Você ainda não tem um código.' + (i.legado ? ' O código antigo continua valendo até você gerar o seu.' : '') + '</div><button type="button" class="atl-bt atl-esc" data-atla="gerar">Gerar meu código</button>';
+  return '<div class="atl-cod" id="atlCod">' + escapeHtml(atlS.mostrar ? i.codigo : atlMascara(i.codigo)) + '</div>' +
+    '<div class="atl-duo"><button type="button" class="atl-bt" data-atla="mostrar">' + (atlS.mostrar ? 'Esconder' : 'Mostrar') + '</button><button type="button" class="atl-bt" data-atla="copiar">Copiar</button></div>' +
+    '<div class="atl-nota atl-verm">É só seu: quem tiver este código consegue mandar arquivos para a sua caixa. Não repasse.</div>' +
+    '<button type="button" class="atl-bt atl-perigo" data-atla="novo">Gerar novo código</button><div class="atl-peq">O código atual deixa de valer na hora. Cole o novo no atalho (iPhone: Atalhos › Editar; Android: HTTP Shortcuts › Editar).</div>';
+}
+function atlAndroidHtml(i){
+  var inst = atlInstalado();
+  return '<p class="atl-intro">Mande extrato, fatura do cartão, boleto, comprovante ou contracheque direto do Android para o Horus: em qualquer app, toque em Compartilhar › <b>Horus</b>. O Horus lê o arquivo e mostra a conferência; nada é lançado antes de você confirmar.</p>' + (atlS.nota ? '<div class="atl-nota atl-ok">' + escapeHtml(atlS.nota) + '</div>' : '') +
+    '<div class="atl-sec"><div class="atl-t"><span class="atl-n">1</span>Instalar o Horus no celular <span class="atl-tag atl-ok2">recomendado</span></div>' +
+    '<ol class="atl-passos"><li>Abra o Horus no <b>Chrome</b> (ou Samsung Internet) e entre com o seu e-mail e a sua senha.</li><li>Toque no menu <b>⋮</b> › <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</li><li>Abra o Horus pelo <b>ícone novo</b> uma vez. Pronto: ele passa a aparecer no menu <b>Compartilhar</b> de qualquer app (banco, Gmail, Arquivos, WhatsApp).</li></ol>' +
+    '<div class="atl-lin"><span>Neste aparelho</span><span class="atl-tag ' + (inst ? 'atl-ok2' : 'atl-av') + '">' + (inst ? 'Horus instalado' : 'aberto no navegador (ainda não instalado)') + '</span></div>' +
+    '<div class="atl-peq">Sem código e sem app extra. Vale a sua sessão: o arquivo cai só na sua caixa. Se a sessão tiver vencido, entre no app antes de compartilhar.</div></div>' +
+    '<div class="atl-sec"><div class="atl-t"><span class="atl-n">2</span>Alternativa: atalho com código <span class="atl-tag atl-cz">opcional</span></div>' +
+    '<div class="atl-peq" style="margin:0 0 8px">Para quem prefere não instalar o app: use o app gratuito <b>HTTP Shortcuts</b> (Play Store) com o seu código pessoal, o mesmo do iPhone.</div>' + atlCodigoHtml(i) +
+    '<button type="button" class="atl-bt atl-azul" data-atla="promptand"' + (i.tem ? '' : ' disabled') + '>Copiar as instruções do atalho (já com o meu código)</button>' +
+    (i.tem ? '' : '<div class="atl-peq">Gere o seu código para liberar as instruções.</div>') + '</div>';
+}
 function atlAbrir(){
-  var ov = sgMontar('overlayAtalho', 'Atalho do iPhone');
+  var ov = sgMontar('overlayAtalho', 'Atalhos do iPhone e Android');
   if (!ov.getAttribute('data-atl')){
     ov.setAttribute('data-atl', '1');
     ov.addEventListener('click', function(e){ var b = e.target.closest ? e.target.closest('[data-atla]') : null; if (b) atlAcao(b.getAttribute('data-atla'), b); });
@@ -25809,7 +26191,10 @@ function atlCarregar(){
 function atlMascara(c){ return '•••• •••• •••• ' + c.slice(-4); }
 function atlDesenhar(){
   var c = qs('overlayAtalhoC'), i = atlS.info; if (!c || !i) return;
+  var seg = '<div class="atl-seg"><button type="button" data-atla="aba-iphone" class="' + (atlS.aba === 'iphone' ? 'on' : '') + '">iPhone</button><button type="button" data-atla="aba-android" class="' + (atlS.aba === 'android' ? 'on' : '') + '">Android</button></div>';
   var h = '<p class="atl-intro">Mande o extrato do banco direto do iPhone para o Horus: no extrato, toque em Compartilhar › <b>Enviar extrato ao Horus</b>. O Horus lê o arquivo e mostra a conferência; nada é lançado antes de você confirmar.</p>' + (atlS.nota ? '<div class="atl-nota atl-ok">' + escapeHtml(atlS.nota) + '</div>' : '');
+  if (atlS.aba === 'android') h = atlAndroidHtml(i);
+  else {
   /* 1. código */
   h += '<div class="atl-sec"><div class="atl-t"><span class="atl-n">1</span>Seu código pessoal</div>';
   if (!i.tem){
@@ -25828,6 +26213,7 @@ function atlDesenhar(){
     '<a class="atl-bt" href="shortcuts://create-shortcut">Abrir o app Atalhos</a>' +
     (i.tem ? '' : '<div class="atl-peq">Gere o seu código no passo 1 para liberar a descrição.</div>') +
     '<div class="atl-conf"><b>Conferir antes de salvar:</b><ul><li>O atalho aparece na <b>Folha de Compartilhamento</b> e aceita arquivos.</li><li>Ação <b>Obter conteúdo do URL</b>: método <b>POST</b>, corpo <b>Arquivo</b>.</li><li>Cabeçalho <b>Authorization</b> = <b>Bearer</b> + o seu código (toque em Mostrar acima para comparar).</li><li>Cabeçalho <b>X-Nome</b> = nome do arquivo.</li><li>No fim, só uma <b>notificação</b>.</li></ul><div class="atl-peq">Se o iPhone errar algum ponto, corrija à mão ou descreva de novo. O texto contém o seu código: se achar que vazou, gere um novo.</div></div></div>';
+  }
   /* 3. testar */
   h += '<div class="atl-sec"><div class="atl-t"><span class="atl-n">3</span>Testar</div>' +
     '<div class="atl-lin"><span>Último envio</span><span>' + (i.ultimo ? '<b>' + escapeHtml(atlQuando(i.ultimo.em)) + '</b> · ' + escapeHtml(i.ultimo.nome) : 'nenhum ainda') + '</span></div>' +
@@ -25845,13 +26231,15 @@ function atlDesenhar(){
       return '<div class="atl-lin"><span><b>' + escapeHtml(p.nome) + '</b><br><span class="atl-peq">' + (p.papel === 'proprietario' ? 'proprietário' : (p.papel === 'advogado' ? 'advogado(a)' : 'estagiário(a): não usa')) + '</span></span><span style="text-align:right">' + st + (p.tem && p.papel !== 'proprietario' ? '<br><button type="button" class="atl-mini" data-atla="desligar" data-uid="' + escapeHtml(p.id) + '" data-nome="' + escapeHtml(p.nome) + '">Desligar</button>' : '') + '</span></div>';
     }).join('') + '<div class="atl-peq" style="margin-top:8px">Você não vê o código nem o conteúdo dos extratos de ninguém: só quem tem atalho e quando usou.</div></div>';
   }
-  c.innerHTML = h;
+  c.innerHTML = seg + h;
 }
 function atlAcao(a, bt){
   var i = atlS.info;
   var gerar = function(){ return esJson('/api/atalho/gerar', 'POST', {}).then(function(){ atlS.mostrar = true; atlS.nota = 'Código gerado. Cole-o no atalho do iPhone.'; return atlCarregar(); }).catch(function(e){ toast(e.message); }); };
   if (a === 'gerar') return gerar();
   if (a === 'novo'){ if (!confirm('Gerar um novo código e desligar o atual? O atalho do iPhone vai parar de enviar até você colar o novo código nele.')) return; return gerar(); }
+  if (a === 'aba-iphone' || a === 'aba-android'){ atlS.aba = a === 'aba-android' ? 'android' : 'iphone'; return atlDesenhar(); }
+  if (a === 'promptand'){ if (!i.tem){ toast('Gere o seu código primeiro.'); return; } return atlCopiar(atlPromptAndroid(i.codigo)).then(function(ok){ toast(ok ? 'Instruções copiadas, já com o seu código.' : 'Não consegui copiar.'); }); }
   if (a === 'mostrar'){ atlS.mostrar = !atlS.mostrar; return atlDesenhar(); }
   if (a === 'copiar') return atlCopiar(i.codigo).then(function(ok){ toast(ok ? 'Código copiado.' : 'Não consegui copiar: toque em Mostrar e copie à mão.'); });
   if (a === 'prompt'){ if (!i.tem){ toast('Gere o seu código primeiro.'); return; } return atlCopiar(atlPrompt(i.codigo)).then(function(ok){ toast(ok ? 'Descrição copiada, já com o seu código. Cole em “Descrever um atalho”.' : 'Não consegui copiar.'); }); }
@@ -25869,8 +26257,19 @@ function atlAcao(a, bt){
     '.atl-lin{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:var(--t2)}.atl-t+.atl-lin{border-top:0}.atl-tag{display:inline-block;border-radius:99px;padding:2px 9px;font-size:10.5px;font-weight:800}' +
     '.atl-er{background:#FDE3E3;color:#B42323}.atl-av{background:#FBEFD2;color:#8A5A0B}.atl-cz{background:#EAEEFB;color:#5b6488}.atl-ok2{background:#DDF3E5;color:#16683A}.atl-l{display:block;font-size:var(--t1);font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:10px 0 4px}' +
     '.atl-in{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px;font:inherit;font-size:var(--t3);background:var(--bg);color:var(--ink)}.atl-conf{margin-top:10px;background:var(--bg);border-radius:10px;padding:10px 12px;font-size:var(--t2)}.atl-conf ul{margin:6px 0 0;padding-left:18px;line-height:1.5}.atl-passos{margin:0 0 6px;padding-left:20px;font-size:var(--t2);line-height:1.5}.atl-bt[disabled]{opacity:.5}a.atl-bt{box-sizing:border-box}.atl-mini{border:1px solid var(--border);background:var(--surface);color:var(--urgente);border-radius:8px;padding:3px 9px;font:700 11px system-ui,sans-serif;cursor:pointer;margin-top:4px}';
+  st.textContent += '.atl-seg{display:flex;background:var(--surface-2);border-radius:99px;padding:3px;width:fit-content;margin:0 0 10px}.atl-seg button{border:0;background:transparent;padding:7px 20px;border-radius:99px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.atl-seg button.on{background:#12172A;color:#fff}';
   document.head.appendChild(st);
-  if (typeof CF_LINHAS !== 'undefined') CF_LINHAS.splice(1, 0, { id: 'atalho', ic: 'file-up', t: 'Atalho do iPhone', s: 'mande o extrato do banco direto do celular', go: function(){ atlAbrir(); } });
+  /* voltou do compartilhar do Android: diz quantos arquivos chegaram e abre os extratos */
+  try{
+    var q = new URLSearchParams(location.search);
+    if (q.has('compartilhado')){
+      var n = parseInt(q.get('compartilhado'), 10) || 0, mot = q.get('motivo') || '';
+      history.replaceState(null, '', location.pathname + location.hash);
+      var avisar = function(){ toast(n ? (n + (n === 1 ? ' arquivo recebido' : ' arquivos recebidos') + '. Confira em Extratos.') : (mot || 'Não consegui receber o arquivo.')); if (n){ try{ setActiveTab('extratos'); }catch(e){} } };
+      if (window.__horusEu && window.__horusEu.pronto) setTimeout(avisar, 600); else window.addEventListener('horus-eu', function(){ setTimeout(avisar, 600); }, { once: true });
+    }
+  }catch(e){}
+  if (typeof CF_LINHAS !== 'undefined') CF_LINHAS.splice(1, 0, { id: 'atalho', ic: 'file-up', t: 'Atalho do iPhone e Android', s: 'mande extratos, faturas e documentos direto do celular', go: function(){ atlAbrir(); } });
   /* advogado: a lista simplificada de Minha conta ganha a linha do atalho */
   if (typeof cfRender === 'function'){
     var cfOrig = cfRender;

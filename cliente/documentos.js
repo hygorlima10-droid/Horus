@@ -12,7 +12,7 @@ function dcmDinheiro(c){ return fmtMoeda((c || 0) / 100); }
 function dcmCatId(label){ var l = (typeof CATEGORIAS_LISTA !== 'undefined' ? CATEGORIAS_LISTA : []).filter(function(c){ return c.label === label; })[0]; return l ? l.id : 'outros'; }
 function dcmCatDe(nome){ try{ return extCategoria({ s: nome || '', n: '' }, extCfg().regras); }catch(e){ return 'Outros'; } }
 function dcmPode(){ return ppDono() || ppPapel() === 'advogado' || (typeof ffnAtivo === 'function' && ffnAtivo()); }
-function dcmPendentes(){ return extratos.filter(function(d){ return d.tipo === 'documento' && d.status === 'pendente'; }).sort(function(a, b){ return String(b.lidoEm || '').localeCompare(String(a.lidoEm || '')); }); }
+function dcmPendentes(){ return extratos.filter(function(d){ return d.tipo === 'documento' && d.status === 'pendente' && d.kind !== 'fatura'; }).sort(function(a, b){ return String(b.lidoEm || '').localeCompare(String(a.lidoEm || '')); }); }
 
 /* ---------- ler: linhas de PDF, texto colado ou foto (OCR) → { kind, dados } ---------- */
 function dcmCompactoComprovante(c){
@@ -24,11 +24,13 @@ function dcmDeLinhas(linhas, itens){
   var c = LeitorGeral.classificar(linhas, itens), hoje = todayISO();
   if (c.tipo === 'boleto'){ var b = LeitorGeral.lerBoletoDoc(linhas, hoje); if (b) return { kind: 'boleto', dados: { beneficiario: b.beneficiario, beneficiarioDoc: b.beneficiarioDoc, pagador: b.pagador, banco: b.banco, bancoNome: b.bancoNome, valor: b.valorDocumento != null && b.valor == null ? b.valorDocumento : b.valor, vencimento: b.vencimento, semVencimento: b.semVencimento, linhaFmt: b.linhaFmt, tipo: b.tipo, selo: b.selo, provas: b.provas } }; }
   if (c.tipo === 'contracheque' && typeof ccqAtivo === 'function' && ccqAtivo()){ var cc = LeitorGeral.lerContracheque(linhas); if (cc) return { kind: 'contracheque', dados: ccqCompacto(cc) }; }
+  if (c.tipo === 'fatura'){ var ft = LeitorGeral.lerFaturaPdf(linhas, hoje, itens, linhas && linhas.pag); if (ft) return { kind: 'fatura', dados: ft }; }
   if (c.tipo === 'pix_copia_cola'){ var p = LeitorGeral.acharBRCode(linhas.join('\n')); if (p) return { kind: 'pix', dados: { valor: p.valor, nome: p.nome, cidade: p.cidade, chave: p.chave, txid: p.txid, descricao: p.descricao, dinamico: p.dinamico, selo: p.crcOk ? 'verde' : 'amarelo', provas: [p.crcOk ? 'CRC do Pix confere' : 'CRC do Pix não confere'] } }; }
   if (c.tipo === 'comprovante'){ var m = LeitorGeral.lerComprovante(linhas, hoje); return { kind: 'comprovante', dados: dcmCompactoComprovante(m) }; }
   return null;
 }
-function dcmDeTexto(txt){
+function dcmDeTexto(txt, nome){
+  if (typeof LeitorGeral !== 'undefined' && !/^\s*(OFXHEADER|<OFX)/i.test(String(txt))){ var fc = LeitorGeral.lerFaturaCsv(txt, nome || '', todayISO()); if (fc) return { kind: 'fatura', dados: fc }; }   /* CSV de fatura de cartão */
   var linhas = String(txt || '').split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
   var d = dcmDeLinhas(linhas, null); if (d) return d;
   var bs = typeof LeitorGeral !== 'undefined' ? LeitorGeral.acharBoletos(txt, todayISO()) : [];   /* só a linha digitável colada */
@@ -38,7 +40,7 @@ function dcmDeTexto(txt){
 function dcmRegistrar(nome, d, sig){
   var id = 'dcm_' + sig;
   if (extDocPorId(id)) return Promise.resolve({ jaLido: true, nome: nome });
-  return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ return { ok: true, nome: nome, linhas: 1, documento: true }; });
+  return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ if (d.kind === 'fatura' && typeof fatS !== 'undefined') fatS.aba = 'cartao'; return { ok: true, nome: nome, linhas: 1, documento: true }; });
 }
 function dcmColar(texto){
   texto = String(texto || '').trim(); if (!texto){ toast('Cole a linha digitável do boleto ou o Pix copia e cola.'); return Promise.resolve(); }

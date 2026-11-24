@@ -62,11 +62,19 @@ await dono.click('[data-atla="desligar"]'); dono.on('dialog', (d) => d.accept())
 // estagiária não vê
 const caio = await abrir('caio'); await irConfig(caio);
 check(await caio.evaluate(() => !document.querySelector('[data-cf="atalho"]')), 'a estagiária não vê o atalho');
+// aba Android: compartilhar do Chrome (recomendado) e atalho com código (alternativa)
+const ana2 = await abrir('ana'); await abrirAtalho(ana2);
+await ana2.click('[data-atla="aba-android"]'); await ana2.waitForTimeout(400);
+const tAnd = await ana2.evaluate(() => document.getElementById('overlayAtalhoC').innerText.replace(/\s+/g, ' '));
+check(/Instalar o Horus no celular/i.test(tAnd) && /recomendado/i.test(tAnd) && /Compartilhar/i.test(tAnd) && /HTTP Shortcuts/i.test(tAnd) && /Copiar as instruções do atalho/i.test(tAnd), 'aba Android: instalar o Horus (recomendado) e a alternativa HTTP Shortcuts com o código');
+check(/Neste aparelho/i.test(tAnd) && /Último envio/i.test(tAnd), 'aba Android: mostra se o aparelho está instalado e o último envio');
+await ana2.click('[data-atla="aba-iphone"]'); await ana2.waitForTimeout(300);
+check(/Seu código pessoal/i.test(await ana2.evaluate(() => document.getElementById('overlayAtalhoC').innerText)), 'voltar para a aba iPhone mostra o código pessoal');
 // celular
 const cel = await abrir('ana', 390); await abrirAtalho(cel);
 check(await cel.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no celular a tela cabe na largura');
 if (process.env.FOTO) await cel.screenshot({ path: process.env.FOTO + '/atalho-celular.png' });
 if (process.env.FOTO) await dono.screenshot({ path: process.env.FOTO + '/atalho-dono.png' });
-for (const p of [ana, dono, caio, cel]) check(p.erros.length === 0, 'sem erros de script' + (p.erros[0] ? ': ' + p.erros[0] : ''));
+for (const p of [ana, ana2, dono, caio, cel]) check(p.erros.length === 0, 'sem erros de script' + (p.erros[0] ? ': ' + p.erros[0] : ''));
 await br.close();
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

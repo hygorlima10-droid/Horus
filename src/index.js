@@ -239,21 +239,27 @@ async function tokenConfere(env, request) {
   return d === 0;
 }
 const paraB64 = (buf) => { let s = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
-async function enviar(request, env) {
+/* sessao: envio feito por quem JÁ está logado (compartilhar do Android) { uid }; pronto: { nome, tipo, bytes } já lidos do formulário */
+async function enviar(request, env, sessao, pronto) {
   if (request.method !== 'POST') return erro(405, 'method', 'Use POST.');
-  const ip = request.headers.get('cf-connecting-ip') || 'sem-ip', chave = 'tent-env-' + ip.replace(/[^A-Za-z0-9:._-]/g, '_').slice(0, 60), agora = Date.now();
-  const t = await lerTent(env, chave);
-  if (t.n >= MAX_FALHAS && t.ate > agora) return erro(429, 'rate_limited', 'Muitas tentativas. Aguarde 15 minutos.');
-  const quem = await resolverCodigo(env, request, () => tokenConfere(env, request));   // de quem é o código? (cada pessoa tem o seu; o antigo vale só para o proprietário)
-  if (!quem) {
-    await gravarTent(env, chave, { n: (t.ate > agora ? t.n : 0) + 1, ate: agora + BLOQUEIO_MS });
-    return erro(401, 'not_granted', 'Código inválido.');
+  let quem = null;
+  if (sessao) quem = { uid: sessao.uid, legado: false };
+  else {
+    const ip = request.headers.get('cf-connecting-ip') || 'sem-ip', chave = 'tent-env-' + ip.replace(/[^A-Za-z0-9:._-]/g, '_').slice(0, 60), agora = Date.now();
+    const t = await lerTent(env, chave);
+    if (t.n >= MAX_FALHAS && t.ate > agora) return erro(429, 'rate_limited', 'Muitas tentativas. Aguarde 15 minutos.');
+    quem = await resolverCodigo(env, request, () => tokenConfere(env, request));   // de quem é o código? (cada pessoa tem o seu; o antigo vale só para o proprietário)
+    if (!quem) {
+      await gravarTent(env, chave, { n: (t.ate > agora ? t.n : 0) + 1, ate: agora + BLOQUEIO_MS });
+      return erro(401, 'not_granted', 'Código inválido.');
+    }
   }
   const temR2 = !!env.ARQUIVOS, ct = request.headers.get('content-type') || '';
-  if (Number(request.headers.get('content-length') || 0) > (temR2 ? MAX_ARQ_EXTRATO + 4096 : MAX_B64)) return erro(413, 'quota_exceeded', temR2 ? 'Arquivo grande demais (limite de 25 MB).' : 'Arquivo grande demais (limite de uns 600 KB). Use "Escolher extratos" dentro do app.');
+  if (!pronto && Number(request.headers.get('content-length') || 0) > (temR2 ? MAX_ARQ_EXTRATO + 4096 : MAX_B64)) return erro(413, 'quota_exceeded', temR2 ? 'Arquivo grande demais (limite de 25 MB).' : 'Arquivo grande demais (limite de uns 600 KB). Use "Escolher extratos" dentro do app.');
   let nome = '', tipo = ct.split(';')[0].trim() || 'application/octet-stream', bytes;
   try { nome = decodeURIComponent(request.headers.get('x-nome') || ''); } catch (e) { nome = request.headers.get('x-nome') || ''; }
-  if (/multipart\/form-data/i.test(ct)) {
+  if (pronto) { nome = pronto.nome; tipo = pronto.tipo || tipo; bytes = pronto.bytes; }
+  else if (/multipart\/form-data/i.test(ct)) {
     const f = await request.formData(); let arq = null;
     for (const v of f.values()) if (v && typeof v === 'object' && 'arrayBuffer' in v) { arq = v; break; }
     if (!arq) return erro(400, 'invalid', 'Nenhum arquivo no envio.');
@@ -278,6 +284,22 @@ async function enviar(request, env) {
   await gravar(env, '_recebidos', id, reg);
   try { await registrarUso(env, uid, reg.nome); } catch (e) { console.error('uso do atalho', e); }
   return json({ ok: true, id, nome: nome || 'arquivo', recebido: true });
+}
+/* compartilhar do Android: o app instalado aparece no menu Compartilhar (share_target do manifesto) e o navegador envia os arquivos para cá (POST, formulário).
+   Vale a sessão de quem está logado; cada arquivo vai para a caixa DESSA pessoa (a mesma do atalho do iPhone). Estagiário e familiar sem Finanças não recebem. */
+async function compartilhar(request, env, auth) {
+  const volta = (ok, motivo) => new Response(null, { status: 303, headers: { location: '/?compartilhado=' + ok + (motivo ? '&motivo=' + encodeURIComponent(motivo) : '') } });
+  const p = auth && auth.usuario ? normalizarUsuario(auth.usuario) : null;
+  if (p && (p.papel === 'estagiario' || (p.papel === 'familiar' && !p.modulos.includes('financas')))) return volta(0, 'Este acesso não recebe documentos.');
+  let f; try { f = await request.formData(); } catch (e) { return volta(0, 'Não consegui ler o que foi compartilhado.'); }
+  const uid = auth && auth.usuario && auth.usuario.id ? auth.usuario.id : (await donoId(env)) || '';
+  let ok = 0, motivo = '';
+  for (const v of f.values()) {
+    if (!v || typeof v !== 'object' || !('arrayBuffer' in v)) continue;
+    const bytes = await v.arrayBuffer(), r = await enviar(request, env, { uid }, { nome: v.name || 'arquivo', tipo: v.type || 'application/octet-stream', bytes });
+    if (r.status === 200) ok++; else { try { motivo = (await r.json()).error.message; } catch (e) { motivo = 'Não consegui guardar um dos arquivos.'; } }
+  }
+  return volta(ok, ok ? '' : (motivo || 'Nenhum arquivo foi compartilhado.'));
 }
 /* caixa de entrada de cada pessoa: o proprietário e os advogados leem só os arquivos que chegaram com o código DELES (registro sem `uid` = do proprietário, de antes) */
 async function recebidos(request, env, partes, auth) {
@@ -726,5 +748,6 @@ async function tratar(request, env, ctx) {
     try { return await rota[1](request, env, partes, auth); }
     catch (e) { console.error(e); return erro(500, 'server', 'Erro no servidor.'); }
   }
+  if (url.pathname === '/compartilhar' && request.method === 'POST') return compartilhar(request, env, auth);
   return env.ASSETS.fetch(request);
 }

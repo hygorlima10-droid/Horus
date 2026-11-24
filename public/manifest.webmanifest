@@ -7,6 +7,19 @@
  "background_color": "#0b0e11",
  "theme_color": "#18181b",
  "lang": "pt-BR",
+ "share_target": {
+  "action": "/compartilhar",
+  "method": "POST",
+  "enctype": "multipart/form-data",
+  "params": {
+   "files": [
+    {
+     "name": "arquivos",
+     "accept": ["application/pdf", ".pdf", "text/csv", ".csv", "application/vnd.ms-excel", "text/plain", "image/*", ".ofx", "application/x-ofx", "application/zip", ".zip"]
+    }
+   ]
+  }
+ },
  "icons": [
   {
    "src": "/icon-192.png?v=3",

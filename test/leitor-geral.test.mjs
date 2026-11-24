@@ -195,4 +195,22 @@ const CC = ['Nome Órgão   Município', 'POLÍCIA MILITAR   PLANALTINA', 'Unida
   check(q && q.itens.length === 4 && q.totais.liquido === 60000 && q.selo === 'verde', 'QTDE ilegível ("jo)") vira 0 e a linha continua valendo');
   check(LeitorGeral.lerContracheque(['Olá', 'nada aqui']) === null, 'texto sem tabela de proventos e descontos: não é contracheque');
 }
+
+console.log('\n— Fatura do cartão (CSV e PDF)');
+{
+  const csv = ['date,title,amount', '2026-11-24,IOF de compra internacional,"3,61"', '2026-11-24,IOF de volta de Openai *Chatgpt Subscr,"- 3,61"', '2026-11-24,Openai *Chatgpt Subscr,"103,40"', '2026-11-23,Celeiro Supermercado L,"112,30"', '2026-11-22,Mega Mix - Parcela 1/2,"149,95"', '2026-11-20,B91*Mundo das Utilidad,"7,00"', '2026-10-30,Pagamento recebido,"- 8.611,40"'].join('\n');
+  const f = LeitorGeral.lerFaturaCsv(csv, 'Nubank_2026-12-02.csv', '2026-11-24');
+  check(f && f.itens.length === 4 && f.soma === 37265 && f.vencimento === null && f.dicaVencimento === '2026-12-02', 'CSV Nubank: 4 compras (R$ 372,65), pagamento anterior e IOF que se anula fora, vencimento NÃO vem do nome do arquivo (só dica)');
+  check(f.itens.find((i) => /Mega Mix/.test(i.t)).parcela.n === 1 && f.itens.find((i) => /Mega Mix/.test(i.t)).parcela.m === 2 && !/Parcela/.test(f.itens.find((i) => /Mega Mix/.test(i.t)).t), 'parcela "Parcela 1/2" sai do nome e vira 1 de 2');
+  const pt = ['Data;Descrição;Parcela;Valor (em R$)', '10/11/2026;LOJA A;1/3;"1.234,56"', '11/11/2026;LOJA B;Única;"10,00"', '12/11/2026;ESTORNO LOJA C;;"-5,00"'].join('\n');
+  const g = LeitorGeral.lerFaturaCsv(pt, 'fatura.csv', '2026-11-24');
+  check(g === null || g.itens.length === 3, 'CSV com ponto e vírgula e número 1.234,56 também é lido (ou não confunde com outra coisa)');
+  check(LeitorGeral.lerFaturaCsv('Data,Histórico,Valor,Saldo\n2026-11-01,PIX,10,50\n2026-11-02,PIX,10,40\n2026-11-03,PIX,10,30', 'extrato.csv', '2026-11-24') === null, 'CSV de extrato de conta (com coluna Saldo) não é fatura');
+  const pdf = ['Fatura do cartão', 'Vencimento: 09/11/2026', 'Previsão próx. Fechamento: 02/12/2026', 'Lançamentos: compras e saques', '03/10 SUPERMERCADO TESTE 120,00', '05/10 FARMACIA TESTE 80,00', '20/01 LOJA DA CASA 10/10 60,00', '06/10 ESTORNO -20,00', 'Total dos lançamentos atuais 240,00'];
+  const h = LeitorGeral.lerFaturaPdf(pdf, '2026-11-24');
+  check(LeitorGeral.classificar(pdf).tipo === 'fatura' && h && h.vencimento === '2026-11-09' && h.soma === 24000 && h.selo === 'verde', 'PDF: reconhecido como fatura, vencimento do campo "Vencimento" (não do próximo fechamento) e soma confere com o total');
+  const lp = h.itens.find((i) => /LOJA DA CASA/.test(i.t));
+  check(lp.dc === '2026-01-20' && lp.parcela.n === 10 && lp.d === h.periodo.ate, 'parcela que não é a primeira: data da compra original guardada e competência no mês em que a fatura fecha');
+  check(LeitorGeral.lerFaturaPdf(pdf.filter((x) => !/Vencimento:/.test(x)), '2026-11-24').vencimento === null, 'sem o campo Vencimento: devolve null (o app pergunta)');
+}
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
