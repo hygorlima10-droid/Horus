@@ -3950,6 +3950,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var cod = err && err.code;
     if (cod === 'quota_exceeded') return 'O banco atingiu o limite de registros e não aceita novos cadastros. Baixe um backup e peça ao Claude para liberar espaço.';
     if (cod === 'revoked' || cod === 'not_granted') return 'Sem permissão para salvar agora. Recarregue a página e tente de novo.';
+    if (cod === 'forbidden' && err.message) return err.message;   /* recusa de permissão do servidor: mostra o motivo (ex.: "Estagiário não marca recebimento de honorários.") */
     return 'Não foi possível salvar agora. Tente novamente.';
   }
   function escapeHtml(s){

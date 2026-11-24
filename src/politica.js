@@ -16,6 +16,7 @@ const COM_PROCESSO = new Set(['prazosPub']);                                    
 const LIVRES = new Set(['pecasAprendidas', 'delegadas']);                                        // aprendizado de peças: do escritório todo
 const CONFIG_LIVRE = new Set(['personalizacao', 'preferencias']);                    // documentos de config que cada pessoa pode ler e gravar
 const CAMPOS_PAGTO = ['pago', 'status', 'dataRecebimento', 'recebidoEm', 'parciais'];
+const STATUS_PAGO = /^(recebid[oa]s?|pag[oa]s?)$/i;
 
 const digitos = (s) => String(s == null ? '' : s).replace(/\D/g, '');
 export const normNome = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -154,7 +155,8 @@ export const checarDocConfig = (id, auth) => (ehDono(auth) || (id && CONFIG_LIVR
 /* ---------- pagamento: só quem pode marcar recebimento mexe nestes campos ---------- */
 function nosDePagamento(d) {
   const nos = [];
-  const ver = (n, caminho) => { if (n && typeof n === 'object') { const f = {}; for (const c of CAMPOS_PAGTO) { const v = n[c]; if (v !== undefined && v !== null && v !== false && v !== '' && !(Array.isArray(v) && !v.length)) f[c] = v; } if (Object.keys(f).length) nos.push(caminho + JSON.stringify(f)); } };
+  const ver = (n, caminho) => { if (n && typeof n === 'object') { const f = {}; for (const c of CAMPOS_PAGTO) { const v = n[c]; if (c === 'status' && !STATUS_PAGO.test(String(v || ''))) continue;   /* o `status` da Inicial (pendente, protocolado…) não é pagamento: só conta quando diz que recebeu */
+        if (v !== undefined && v !== null && v !== false && v !== '' && !(Array.isArray(v) && !v.length)) f[c] = v; } if (Object.keys(f).length) nos.push(caminho + JSON.stringify(f)); } };
   const varre = (o, base) => { ver(o, base); if (o && o.avista) ver(o.avista, base + '.avista'); if (o && Array.isArray(o.parcelas)) o.parcelas.forEach((p, i) => ver(p, base + '.parcelas' + i)); };
   varre(d || {}, 'raiz'); if (d && d.exito) varre(d.exito, 'raiz.exito');
   return nos.join('\n');
