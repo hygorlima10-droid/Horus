@@ -1981,6 +1981,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -25047,7 +25048,7 @@ var LeitorGeral = (function(){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), txt = L.join('\n'), N = norm(txt);
     if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
     var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
-    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
+    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (L.filter(function(l){ return !!ccLinhaItem(l); }).length >= 5 && !!ccTotaisPorConta(L)) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
     var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
     var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
     if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
@@ -25078,7 +25079,16 @@ var LeitorGeral = (function(){
      SEM coluna de sinal. Quem é provento e quem é desconto sai da CONTA: os totais do rodapé (Rendimentos, Descontos, Líquido) têm de fechar com a
      soma das linhas (primeiro tenta as primeiras linhas, depois qualquer combinação). Se fechar: selo verde. Entrada: linhas de texto (PDF ou foto).
      ============================================================ */
-  var CC_ITEM = /^(\d{6})\s+(.+?)\s+(\d+(?:\s+de\s+\d+)?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  var CC_ITEM = /^([0-9A-Za-z]{6})\s+(.+?)\s+(\d+\s+de\s+\d+|\S{1,4})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;   /* QTDE ilegível na foto (ex.: "jo)") vira 0 */
+  function ccLinhaItem(l){ var m = CC_ITEM.exec(l.trim()); if (!m || (m[1].match(/\d/g) || []).length < 3 || !/[A-Za-zÀ-ÿ]{3}/.test(m[2])) return null; var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); return { codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : (/^\d+$/.test(m[3]) ? +m[3] : 0), parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }; }
+  /* totais sem depender dos rótulos: uma linha com valores em que rendimentos − descontos = líquido (com ou sem o FGTS na frente) */
+  function ccTotaisPorConta(L){
+    for (var i = L.length - 1; i >= 0; i--){
+      var vs = (L[i].match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(ccCentavos); if (vs.length < 3 || vs.length > 5) continue;
+      for (var k = 0; k + 2 < vs.length; k++) if (vs[k] > 0 && vs[k] - vs[k + 1] === vs[k + 2] && vs[k + 2] > 0) return { rendimentos: vs[k], descontos: vs[k + 1], liquido: vs[k + 2], fgts: k > 0 ? vs[k - 1] : null };
+    }
+    return null;
+  }
   var CC_MESES = 'JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO';
   function ccCentavos(t){ var v = lerValor(String(t).replace(/\s+/g, '')); return v ? v.c : null; }
   function ccCategoria(desc, tipo, parcela){
@@ -25113,7 +25123,7 @@ var LeitorGeral = (function(){
   function lerContracheque(linhas){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).map(function(x){ return x.replace(/\s+$/, ''); }).filter(function(x){ return x.trim(); });
     var N = norm(L.join('\n')), itens = [], i;
-    L.forEach(function(l){ var m = CC_ITEM.exec(l.trim()); if (m){ var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); itens.push({ codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : +m[3], parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }); } });
+    L.forEach(function(l){ var it = ccLinhaItem(l); if (it) itens.push(it); });
     if (itens.length < 3) return null;
     var T = { rendimentos: null, descontos: null, liquido: null, fgts: null, baseIrrf: null }, margem = { consignavel: null, cartao: null };
     for (i = 0; i < L.length; i++){
@@ -25125,15 +25135,17 @@ var LeitorGeral = (function(){
       if (/BASE IRRF/.test(ln)){ var bv = (L[i + 1] || '').split(/\s{2,}/)[0]; T.baseIrrf = ccCentavos(bv); }
       if (/LIMITE CONSIG/.test(ln)){ for (var k2 = i + 1; k2 < Math.min(L.length, i + 4); k2++){ var vs = L[k2].split(/\s{2,}/).map(function(x){ return ccCentavos(x); }).filter(function(x){ return x != null; }); if (vs.length){ margem.consignavel = vs[0]; margem.cartao = vs.length > 1 ? vs[1] : null; break; } } }
     }
+    if (T.rendimentos == null){ var pc = ccTotaisPorConta(L); if (pc){ T.rendimentos = pc.rendimentos; T.descontos = pc.descontos; T.liquido = pc.liquido; if (pc.fgts != null) T.fgts = pc.fgts; } }
     if (T.rendimentos == null){ var m1 = /RENDIMENTOS\s+([\d.,]+)/.exec(N), m2 = /DESCONTOS\s+([\d.,]+)/.exec(N), m3 = /LIQUIDO\s+([\d.,]+)/.exec(N); if (m1) T.rendimentos = ccCentavos(m1[1]); if (m2) T.descontos = ccCentavos(m2[1]); if (m3) T.liquido = ccCentavos(m3[1]); }
-    var provas = [], selo = 'amarelo', marca = null;
+    var provas = [], selo = 'amarelo', marca = null, totaisLidos = T.rendimentos != null && T.descontos != null && T.liquido != null;
     if (T.rendimentos != null) marca = ccSeparar(itens.map(function(x){ return x.valor; }), T.rendimentos);
     if (!marca){ marca = itens.map(function(x){ return /^2/.test(x.codigo) && !/FARDAMENTO$|^FAS/.test(norm(x.desc)); }); provas.push('não consegui separar proventos e descontos pelos totais: confira'); }
     itens.forEach(function(x, k){ x.tipo = marca[k] ? 'provento' : 'desconto'; x.cat = ccCategoria(x.desc, x.tipo, x.parcela); });
     var sp = itens.filter(function(x){ return x.tipo === 'provento'; }).reduce(function(t, x){ return t + x.valor; }, 0), sd = itens.filter(function(x){ return x.tipo === 'desconto'; }).reduce(function(t, x){ return t + x.valor; }, 0);
     if (T.rendimentos == null) T.rendimentos = sp; if (T.descontos == null) T.descontos = sd; if (T.liquido == null) T.liquido = T.rendimentos - T.descontos;
     var fechaP = sp === T.rendimentos, fechaD = sd === T.descontos, fechaL = T.rendimentos - T.descontos === T.liquido;
-    if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
+    if (!totaisLidos) provas.push('não achei os totais do rodapé (rendimentos, descontos e líquido) para conferir: confira linha a linha');
+    else if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
     else { if (!fechaP) provas.push('a soma dos proventos (' + (sp / 100).toFixed(2).replace('.', ',') + ') difere do total "Rendimentos"'); if (!fechaD) provas.push('a soma dos descontos (' + (sd / 100).toFixed(2).replace('.', ',') + ') difere do total "Descontos"'); if (!fechaL) provas.push('rendimentos − descontos não dá o líquido'); }
     var out = { referencia: null, itens: itens, totais: T, margem: margem, servidor: '', cargo: '', orgao: '', selo: selo, provas: provas };
     var mr = new RegExp('REFERENCIA[\\s\\S]{0,160}?(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N) || new RegExp('(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N);
@@ -25205,19 +25217,49 @@ function dcmOcrCarregar(){
   dcmOcrP = new Promise(function(res, rej){ var s = document.createElement('script'); s.src = DCM_OCR_URL; s.onload = function(){ window.Tesseract ? res(window.Tesseract) : rej(new Error('Não consegui carregar a leitura de foto.')); }; s.onerror = function(){ dcmOcrP = null; rej(new Error('Não consegui carregar a leitura de foto (precisa de internet na primeira vez).')); }; document.head.appendChild(s); });
   return dcmOcrP;
 }
+/* prepara a imagem para o OCR: amplia (print pequeno vira ~2400 px de largura, no máximo 3×), tons de cinza e contraste. Sem isso, um print de 860 px perde vírgulas e dígitos. */
+function dcmPreparar(buf){
+  return new Promise(function(res){
+    var orig = new Blob([buf]), url = URL.createObjectURL(orig), img = new Image();
+    img.onload = function(){
+      try{
+        var e = img.width >= 2400 ? 1 : Math.min(3, 2400 / img.width); if (img.height * e > 5000) e = 5000 / img.height;
+        var c = document.createElement('canvas'); c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+        var d = x.getImageData(0, 0, c.width, c.height), px = d.data;
+        for (var i = 0; i < px.length; i += 4){ var g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2], v = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128)); px[i] = px[i + 1] = px[i + 2] = v; }
+        x.putImageData(d, 0, 0); URL.revokeObjectURL(url);
+        c.toBlob(function(b){ res(b || orig); }, 'image/png');
+      }catch(err){ URL.revokeObjectURL(url); res(orig); }
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); res(orig); };
+    img.src = url;
+  });
+}
+function dcmOcrRodar(T, blob, psm){
+  var cfg = Object.assign({ langPath: DCM_OCR_LANG }, window.__dcmOcrCfg || {});   /* idioma português, modelo compacto (cerca de 1,4 MB); o motor baixa uma vez e fica no cache do navegador */
+  return T.createWorker('por', 1, cfg).then(function(w){
+    return w.setParameters({ tessedit_pageseg_mode: psm, preserve_interword_spaces: '1' }).then(function(){ return w.recognize(blob); })
+      .then(function(r){ return w.terminate().then(function(){ return (r && r.data && r.data.text) || ''; }); });
+  });
+}
 function dcmLerImagem(nome, buf){
   var teste = window.__dcmOcrTeste;   /* os testes entram aqui com um texto pronto */
-  var obter = teste ? Promise.resolve(teste(nome)) : dcmOcrCarregar().then(function(T){
+  var obter = teste ? Promise.resolve(teste(nome)).then(function(t){ return { texto: t, d: dcmDeTexto(t) }; }) : dcmOcrCarregar().then(function(T){
     impEstado.info = 'Lendo a foto (na primeira vez baixa o motor de leitura, alguns MB; pode levar um pouco)…'; renderExtratos();
-    var blob = new Blob([buf]);
-    var cfg = Object.assign({ langPath: DCM_OCR_LANG }, window.__dcmOcrCfg || {});   /* idioma português, modelo compacto (cerca de 1,4 MB); o motor baixa uma vez e fica no cache do navegador */
-    return T.recognize(blob, 'por', cfg).then(function(r){ return (r && r.data && r.data.text) || ''; });
+    return dcmPreparar(buf).then(function(blob){
+      /* 1ª leitura em modo de tabela (extrato, contracheque); se não reconhecer, 2ª em modo automático (comprovantes de app) */
+      return dcmOcrRodar(T, blob, '6').then(function(t1){ var d1 = dcmDeTexto(t1); if (d1) return { texto: t1, d: d1 }; return dcmOcrRodar(T, blob, '3').then(function(t2){ return { texto: t2, d: dcmDeTexto(t2) }; }); });
+    });
   });
-  return obter.then(function(texto){
-    var d = dcmDeTexto(texto);
-    if (!d) throw new Error('Li a foto, mas não reconheci como extrato, boleto ou comprovante. Tente uma foto mais nítida e reta, ou envie o PDF.');
+  return obter.then(function(r){
+    var d = r.d;
+    if (!d){
+      var pareceContra = typeof LeitorGeral !== 'undefined' && /PROVENTOS|RENDIMENTOS|CONTRA ?CHEQUE|SERVIDOR/.test(LeitorGeral.norm(r.texto || ''));
+      throw new Error(pareceContra ? 'Parece um contracheque, mas a foto não ficou nítida o bastante para eu conferir os valores. Envie o PDF do contracheque (do portal) ou uma foto ou print maior, reta e sem reflexo.' : 'Li a foto, mas não reconheci como extrato, boleto, comprovante ou contracheque. Tente uma foto mais nítida e reta, ou envie o PDF.');
+    }
     d.dados.viaFoto = true; if (d.dados.selo === 'verde') d.dados.selo = 'amarelo'; (d.dados.provas = d.dados.provas || []).push('lido de foto: confira os valores');
-    return { doc: d, sig: EX.fnv('img|' + String(texto).replace(/\s+/g, ' ').slice(0, 2000)) };
+    return { doc: d, sig: EX.fnv('img|' + String(r.texto).replace(/\s+/g, ' ').slice(0, 2000)) };
   });
 }
 

@@ -421,7 +421,7 @@ var LeitorGeral = (function(){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), txt = L.join('\n'), N = norm(txt);
     if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
     var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
-    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
+    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (L.filter(function(l){ return !!ccLinhaItem(l); }).length >= 5 && !!ccTotaisPorConta(L)) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
     var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
     var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
     if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
@@ -452,7 +452,16 @@ var LeitorGeral = (function(){
      SEM coluna de sinal. Quem é provento e quem é desconto sai da CONTA: os totais do rodapé (Rendimentos, Descontos, Líquido) têm de fechar com a
      soma das linhas (primeiro tenta as primeiras linhas, depois qualquer combinação). Se fechar: selo verde. Entrada: linhas de texto (PDF ou foto).
      ============================================================ */
-  var CC_ITEM = /^(\d{6})\s+(.+?)\s+(\d+(?:\s+de\s+\d+)?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  var CC_ITEM = /^([0-9A-Za-z]{6})\s+(.+?)\s+(\d+\s+de\s+\d+|\S{1,4})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;   /* QTDE ilegível na foto (ex.: "jo)") vira 0 */
+  function ccLinhaItem(l){ var m = CC_ITEM.exec(l.trim()); if (!m || (m[1].match(/\d/g) || []).length < 3 || !/[A-Za-zÀ-ÿ]{3}/.test(m[2])) return null; var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); return { codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : (/^\d+$/.test(m[3]) ? +m[3] : 0), parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }; }
+  /* totais sem depender dos rótulos: uma linha com valores em que rendimentos − descontos = líquido (com ou sem o FGTS na frente) */
+  function ccTotaisPorConta(L){
+    for (var i = L.length - 1; i >= 0; i--){
+      var vs = (L[i].match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(ccCentavos); if (vs.length < 3 || vs.length > 5) continue;
+      for (var k = 0; k + 2 < vs.length; k++) if (vs[k] > 0 && vs[k] - vs[k + 1] === vs[k + 2] && vs[k + 2] > 0) return { rendimentos: vs[k], descontos: vs[k + 1], liquido: vs[k + 2], fgts: k > 0 ? vs[k - 1] : null };
+    }
+    return null;
+  }
   var CC_MESES = 'JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO';
   function ccCentavos(t){ var v = lerValor(String(t).replace(/\s+/g, '')); return v ? v.c : null; }
   function ccCategoria(desc, tipo, parcela){
@@ -487,7 +496,7 @@ var LeitorGeral = (function(){
   function lerContracheque(linhas){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).map(function(x){ return x.replace(/\s+$/, ''); }).filter(function(x){ return x.trim(); });
     var N = norm(L.join('\n')), itens = [], i;
-    L.forEach(function(l){ var m = CC_ITEM.exec(l.trim()); if (m){ var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); itens.push({ codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : +m[3], parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }); } });
+    L.forEach(function(l){ var it = ccLinhaItem(l); if (it) itens.push(it); });
     if (itens.length < 3) return null;
     var T = { rendimentos: null, descontos: null, liquido: null, fgts: null, baseIrrf: null }, margem = { consignavel: null, cartao: null };
     for (i = 0; i < L.length; i++){
@@ -499,15 +508,17 @@ var LeitorGeral = (function(){
       if (/BASE IRRF/.test(ln)){ var bv = (L[i + 1] || '').split(/\s{2,}/)[0]; T.baseIrrf = ccCentavos(bv); }
       if (/LIMITE CONSIG/.test(ln)){ for (var k2 = i + 1; k2 < Math.min(L.length, i + 4); k2++){ var vs = L[k2].split(/\s{2,}/).map(function(x){ return ccCentavos(x); }).filter(function(x){ return x != null; }); if (vs.length){ margem.consignavel = vs[0]; margem.cartao = vs.length > 1 ? vs[1] : null; break; } } }
     }
+    if (T.rendimentos == null){ var pc = ccTotaisPorConta(L); if (pc){ T.rendimentos = pc.rendimentos; T.descontos = pc.descontos; T.liquido = pc.liquido; if (pc.fgts != null) T.fgts = pc.fgts; } }
     if (T.rendimentos == null){ var m1 = /RENDIMENTOS\s+([\d.,]+)/.exec(N), m2 = /DESCONTOS\s+([\d.,]+)/.exec(N), m3 = /LIQUIDO\s+([\d.,]+)/.exec(N); if (m1) T.rendimentos = ccCentavos(m1[1]); if (m2) T.descontos = ccCentavos(m2[1]); if (m3) T.liquido = ccCentavos(m3[1]); }
-    var provas = [], selo = 'amarelo', marca = null;
+    var provas = [], selo = 'amarelo', marca = null, totaisLidos = T.rendimentos != null && T.descontos != null && T.liquido != null;
     if (T.rendimentos != null) marca = ccSeparar(itens.map(function(x){ return x.valor; }), T.rendimentos);
     if (!marca){ marca = itens.map(function(x){ return /^2/.test(x.codigo) && !/FARDAMENTO$|^FAS/.test(norm(x.desc)); }); provas.push('não consegui separar proventos e descontos pelos totais: confira'); }
     itens.forEach(function(x, k){ x.tipo = marca[k] ? 'provento' : 'desconto'; x.cat = ccCategoria(x.desc, x.tipo, x.parcela); });
     var sp = itens.filter(function(x){ return x.tipo === 'provento'; }).reduce(function(t, x){ return t + x.valor; }, 0), sd = itens.filter(function(x){ return x.tipo === 'desconto'; }).reduce(function(t, x){ return t + x.valor; }, 0);
     if (T.rendimentos == null) T.rendimentos = sp; if (T.descontos == null) T.descontos = sd; if (T.liquido == null) T.liquido = T.rendimentos - T.descontos;
     var fechaP = sp === T.rendimentos, fechaD = sd === T.descontos, fechaL = T.rendimentos - T.descontos === T.liquido;
-    if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
+    if (!totaisLidos) provas.push('não achei os totais do rodapé (rendimentos, descontos e líquido) para conferir: confira linha a linha');
+    else if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
     else { if (!fechaP) provas.push('a soma dos proventos (' + (sp / 100).toFixed(2).replace('.', ',') + ') difere do total "Rendimentos"'); if (!fechaD) provas.push('a soma dos descontos (' + (sd / 100).toFixed(2).replace('.', ',') + ') difere do total "Descontos"'); if (!fechaL) provas.push('rendimentos − descontos não dá o líquido'); }
     var out = { referencia: null, itens: itens, totais: T, margem: margem, servidor: '', cargo: '', orgao: '', selo: selo, provas: provas };
     var mr = new RegExp('REFERENCIA[\\s\\S]{0,160}?(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N) || new RegExp('(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N);

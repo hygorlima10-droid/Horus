@@ -1,0 +1,34 @@
+3         Nome Órgão
+[           POLÍCIA MILITAR                                                                                                      Município
+Unidade Administrativa                                                                                               PLANALTINA
+-— | 21º BATALHAO DE POLICIA MILITAR DO ESTADO DE GOIAS
+Nome Servidor                                                                                                                     CPF
+SERVIDOR DE EXEMPLO DA SILVA                                                                                                         000.000.000-00
+000.00000.00-0                             28673                                         01/04/1996                                  Abril/2024
+argo                                                                                                                                 Diploma Lega
+[primeiro Sargento-- Lei 15668 o ES
+Militar                                         Ativo                                 Cargo Efetivo                       33693
+200027 SUBSIDIO EFETIVO                                                                                 200                         11.167,31
+200041 ABONO FARDAMENTO                                                                                                 o                                      50,04
+200044 LOCALIDADE -AC3                                                                                                            55                                      552,00
+200042 FARDAMENTO                                                                                                                                                                              jo)                                                              50,04
+200045 FAS-MILITAR- ATIVO                                                                                                                      o                                              59,29
+800004 IRRF                                                                                                                                         o                                        1.852,55
+800338 CONTRIBUIÇCAO PENSAO E INATIVIDADE                                                                               0                                   1.172,57
+900044 IPASGO BASICO - 6,81%                                                                                                           o                                        680,64
+900128 BANCO INTERMEDIUM - EMPRESTIMO 01                                                                               25 de 96                                   294,00
+900235 BANCO SAFRA - EMPRESTIMO 01                                                                                          31 de 96                                   414,70
+900236 BRB- EMPRESTIMO 01                                                                                                   13 de 96                                  790,05
+900378 UNIMIL-CONTRIBUICAO                                                                     1                            82,00
+900407 BRB- EMPRESTIMO 02                                                                                                       13 de 96                                   342,40
+900414 BRB- EMPRESTIMO 03                                                                                                           13 de 96                                     263,11
+900415 BRB- EMPRESTIMO 04                                                                                                         13 de 96                                  1.092,60
+900424 BANCO SAFRA - EMPRESTIMO 02                                                                                           15 de 96                                    492,90
+900507 BANCO SANTANDER BRASIL - EMPRESTIMO 02                                                    10 de 96                          107,74
+900508 BANCO SANTANDER BRASIL - EMPRESTIMO 03                                                                           6 de 96                                      111,00
+900685  VEMCARD - CARTAO BENEFICIO - SAQUE - LEI 22.449                                                                          1                                         1.116,73
+0,00                                                      11.769,35                                                  8.922,32                                                              2.847,03
+9.994,74                                                          é)                                                                    o)
+Valor Limite Consig | Valor Limite Cartão
+3.908,56                    1.116,73
+

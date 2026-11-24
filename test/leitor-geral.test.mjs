@@ -171,6 +171,17 @@ const CC = ['Nome Órgão   Município', 'POLÍCIA MILITAR   PLANALTINA', 'Unida
   check(e && e.selo === 'verde' && e.referencia === '2026-12' && e.itens.filter((x) => x.cat === 'extra').length === 2 && e.itens.some((x) => x.cat === 'decimo') && e.itens.some((x) => x.cat === 'ferias') && e.itens.some((x) => x.cat === 'abono'), 'SERV EXTRAORDINARIO e AC4 como extras; 13º salário, 1/3 de férias e abono reconhecidos pelo nome');
   const ruim = LeitorGeral.lerContracheque(CC.map((x) => x.replace('8.922,32', '8.922,00')));
   check(ruim.selo === 'amarelo' && ruim.provas.some((p) => /Descontos/.test(p)), 'total que não fecha (descontos 8.922,00): selo AMARELO apontando a diferença');
+  // texto de OCR de um print pequeno do contracheque, lido com a imagem ampliada: colunas com vários espaços, sem os rótulos dos totais
+  const ocr = fs.readFileSync(new URL('./fixtures/contracheque-ocr.txt', import.meta.url), 'utf8').split(/\r?\n/).filter((x) => x.trim());
+  check(LeitorGeral.classificar(ocr).tipo === 'contracheque', 'texto de OCR sem os rótulos dos totais: ainda é reconhecido como contracheque (pela conta rendimentos − descontos = líquido)');
+  const o = LeitorGeral.lerContracheque(ocr);
+  check(o && o.itens.length === 19 && o.totais.rendimentos === 1176935 && o.totais.descontos === 892232 && o.totais.liquido === 284703 && o.selo === 'verde' && o.itens.filter((x) => x.cat === 'consignado').length === 9, 'OCR: as 19 linhas, os totais pela conta, os 9 consignados e selo VERDE');
+  // OCR sem os totais legíveis: nunca dá verde (não há como conferir)
+  const semTot = LeitorGeral.lerContracheque(ocr.filter((x) => !/11\.769,35/.test(x)).concat(['PROVENTOS/DESCONTOS   QTDE   VALOR']));
+  check(semTot && semTot.selo === 'amarelo' && /não achei os totais/.test(semTot.provas.join(' ')), 'sem os totais do rodapé: selo AMARELO ("não achei os totais"), nunca verde');
+  // QTDE ilegível na foto
+  const q = LeitorGeral.lerContracheque(['200027   SUBSIDIO EFETIVO   200   1.000,00', '200041   ABONO FARDAMENTO   jo)   100,00', '800004   IRRF   o   300,00', '900044   IPASGO BASICO   0   200,00', '0,00   1.100,00   500,00   600,00']);
+  check(q && q.itens.length === 4 && q.totais.liquido === 60000 && q.selo === 'verde', 'QTDE ilegível ("jo)") vira 0 e a linha continua valendo');
   check(LeitorGeral.lerContracheque(['Olá', 'nada aqui']) === null, 'texto sem tabela de proventos e descontos: não é contracheque');
 }
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
