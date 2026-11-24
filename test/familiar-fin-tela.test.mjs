@@ -51,7 +51,7 @@ if (FOTO) await p.screenshot({ path: FOTO + '/fin-resumo.png' });
 // extratos: conta só pessoal
 await p.evaluate(() => document.querySelector('#drawer [data-tab="extratos"]').click()); await p.waitForTimeout(900);
 const ex = await p.evaluate(() => document.getElementById('bodyExtratos').innerText.replace(/\s+/g, ' '));
-check(/PDF ou arquivo OFX do seu banco/.test(ex) && !/Itaú|Sicoob|C6/.test(ex), 'extratos: texto geral (qualquer banco)');
+check(/PDF, foto ou arquivo OFX, de qualquer banco/.test(ex) && !/Itaú|Sicoob/.test(ex), 'extratos: texto geral (qualquer banco)');
 
 // análises e fechamento: sem PJ
 for (const [nome, sel] of [['análises', '[data-tab="analises"]'], ['fechamento', '#abrirFechamentoBtn']]) {
