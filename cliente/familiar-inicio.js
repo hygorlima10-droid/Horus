@@ -4,7 +4,7 @@
      - Finanças: despesas pessoais a vencer (fixas e únicas em aberto, também as atrasadas) e o salário previsto ("a receber");
      - Construção: parcela do consórcio, contas da obra a pagar, medições e liberações, checklist (os mesmos avisos da obra).
    Descontos em folha e consignados não entram (já saem do salário). Janela de 7, 15 ou 30 dias; filtro Tudo / Pessoal / Obra quando há os dois módulos.
-   Atrasada em vermelho, vencendo hoje em âmbar; tocar no item abre a ação dele (pagar a despesa, ações da obra, salário).
+   Atrasada em vermelho, vencendo hoje em âmbar; tocar numa despesa ou no salário abre "Salário e fixos" (nada é pago só por tocar); itens da obra abrem as ações da obra.
    ============================================================ */
 var FMI_LS = 'horus.fmi.v1', fmiS = { filtro: 'tudo', janela: 15 };
 try{ var fmiSalvo = JSON.parse(localStorage.getItem(FMI_LS) || '{}'); if ([7, 15, 30].indexOf(fmiSalvo.janela) >= 0) fmiS.janela = fmiSalvo.janela; }catch(e){}
@@ -42,7 +42,7 @@ function fmiItens(){
     });
   }
   if (mods.indexOf('obra') >= 0 && typeof ob7Avisos === 'function'){
-    try{ ob7Avisos().filter(function(a){ return a.tipo !== 'calc' && a.tipo !== 'juros' && a.d <= lim; }).forEach(function(a){ out.push({ d: a.d, titulo: String(a.titulo).replace(/^Obra · /, ''), sub: a.detalhe, tag: 'Obra', tipo: 'obra', av: a.tipo + '|' + a.id, valor: a.valor, entra: a.tipo === 'med' }); }); }catch(e){ console.error('avisos da obra', e); }
+    try{ ob7Avisos().filter(function(a){ return a.tipo !== 'calc' && a.tipo !== 'juros' && a.d <= lim; }).forEach(function(a){ out.push({ d: a.d, titulo: String(a.titulo).replace(/^Obra · /, '').replace(/^./, function(c){ return c.toUpperCase(); }), sub: a.detalhe, tag: 'Obra', tipo: 'obra', av: a.tipo + '|' + a.id, valor: a.valor, entra: a.tipo === 'med' }); }); }catch(e){ console.error('avisos da obra', e); }
   }
   return out.sort(function(a, b){ return a.d.localeCompare(b.d); });
 }
@@ -95,9 +95,7 @@ document.addEventListener('click', function(ev){
   else if (a === 'janela'){ fmiS.janela = Number(b.getAttribute('data-v')); fmiGuardar(); fmiRender(); }
   else if (a === 'financas'){ setActiveTab('financeiro'); }
   else if (a === 'item'){
-    var t = b.getAttribute('data-fmi-tipo'), id = b.getAttribute('data-fmi-id');
-    if (t === 'despesa') iniciarPagamentoDespesa(id);
-    else { setActiveTab('financeiro'); irParaFinTab('pf'); }
+    setActiveTab('financeiro'); irParaFinTab('pf');   /* despesa e salário abrem "Salário e fixos", onde ele paga ou marca com confirmação (nada é pago só por tocar aqui) */
   }
 });
 (function(){

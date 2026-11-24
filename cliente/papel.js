@@ -95,14 +95,15 @@ function ppPor(n){
     '.sem-totais .ini-hero,.sem-totais .ini-kpi,.sem-totais #rsPainel,.sem-totais .rs-wrap,.sem-totais #stats{display:none!important}' +
     '#inicioAcoes{display:flex;flex-wrap:wrap;gap:8px;max-width:none}#inicioAcoes .acao{flex:0 0 auto;min-width:104px;padding:9px 16px}' +
     /* familiar: o menu e a barra de baixo mostram só o que foi liberado; o resto do escritório não aparece */
-    '.papel-familiar #drawer .dr-it,.papel-familiar #drawer .dr-grp,.papel-familiar #btbar .bt-it:not(#btMais):not(.bt-fam):not(.bt-fam-i),.papel-familiar #fabNew,.papel-familiar #finFabMenu,.papel-familiar #menuNav .dr-n{display:none!important}' +
+    '.papel-familiar #drawer .dr-it,.papel-familiar #drawer .dr-grp,.papel-familiar #btbar .bt-it:not(#btMais):not(.bt-fam):not(.bt-fam-i):not(.bt-fam-f),.papel-familiar #fabNew,.papel-familiar #finFabMenu,.papel-familiar #menuNav .dr-n{display:none!important}' +
     '.papel-familiar.fam-obra #drawer .dr-it[data-tab="obra"],.papel-familiar #drawer .dr-it[data-tab="configuracoes"],.papel-familiar #drawer #sairBtn,.papel-familiar.fam-obra #btbar .bt-fam{display:flex!important}' +
     '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="analises"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="extratos"],.papel-familiar.fam-fin #drawer .dr-it#abrirFechamentoBtn,.papel-familiar.fam-fin #btbar .bt-it[data-tab="financeiro"]{display:flex!important}' +
     '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"][data-fin="pj"],.papel-familiar #drawer #abrirRecebiBtn,.papel-familiar [data-transferir-pf],.papel-familiar #finTransfNota,.papel-familiar #finTransfDesp{display:none!important}' +
     '.papel-familiar .cat-pk-lk{display:none!important}' +
-    '.papel-familiar.fam-obra #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-obra #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-i{display:flex!important}' +
+    '.papel-familiar.fam-obra #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-obra #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-f{display:flex!important}' +
     '.papel-familiar #bodyInicio>*:not(#iniSauda):not(#fmiCentral){display:none!important}' +
     '.bt-fam{display:none}' +
+    '.papel-familiar #btbar .bt-fam-i,.papel-familiar #btbar .bt-fam-f{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
   /* quando o servidor responde quem é a pessoa: sai de uma tela que não é dela e ajusta os rótulos */

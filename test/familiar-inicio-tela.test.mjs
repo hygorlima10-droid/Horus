@@ -20,16 +20,17 @@ check(/Tudo em dia/.test(await p.evaluate(() => document.getElementById('fmiCent
 const desp = (id, nome, valor, data) => ({ nome, coluna: 'pf', tipo: 'unica', categoria: 'outros', valor, data, mesReferencia: data.slice(0, 7), pago: false, dataPagamento: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {} });
 await api(p, 'PUT', '/api/db/despesas/i1', desp('i1', 'Energia elétrica', 412.87, iso(-2))); await api(p, 'PUT', '/api/db/despesas/i2', desp('i2', 'Escola', 1200, iso(11))); await api(p, 'PUT', '/api/db/despesas/i3', desp('i3', 'Plano de saúde', 350, iso(25)));
 await api(p, 'PUT', '/api/db/receitasManuais/is1', { coluna: 'pf', descricao: 'Salário (contracheque)', recorrente: true, valorPadrao: 2847.03, data: hoje.slice(0, 7) + '-01', mesReferencia: hoje.slice(0, 7), recebimentos: {}, pausadaAPartirDeMes: null, ccqSalario: true });
+await p.reload(); await p.waitForTimeout(2500);   // os registros criados por API entram no app ao recarregar
 await p.evaluate(() => document.querySelector('#drawer [data-tab="obra"]').click()); await p.waitForTimeout(900);
 await p.click('button:has-text("Criar a obra")'); await p.waitForSelector('#of_ftipo');
 await p.fill('#of_nome', 'Casa'); await p.fill('#of_orc', '320000'); await p.selectOption('#of_fstatus', 'aprovado'); await p.fill('#of_fval', '200000'); await p.fill('#of_fprazo', '180'); await p.fill('#of_cparcela', '1350'); await p.fill('#of_cdia', String(Math.min(28, +hoje.slice(8, 10)))); await p.fill('#of_etnome', 'Fundação'); await p.fill('#of_etorc', '30000'); await p.click('#obraFormSalvar'); await p.waitForTimeout(2000);
 await p.evaluate(() => document.querySelector('#drawer [data-tab="inicio"]').click()); await p.waitForTimeout(1500);
 let l = await itens(p), t = l.join(' | ');
 check(l.length >= 4, 'a central lista os vencimentos (' + l.length + '): ' + t.slice(0, 260));
-check(/Energia elétrica Pessoal atrasada há 2 dias R\$ 412,87/.test(l[0] || ''), 'a despesa atrasada vem primeiro: "atrasada há 2 dias" (R$ 412,87)');
-check(l.some((x) => /Parcela do consórcio Obra/.test(x)), 'a parcela do consórcio aparece com a etiqueta Obra');
-check(l.some((x) => /Escola Pessoal vence em 11 dias R\$ 1\.200,00/.test(x)), 'despesa pessoal que vence em 11 dias');
-check(l.some((x) => /Salário \(contracheque\) A receber .*\+ R\$ 2\.847,03/.test(x)), 'o salário previsto aparece como "A receber" com + R$ 2.847,03');
+check(/Energia elétrica\s*Pessoal\s*atrasada há 2 dias\s*R\$ 412,87/.test(l[0] || ''), 'a despesa atrasada vem primeiro: "atrasada há 2 dias" (R$ 412,87)');
+check(l.some((x) => /Parcela do consórcio\s*Obra/.test(x)), 'a parcela do consórcio aparece com a etiqueta Obra');
+check(l.some((x) => /Escola\s*Pessoal\s*vence em 11 dias\s*R\$ 1\.200,00/.test(x)), 'despesa pessoal que vence em 11 dias');
+check(l.some((x) => /Salário \(contracheque\)\s*A receber .*\+ R\$ 2\.847,03/.test(x)), 'o salário previsto aparece como "A receber" com + R$ 2.847,03');
 check(await p.evaluate(() => !!document.querySelector('#fmiCentral .fmi-d.atr') && !!document.querySelector('#fmiCentral .fmi-w.atr')), 'a atrasada fica em vermelho');
 check(!/Plano de saúde/.test(t), 'o que vence só em 25 dias fica de fora (janela de 15 dias)');
 // filtros e janela
@@ -37,7 +38,7 @@ check(await p.evaluate(() => document.querySelectorAll('#fmiCentral [data-fmi="f
 await p.click('[data-fmi="filtro"][data-v="obra"]'); await p.waitForTimeout(400); l = await itens(p);
 check(l.length >= 1 && l.every((x) => /Obra/.test(x)), 'filtro Obra: só os itens da obra (' + l.length + ')');
 await p.click('[data-fmi="filtro"][data-v="pessoal"]'); await p.waitForTimeout(400); l = await itens(p);
-check(l.length >= 3 && l.every((x) => !/ Obra /.test(x)) && l.some((x) => /Salário/.test(x)), 'filtro Pessoal: despesas e salário, sem a obra');
+check(l.length >= 3 && l.every((x) => !/Obra/.test(x)) && l.some((x) => /Salário/.test(x)), 'filtro Pessoal: despesas e salário, sem a obra');
 await p.click('[data-fmi="filtro"][data-v="tudo"]'); await p.click('[data-fmi="janela"][data-v="30"]'); await p.waitForTimeout(400);
 check((await itens(p)).some((x) => /Plano de saúde/.test(x)), 'janela de 30 dias: o plano de saúde (25 dias) entra');
 await p.click('[data-fmi="janela"][data-v="7"]'); await p.waitForTimeout(400);
@@ -46,8 +47,9 @@ await p.click('[data-fmi="janela"][data-v="15"]'); await p.waitForTimeout(300);
 const rod = await p.evaluate(() => document.querySelector('#fmiCentral .fmi-rod').innerText.replace(/\s+/g, ' '));
 check(/Atrasado: R\$ 412,87/.test(rod) && /Ver tudo em Finanças/.test(rod), 'rodapé com o total atrasado e o atalho para Finanças: ' + rod);
 check(await p.evaluate(() => /^[1-9]/.test(document.getElementById('btBadgeInicio').textContent)), 'o atalho do Início mostra quantos já venceram ou vencem hoje');
-await p.click('[data-fmi="item"][data-fmi-tipo="despesa"]'); await p.waitForTimeout(800);
-check(await p.evaluate(() => document.querySelectorAll('.overlay.show').length > 0 || /pagar|Pagar|pago|Pago/.test(document.body.innerText)), 'tocar numa despesa abre o pagamento dela');
+await p.click('[data-fmi="item"][data-fmi-tipo="despesa"]'); await p.waitForTimeout(900);
+check((await p.locator('#tituloTela').innerText()) === 'Salário e fixos', 'tocar numa despesa abre "Salário e fixos" (não paga sozinho)');
+check(await p.evaluate(async () => !(await (await fetch('/api/db/despesas')).json()).docs.some((d) => d.data.pago === true)), 'nada foi marcado como pago só por tocar');
 check(p.erros.length === 0 && p.recusados.length === 0, 'sem erros de script nem pedidos recusados' + (p.erros.length ? ': ' + p.erros.join(' | ') : '') + (p.recusados.length ? ': ' + [...new Set(p.recusados)].join(' | ') : ''));
 
 // celular
