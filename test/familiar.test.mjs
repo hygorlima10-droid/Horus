@@ -63,6 +63,11 @@ check((await dono('GET', '/api/recebidos')).j.itens.every((i) => i.nome !== 'ext
 check((await fam2('GET', '/api/atalho/pessoas')).s === 403, 'ele não lista os atalhos dos outros');
 r = await fam2('DELETE', '/api/recebidos/' + (await fam2('GET', '/api/recebidos')).j.itens[0].id); check(r.s === 200, 'e pode apagar o que recebeu');
 
+// avisos do celular: só vencimentos da obra e das contas dele (nada de prazos, alertas do escritório nem publicações)
+r = await fam2('PUT', '/api/notif/resumo', { itens: [{ d: '2026-12-10', t: 'obra', n: 'Parcela do consórcio', v: 1350 }], alertas: [{ chave: 'caixa|x', titulo: 'Caixa', detalhe: 'd' }], prazos: [{ d: '2026-12-02', n: 'Proc', l: 'Prazo', t: 'prazo' }] });
+check(r.s === 200 && r.j.itens === 1 && r.j.alertas === 0 && r.j.prazos === 0, 'o resumo do familiar guarda só os vencimentos (sem alertas nem prazos do escritório)');
+r = await fam2('GET', '/api/notif/estado'); check(r.s === 200 && r.j.papel === 'familiar' && !r.j.equipe, 'estado das notificações do familiar: sem avisos da equipe');
+
 // proprietário gerencia o acesso
 r = await dono('GET', '/api/usuarios'); const u6 = r.j.usuarios.find((u) => u.id === 'uf6');
 check(u6 && u6.papel === 'familiar' && JSON.stringify(u6.modulos) === '["obra"]', 'o proprietário vê o familiar e os módulos dele na lista de usuários');

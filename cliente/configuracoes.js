@@ -31,7 +31,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: 'resumo do dia, prazos, indicações e repasses' }, false) + cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: (typeof ppFamiliar === 'function' && ppFamiliar()) ? 'vencimentos da obra e das contas' : 'resumo do dia, prazos, indicações e repasses' }, false) + ((typeof ppFamiliar === 'function' && ppFamiliar()) ? '' : cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false)) + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +

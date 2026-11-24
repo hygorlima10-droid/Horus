@@ -421,7 +421,7 @@ export async function enviarResumoDiario(env, opcoes = {}) {
     let pubs = [];
     if (!opcoes.teste) {
       if (p.dono) pubs = await pubsDoProprietario(env, todasPubs).catch(() => todasPubs);
-      else { const u = p.u || (await usuariosAtivos(env)).find((x) => x.id === p.uid); pubs = u ? await pubsDaPessoa(env, todasPubs, u.norm.oabs, u.norm.papel === 'estagiario' && u.norm.permissoes.verPublicacoes) : []; }
+      else { const u = p.u || (await usuariosAtivos(env)).find((x) => x.id === p.uid); pubs = u && u.norm.papel !== 'familiar' ? await pubsDaPessoa(env, todasPubs, u.norm.oabs, u.norm.papel === 'estagiario' && u.norm.permissoes.verPublicacoes) : []; }
     }
     let lista = opcoes.teste ? [{ tag: 'teste', titulo: 'Notificação de teste', corpo: 'Se você está lendo isto, as notificações do Horus estão funcionando.', url: '/' }] : montarNotificacoes(resumo, { ...cfgDono, ...config, esconder: config.esconder }, enviados, hoje, mes, pubs, prefsDe(config));
     if (opcoes.soPublicacoes) lista = lista.filter((n) => String(n.tag).startsWith('pub-')).map((n) => ({ ...n, tag: n.tag + '-' + new Date().getUTCHours() }));   // releitura da tarde: só as publicações novas, sem repetir o resumo do dia
@@ -491,8 +491,9 @@ async function notif(request, env, partes, auth) {
     let r; try { r = JSON.parse(txt); } catch (e) { return erro(400, 'invalid', 'JSON inválido.'); }
     const limpa = (s) => String(s == null ? '' : s).slice(0, 140);
     const itens = (Array.isArray(r.itens) ? r.itens : []).slice(0, 300).filter((i) => i && /^\d{4}-\d{2}-\d{2}$/.test(i.d || '')).map((i) => ({ d: i.d, t: limpa(i.t), n: limpa(i.n), l: limpa(i.l), v: i.v == null ? null : Number(i.v) || 0 }));
-    const alertas = (Array.isArray(r.alertas) ? r.alertas : []).slice(0, 10).filter((a) => a && a.chave).map((a) => ({ chave: limpa(a.chave), titulo: limpa(a.titulo), detalhe: limpa(a.detalhe) }));
-    const prazos = (Array.isArray(r.prazos) ? r.prazos : []).slice(0, 200).filter((p) => p && /^\d{4}-\d{2}-\d{2}$/.test(p.d || '')).map((p) => ({ d: p.d, h: /^\d{2}:\d{2}$/.test(p.h || '') ? p.h : '', n: limpa(p.n), l: limpa(p.l), t: ['prazo', 'audiencia', 'tarefa'].includes(p.t) ? p.t : 'prazo', a: (Array.isArray(p.a) ? p.a : [5, 2, 1, 0]).map(Number).filter((x) => Number.isInteger(x) && x >= 0 && x <= 30).slice(0, 8) }));
+    const fam = !dono && normalizarUsuario(auth.usuario).papel === 'familiar';   // familiar: só vencimentos da obra e das contas dele; nada de prazos, alertas do proprietário ou publicações
+    const alertas = fam ? [] : (Array.isArray(r.alertas) ? r.alertas : []).slice(0, 10).filter((a) => a && a.chave).map((a) => ({ chave: limpa(a.chave), titulo: limpa(a.titulo), detalhe: limpa(a.detalhe) }));
+    const prazos = fam ? [] : (Array.isArray(r.prazos) ? r.prazos : []).slice(0, 200).filter((p) => p && /^\d{4}-\d{2}-\d{2}$/.test(p.d || '')).map((p) => ({ d: p.d, h: /^\d{2}:\d{2}$/.test(p.h || '') ? p.h : '', n: limpa(p.n), l: limpa(p.l), t: ['prazo', 'audiencia', 'tarefa'].includes(p.t) ? p.t : 'prazo', a: (Array.isArray(p.a) ? p.a : [5, 2, 1, 0]).map(Number).filter((x) => Number.isInteger(x) && x >= 0 && x <= 30).slice(0, 8) }));
     await gravarReservado(env, 'resumo' + s, { geradoEm: new Date().toISOString(), itens, alertas, prazos });
     return json({ ok: true, itens: itens.length, alertas: alertas.length, prazos: prazos.length });
   }

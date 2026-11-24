@@ -38,29 +38,30 @@ function ntCarregar(){
 function ntResumo(){
   var hoje = todayISO(), lim = somarDias(hoje, 45), itens = [];
   var papelNt = (typeof ppPapel === 'function') ? ppPapel() : 'proprietario';
-  if (papelNt !== 'estagiario') listarUnidades().forEach(function(u){
+  var fam = papelNt === 'familiar', famFin = fam && ffnAtivo(), famObra = fam && ppFamModulos().indexOf('obra') >= 0;   /* familiar: só vencimentos da obra e das contas dele */
+  if (papelNt !== 'estagiario' && !fam) listarUnidades().forEach(function(u){
     var d = anDocDaUnidade(u);
     if (restanteUn(u) <= 0.004 || !u.data || u.data < hoje || u.data > lim || u.arquivado || (d && d.atipica)) return;
     itens.push({ d: u.data, t: u.docTipo === 'alvara' ? 'alvara' : 'pagamento', n: u.cliente, l: u.labelAlerta || u.label, v: r2(restanteMeu(u)) });
   });
   var m0 = hoje.slice(0, 7);
-  if (papelNt === 'proprietario') [m0, deslocarMes(m0, 1)].forEach(function(m){
+  if (papelNt === 'proprietario' || famFin) [m0, deslocarMes(m0, 1)].forEach(function(m){
     comMes(m, function(){
-      ['pj', 'pf'].forEach(function(col){
+      (fam ? ['pf'] : ['pj', 'pf']).forEach(function(col){
         getDespesasParaMes(col).forEach(function(it){
           if (it.pago || it.despesa.transferenciaId || !it.vencimento || it.vencimento < hoje || it.vencimento > lim) return;
           var v = (it.valor !== null && it.valor !== undefined) ? Math.max(0, r2(it.valor - (it.somaParcial || 0))) : null;
-          itens.push({ d: it.vencimento, t: 'despesa', n: it.despesa.nome + ' (' + (col === 'pf' ? 'PF' : 'PJ') + ')', l: '', v: v });
+          itens.push({ d: it.vencimento, t: 'despesa', n: it.despesa.nome + (fam ? '' : ' (' + (col === 'pf' ? 'PF' : 'PJ') + ')'), l: '', v: v });
         });
       });
       return 0;
     });
   });
-  try{ if (papelNt === 'proprietario' && typeof ob7Itens === 'function') ob7Itens(hoje, lim).forEach(function(i){ itens.push(i); }); }catch(e){}
+  try{ if ((papelNt === 'proprietario' || famObra) && typeof ob7Itens === 'function') ob7Itens(hoje, lim).forEach(function(i){ itens.push(i); }); }catch(e){}
   var alertas = []; /* atrasos de clientes você confere no app: só chegam alertas de caixa, reserva, despesas e alvarás */
   try{ if (papelNt === 'proprietario') alertas = paAlertas().filter(function(a){ return String(a.chave).indexOf('cliente|') !== 0; }).map(function(a){ return { chave: a.chave, titulo: a.titulo, detalhe: a.detalhe }; }); }catch(e){}
   var prazos = []; /* prazos processuais, audiências e tarefas da Agenda: aviso separado do dinheiro */
-  try{ prazos = agPrazosResumo(hoje, somarDias(hoje, 10)); }catch(e){ console.error('prazos', e); }
+  try{ if (!fam) prazos = agPrazosResumo(hoje, somarDias(hoje, 10)); }catch(e){ console.error('prazos', e); }
   return { itens: itens, alertas: alertas, prazos: prazos };
 }
 var ntAtraso = null, ntUltimo = '';
@@ -124,8 +125,8 @@ function ntSwitch(attr, k, ligado, titulo, sub){
 }
 function ntDesenhar(){
   var c = qs('ntCorpo'); if (!c) return;
-  var neste = ntEstado.neste, dono = ntEstado.papel === 'proprietario', av = ntEstado.avisos || {}, eq = ntEstado.equipe || {};
-  var intro = dono
+  var neste = ntEstado.neste, dono = ntEstado.papel === 'proprietario', famNt = ntEstado.papel === 'familiar', av = ntEstado.avisos || {}, eq = ntEstado.equipe || {};
+  var intro = famNt ? 'Todo dia às <b>10:00</b> chega uma notificação com o que <b>vence hoje</b> nas suas contas e na sua obra (contas a pagar, parcela do consórcio, medições). Os atrasos você confere no app.' : dono
     ? 'Todo dia às <b>10:00</b> chega uma notificação com o que <b>vence hoje</b>. Os atrasos você confere no app. Os alertas do app também avisam, uma vez por mês cada um, sem repetir. Prazos processuais e audiências avisam nos dias de antecedência escolhidos em cada um.'
     : 'Todo dia às <b>10:00</b> chega o resumo do que <b>é seu</b>: prazos, audiências e tarefas em que você é responsável' + (ntEstado.papel === 'advogado' ? ' e as publicações das suas OABs' : '') + '. Cada pessoa liga os avisos no próprio celular.';
   c.innerHTML = '<div class="parcela-sum">' + intro + '</div>' +
@@ -133,7 +134,7 @@ function ntDesenhar(){
     (ntEstado.resumoEm ? '<div class="cli-linha"><span class="l">Lista de vencimentos atualizada em</span><span>' + escapeHtml(extFmtQuando(ntEstado.resumoEm)) + '</span></div>' : '') + '</div>' +
     (neste ? '<button type="button" class="btn btn-ghost" data-nt="desativar" style="width:100%;justify-content:center;">Desativar neste aparelho</button>' : '<button type="button" class="btn btn-primary" data-nt="ativar" style="width:100%;justify-content:center;">Ativar avisos neste aparelho</button>') +
     '<div class="pb-sec-t" style="margin:14px 4px 4px">O que receber neste celular</div><div class="nt-lista">' +
-    NT_AVISOS.filter(function(x){ return !(x[0] === 'repasses' && ntEstado.papel === 'estagiario'); }).map(function(x){ return ntSwitch('data-ntav', x[0], av[x[0]] !== false, x[1], (dono && x[0] === 'resumo') ? 'o que vence hoje e nos próximos dias' : x[2]); }).join('') +
+    NT_AVISOS.filter(function(x){ return famNt ? x[0] === 'resumo' : !(x[0] === 'repasses' && ntEstado.papel === 'estagiario'); }).map(function(x){ return ntSwitch('data-ntav', x[0], av[x[0]] !== false, famNt ? 'Vencimentos de hoje · 10:00' : x[1], famNt ? 'contas a pagar, parcela do consórcio e medições da obra' : ((dono && x[0] === 'resumo') ? 'o que vence hoje e nos próximos dias' : x[2])); }).join('') +
     (dono ? '<label class="nt-op"><span class="nt-tx"><b>Alertas do app</b><small>caixa previsto, reserva, despesas e alvarás</small></span><input type="checkbox" class="nt-sw" id="ntAlertas"' + (ntEstado.config.alertas ? ' checked' : '') + '></label>' : '') +
     '<label class="nt-op"><span class="nt-tx"><b>Esconder nomes e valores</b><small>a notificação só diz quantos itens vencem</small></span><input type="checkbox" class="nt-sw" id="ntEsconder"' + (ntEstado.config.esconder ? ' checked' : '') + '></label></div>' +
     (dono && ntEstado.equipe ? '<div class="pb-sec-t" style="margin:14px 4px 4px">Avisos da equipe · me avise quando…</div><div class="nt-lista">' + NT_EQUIPE.map(function(x){ return ntSwitch('data-nteq', x[0], eq[x[0]] === true, x[1], x[2]); }).join('') + '</div>' : '') +
