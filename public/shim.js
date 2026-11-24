@@ -27,7 +27,7 @@
     if (url.charAt(0) !== '/' || url.indexOf('/api/') !== 0) return fetchOrig(entrada, opcoes);
     var decidir = function () {
       if (EU.papel !== 'familiar') return fetchOrig(entrada, opcoes);
-      var partes = url.slice(5).split('?')[0].split('/'), ok = !!ROTAS_FAM[partes[0]] && (partes[0] !== 'db' || famPermite(partes[1]));
+      var partes = url.slice(5).split('?')[0].split('/'), ok = (!!ROTAS_FAM[partes[0]] || ((partes[0] === 'recebidos' || partes[0] === 'atalho') && (EU.modulos || []).indexOf('financas') >= 0)) && (partes[0] !== 'db' || famPermite(partes[1]));
       if (ok) return fetchOrig(entrada, opcoes);
       return Promise.resolve(new Response(JSON.stringify({ error: { code: 'forbidden', message: 'Esta área não está liberada para o seu acesso.' } }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8' } }));
     };

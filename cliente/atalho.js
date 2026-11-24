@@ -105,7 +105,7 @@ function atlAcao(a, bt){
     var cfOrig = cfRender;
     cfRender = function(){
       cfOrig.apply(this, arguments);
-      try{ var w = qs('cfWrap'), m = w && w.querySelector('.pb-menu'); if (m && typeof ppPapel === 'function' && ppPapel() === 'advogado' && !m.querySelector('[data-cf="atalho"]')) m.insertAdjacentHTML('beforeend', cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'atalho'; })[0], false)); }catch(e){}
+      try{ var w = qs('cfWrap'), m = w && w.querySelector('.pb-menu'); if (m && typeof ppPapel === 'function' && (ppPapel() === 'advogado' || (typeof ffnAtivo === 'function' && ffnAtivo())) && !m.querySelector('[data-cf="atalho"]')) m.insertAdjacentHTML('beforeend', cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'atalho'; })[0], false)); }catch(e){}
     };
   }
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { atlAbrir: atlAbrir, atlS: atlS, atlPrompt: atlPrompt });

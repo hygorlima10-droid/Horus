@@ -25,7 +25,7 @@ export function novoCodigo() {
   for (const x of b) s += ALFABETO[x % ALFABETO.length];
   return s.match(/.{4}/g).join('-');
 }
-const podeTer = (auth) => ehDono(auth) || normalizarUsuario(auth.usuario).papel === 'advogado';
+const podeTer = (auth) => { if (ehDono(auth)) return true; const u = normalizarUsuario(auth.usuario); return u.papel === 'advogado' || (u.papel === 'familiar' && u.modulos.includes('financas')); };
 const uidDe = async (env, auth) => { if (auth && auth.usuario && auth.usuario.id) return auth.usuario.id; const d = await env.DB.prepare("SELECT id FROM docs WHERE colecao = ? AND json_extract(dados, '$.papel') = 'proprietario' LIMIT 1").bind(COL_USU).first(); return d ? d.id : ''; };
 async function lerDoc(env, id) { const r = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(COL, id).first(); return r ? JSON.parse(r.dados) : null; }
 const gravarDoc = (env, id, d) => env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?) ON CONFLICT(colecao,id) DO UPDATE SET dados=excluded.dados, atualizado=excluded.atualizado').bind(COL, id, JSON.stringify(d), Date.now()).run();
@@ -83,7 +83,7 @@ export async function atalhoRotas(request, env, partes, auth) {
     for (const r of results) {
       const u = JSON.parse(r.dados); if (u.ativo === false) continue;
       const papel = normalizarUsuario({ ...u, id: r.id }).papel, d = await lerDoc(env, 'u:' + r.id);
-      out.push({ id: r.id, nome: String(u.nome || '').slice(0, 80), papel, aplica: papel !== 'estagiario', tem: !!d, ultimo: d && d.ultimoEm ? d.ultimoEm : '' });
+      out.push({ id: r.id, nome: String(u.nome || '').slice(0, 80), papel, aplica: papel === 'proprietario' || papel === 'advogado' || (papel === 'familiar' && (normalizarUsuario({ ...u, id: r.id }).modulos || []).includes('financas')), tem: !!d, ultimo: d && d.ultimoEm ? d.ultimoEm : '' });
     }
     return json({ pessoas: out.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')) });
   }

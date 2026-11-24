@@ -63,7 +63,8 @@ function mfReservaEm(fim){   /* o mesmo critério de anPatrimonioEm: soma dos mo
 /* ---------------- VISÃO GERAL DO FINANCEIRO ---------------- */
 function mfResumo(){
   var hoje = todayISO(), mA = hoje.slice(0, 7), ehAtual = mesSelecionado === mA, pat = computePatrimonio(), d = null, pr = null;
-  try{ d = comMes(mA, computeDivisao); }catch(e){ console.error('divisão', e); }
+  var fam = ffnAtivo();   /* familiar: só PF; sem a divisão da PJ (pró-labore, lucros, folga) */
+  try{ if (fam) d = { reservaMeta: metas.filter(function(m){ return m.tipo === 'reserva'; })[0] || null, res: computeReservaInfo() }; else d = comMes(mA, computeDivisao); }catch(e){ console.error('divisão', e); }
   try{ pr = anProjecao(6); }catch(e){ console.error('projeção', e); }
   var mesesHoje = anMesesAte(6), fimDe = function(m){ return m === mA ? hoje : anUltimoDia(m); };
   /* patrimônio: evolução pelos saldos informados */
@@ -72,20 +73,22 @@ function mfResumo(){
   var hero = '<div class="md-card mf-hero"><div class="md-h"><span class="md-k">' + mdIc('landmark', MD_COR.ouro) + '<span>Patrimônio líquido</span></span><button type="button" class="md-link" data-md-ir="aba:patrimonio">ver composição ›</button></div>' +
     '<b class="mf-big">' + fmtMoeda(pat.total) + '</b>' + (delta !== null ? '<span class="fv-chip ' + (delta >= 0 ? 'ok' : 'neg') + '">' + (delta >= 0 ? '▲ ' : '▼ ') + fmtMoeda(Math.abs(delta)) + ' vs. fim de ' + escapeHtml(mdMesAno(deslocarMes(mA, -1))) + '</span>' : '') +
     (evo.length >= 2 ? mdLinha(evo.map(function(x){ return x.m; }), evo.map(function(x){ return x.v; }), MD_COR.ouro, { id: 'pat', fmt: mfMil, dinheiro: true, titulo: 'Evolução do patrimônio' }) : '<div class="md-foot" style="margin:10px 0">A evolução aparece quando houver saldo informado em mais de um mês.</div>') +
-    '<div class="md-foot">PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf) + ' · Metas ' + fmtMoeda(pat.totalMetas) + (Math.abs(pat.obraSaldo) > 0.004 ? ' · Obra ' + fmtMoeda(pat.obraSaldo) : '') + (pat.repasseAPagar > 0.004 ? ' · Repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : '') + '</div></div>';
+    '<div class="md-foot">' + (fam ? 'Contas ' : 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ') + fmtMoeda(pat.saldoPf) + ' · Metas ' + fmtMoeda(pat.totalMetas) + (Math.abs(pat.obraSaldo) > 0.004 ? ' · Obra ' + fmtMoeda(pat.obraSaldo) : '') + (pat.repasseAPagar > 0.004 ? ' · Repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : '') + '</div></div>';
   var rec = anRecebidoMes(mesSelecionado), pago = comMes(mesSelecionado, function(){ return r2(computeDespesasResumoMes('pj').pago + computeDespesasResumoMes('pf').pago); });
-  var kp = [
-    { ir: 'aba:pj', ic: 'briefcase-business', cor: MD_COR.azul, rot: 'Saldo da PJ', v: fmtMoeda(pat.saldoPj), foot: escapeHtml(idadeSaldo('pj')) },
-    { ir: 'aba:pf', ic: 'user-round', cor: MD_COR.azul, rot: 'Saldo da PF', v: fmtMoeda(pat.saldoPf), foot: escapeHtml(idadeSaldo('pf')) }];
+  var kp = (fam ? [] : [{ ir: 'aba:pj', ic: 'briefcase-business', cor: MD_COR.azul, rot: 'Saldo da PJ', v: fmtMoeda(pat.saldoPj), foot: escapeHtml(idadeSaldo('pj')) }]).concat([
+    { ir: 'aba:pf', ic: 'user-round', cor: MD_COR.azul, rot: fam ? 'Saldo da conta' : 'Saldo da PF', v: fmtMoeda(pat.saldoPf), foot: escapeHtml(idadeSaldo('pf')) }]);
   if (d && d.reservaMeta){
     var pc = d.res.alvo > 0 ? Math.min(100, d.res.atual / d.res.alvo * 100) : 0;
     kp.push({ ir: 'aba:patrimonio', ic: 'piggy-bank', cor: MD_COR.verde, rot: 'Reserva de emergência', v: d.res.alvo > 0 ? fmtPerc(pc) : fmtMoeda(d.res.atual), foot: (d.res.alvo > 0 ? fmtMoeda(d.res.atual) + ' de ' + fmtMoeda(d.res.alvo) : 'sem alvo definido') + '<div class="mf-bar"><i style="width:' + pc + '%"></i></div>' });
   } else kp.push({ ir: 'aba:geral', ic: 'piggy-bank', cor: MD_COR.cinza, rot: 'Reserva de emergência', v: '—', foot: 'ainda não há meta de reserva' });
-  if (d){
+  if (fam){
+    var rpf = computeResultadoMes('pf'), sob = rpf.vaiSobrarFinal;
+    kp.push({ ir: 'aba:pf', ic: 'calendar-check', cor: sob >= -0.005 ? MD_COR.ouro : MD_COR.verm, rot: sob >= -0.005 ? 'Vai sobrar no fim do mês' : 'Vai faltar no fim do mês', v: fmtMoeda(Math.abs(sob)), cls: sob >= -0.005 ? '' : 'neg', foot: rpf.modo === 'caixa' ? 'caixa de hoje menos o que falta pagar' : 'recebido menos despesas do mês' });
+  } else if (d){
     kp.push({ ir: 'aba:geral', ic: 'trending-up', cor: d.folgaPJ >= 0 ? MD_COR.verde : MD_COR.verm, rot: d.folgaPJ >= 0 ? 'Folga projetada da PJ' : 'Falta projetada na PJ', v: fmtMoeda(Math.abs(d.folgaPJ)), cls: d.folgaPJ >= 0 ? 'ok' : 'neg', foot: 'depois das despesas pendentes' + (d.margem > 0 ? ' e do caixa mínimo' : '') + ' · projeção, ainda não é dinheiro' });
     kp.push({ ir: 'aba:pf', ic: 'calendar-check', cor: d.pfFecha >= -0.005 ? MD_COR.ouro : MD_COR.verm, rot: d.pfFecha >= -0.005 ? 'Fechamento projetado da PF' : 'Falta projetada na PF', v: fmtMoeda(Math.abs(d.pfFecha)), cls: d.pfFecha >= -0.005 ? '' : 'neg', foot: d.faltaPF > 0.005 ? 'contando ' + fmtMoeda(d.faltaPF) + ' que ainda vem da PJ' : 'projeção do mês' });
   }
-  kp.push({ ir: 'aba:pj', ic: 'circle-dollar-sign', cor: MD_COR.verde, rot: 'Recebido em ' + escapeHtml(mdMesAno(mesSelecionado)), v: fmtMoeda(rec.total), cls: rec.total > 0.004 ? 'ok' : '', foot: 'despesas pagas no mês: ' + fmtMoeda(pago) });
+  kp.push({ ir: fam ? 'aba:pf' : 'aba:pj', ic: 'circle-dollar-sign', cor: MD_COR.verde, rot: 'Recebido em ' + escapeHtml(mdMesAno(mesSelecionado)), v: fmtMoeda(rec.total), cls: rec.total > 0.004 ? 'ok' : '', foot: 'despesas pagas no mês: ' + fmtMoeda(pago) });
   var h = (ehAtual ? '' : '<div class="mf-aviso">Saldos, folga, fechamento e reserva são os de hoje. O recebido e os gráficos seguem o mês escolhido no topo (' + escapeHtml(mesLabel(mesSelecionado)) + ').</div>') +
     '<div class="mf-topo">' + hero + kp.map(mdKpi).join('') + '</div>';
   /* receitas × despesas */
@@ -113,7 +116,7 @@ function mfResumo(){
       '<div class="md-foot">Guardado ' + fmtMoeda(d.res.atual) + (d.res.alvo > 0 ? ' · alvo ' + fmtMoeda(d.res.alvo) + (d.res.alvo - d.res.atual > 0.004 ? ' · faltam ' + fmtMoeda(d.res.alvo - d.res.atual) : ' · alvo atingido') : '') + '</div>', ['aba:patrimonio', 'ver aportes']);
   }
   /* distribuição do mês (a mesma conta da Divisão do mês) */
-  if (d){
+  if (d && !fam){
     var partes = [['PF · pró-labore', d.proPart, d.feitoPro, MD_COR.azul], ['PF · lucros', d.lucPart, d.feitoLuc, MD_COR.roxo], ['Reserva de emergência', d.metaRes, d.aportadoRes, MD_COR.verde], ['Caixa que fica na PJ', d.metaPJ, null, MD_COR.ouro]].filter(function(x){ return x[1] > 0.005; });
     var totP = partes.reduce(function(t, x){ return t + x[1]; }, 0), falta = [];
     if (d.faltaPF > 0.005) falta.push('transferir ' + fmtMoeda(d.faltaPF) + ' para a PF'); if (d.faltaRes > 0.005) falta.push('aportar ' + fmtMoeda(d.faltaRes) + ' na reserva');
@@ -129,7 +132,7 @@ function mfResumo(){
     });
     if (pr.linhas[0] && pr.linhas[0].atrasados > 0.004) at.push({ ic: 'hand-coins', cor: MD_COR.verm, t: 'Recebimentos de clientes em atraso', s: 'parcelas vencidas ainda não recebidas', v: fmtMoeda(pr.linhas[0].atrasados), ir: 'clientes', neg: true });
   }
-  if (d){
+  if (d && !fam){
     if (d.faltaPro > 0.005) at.push({ ic: 'arrow-left-right', cor: MD_COR.azul, t: 'Transferência para a PF', s: 'planejada, ainda não feita', v: fmtMoeda(d.faltaPro), ir: 'aba:geral' });
     if (d.faltaRes > 0.005) at.push({ ic: 'piggy-bank', cor: MD_COR.verde, t: 'Aporte na reserva', s: 'planejado, ainda não feito', v: fmtMoeda(d.faltaRes), ir: 'aba:geral' });
     d.alertas.filter(function(a){ return a.nivel === 'aviso'; }).forEach(function(a){ at.push({ ic: 'info', cor: MD_COR.ouro, t: a.texto, s: 'aviso da divisão do mês', v: '', ir: 'aba:geral', longo: true }); });
@@ -216,8 +219,8 @@ function mfObraResumo(r, cfg){
   var aportado = r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0) + (r.aportes.terceiro || 0) - (r.retirado || 0)), falta = Math.max(0, r2(proprios - aportado));
   var cProprios = '<div class="md-card mf-proprios"><div class="md-h"><span class="md-k">' + mdIc('coins', MD_COR.verde) + '<span>Recursos próprios necessários</span></span></div><b class="mf-big">' + fmtMoeda(proprios) + '</b>' +
     '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − ' + (fin.tipo === 'consorcio' ? 'consórcio' : 'financiamento') + ' ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + obSitCred(fin) + ')</em>' : (fin.tipo === 'consorcio' ? 'sem valor de consórcio informado: o custo estimado inteiro é recurso próprio' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio')) + '</div>' +
-    cal(obSoObra() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
-    '<div class="md-foot">' + (obSoObra() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
+    cal(obSoPF() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
+    '<div class="md-foot">' + (obSoPF() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
   var nAPagar = obraMov.filter(function(m){ return m.tipo === 'gasto' && m.status === 'apagar'; }).length;
   var kp = [
     { ir: 'sub:etapas', ic: 'hard-hat', cor: MD_COR.ouro, rot: 'Orçamento', v: fmtMoeda(r.orcamento), foot: r.orcamento > 0 ? fmtPerc(r.detalhado / r.orcamento * 100) + ' detalhado em etapas' : 'sem orçamento definido' },
@@ -232,7 +235,7 @@ function mfObraResumo(r, cfg){
   var g = mdCard('Orçado × realizado por etapa', !ets.length ? '<div class="md-vazio">Nenhuma etapa com valor. Use “Adicionar etapa” na sub-aba Etapas.</div>' :
     mdBarras(ets.map(function(x){ return x.e.id; }), ets.map(function(x){ return x.orcado; }), ets.map(function(x){ return r2(x.pago + x.aPagar); }), { sel: sel, ca: '#B9B7AE', cb: MD_COR.ouro, ra: 'orçado', rb: 'realizado', rot: function(i){ return curto(ets[i].e.nome); }, tit: function(i){ return String(ets[i].e.nome).slice(0, 16); }, titulo: 'Orçado e realizado por etapa' }) +
     mdLeg([['#B9B7AE', 'Orçado'], [MD_COR.ouro, 'Realizado (pago + a pagar)']]) + '<div class="md-foot">' + (sel != null ? 'Toque de novo em <b>' + escapeHtml(ets[sel].e.nome) + '</b> para ver os gastos dessa etapa.' : 'Toque numa etapa para ver os valores.') + '</div>', ['sub:etapas', 'abrir as etapas']);
-  var fontes = [[obSoObra() ? 'Recursos próprios' : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
+  var fontes = [[obSoPF() ? (ffnAtivo() ? 'Da minha conta' : 'Recursos próprios') : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
   var totF = fontes.reduce(function(t, x){ return t + x[1]; }, 0);
   g += mdCard('De onde veio o dinheiro', !fontes.length ? '<div class="md-vazio">Nenhum aporte ou liberação ainda.</div>' : (discreto ? mdOculto() :
     '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center">' + mdRosca(fontes, mdCompacto(totF), 'entrou na obra') + '<div style="flex:1;min-width:170px">' + fontes.map(function(x){ return '<button type="button" class="md-fase" style="grid-template-columns:minmax(0,1fr) auto" data-md-ir="sub:caixa"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + x[2] + ';margin-right:7px"></i>' + escapeHtml(x[0]) + '</span><b>' + fmtMoeda(x[1]) + '</b></button>'; }).join('') + '</div></div>'), ['sub:caixa', 'ver entradas']);

@@ -1965,6 +1965,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -6840,7 +6846,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       '<div class="fp-nota" style="margin-top:8px;">' + escapeHtml(legendaResultado(resultado)) + (faltaPF ? ' A Visão geral mostra o fechamento já com a transferência da PJ; aqui ela aparece separada porque ainda não entrou na conta.' : '') + '</div></div>';
     var total = despesasResumo.pago + despesasResumo.pendente, pct = total > 0 ? Math.min(100, despesasResumo.pago / total * 100) : 0;
     var nomes = { fixa: 'Fixas', variavel: 'Variáveis', avulsa: 'Avulsas' }, corpoD = '';
-    if (!despesasResumo.itens.length) corpoD = '<div class="financeiro-vazio">Nenhuma despesa cadastrada para esta coluna.</div>';
+    if (!despesasResumo.itens.length) corpoD = '<div class="financeiro-vazio">' + (ppFamiliar() ? 'Nenhuma despesa neste mês.' : 'Nenhuma despesa cadastrada para esta coluna.') + '</div>';
     else {
       var algum = false;
       ['fixa', 'variavel', 'avulsa'].forEach(function(g){ if (gruposPend[g].length){ algum = true; corpoD += '<div class="fv-grp">' + nomes[g] + '</div>' + gruposPend[g].join(''); } });
@@ -8935,6 +8941,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     });
     obraMov.forEach(function(x){
       if (x.tipo === 'aporte' && x.origem === coluna) add(x.data, x.valor, 'saida', x.criadoEm, 'obra ' + (x.descricao || ''));
+      else if (x.tipo === 'parcela' && coluna === 'pf' && ffnAtivo()) add(x.data, x.valor, 'saida', x.criadoEm, 'parcela do consórcio');   /* familiar com Finanças: a parcela paga sai do caixa dele (um lançamento vale nos dois módulos) */
       else if (x.tipo === 'retirada' && x.destino === coluna) add(x.data, x.valor, 'entrada', x.criadoEm, 'obra ' + (x.descricao || ''));
     });
     despesas.forEach(function(d){
@@ -9675,7 +9682,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     pat.metas.forEach(function(x){ if (x.meta.tipo === 'reserva'){ reservaV += x.valor; reservaAlvo += metaAlvo(x.meta) || 0; } else outrasV += x.valor; });
     var contas = r2(pat.saldoPj + pat.saldoPf - pat.repasseAPagar), temObra = obraCfg().criada;
     var itens = [
-      { k: 'wallet', cor: '#B7791E', nome: 'Nas contas (livre)', sub: 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf) + (pat.repasseAPagar > 0.004 ? ' · repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : ''), v: contas },
+      { k: 'wallet', cor: '#B7791E', nome: 'Nas contas (livre)', sub: (ppFamiliar() ? 'Saldo informado da conta' : 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf)) + (pat.repasseAPagar > 0.004 ? ' · repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : ''), v: contas },
       { k: 'shield', cor: '#2A78D6', nome: 'Reserva de emergência', sub: reservaAlvo > 0 ? fmtPerc(Math.min(100, reservaV / reservaAlvo * 100)) + ' da meta' : 'em metas, separado do mês', v: reservaV },
       { k: 'plane', cor: '#8B5CF6', nome: 'Outras metas', sub: 'fora do planejamento do mês', v: outrasV }
     ];
@@ -9684,7 +9691,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var h = '<div class="financeiro-bloco fv-pat"><span class="fv-k">Patrimônio líquido</span><div class="fv-big">' + fmtMoeda(pat.total) + '</div><div class="fv-pat-l"><span>' + chipDelta + '</span></div>' +
       (totalSeg > 0 ? '<div class="ct-topo">' + patDonut(itens.map(function(x){ return { v: Math.max(0, x.v), cor: x.cor }; }), totalSeg) + '<div class="ct-leg">Onde está o seu dinheiro.<br>Cada cor é uma parte do patrimônio.</div></div>' : '') +
       itens.map(function(x){ return '<div class="fv-lin">' + fvIc(x.k, x.cor) + '<span class="fv-ln">' + x.nome + '<br><span class="fp-nota">' + x.sub + '</span></span><b>' + fmtMoeda(x.v) + '</b></div>'; }).join('') +
-      '<div class="fp-nota" style="margin-top:8px;">Por titular: PJ ' + fmtMoeda(pat.totalPj) + ' · PF ' + fmtMoeda(pat.totalPf) + '.' + (pat.repasseAPagar > 0.004 ? ' O total já desconta ' + fmtMoeda(pat.repasseAPagar) + ' de repasses a parceiros que ainda não foram pagos.' : '') + '</div></div>';
+      '<div class="fp-nota" style="margin-top:8px;">' + (ppFamiliar() ? 'Total das contas e das metas.' : 'Por titular: PJ ' + fmtMoeda(pat.totalPj) + ' · PF ' + fmtMoeda(pat.totalPf) + '.') + (pat.repasseAPagar > 0.004 ? ' O total já desconta ' + fmtMoeda(pat.repasseAPagar) + ' de repasses a parceiros que ainda não foram pagos.' : '') + '</div></div>';
     return h;
   }
   function renderFinPatrimonio(){
@@ -10026,6 +10033,11 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       if (m.tipo !== 'aporte' || m.origem !== coluna) return;
       add({ data: String(m.data || '').slice(0, 10), valor: Number(m.valor) || 0, dir: -1, desc: 'Aporte para a obra' + (m.obs ? ' \u2014 ' + m.obs : ''), tag: 'Obra', ts: m.criadoEm || '',
         acao: { k: 'obra', id: m.id }, conf: 'Excluir este aporte da obra?' + (m.grupo ? ' Como foi lançado "pago direto da conta", o gasto ligado a ele também será excluído.' : ' O saldo da obra diminui.') });
+    });
+    if (coluna === 'pf' && ffnAtivo()) obraMov.forEach(function(m){
+      if (m.tipo !== 'parcela') return;
+      add({ data: String(m.data || '').slice(0, 10), valor: Number(m.valor) || 0, dir: -1, desc: 'Parcela do consórcio' + (m.obs ? ' \u2014 ' + m.obs : ''), tag: 'Obra', ts: m.criadoEm || '',
+        acao: { k: 'obra', id: m.id }, conf: 'Excluir esta parcela? Ela também sai da aba Construção.' });
     });
     obraMov.forEach(function(m){
       if (m.tipo !== 'retirada' || m.destino !== coluna) return;
@@ -13485,6 +13497,7 @@ function extRotuloConta(chave){
 /* conta marcada como "dinheiro da obra" (ex.: a conta do financiamento): o saldo dela é comparado com a aba Construção, não entra na PF nem na PJ */
 function extContaObra(chave){ var c = extCfg().contas[chave]; return !!(c && c.obra); }
 function extColunaConta(chave, fallback){
+  if (ppFamiliar()) return 'pf';   /* familiar: só conta pessoal */
   var c = extCfg().contas[chave];
   return (c && (c.coluna === 'pj' || c.coluna === 'pf')) ? c.coluna : (fallback || 'pf');
 }
@@ -14324,7 +14337,7 @@ function extDesenharConferencia(){
     html += '<div class="ext-arq"><div class="ext-arq-top"><b class="exc-tit">' + excLogo(doc.chave, 30) + ' ' + escapeHtml(extRotuloConta(doc.chave)) + '</b><span class="saldo-data">' + escapeHtml(fmtData(doc.de || '')) + ' a ' + escapeHtml(fmtData(doc.ate || '')) + '</span></div>' +
       '<div class="ext-chips"><span class="ext-chip">' + (doc.lanc || []).length + ' linha(s) nova(s)</span>' + (doc.nRep ? '<span class="ext-chip">' + doc.nRep + ' já importada(s)</span>' : '') + (doc.nDescartadas ? '<span class="ext-chip">' + doc.nDescartadas + ' anterior(es) ao corte, descartada(s)</span>' : '') + '<span class="ext-chip ' + (doc.saldoFecha ? 'ok' : 'bad') + '">' + (doc.saldoFecha ? 'saldo fecha' : 'o saldo não fecha em ' + doc.nDiverg + ' ponto(s)') + '</span></div>' +
       '<label class="ext-saldo-lab"><input type="checkbox" data-conta-obra="' + escapeHtml(doc.chave) + '"' + (conta && conta.obra ? ' checked' : '') + '><span>É dinheiro da obra <small>(o saldo é comparado com a aba Construção; as linhas ficam só para conferência)</small></span></label>' +
-      (conta && !conta.confirmada && !conta.obra ? '<div class="ext-conta">Esta conta é: ' + extSelectHtml('data-conta="' + escapeHtml(doc.chave) + '"', [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']], conta.coluna) + '</div>' : '') +
+      (conta && !conta.confirmada && !conta.obra && !ppFamiliar() ? '<div class="ext-conta">Esta conta é: ' + extSelectHtml('data-conta="' + escapeHtml(doc.chave) + '"', [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']], conta.coluna) + '</div>' : '') +
       (doc.saldoNovo === false && doc.saldoAtual != null ? '<div class="saldo-data">O saldo informado no app já é mais recente que este extrato.</div>' : '') +
       '</div>';
   });
@@ -14609,7 +14622,7 @@ function impLerArquivos(files){
   });
   return cadeia.then(function(){ return persistExtCfg({ ultimaLeitura: new Date().toISOString(), iniciado: true }); }).then(function(){ impResumir(res, falhas); }).then(function(){ impEstado.rodando = false; renderExtratos(); renderInicioExtratos(); renderPainelAtencao(); });
 }
-function ppRecebeP(){ var e = window.__horusEu; if (e && e.pronto) return Promise.resolve(e.papel === 'proprietario' || e.papel === 'advogado'); return new Promise(function(res){ window.addEventListener('horus-eu', function(){ res(window.__horusEu.papel === 'proprietario' || window.__horusEu.papel === 'advogado'); }, { once: true }); }); }   /* quem tem caixa de entrada do Atalho do iPhone: o proprietário e os advogados */
+function ppRecebeP(){ var ok = function(e){ return e.papel === 'proprietario' || e.papel === 'advogado' || (e.papel === 'familiar' && (e.modulos || []).indexOf('financas') >= 0); }; var e = window.__horusEu; if (e && e.pronto) return Promise.resolve(ok(e)); return new Promise(function(res){ window.addEventListener('horus-eu', function(){ res(ok(window.__horusEu)); }, { once: true }); }); }   /* quem tem caixa de entrada do Atalho do iPhone: o proprietário, os advogados e o familiar com Finanças */
 function impVerRecebidos(){ var a = arguments; return ppRecebeP().then(function(ok){ return ok ? impVerRecebidos0.apply(null, a) : null; }); }
 function impVerRecebidos0(){
   return fetch('/api/recebidos', { credentials: 'same-origin', cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(j){ impEstado.recebidos = (j && j.itens) || []; impEstado.carregou = true; renderExtratos(); renderInicioExtratos(); try{ renderPainelAtencao(); }catch(e){} impAutoLer(0); }).catch(function(){ impEstado.carregou = true; });
@@ -14648,7 +14661,7 @@ function impTopoHtml(cfg){
   var corte = extDataCorte() || '';
   var rec = impEstado.recebidos || [];
   return '<div class="ext-topo-tit">Extratos do banco</div>' +
-    '<div class="parcela-sum">Escolha os extratos que estão no celular (PDF do Itaú, do Sicoob ou do C6; arquivo OFX; ou o zip do C6, que pede a senha). O app lê, mostra o que entendeu e só lança o que você confirmar.</div>' +
+    '<div class="parcela-sum">Escolha os extratos que estão no celular (' + (ppFamiliar() ? 'PDF ou arquivo OFX do seu banco' : 'PDF do Itaú, do Sicoob ou do C6; arquivo OFX; ou o zip do C6, que pede a senha') + '). O app lê, mostra o que entendeu e só lança o que você confirmar.</div>' +
     '<input type="file" id="impArq" accept=".pdf,.ofx,.zip,application/pdf,application/x-ofx,application/zip,application/x-zip-compressed,text/plain,application/octet-stream" multiple style="display:none">' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" id="impEscolher"' + (impEstado.rodando ? ' disabled' : '') + '>' + (impEstado.rodando ? 'Lendo…' : 'Escolher extratos') + '</button><button type="button" class="btn btn-ghost" id="extContas">Contas</button></div>' +
     (impEstado.info ? '<div class="saldo-data" role="status">' + escapeHtml(impEstado.info) + '</div>' : '') +
@@ -15034,7 +15047,7 @@ function anBarraHtml(rot, v, max, total, cor){
 function anCardCaixa(pr, w, n){
   var S1 = 'var(--an-1)', S2 = 'var(--an-2)';
   var serPr = [{ key: 'base', nome: 'Só parcelas e despesas', cor: S1 }, { key: 'alv', nome: 'Com alvarás e atrasados', cor: S2, tracejada: true }];
-  var pontos = [{ rot: 'hoje', v: { base: pr.ini, alv: pr.ini }, tip: '<b>Hoje</b><br>Dinheiro nas contas (PJ + PF)' + (pr.repasseHoje > 0.004 ? ', menos ' + fmtMoeda(pr.repasseHoje) + ' de repasses a pagar' : '') + ': <b>' + fmtMoeda(pr.ini) + '</b><br><em>A reserva e as metas ficam de fora.</em>' }];
+  var pontos = [{ rot: 'hoje', v: { base: pr.ini, alv: pr.ini }, tip: '<b>Hoje</b><br>Dinheiro nas contas (' + anContas() + ')' + (pr.repasseHoje > 0.004 ? ', menos ' + fmtMoeda(pr.repasseHoje) + ' de repasses a pagar' : '') + ': <b>' + fmtMoeda(pr.ini) + '</b><br><em>A reserva e as metas ficam de fora.</em>' }];
   pr.linhas.forEach(function(l){
     pontos.push({ rot: anRotMes(l.m), v: { base: l.saldoBase, alv: l.saldoAlv },
       tip: '<b>Fim de ' + escapeHtml(mesLabel(l.m)) + '</b><br><i style="background:' + S1 + '"></i>Só parcelas e despesas: <b>' + fmtMoeda(l.saldoBase) + '</b><br><i style="background:' + S2 + '"></i>Com alvarás e atrasados: <b>' + fmtMoeda(l.saldoAlv) + '</b>' +
@@ -15046,7 +15059,7 @@ function anCardCaixa(pr, w, n){
   var fimL = pr.linhas[pr.linhas.length - 1];
   var aviso2 = (gde && gde.v >= 10000 && totEnt > 0 && gde.v / totEnt >= 0.4) ? '<div class="an-alerta an-info">Uma única entrada pesa muito: <b>' + escapeHtml(gde.nome) + '</b>, ' + fmtMoeda(gde.v) + ' previstos para ' + escapeHtml(fmtData(gde.data).slice(0, 5)) + (gde.alvara ? ' (alvará)' : '') + ' \u2014 ' + Math.round(gde.v / totEnt * 100) + '% de tudo o que se espera receber nos próximos ' + n + ' meses. Sem ela, o caixa de ' + escapeHtml(mesCurto(fimL.m)) + ' ficaria em ' + fmtMoeda(fimL.saldoAlv - gde.v) + ' em vez de ' + fmtMoeda(fimL.saldoAlv) + '.</div>' : '';
   var aviso = minBase < -0.004 ? '<div class="an-alerta">' + ico('triangle-alert', 14) + 'No cenário só com parcelas e despesas o caixa fica negativo em ' + escapeHtml(mesLabel(pr.linhas.filter(function(l){ return l.saldoBase < 0; })[0].m)) + '. Alvarás e cobranças atrasadas melhoram isso, mas não têm data certa.</div>' : '';
-  return anCard('Para onde o caixa caminha', 'Saldo livre (PJ + PF) no fim de cada mês dos próximos ' + n + ' meses.',
+  return anCard('Para onde o caixa caminha', 'Saldo livre (' + anContas() + ') no fim de cada mês dos próximos ' + n + ' meses.',
     anLegenda(serPr) + aviso + aviso2 + anLinhas({ w: w, pontos: pontos, series: serPr, rotulo: 'Projeção do caixa livre' }) +
     anTabela(['Mês', 'Entra', 'Sai', 'Só parcelas', 'Com alvarás'], pr.linhas.map(function(l){ return [escapeHtml(mesCurto(l.m)), fmtMoeda(l.parc + l.fixas), fmtMoeda(l.desp + l.dia), fmtMoeda(l.saldoBase), fmtMoeda(l.saldoAlv)]; })) +
     '<div class="saldo-data an-nota">Como calculei: parte do saldo de hoje; soma as parcelas e acordos no mês do vencimento e as receitas fixas ainda não recebidas; tira as despesas ainda não pagas (fixas variáveis pela média dos últimos meses)' + (pr.mediaDD > 0 ? ' e o dia a dia pela média dos extratos (' + fmtMoeda(pr.mediaDD) + ' por mês)' : '; o dia a dia ainda não entra por falta de um mês completo de extratos') + '. Alvarás e parcelas atrasadas só entram no segundo cenário. Aportes na reserva não estão previstos.' + (pr.semData > 0.004 ? ' Ficam de fora ' + fmtMoeda(pr.semData) + ' a receber sem data prevista.' : '') + '</div>');
@@ -15082,7 +15095,7 @@ function anMarcarObra(chave){
   }).catch(function(err){ console.error('erro ao marcar', err); toast('Não consegui salvar. Tente de novo.'); });
 }
 function anSegBotoes(){
-  return [['ult', 'Último mês'], ['hist', 'Histórico'], ['sem', 'Semanas'], ['sim', 'Simulador'], ['fut', 'Futuro']].map(function(o){
+  return [['ult', 'Último mês'], ['hist', 'Histórico'], ['sem', 'Semanas'], ['sim', 'Simulador'], ['fut', 'Futuro']].filter(function(o){ return !(o[0] === 'sim' && ppFamiliar()); }).map(function(o){
     return '<button type="button" data-an-periodo="' + o[0] + '" class="seg-btn' + (anPeriodo === o[0] ? ' active' : '') + '">' + o[1] + '</button>';
   }).join('');
 }
@@ -15122,6 +15135,7 @@ function anMediaMeses(lista){
   Object.keys(cats).forEach(function(k){ cats[k] = r2(cats[k] / n); });
   return { n: n, rec: r2(rec / n), gas: r2(gas / n), sobra: r2((rec - gas) / n), cats: cats };
 }
+function anContas(){ return ppFamiliar() ? 'suas contas' : 'PJ + PF'; }
 function anSeta(v, base, invertido){
   if (!(base > 0.004)) return '';
   var p = Math.round((v - base) / base * 100);
@@ -15161,7 +15175,7 @@ function renderAnaliseUltimo(el){
     kp('Patrimônio', 'landmark', MD_COR.azul, dPat === null ? (Pm ? fmtMoeda(Pm.total) : '—') : (dPat >= 0 ? '+ ' : '− ') + fmtMoeda(Math.abs(dPat)), dPat === null ? '' : (dPat >= 0 ? 'ok' : 'neg'),
       '<div class="md-foot">' + (Pm && Pa ? fmtMoeda(Pa.total) + ' → ' + fmtMoeda(Pm.total) : (Pm ? 'no fim do mês' : 'informe o saldo das contas')) + '</div>') + '</div>';
   /* origem */
-  var fatiasO = [['Clientes próprios', R.proprio, MD_COR.ouro], ['Murilo', R.murilo, MD_COR.azul], ['Outras receitas', R.outras, MD_COR.roxo]];
+  var fatiasO = ppFamiliar() ? [['Salário e outras receitas', R.total, MD_COR.roxo]] : [['Clientes próprios', R.proprio, MD_COR.ouro], ['Murilo', R.murilo, MD_COR.azul], ['Outras receitas', R.outras, MD_COR.roxo]];
   var cOrigem = anCard('De onde veio', '',
     '<div class="an-rosca">' + mdRosca(fatiasO, 'R$ ' + anFmtEixo(R.total), 'recebido') + '<div class="an-rosca-leg">' + fatiasO.map(function(x){ return '<div class="plan-linha"><span><i class="an-pt" style="background:' + x[2] + '"></i>' + x[0] + '</span><strong' + (x[1] > 0.004 ? '' : ' style="color:var(--ink-soft)"') + '>' + fmtMoeda(x[1]) + '</strong></div>'; }).join('') + '</div></div>');
   /* categorias */
@@ -15221,7 +15235,7 @@ function anHtmlProximos3(w){
     anKpiMd('Com alvarás e atrasados', 'landmark', MD_COR.ouro, fmtMoeda(fim.saldoAlv), fim.saldoAlv >= 0 ? '' : 'neg', '<div class="md-foot">se eles entrarem</div>', 'pjFimAlv') +
     (pr.obra.total > 0.004 ? anKpiMd('Obra a receber', 'hard-hat', MD_COR.roxo, fmtMoeda(pr.obra.total), '', '<div class="md-foot">fora do caixa do dia a dia</div>', 'pjObra') : '') + '</div>';
   /* como cada mês termina */
-  var cTermina = anCard('Como cada mês termina', 'Saldo livre (PJ + PF) no fim do mês. "Apertado" é quando o caixa fica abaixo do que sai no próprio mês.',
+  var cTermina = anCard('Como cada mês termina', 'Saldo livre (' + anContas() + ') no fim do mês. "Apertado" é quando o caixa fica abaixo do que sai no próprio mês.',
     L.map(function(l){
       var s = anSituacaoMes(l);
       return '<div class="an-sit"><b>' + escapeHtml(mesLabel(l.m)) + '</b><span class="est ' + s.cls + '">' + s.rot + '</span><span class="saldo-data">fecha com <b>' + fmtMoeda(l.saldoBase) + '</b>' + (l.alvaras + l.atrasados > 0.004 ? ' · com alvarás e atrasados ' + fmtMoeda(l.saldoAlv) : '') + ' · entra ' + fmtMoeda(l.parc + l.fixas) + ' · sai ' + fmtMoeda(l.desp + l.dia) + '</span></div>';
@@ -15255,7 +15269,7 @@ function anHtmlProximos3(w){
     '<div class="plano-tit" style="margin-top:12px;">Saídas</div>' + anListaEventos(topo(pr.eventos.saidas), 'Nenhuma despesa a pagar prevista.', '−'));
   h += '<div class="an-duas">' + cObra + cPrinc + '</div>';
   if (pr.semDataLista.length) h += anCard('A receber sem data prevista', 'Não entram nos cenários porque não têm data. Se for dinheiro da construção, marque no cartão "Dinheiro da obra a receber".', anListaEventos(pr.semDataLista.slice(0, 8), '', '+'));
-  h += '<div class="saldo-data an-nota">O que não entra nesta projeção: a obra (aportes, gastos e contratos), as transferências entre PF e PJ, os aportes na reserva e impostos. ' +
+  h += '<div class="saldo-data an-nota">O que não entra nesta projeção: a obra (aportes, gastos e contratos), ' + (ppFamiliar() ? '' : 'as transferências entre PF e PJ, ') + 'os aportes na reserva e impostos. ' +
     (pr.repasseHoje > 0.004 ? 'O caixa de hoje já está sem os ' + fmtMoeda(pr.repasseHoje) + ' que você deve a advogados parceiros. ' : '') +
     (pr.semData > 0.004 ? 'Ficam de fora ' + fmtMoeda(pr.semData) + ' a receber sem data prevista.' : '') + '</div>';
   return h;
@@ -15366,7 +15380,7 @@ function anCardComparar(){
   return anCard('Comparar dois meses', '',
     '<div class="an-cmp-sel"><select data-an-cmp="a" aria-label="Primeiro mês">' + opt(anCmpA) + '</select><span>contra</span><select data-an-cmp="b" aria-label="Segundo mês">' + opt(anCmpB) + '</select></div>' +
     '<div class="an-tab-rolar"><table><thead><tr><th></th><th class="n">' + escapeHtml(mesCurto(anCmpA)) + '</th><th class="n">' + escapeHtml(mesCurto(anCmpB)) + '</th><th class="n">Dif.</th></tr></thead><tbody>' +
-    lin('Patrimônio final', 'patrimonio') + lin('Recebido', 'recebido') + lin('Despesas pagas', 'pago', true) + lin('Resultado PJ', 'resPJ') + lin('Resultado PF', 'resPF') + lin('Reserva', 'reserva') + '</tbody></table></div>');
+    lin('Patrimônio final', 'patrimonio') + lin('Recebido', 'recebido') + lin('Despesas pagas', 'pago', true) + (ppFamiliar() ? '' : lin('Resultado PJ', 'resPJ')) + lin(ppFamiliar() ? 'Resultado do mês' : 'Resultado PF', 'resPF') + lin('Reserva', 'reserva') + '</tbody></table></div>');
 }
 function anAvisoFechamento(){
   var meses = anFechGet(), ks = Object.keys(meses).filter(function(k){ return meses[k].auto && !meses[k].retro; }).sort(), u = ks.length ? meses[ks[ks.length - 1]] : null;
@@ -15504,7 +15518,7 @@ function renderAnaliseSemanas(el){
   var serLeg = '<div class="an-leg"><span><i class="an-sem-i ent"></i>Entradas previstas</span><span><i class="an-sem-i sai"></i>Saídas previstas</span><span><i class="an-sem-i lin"></i>Saldo previsto (linha)</span><span class="saldo-data">Tracejado = previsão</span></div>';
   h += '<section class="ini-card an-card"><div class="an-tit"><h4>Entradas, saídas e saldo previsto · próximas ' + S.sem.length + ' semanas</h4>' +
     '<button type="button" class="an-sem-mais" data-an-sem-n="' + (anSemN === 10 ? 12 : 10) + '">' + (anSemN === 10 ? '12 semanas ›' : '10 semanas ›') + '</button></div>' +
-    '<div class="saldo-data">Começa com o caixa de hoje: ' + fmtMoeda(S.ini) + ' (PJ + PF' + (S.repasseHoje > 0.004 ? ', sem os ' + fmtMoeda(S.repasseHoje) + ' que são de advogados parceiros' : '') + '). Toque numa semana para ver os lançamentos.</div>' +
+    '<div class="saldo-data">Começa com o caixa de hoje: ' + fmtMoeda(S.ini) + ' (' + anContas() + (S.repasseHoje > 0.004 ? ', sem os ' + fmtMoeda(S.repasseHoje) + ' que são de advogados parceiros' : '') + '). Toque numa semana para ver os lançamentos.</div>' +
     anGraficoSemanas(S, w, anSemSel) + serLeg +
     anTabela(['Semana', 'Entra', 'Sai', 'Saldo previsto'], S.sem.map(function(x){ return [escapeHtml(anDM(x.ini)), fmtMoeda(x.ent), fmtMoeda(x.sai), fmtS(x.saldo)]; })) + '</section>';
   var ent = sm.itens.filter(function(it){ return it.sinal > 0; }), sai = sm.itens.filter(function(it){ return it.sinal < 0; });
@@ -15521,7 +15535,7 @@ function renderAnaliseSemanas(el){
   h += '<section class="ini-card an-card"><div class="an-tit"><h4>O que a semana não conta</h4></div>' +
     nota(1, fora.length ? '<b>Ficam de fora do saldo:</b> ' + fora.join('; ') + '. Entram na previsão quando ganharem data e deixarem de ser alvará ou atraso.' : '<b>Alvarás, atrasados e valores sem data:</b> hoje não há nenhum cadastrado; quando houver, ficam de fora do saldo e aparecem aqui.') +
     nota(2, S.mediaDD > 0 ? '<b>Dia a dia</b> entra pela média dos últimos meses lidos nos extratos (' + fmtMoeda(S.mediaDD) + ' por mês), espalhada pelos dias. Receitas fixas e despesas sem dia certo também são espalhadas pelo mês.' : '<b>Dia a dia</b> ainda não entra, por falta de um mês completo de extratos. Receitas fixas e despesas sem dia certo são espalhadas pelo mês.') +
-    nota(3, '<b>É previsão:</b> nunca vira saldo disponível nem altera a divisão do mês. Também não entram a obra, as transferências entre PF e PJ e os aportes na reserva.') + '</section></div>';
+    nota(3, '<b>É previsão:</b> nunca vira saldo disponível nem altera a divisão do mês. Também não entram a obra, ' + (ppFamiliar() ? '' : 'as transferências entre PF e PJ ') + 'e os aportes na reserva.') + '</section></div>';
   el.innerHTML = h + '<div id="anTip" class="an-tip" role="status" style="display:none;"></div>';
   anTipEl = qs('anTip');
 }
@@ -15566,12 +15580,12 @@ function renderAnalises(){
   h += '<div class="an-duas">' + anCardComparar() + anCardFechados() + '</div>';
   var soPf = r2(dados.reduce(function(a, x){ return a + comMes(x.m, function(){ return computeReceitaManualMes('pf') - computeReceitaTransferenciaMes('pf'); }); }, 0));
   /* 1) recebido por mês, por origem */
-  var serRec = [{ key: 'proprio', nome: 'Clientes próprios', cor: S1 }, { key: 'murilo', nome: 'Murilo', cor: S2 }, { key: 'outras', nome: 'Outras receitas', cor: S3 }];
-  var itRec = dados.map(function(x){ return { m: x.m, rotuloLongo: mesLabel(x.m), parcial: x.parcial, inicio: x.inicio, v: { proprio: x.r.proprio, murilo: x.r.murilo, outras: x.r.outras } }; });
-  h += anCard('Quanto entrou por mês', 'Honorários recebidos de clientes próprios e do Murilo, mais outras receitas. Transferências entre PF e PJ não contam.',
+  var serRec = ppFamiliar() ? [{ key: 'outras', nome: 'Salário e outras receitas', cor: S3 }] : [{ key: 'proprio', nome: 'Clientes próprios', cor: S1 }, { key: 'murilo', nome: 'Murilo', cor: S2 }, { key: 'outras', nome: 'Outras receitas', cor: S3 }];
+  var itRec = dados.map(function(x){ return { m: x.m, rotuloLongo: mesLabel(x.m), parcial: x.parcial, inicio: x.inicio, v: ppFamiliar() ? { outras: x.r.total } : { proprio: x.r.proprio, murilo: x.r.murilo, outras: x.r.outras } }; });
+  h += anCard('Quanto entrou por mês', ppFamiliar() ? 'Salário e outras receitas recebidas em cada mês.' : 'Honorários recebidos de clientes próprios e do Murilo, mais outras receitas. Transferências entre PF e PJ não contam.',
     anLegenda(serRec) + anBarras({ w: w, itens: itRec, series: serRec, empilhado: true, rotulo: 'Recebido por mês, por origem', duasLinhas: meses.length > 6 }) +
-    anTabela(['Mês', 'Próprios', 'Murilo', 'Outras', 'Total'], dados.map(function(x){ return [escapeHtml(mesCurto(x.m)) + (x.parcial ? ' *' : '') + (x.inicio ? ' †' : ''), fmtMoeda(x.r.proprio), fmtMoeda(x.r.murilo), fmtMoeda(x.r.outras), fmtMoeda(x.r.total)]; })) +
-    (soPf > 0.004 ? '<div class="saldo-data an-nota">Não inclui ' + fmtMoeda(soPf) + ' de receitas lançadas só na aba PF neste período (consultas, distribuições antigas sem a transferência correspondente na PJ).</div>' : ''));
+    (ppFamiliar() ? anTabela(['Mês', 'Recebido'], dados.map(function(x){ return [escapeHtml(mesCurto(x.m)) + (x.parcial ? ' *' : '') + (x.inicio ? ' †' : ''), fmtMoeda(x.r.total)]; })) : anTabela(['Mês', 'Próprios', 'Murilo', 'Outras', 'Total'], dados.map(function(x){ return [escapeHtml(mesCurto(x.m)) + (x.parcial ? ' *' : '') + (x.inicio ? ' †' : ''), fmtMoeda(x.r.proprio), fmtMoeda(x.r.murilo), fmtMoeda(x.r.outras), fmtMoeda(x.r.total)]; }))) +
+    (soPf > 0.004 && !ppFamiliar() ? '<div class="saldo-data an-nota">Não inclui ' + fmtMoeda(soPf) + ' de receitas lançadas só na aba PF neste período (consultas, distribuições antigas sem a transferência correspondente na PJ).</div>' : ''));
 
   /* 2) recebido x gasto */
   var serRG = [{ key: 'rec', nome: 'Recebido', cor: S1 }, { key: 'desp', nome: 'Gasto', cor: S2 }];
@@ -15579,7 +15593,7 @@ function renderAnalises(){
     var sobra = r2(x.r.total - x.d.total);
     return { m: x.m, rotuloLongo: mesLabel(x.m), parcial: x.parcial, inicio: x.inicio, v: { rec: x.r.total, desp: x.d.total }, extraTip: (sobra >= 0 ? 'Sobrou ' : 'Faltou ') + '<b>' + fmtMoeda(Math.abs(sobra)) + '</b>' };
   });
-  var cRG = anCard('Recebido x gasto', 'Gasto = despesas lançadas (PJ e PF, sem as transferências entre as duas) + o dia a dia que vem dos extratos.',
+  var cRG = anCard('Recebido x gasto', (ppFamiliar() ? 'Gasto = despesas lançadas + o dia a dia que vem dos extratos.' : 'Gasto = despesas lançadas (PJ e PF, sem as transferências entre as duas) + o dia a dia que vem dos extratos.'),
     anLegenda(serRG) + anBarras({ w: wMeia, itens: itRG, series: serRG, empilhado: false, rotulo: 'Recebido e gasto por mês', duasLinhas: meses.length > 6 }) +
     anTabela(['Mês', 'Recebido', 'Despesas', 'Dia a dia', 'Sobrou'], dados.map(function(x){ return [escapeHtml(mesCurto(x.m)) + (x.parcial ? ' *' : '') + (x.inicio ? ' †' : ''), fmtMoeda(x.r.total), fmtMoeda(x.d.lancadas), fmtMoeda(x.d.diaADia), fmtMoeda(x.r.total - x.d.total)]; })) +
     '<div class="saldo-data an-nota">* mês em andamento: despesas ainda não pagas entram pela estimativa.' + (dados.some(function(x){ return x.inicio; }) ? ' † os registros do app começam no meio desse mês.' : '') + '</div>');
@@ -15597,7 +15611,7 @@ function renderAnalises(){
   if (resto > 0.004) topo.push({ k: 'Outras (' + (listaCat.length - 8) + ')', v: r2(resto) });
   var segDesp = '<div class="segmented an-seg2" role="group" aria-label="Agrupar por">' + [['cat', 'Por categoria'], ['nome', 'Por despesa']].map(function(o){ return '<button type="button" data-an-visao="' + o[0] + '" class="seg-btn' + (anVisaoDesp === o[0] ? ' active' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>';
   var ctRes = (!porNome && typeof ctCardHtml === 'function') ? ctCardHtml(meses) : null;
-  h += anCard('Para onde o dinheiro vai', 'Despesas e dia a dia do período (' + fmtMoeda(totalCat) + ' no total). Transferências entre PF e PJ não entram.' + (ctRes ? ' Toque numa categoria para ver os lançamentos.' : ''),
+  h += anCard('Para onde o dinheiro vai', 'Despesas e dia a dia do período (' + fmtMoeda(totalCat) + ' no total).' + (ppFamiliar() ? '' : ' Transferências entre PF e PJ não entram.') + (ctRes ? ' Toque numa categoria para ver os lançamentos.' : ''),
     segDesp + (ctRes ? ctRes.html : topo.length ? '<div class="an-hbs">' + topo.map(function(x){ return anBarraHtml(x.k, x.v, topo[0].v, totalCat, S1); }).join('') + '</div>' + anTabela(['Categoria', 'Valor', '%'], listaCat.map(function(x){ return [escapeHtml(x.k), fmtMoeda(x.v), (totalCat > 0 ? Math.round(x.v / totalCat * 100) : 0) + '%']; }))
       : '<div class="financeiro-vazio">Ainda não há despesas no período.</div>'));
 
@@ -16223,9 +16237,10 @@ function obraExcluirContrato(id){
 
 /* Familiar só com a Construção: sem PF/PJ (ele não tem PJ nem as contas do Financeiro). Com o módulo Finanças ligado, volta "Conta PF". */
 function obSoObra(){ try{ return ppFamiliar() && ppFamModulos().indexOf('financas') < 0; }catch(e){ return false; } }
-function obFormasPag(){ return obSoObra() ? [['obra', 'Saldo da conta da obra'], ['pf', 'Recursos próprios (cria um aporte junto)']] : [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']]; }
-function obOrigemOpts(){ return obSoObra() ? [['pf', 'Recursos próprios (meu dinheiro)'], ['externo', 'Já está na conta da obra'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ'], ['externo', 'Já está na conta da obra (não mexe na PF/PJ)'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']]; }
-function obDestinoOpts(){ return obSoObra() ? [['pf', 'Para mim']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ']]; }
+function obSoPF(){ try{ return ppFamiliar(); }catch(e){ return false; } }   /* familiar: nunca há PJ (com Finanças ligadas, "minha conta" sai do caixa dele) */
+function obFormasPag(){ return obSoPF() ? [['obra', 'Saldo da conta da obra'], ['pf', (ffnAtivo() ? 'Minha conta (sai do meu caixa; cria um aporte junto)' : 'Recursos próprios (cria um aporte junto)')]] : [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']]; }
+function obOrigemOpts(){ return obSoPF() ? [['pf', (ffnAtivo() ? 'Minha conta (sai do meu caixa)' : 'Recursos próprios (meu dinheiro)')], ['externo', 'Já está na conta da obra'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ'], ['externo', 'Já está na conta da obra (não mexe na PF/PJ)'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']]; }
+function obDestinoOpts(){ return obSoPF() ? [['pf', 'Para mim']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ']]; }
 /* consórcio: tudo preenchido à mão por quem tem o contrato (prazo, parcela, taxas, contemplação) */
 function obConsorcioNorm(c){
   c = c && typeof c === 'object' ? c : {};
@@ -24468,6 +24483,106 @@ function famExportar(){
 })();
 
 /* ============================================================
+   FINANÇAS DO FAMILIAR (prefixo ffn) — o familiar com o módulo "Finanças pessoais" liberado vê só a parte pessoal (PF):
+   sem aba PJ, sem transferência PF↔PJ, sem honorários. Os dados dele ficam no cofre próprio (o servidor separa).
+   - menu e sub-abas: Visão geral · Salário e fixos (a coluna PF) · Divisão do salário · Patrimônio e metas · Orçamento · Análises;
+   - "Divisão do salário" no lugar da "Divisão do mês" (que é do caixa da PJ): salário e entradas do mês → gastos fixos, parcela do consórcio,
+     aporte na obra, outros gastos, reserva e o que sobra; o plano em % é opcional (config/divisaoSalario);
+   - a parcela do consórcio (Construção) sai do caixa dele: um lançamento vale nos dois módulos.
+   ============================================================ */
+function ffnAtivo(){ try{ return ppFamiliar() && ppFamModulos().indexOf('financas') >= 0; }catch(e){ return false; } }
+var FFN_ABAS = [['resumo', 'Visão geral'], ['pf', 'Salário e fixos'], ['geral', 'Divisão do salário'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
+var FFN_ROT = { resumo: 'Visão geral', geral: 'Divisão do salário', pf: 'Salário e fixos', patrimonio: 'Patrimônio e metas', orcamento: 'Orçamento', analises: 'Análises' };
+var FFN_PARTES = [['fixos', 'Gastos fixos', '#4F46E5'], ['consorcio', 'Parcela do consórcio', '#C98500'], ['aporte', 'Aporte na obra', '#B7791E'], ['outros', 'Outros gastos', '#DB2777'], ['reserva', 'Reserva', '#17895A']];
+
+function ffnPlano(){ var p = config && config.divisaoSalario && config.divisaoSalario.pct; return p && typeof p === 'object' ? p : {}; }
+/* o que entrou, saiu e foi separado no mês escolhido (só pessoa física) */
+function ffnDados(){
+  var m = mesSelecionado, ent = 0, rec = 0, fixos = 0, outros = 0, parc = 0, apo = 0;
+  getReceitasManuaisParaMes('pf').forEach(function(it){ var v = Number(it.valor) || 0; ent += v; if (it.recebido) rec += v; });
+  getDespesasParaMes('pf').forEach(function(it){
+    var d = it.despesa; if (d.transferenciaId) return;
+    var v = valorDespesaItem(it); if (!(v > 0)) return;
+    if (d.tipo === 'fixa') fixos += v; else outros += v;
+  });
+  if (ppFamModulos().indexOf('obra') >= 0) obraMov.forEach(function(x){
+    if (String(x.data || '').slice(0, 7) !== m) return;
+    var v = Number(x.valor) || 0;
+    if (x.tipo === 'parcela') parc += v; else if (x.tipo === 'aporte' && x.origem === 'pf') apo += v;
+  });
+  var res = Math.max(0, aportadoReservaMes());
+  var gasto = fixos + outros + parc + apo + res;
+  return { entrada: r2(ent), recebido: r2(rec), v: { fixos: r2(fixos), consorcio: r2(parc), aporte: r2(apo), outros: r2(outros), reserva: r2(res) }, livre: r2(ent - gasto) };
+}
+function ffnPct(v, base){ return base > 0.004 ? Math.round(v / base * 100) : 0; }
+function ffnDivisaoHtml(){
+  var d = ffnDados(), pl = ffnPlano(), base = d.entrada, tem = base > 0.004;
+  var cab = '<div class="financeiro-secao-head"><h4>Divisão do salário · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn-text" data-ffn="plano">Ajustar plano</button></div>';
+  if (!tem) return '<div class="financeiro-bloco">' + cab + '<div class="financeiro-vazio">Ainda não há salário nem outra entrada lançada neste mês. Em <b>Salário e fixos</b>, use “Lançar receita” (marque <b>recorrente</b> para o salário se repetir todo mês).</div><button type="button" class="btn btn-ghost" data-ffn="ir-pf">Ir para Salário e fixos</button></div>';
+  var partes = FFN_PARTES.filter(function(p){ return d.v[p[0]] > 0.004 || Number(pl[p[0]]) > 0; });
+  var barra = discreto ? '' : '<div class="mf-stk">' + partes.map(function(p){ return '<i style="width:' + Math.max(0, d.v[p[0]] / base * 100) + '%;background:' + p[2] + '" title="' + escapeHtml(p[1]) + '"></i>'; }).join('') + (d.livre > 0 ? '<i style="width:' + (d.livre / base * 100) + '%;background:#B9B7AE" title="Livre"></i>' : '') + '</div>';
+  var linhas = partes.map(function(p){
+    var v = d.v[p[0]], pct = ffnPct(v, base), alvo = Number(pl[p[0]]) || 0, acima = alvo > 0 && pct > alvo;
+    return '<div class="fp-eq"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + p[2] + ';margin-right:7px"></i>' + escapeHtml(p[1]) + (alvo > 0 ? ' <small class="saldo-data">plano ' + alvo + '%</small>' : '') + '</span><b' + (acima ? ' class="neg"' : '') + '>' + fmtMoeda(v) + ' · ' + pct + '%</b></div>';
+  }).join('');
+  var sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
+  return '<div class="financeiro-bloco">' + cab + '<div class="fv-k">Salário e entradas do mês</div><div class="fv-big">' + fmtMoeda(base) + '</div>' +
+    '<div class="saldo-data">Já recebido ' + fmtMoeda(d.recebido) + (base - d.recebido > 0.004 ? ' · ainda a receber ' + fmtMoeda(base - d.recebido) : '') + '</div>' + barra + linhas + sobra +
+    '<div class="saldo-data" style="margin-top:8px">Os percentuais do plano são opcionais e só servem de comparação (fica vermelho quando passa). “Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>';
+}
+function ffnAbrirPlano(){
+  var pl = ffnPlano();
+  var html = '<div class="saldo-data" style="margin-bottom:8px">Quanto do salário você quer destinar a cada parte (em %). Deixe em branco o que não quiser acompanhar; o resto é o que fica livre.</div>' +
+    FFN_PARTES.map(function(p){ return obCampo(p[1] + ' (%)', obInput('ffn_' + p[0], 'number', pl[p[0]] || '', 'min="0" max="100" step="1" inputmode="decimal"')); }).join('');
+  obraAbrirForm('Plano da divisão do salário', html, function(){
+    var pct = {}, tot = 0;
+    FFN_PARTES.forEach(function(p){ var v = Math.round(obNum('ffn_' + p[0])); if (v < 0 || v > 100) { pct = null; return; } if (pct && v > 0) { pct[p[0]] = v; tot += v; } });
+    if (!pct) return 'Use percentuais de 0 a 100.';
+    if (tot > 100) return 'A soma passou de 100% (' + tot + '%).';
+    var dados = { pct: pct }; config.divisaoSalario = dados;
+    var ok = (storageMode === 'db' && configRef) ? Promise.resolve(configRef.doc('divisaoSalario').set(dados)) : (saveLocalConfig(), Promise.resolve());
+    return ok.then(function(){ renderFinanceiro(); });
+  });
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('[data-ffn]'); if (!b) return;
+  var k = b.getAttribute('data-ffn');
+  if (k === 'plano') ffnAbrirPlano(); else if (k === 'ir-pf') irParaFinTab('pf');
+});
+
+/* menu, títulos e sub-abas só PF */
+function ffnRotular(){
+  if (!ffnAtivo()) return;
+  try{ FIN_NOMES.geral = FFN_ROT.geral; FIN_NOMES.pf = FFN_ROT.pf; FIN_NOMES.patrimonio = FFN_ROT.patrimonio; }catch(e){}
+  Array.prototype.forEach.call(document.querySelectorAll('#drawer .dr-it[data-fin]'), function(b){
+    var rot = FFN_ROT[b.getAttribute('data-fin')]; if (!rot) return;
+    var l = b.querySelector('.lab'); if (l) l.textContent = rot; b.title = rot;
+  });
+  var ph = { receitaDescInput: 'Ex.: Salário, 13º salário, adicional de férias', despesaNomeInput: 'Ex.: Escola, plano de saúde, energia' };
+  Object.keys(ph).forEach(function(id){ var i = qs(id); if (i) i.placeholder = ph[id]; });
+  /* formulários: sem a escolha PF/PJ (tudo é dele) */
+  ['segDespesaColuna', 'segReceitaColuna', 'segMetaColuna'].forEach(function(id){ var f = qs(id) && qs(id).closest('.field'); if (f) f.style.display = 'none'; });
+  try{ var h = qs('headFinanceiro'); if (h) h.removeAttribute('data-h'); atualizarTituloTela(); }catch(e){}
+}
+(function(){
+  if (typeof mfBarra === 'function'){
+    var oBarra = mfBarra;
+    mfBarra = function(atual){ return ffnAtivo() ? mdBarraHtml(FFN_ABAS, atual, function(k){ return 'data-mf-aba="' + k + '"'; }) : oBarra.apply(this, arguments); };
+  }
+  if (typeof renderFinGeral === 'function'){
+    var oGeral = renderFinGeral;
+    renderFinGeral = function(){
+      if (!ffnAtivo()) return oGeral.apply(this, arguments);
+      var el = qs('finGeral'); if (!el) return;
+      try{ el.innerHTML = ffnDivisaoHtml(); }catch(e){ console.error('divisão do salário', e); el.innerHTML = '<div class="empty"><strong>Não consegui montar a divisão do salário</strong>As outras abas continuam funcionando.</div>'; }
+    };
+  }
+  window.addEventListener('horus-eu', function(){ ffnRotular(); try{ if (ffnAtivo()) renderFinanceiro(); }catch(e){} });
+  if (window.__horusEu && window.__horusEu.pronto) ffnRotular();
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { ffnAtivo: ffnAtivo, ffnDados: ffnDados });
+})();
+
+/* ============================================================
    ATALHO DO IPHONE (prefixo atl) — Configurações › Atalho do iPhone
    Cada pessoa (proprietário e advogados) tem o SEU código e a SUA caixa de entrada: o extrato mandado pelo iPhone chega só para ela.
    O servidor (src/atalho.js) guarda o código e o arquivo (R2, até 25 MB); o app lê os recebidos na aba Extratos.
@@ -24574,7 +24689,7 @@ function atlAcao(a, bt){
     var cfOrig = cfRender;
     cfRender = function(){
       cfOrig.apply(this, arguments);
-      try{ var w = qs('cfWrap'), m = w && w.querySelector('.pb-menu'); if (m && typeof ppPapel === 'function' && ppPapel() === 'advogado' && !m.querySelector('[data-cf="atalho"]')) m.insertAdjacentHTML('beforeend', cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'atalho'; })[0], false)); }catch(e){}
+      try{ var w = qs('cfWrap'), m = w && w.querySelector('.pb-menu'); if (m && typeof ppPapel === 'function' && (ppPapel() === 'advogado' || (typeof ffnAtivo === 'function' && ffnAtivo())) && !m.querySelector('[data-cf="atalho"]')) m.insertAdjacentHTML('beforeend', cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'atalho'; })[0], false)); }catch(e){}
     };
   }
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { atlAbrir: atlAbrir, atlS: atlS, atlPrompt: atlPrompt });
@@ -25171,11 +25286,15 @@ var CAT_DADOS = [
   ['compras_online', 'Compras online', 'package', 'compras', 'A', 'MERCADO LIVRE|MERCADOLIVRE|AMAZON|SHOPEE|SHEIN|ALIEXPRESS|AMERICANAS|SUBMARINO'],
   ['pets', 'Pets e veterinário', 'paw-print', 'compras', 'F', 'PETZ|COBASI|PET SHOP|PETSHOP|VETERINAR*'],
   ['filhos', 'Filhos e família', 'user-round', 'familia', 'F', 'ESCOLINHA|BRINQUEDO*|RIHAPPY'],
+  ['medico_filhos', 'Médico dos filhos', 'stethoscope', 'familia', 'F', 'PEDIATR*|CLINICA INFANTIL'],
+  ['remedios_filhos', 'Remédios dos filhos', 'pill', 'familia', 'F', 'XAROPE INFANTIL|REMEDIO INFANTIL'],
+  ['fraldas', 'Fraldas e afins', 'bath', 'familia', 'F', 'FRALDA*|PAMPERS|HUGGIES|LENCO UMEDECIDO'],
   ['doacoes', 'Doações e dízimo', 'handshake', 'familia', 'F', 'IGREJA|DIZIMO|DOACAO'],
   ['tarifas', 'Tarifas bancárias', 'building-2', 'financas', 'A', 'TARIFA*|ANUIDADE CARTAO|PACOTE SERVICOS', 'Tarifas e juros'],
   ['juros', 'Juros, multas e IOF', 'percent', 'financas', 'A', 'JUROS|IOF|MULTA|ENCARGOS|MORA'],
   ['emprestimos', 'Empréstimos e financiamentos', 'hand-coins', 'financas', 'A', 'EMPRESTIMO|FINANCIAMENTO|PARCELA*|CONSIGNADO'],
   ['cartao', 'Fatura de cartão', 'credit-card', 'financas', 'A', 'FATURA|PAGAMENTO FATURA|CARTAO DE CREDITO'],
+  ['consorcio', 'Consórcio', 'landmark', 'financas', 'F', 'CONSORCIO|ADM DE CONSORCIO|ADMINISTRADORA DE CONSORCIO'],
   ['seguros', 'Seguros', 'shield-check', 'financas', 'A', 'SEGURO*|SEGURADORA|MAPFRE|TOKIO MARINE'],
   ['impostos_pf', 'Imposto de renda e tributos pessoais', 'landmark', 'financas', 'F', 'DARF|IMPOSTO DE RENDA|RECEITA FEDERAL|IRPF'],
   ['estrutura', 'Estrutura do escritório (aluguel, condomínio)', 'building-2', 'escritorio', 'J', 'ALUGUEL ESCRIT*|COWORKING|CONDOMINIO ESCRIT*', 'Estrutura'],
@@ -25292,7 +25411,7 @@ function catPsLista(){
   CAT_FAMILIAS.forEach(function(f){
     var its = CAT_CATALOGO.filter(function(c){
       if (c.fam !== f[0]) return false;
-      if (S.so && !S.todas && S.so.indexOf(c.esc) < 0 && c.label !== atual) return false;
+      if (S.so && !(S.todas && !catSoPessoal()) && S.so.indexOf(c.esc) < 0 && !(c.label === atual && !catSoPessoal())) return false;
       var hay = catNormTxt(c.label + ' ' + f[1] + ' ' + c.pal.map(function(p){ return p.t; }).join(' '));
       return toks.every(function(t){ return hay.indexOf(t) >= 0; });
     });
@@ -25309,7 +25428,7 @@ function catPsAjusta(){ var bg = qs('catPsBg'); if (!bg || !window.visualViewpor
 function catPsAbrir(btn){
   var w = btn.closest('.cat-ps'), sel = w && w.querySelector('select'); if (!sel) return;
   var so = w.getAttribute('data-catps-so');
-  catPsS = { sel: sel, wrap: w, q: '', todas: false, so: so ? so.split('') : null };
+  catPsS = { sel: sel, wrap: w, q: '', todas: false, so: catSoPessoal() ? ['A', 'F'] : (so ? so.split('') : null) };
   var bg = qs('catPsBg');
   if (!bg){
     bg = document.createElement('div'); bg.id = 'catPsBg'; bg.className = 'cat-ps-bg';
@@ -25335,13 +25454,14 @@ function catPsEscolher(label){
 
 /* ---------- seletor de categoria da ficha de despesa (PJ e PF) ---------- */
 var catPickS = { aberto: false, q: '', todas: false };
-function catColunaAtual(){ try{ return (formStateDespesa && formStateDespesa.coluna) === 'pf' ? 'pf' : 'pj'; }catch(e){ return 'pj'; } }
+function catSoPessoal(){ try{ return ppFamiliar(); }catch(e){ return false; } }   /* familiar: sem as categorias do escritório (PJ) e sem despesas processuais */
+function catColunaAtual(){ if (catSoPessoal()) return 'pf'; try{ return (formStateDespesa && formStateDespesa.coluna) === 'pf' ? 'pf' : 'pj'; }catch(e){ return 'pj'; } }
 function catListaParaPick(){
   var col = catColunaAtual(), ok = col === 'pf' ? ['A', 'F'] : ['A', 'J'], sel = null;
   try{ sel = formStateDespesa.categoria; }catch(e){}
   var out = [];
   CAT_FAMILIAS.forEach(function(f){
-    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && (catPickS.todas || ok.indexOf(ci.esc) >= 0 || c.id === sel); });
+    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && ((catPickS.todas && !catSoPessoal()) || ok.indexOf(ci.esc) >= 0 || (c.id === sel && !catSoPessoal())); });
     if (its.length) out.push({ nome: f[1], cor: f[2], its: its });
   });
   var meus = CATEGORIAS_LISTA.filter(function(c){ return !CAT_POR_ID[c.id]; });
@@ -26079,6 +26199,8 @@ function ppPor(n){
     '.papel-familiar #drawer .dr-it,.papel-familiar #drawer .dr-grp,.papel-familiar #btbar .bt-it:not(#btMais):not(.bt-fam),.papel-familiar #fabNew,.papel-familiar #finFabMenu,.papel-familiar #menuNav .dr-n{display:none!important}' +
     '.papel-familiar.fam-obra #drawer .dr-it[data-tab="obra"],.papel-familiar #drawer .dr-it[data-tab="configuracoes"],.papel-familiar #drawer #sairBtn,.papel-familiar.fam-obra #btbar .bt-fam{display:flex!important}' +
     '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="analises"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="extratos"],.papel-familiar.fam-fin #drawer .dr-it#abrirFechamentoBtn,.papel-familiar.fam-fin #btbar .bt-it[data-tab="financeiro"]{display:flex!important}' +
+    '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"][data-fin="pj"],.papel-familiar #drawer #abrirRecebiBtn,.papel-familiar [data-transferir-pf],.papel-familiar #finTransfNota,.papel-familiar #finTransfDesp{display:none!important}' +
+    '.papel-familiar .cat-pk-lk{display:none!important}' +
     '.bt-fam{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
@@ -28221,7 +28343,8 @@ function mfReservaEm(fim){   /* o mesmo critério de anPatrimonioEm: soma dos mo
 /* ---------------- VISÃO GERAL DO FINANCEIRO ---------------- */
 function mfResumo(){
   var hoje = todayISO(), mA = hoje.slice(0, 7), ehAtual = mesSelecionado === mA, pat = computePatrimonio(), d = null, pr = null;
-  try{ d = comMes(mA, computeDivisao); }catch(e){ console.error('divisão', e); }
+  var fam = ffnAtivo();   /* familiar: só PF; sem a divisão da PJ (pró-labore, lucros, folga) */
+  try{ if (fam) d = { reservaMeta: metas.filter(function(m){ return m.tipo === 'reserva'; })[0] || null, res: computeReservaInfo() }; else d = comMes(mA, computeDivisao); }catch(e){ console.error('divisão', e); }
   try{ pr = anProjecao(6); }catch(e){ console.error('projeção', e); }
   var mesesHoje = anMesesAte(6), fimDe = function(m){ return m === mA ? hoje : anUltimoDia(m); };
   /* patrimônio: evolução pelos saldos informados */
@@ -28230,20 +28353,22 @@ function mfResumo(){
   var hero = '<div class="md-card mf-hero"><div class="md-h"><span class="md-k">' + mdIc('landmark', MD_COR.ouro) + '<span>Patrimônio líquido</span></span><button type="button" class="md-link" data-md-ir="aba:patrimonio">ver composição ›</button></div>' +
     '<b class="mf-big">' + fmtMoeda(pat.total) + '</b>' + (delta !== null ? '<span class="fv-chip ' + (delta >= 0 ? 'ok' : 'neg') + '">' + (delta >= 0 ? '▲ ' : '▼ ') + fmtMoeda(Math.abs(delta)) + ' vs. fim de ' + escapeHtml(mdMesAno(deslocarMes(mA, -1))) + '</span>' : '') +
     (evo.length >= 2 ? mdLinha(evo.map(function(x){ return x.m; }), evo.map(function(x){ return x.v; }), MD_COR.ouro, { id: 'pat', fmt: mfMil, dinheiro: true, titulo: 'Evolução do patrimônio' }) : '<div class="md-foot" style="margin:10px 0">A evolução aparece quando houver saldo informado em mais de um mês.</div>') +
-    '<div class="md-foot">PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf) + ' · Metas ' + fmtMoeda(pat.totalMetas) + (Math.abs(pat.obraSaldo) > 0.004 ? ' · Obra ' + fmtMoeda(pat.obraSaldo) : '') + (pat.repasseAPagar > 0.004 ? ' · Repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : '') + '</div></div>';
+    '<div class="md-foot">' + (fam ? 'Contas ' : 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ') + fmtMoeda(pat.saldoPf) + ' · Metas ' + fmtMoeda(pat.totalMetas) + (Math.abs(pat.obraSaldo) > 0.004 ? ' · Obra ' + fmtMoeda(pat.obraSaldo) : '') + (pat.repasseAPagar > 0.004 ? ' · Repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : '') + '</div></div>';
   var rec = anRecebidoMes(mesSelecionado), pago = comMes(mesSelecionado, function(){ return r2(computeDespesasResumoMes('pj').pago + computeDespesasResumoMes('pf').pago); });
-  var kp = [
-    { ir: 'aba:pj', ic: 'briefcase-business', cor: MD_COR.azul, rot: 'Saldo da PJ', v: fmtMoeda(pat.saldoPj), foot: escapeHtml(idadeSaldo('pj')) },
-    { ir: 'aba:pf', ic: 'user-round', cor: MD_COR.azul, rot: 'Saldo da PF', v: fmtMoeda(pat.saldoPf), foot: escapeHtml(idadeSaldo('pf')) }];
+  var kp = (fam ? [] : [{ ir: 'aba:pj', ic: 'briefcase-business', cor: MD_COR.azul, rot: 'Saldo da PJ', v: fmtMoeda(pat.saldoPj), foot: escapeHtml(idadeSaldo('pj')) }]).concat([
+    { ir: 'aba:pf', ic: 'user-round', cor: MD_COR.azul, rot: fam ? 'Saldo da conta' : 'Saldo da PF', v: fmtMoeda(pat.saldoPf), foot: escapeHtml(idadeSaldo('pf')) }]);
   if (d && d.reservaMeta){
     var pc = d.res.alvo > 0 ? Math.min(100, d.res.atual / d.res.alvo * 100) : 0;
     kp.push({ ir: 'aba:patrimonio', ic: 'piggy-bank', cor: MD_COR.verde, rot: 'Reserva de emergência', v: d.res.alvo > 0 ? fmtPerc(pc) : fmtMoeda(d.res.atual), foot: (d.res.alvo > 0 ? fmtMoeda(d.res.atual) + ' de ' + fmtMoeda(d.res.alvo) : 'sem alvo definido') + '<div class="mf-bar"><i style="width:' + pc + '%"></i></div>' });
   } else kp.push({ ir: 'aba:geral', ic: 'piggy-bank', cor: MD_COR.cinza, rot: 'Reserva de emergência', v: '—', foot: 'ainda não há meta de reserva' });
-  if (d){
+  if (fam){
+    var rpf = computeResultadoMes('pf'), sob = rpf.vaiSobrarFinal;
+    kp.push({ ir: 'aba:pf', ic: 'calendar-check', cor: sob >= -0.005 ? MD_COR.ouro : MD_COR.verm, rot: sob >= -0.005 ? 'Vai sobrar no fim do mês' : 'Vai faltar no fim do mês', v: fmtMoeda(Math.abs(sob)), cls: sob >= -0.005 ? '' : 'neg', foot: rpf.modo === 'caixa' ? 'caixa de hoje menos o que falta pagar' : 'recebido menos despesas do mês' });
+  } else if (d){
     kp.push({ ir: 'aba:geral', ic: 'trending-up', cor: d.folgaPJ >= 0 ? MD_COR.verde : MD_COR.verm, rot: d.folgaPJ >= 0 ? 'Folga projetada da PJ' : 'Falta projetada na PJ', v: fmtMoeda(Math.abs(d.folgaPJ)), cls: d.folgaPJ >= 0 ? 'ok' : 'neg', foot: 'depois das despesas pendentes' + (d.margem > 0 ? ' e do caixa mínimo' : '') + ' · projeção, ainda não é dinheiro' });
     kp.push({ ir: 'aba:pf', ic: 'calendar-check', cor: d.pfFecha >= -0.005 ? MD_COR.ouro : MD_COR.verm, rot: d.pfFecha >= -0.005 ? 'Fechamento projetado da PF' : 'Falta projetada na PF', v: fmtMoeda(Math.abs(d.pfFecha)), cls: d.pfFecha >= -0.005 ? '' : 'neg', foot: d.faltaPF > 0.005 ? 'contando ' + fmtMoeda(d.faltaPF) + ' que ainda vem da PJ' : 'projeção do mês' });
   }
-  kp.push({ ir: 'aba:pj', ic: 'circle-dollar-sign', cor: MD_COR.verde, rot: 'Recebido em ' + escapeHtml(mdMesAno(mesSelecionado)), v: fmtMoeda(rec.total), cls: rec.total > 0.004 ? 'ok' : '', foot: 'despesas pagas no mês: ' + fmtMoeda(pago) });
+  kp.push({ ir: fam ? 'aba:pf' : 'aba:pj', ic: 'circle-dollar-sign', cor: MD_COR.verde, rot: 'Recebido em ' + escapeHtml(mdMesAno(mesSelecionado)), v: fmtMoeda(rec.total), cls: rec.total > 0.004 ? 'ok' : '', foot: 'despesas pagas no mês: ' + fmtMoeda(pago) });
   var h = (ehAtual ? '' : '<div class="mf-aviso">Saldos, folga, fechamento e reserva são os de hoje. O recebido e os gráficos seguem o mês escolhido no topo (' + escapeHtml(mesLabel(mesSelecionado)) + ').</div>') +
     '<div class="mf-topo">' + hero + kp.map(mdKpi).join('') + '</div>';
   /* receitas × despesas */
@@ -28271,7 +28396,7 @@ function mfResumo(){
       '<div class="md-foot">Guardado ' + fmtMoeda(d.res.atual) + (d.res.alvo > 0 ? ' · alvo ' + fmtMoeda(d.res.alvo) + (d.res.alvo - d.res.atual > 0.004 ? ' · faltam ' + fmtMoeda(d.res.alvo - d.res.atual) : ' · alvo atingido') : '') + '</div>', ['aba:patrimonio', 'ver aportes']);
   }
   /* distribuição do mês (a mesma conta da Divisão do mês) */
-  if (d){
+  if (d && !fam){
     var partes = [['PF · pró-labore', d.proPart, d.feitoPro, MD_COR.azul], ['PF · lucros', d.lucPart, d.feitoLuc, MD_COR.roxo], ['Reserva de emergência', d.metaRes, d.aportadoRes, MD_COR.verde], ['Caixa que fica na PJ', d.metaPJ, null, MD_COR.ouro]].filter(function(x){ return x[1] > 0.005; });
     var totP = partes.reduce(function(t, x){ return t + x[1]; }, 0), falta = [];
     if (d.faltaPF > 0.005) falta.push('transferir ' + fmtMoeda(d.faltaPF) + ' para a PF'); if (d.faltaRes > 0.005) falta.push('aportar ' + fmtMoeda(d.faltaRes) + ' na reserva');
@@ -28287,7 +28412,7 @@ function mfResumo(){
     });
     if (pr.linhas[0] && pr.linhas[0].atrasados > 0.004) at.push({ ic: 'hand-coins', cor: MD_COR.verm, t: 'Recebimentos de clientes em atraso', s: 'parcelas vencidas ainda não recebidas', v: fmtMoeda(pr.linhas[0].atrasados), ir: 'clientes', neg: true });
   }
-  if (d){
+  if (d && !fam){
     if (d.faltaPro > 0.005) at.push({ ic: 'arrow-left-right', cor: MD_COR.azul, t: 'Transferência para a PF', s: 'planejada, ainda não feita', v: fmtMoeda(d.faltaPro), ir: 'aba:geral' });
     if (d.faltaRes > 0.005) at.push({ ic: 'piggy-bank', cor: MD_COR.verde, t: 'Aporte na reserva', s: 'planejado, ainda não feito', v: fmtMoeda(d.faltaRes), ir: 'aba:geral' });
     d.alertas.filter(function(a){ return a.nivel === 'aviso'; }).forEach(function(a){ at.push({ ic: 'info', cor: MD_COR.ouro, t: a.texto, s: 'aviso da divisão do mês', v: '', ir: 'aba:geral', longo: true }); });
@@ -28374,8 +28499,8 @@ function mfObraResumo(r, cfg){
   var aportado = r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0) + (r.aportes.terceiro || 0) - (r.retirado || 0)), falta = Math.max(0, r2(proprios - aportado));
   var cProprios = '<div class="md-card mf-proprios"><div class="md-h"><span class="md-k">' + mdIc('coins', MD_COR.verde) + '<span>Recursos próprios necessários</span></span></div><b class="mf-big">' + fmtMoeda(proprios) + '</b>' +
     '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − ' + (fin.tipo === 'consorcio' ? 'consórcio' : 'financiamento') + ' ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + obSitCred(fin) + ')</em>' : (fin.tipo === 'consorcio' ? 'sem valor de consórcio informado: o custo estimado inteiro é recurso próprio' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio')) + '</div>' +
-    cal(obSoObra() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
-    '<div class="md-foot">' + (obSoObra() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
+    cal(obSoPF() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
+    '<div class="md-foot">' + (obSoPF() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
   var nAPagar = obraMov.filter(function(m){ return m.tipo === 'gasto' && m.status === 'apagar'; }).length;
   var kp = [
     { ir: 'sub:etapas', ic: 'hard-hat', cor: MD_COR.ouro, rot: 'Orçamento', v: fmtMoeda(r.orcamento), foot: r.orcamento > 0 ? fmtPerc(r.detalhado / r.orcamento * 100) + ' detalhado em etapas' : 'sem orçamento definido' },
@@ -28390,7 +28515,7 @@ function mfObraResumo(r, cfg){
   var g = mdCard('Orçado × realizado por etapa', !ets.length ? '<div class="md-vazio">Nenhuma etapa com valor. Use “Adicionar etapa” na sub-aba Etapas.</div>' :
     mdBarras(ets.map(function(x){ return x.e.id; }), ets.map(function(x){ return x.orcado; }), ets.map(function(x){ return r2(x.pago + x.aPagar); }), { sel: sel, ca: '#B9B7AE', cb: MD_COR.ouro, ra: 'orçado', rb: 'realizado', rot: function(i){ return curto(ets[i].e.nome); }, tit: function(i){ return String(ets[i].e.nome).slice(0, 16); }, titulo: 'Orçado e realizado por etapa' }) +
     mdLeg([['#B9B7AE', 'Orçado'], [MD_COR.ouro, 'Realizado (pago + a pagar)']]) + '<div class="md-foot">' + (sel != null ? 'Toque de novo em <b>' + escapeHtml(ets[sel].e.nome) + '</b> para ver os gastos dessa etapa.' : 'Toque numa etapa para ver os valores.') + '</div>', ['sub:etapas', 'abrir as etapas']);
-  var fontes = [[obSoObra() ? 'Recursos próprios' : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
+  var fontes = [[obSoPF() ? (ffnAtivo() ? 'Da minha conta' : 'Recursos próprios') : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
   var totF = fontes.reduce(function(t, x){ return t + x[1]; }, 0);
   g += mdCard('De onde veio o dinheiro', !fontes.length ? '<div class="md-vazio">Nenhum aporte ou liberação ainda.</div>' : (discreto ? mdOculto() :
     '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center">' + mdRosca(fontes, mdCompacto(totF), 'entrou na obra') + '<div style="flex:1;min-width:170px">' + fontes.map(function(x){ return '<button type="button" class="md-fase" style="grid-template-columns:minmax(0,1fr) auto" data-md-ir="sub:caixa"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + x[2] + ';margin-right:7px"></i>' + escapeHtml(x[0]) + '</span><b>' + fmtMoeda(x[1]) + '</b></button>'; }).join('') + '</div></div>'), ['sub:caixa', 'ver entradas']);
@@ -28693,7 +28818,7 @@ function orcRender(){
   if (!orcS.cat || cats.indexOf(orcS.cat) < 0) orcS.cat = com.length ? com[0].k : (cats[0] || null);
   var dir = '', nota = function(n, t){ return '<div class="an-sem-nota"><span>' + n + '</span><div>' + t + '</div></div>'; };
   dir += '<section class="ini-card an-card"><div class="an-tit"><h4>Como funciona</h4></div>' +
-    nota(1, 'O gasto vem <b>dos mesmos lançamentos de hoje</b> (despesas pagas e dia a dia), por categoria, somando PJ e PF. O que ainda vai vencer só aparece como aviso.') +
+    nota(1, 'O gasto vem <b>dos mesmos lançamentos de hoje</b> (despesas pagas e dia a dia), por categoria' + (ppFamiliar() ? '' : ', somando PJ e PF') + '. O que ainda vai vencer só aparece como aviso.') +
     nota(2, 'Alertas em <b>80% e 100%</b>: aparecem aqui e em “Precisa de atenção”, na Visão geral.') +
     nota(3, '<b>O orçamento nunca altera lançamentos.</b> Estourar só avisa.') +
     nota(4, 'Tocar numa linha abre os lançamentos daquela categoria no mês.') + '</section>';
@@ -29069,7 +29194,7 @@ function excAbrirContas(){
     if (c.obra && cmp && cmp.app !== null){ var bate = Math.abs(cmp.dif) <= 0.10; sub = 'extrato ' + extMoeda(cmp.extrato) + ' · app ' + fmtMoeda(cmp.app) + ' · ' + (bate ? '<b class="exc-ok">bate</b>' : '<b class="exc-dif">difere ' + fmtMoeda(Math.abs(cmp.dif)) + '</b>'); }
     else sub = g ? 'saldo ' + extMoeda(g.valor) + ' · lido em ' + escapeHtml(extFmtQuando(g.emitido)) : 'ainda sem extrato';
     return '<div class="exc-conta">' + excLogo(k, 44) + '<div class="exc-tx"><input type="text" class="exc-apelido" data-ctaapelido="' + escapeHtml(k) + '" value="' + escapeHtml(c.rotulo || k) + '" maxlength="60" aria-label="Apelido da conta"><span class="saldo-data">' + sub + '</span></div>' + excTipoChip(c) +
-      '<div class="exc-ctl">' + extSelectHtml('data-ctaconf="' + escapeHtml(k) + '"', [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']], c.coluna) +
+      '<div class="exc-ctl">' + extSelectHtml('data-ctaconf="' + escapeHtml(k) + '"', (ppFamiliar() ? [['pf', 'Conta pessoal']] : [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']]), c.coluna) +
       '<label class="ext-saldo-lab"><input type="checkbox" data-ctaobra="' + escapeHtml(k) + '"' + (c.obra ? ' checked' : '') + '><span>É dinheiro da obra <small>(o saldo é comparado com a aba Construção)</small></span></label></div></div>';
   }).join('');
   extAbrirGen('Contas dos extratos',
@@ -30443,7 +30568,7 @@ function obraAbrirGasto(id, pagarId){
 }
 function obraAbrirAporte(){
   var cfg = obraCfg(), hojeIso = todayISO();
-  var html = obCampo('De onde vem o dinheiro', obSelect('origem', obOrigemOpts(), 'pf'), obSoObra() ? 'Recursos próprios é dinheiro seu que entra na conta da obra. De terceiro, o valor entra direto na conta da obra e não conta como receita.' : 'Da PF ou da PJ, o valor sai do caixa daquela conta. De terceiro, o valor entra direto na conta da obra e não passa pela PF/PJ nem conta como receita. Se o terceiro pagou primeiro a você (e o dinheiro já está na PF/PJ), lance como aporte da PF/PJ.') +
+  var html = obCampo('De onde vem o dinheiro', obSelect('origem', obOrigemOpts(), 'pf'), obSoPF() ? 'Recursos próprios é dinheiro seu que entra na conta da obra. De terceiro, o valor entra direto na conta da obra e não conta como receita.' : 'Da PF ou da PJ, o valor sai do caixa daquela conta. De terceiro, o valor entra direto na conta da obra e não passa pela PF/PJ nem conta como receita. Se o terceiro pagou primeiro a você (e o dinheiro já está na PF/PJ), lance como aporte da PF/PJ.') +
     obCampo('Nome do terceiro (se a origem for terceiro)', obInput('pessoa', 'text', '', 'placeholder="Ex.: Vizinho João"')) +
     obCampo('Valor (R$)', obInput('valor', 'number', '', 'min="0" step="0.01" inputmode="decimal"')) +
     obCampo('Data', obInput('data', 'date', hojeIso)) +
@@ -30472,12 +30597,12 @@ function obraAbrirLiberacao(){
 function obraAbrirRetirada(){
   var r = obraResumo(), hojeIso = todayISO();
   var html = '<div class="parcela-sum">Dinheiro na conta da obra: <b>' + fmtMoedaReal(r.saldo) + '</b> · ainda falta gastar nas etapas: <b>' + fmtMoedaReal(r.faltaGastar) + '</b> · sobra estimada: <b>' + fmtMoedaReal(r.sobra) + '</b>' + (r.semDetalhar > 0.004 ? '<br>Atenção: ainda há ' + fmtMoedaReal(r.semDetalhar) + ' do orçamento sem detalhar em etapas, que não entram nessa conta.' : '') + '</div>' +
-    obCampo('Devolver para', obSelect('destino', obDestinoOpts(), 'pf'), obSoObra() ? 'O valor sai da conta da obra e volta para você. Não é receita.' : 'O valor sai da conta da obra e entra no caixa da conta escolhida. Não é receita nem entra no recebido do mês.') +
+    obCampo('Devolver para', obSelect('destino', obDestinoOpts(), 'pf'), obSoPF() ? 'O valor sai da conta da obra e volta para você. Não é receita.' : 'O valor sai da conta da obra e entra no caixa da conta escolhida. Não é receita nem entra no recebido do mês.') +
     obCampo('Valor (R$)', obInput('valor', 'number', r.sobra > 0.004 ? r.sobra : '', 'min="0" step="0.01" inputmode="decimal"')) +
     obCampo('Data', obInput('data', 'date', hojeIso)) +
     obCampo('Observação (opcional)', obInput('obs', 'text', '', 'placeholder="Ex.: sobra do muro"')) +
     '<div class="saldo-data" id="of_aviso" style="color:var(--danger)"></div>';
-  obraAbrirForm(obSoObra() ? 'Devolver sobra para mim' : 'Devolver sobra à PF/PJ', html, function(){
+  obraAbrirForm(obSoPF() ? 'Devolver sobra para mim' : 'Devolver sobra à PF/PJ', html, function(){
     var valor = r2(obNum('valor')), data = obFid('data').value, atual = obraResumo();
     if (!(valor > 0)) return 'Informe o valor.';
     if (!data) return 'Informe a data.';
@@ -30601,7 +30726,7 @@ function renderObra(){
 
   /* dinheiro da obra */
   var din = obraMovTodos().filter(function(m){ return m.tipo === 'aporte' || m.tipo === 'liberacao' || m.tipo === 'retirada'; }).sort(function(a, b){ return String(b.data || '').localeCompare(String(a.data || '')) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')); });
-  var origemTxt = { pf: obSoObra() ? 'aporte de recursos próprios' : 'aporte da conta PF', pj: 'aporte da conta PJ', externo: 'já estava na conta da obra', terceiro: 'aporte de terceiro' };
+  var origemTxt = { pf: obSoPF() ? (ffnAtivo() ? 'aporte da minha conta' : 'aporte de recursos próprios') : 'aporte da conta PF', pj: 'aporte da conta PJ', externo: 'já estava na conta da obra', terceiro: 'aporte de terceiro' };
   h += '<div class="ini-card"><div class="financeiro-secao-head"><h4>Dinheiro da obra</h4></div><div class="saldo-data" style="margin-bottom:6px;">' + (obSoObra() ? 'Aportes: recursos próprios ' + fmtMoeda(r.aportes.pf) : 'Aportes: PF ' + fmtMoeda(r.aportes.pf) + ' · PJ ' + fmtMoeda(r.aportes.pj)) + ' · direto na conta da obra ' + fmtMoeda(r.aportes.externo) + (r.aportes.terceiro > 0.004 ? ' · terceiros ' + fmtMoeda(r.aportes.terceiro) : '') + (r.liberado > 0.004 ? ' · liberações ' + fmtMoeda(r.liberado) : '') + (r.retirado > 0.004 ? (obSoObra() ? ' · devolvido a você ' : ' · devolvido à PF/PJ ') + fmtMoeda(r.retirado) : '') + '</div>';
   if (!din.length) h += '<div class="financeiro-vazio">Nenhum aporte ou liberação ainda.</div>';
   din.forEach(function(m){

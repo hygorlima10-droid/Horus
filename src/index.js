@@ -658,6 +658,9 @@ const ROTAS = {
 };
 export const RAIZES_API = Object.keys(ROTAS);
 const ROTAS_FAMILIAR = new Set(['db', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
+/* extratos pelo Atalho do iPhone: só o familiar com o módulo de Finanças (a caixa de entrada e o código são só dele) */
+const ROTAS_FAMILIAR_FIN = new Set(['recebidos', 'atalho']);
+const familiarRotaOk = (rota, auth) => ROTAS_FAMILIAR.has(rota) || (ROTAS_FAMILIAR_FIN.has(rota) && normalizarUsuario(auth.usuario).modulos.includes('financas'));
 
 /* aviso curto no celular (entrada em aparelho novo, senha errada, indicado como responsável, repasse…). `uid` vazio = proprietário.
    `pref` = a opção da pessoa que precisa estar ligada ("indicado", "repasses"…); `aviso.equipe` = a chave de equipe do proprietário ("exclusao", "desfeito"…). */
@@ -718,7 +721,7 @@ async function tratar(request, env, ctx) {
     const partes = url.pathname.slice(5).split('/').filter(Boolean), rota = ROTAS[partes[0]];
     if (!rota) return erro(404, 'not_found', 'Não encontrado.');
     if (rota[0] === 'proprietario' && auth && auth.usuario.papel !== 'proprietario') return erro(403, 'forbidden', 'Só o proprietário pode usar isto.');
-    if (auth && auth.usuario && auth.usuario.papel === 'familiar' && !ROTAS_FAMILIAR.has(partes[0])) return erro(403, 'forbidden', 'Esta área não está liberada para o seu acesso.');   // familiar: só os dados dele, a conta, os índices da calculadora, comprovantes e o aviso no celular
+    if (auth && auth.usuario && auth.usuario.papel === 'familiar' && !familiarRotaOk(partes[0], auth)) return erro(403, 'forbidden', 'Esta área não está liberada para o seu acesso.');   // familiar: só os dados dele, a conta, os índices da calculadora, comprovantes e o aviso no celular
     try { return await rota[1](request, env, partes, auth); }
     catch (e) { console.error(e); return erro(500, 'server', 'Erro no servidor.'); }
   }

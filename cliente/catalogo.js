@@ -70,11 +70,15 @@ var CAT_DADOS = [
   ['compras_online', 'Compras online', 'package', 'compras', 'A', 'MERCADO LIVRE|MERCADOLIVRE|AMAZON|SHOPEE|SHEIN|ALIEXPRESS|AMERICANAS|SUBMARINO'],
   ['pets', 'Pets e veterinário', 'paw-print', 'compras', 'F', 'PETZ|COBASI|PET SHOP|PETSHOP|VETERINAR*'],
   ['filhos', 'Filhos e família', 'user-round', 'familia', 'F', 'ESCOLINHA|BRINQUEDO*|RIHAPPY'],
+  ['medico_filhos', 'Médico dos filhos', 'stethoscope', 'familia', 'F', 'PEDIATR*|CLINICA INFANTIL'],
+  ['remedios_filhos', 'Remédios dos filhos', 'pill', 'familia', 'F', 'XAROPE INFANTIL|REMEDIO INFANTIL'],
+  ['fraldas', 'Fraldas e afins', 'bath', 'familia', 'F', 'FRALDA*|PAMPERS|HUGGIES|LENCO UMEDECIDO'],
   ['doacoes', 'Doações e dízimo', 'handshake', 'familia', 'F', 'IGREJA|DIZIMO|DOACAO'],
   ['tarifas', 'Tarifas bancárias', 'building-2', 'financas', 'A', 'TARIFA*|ANUIDADE CARTAO|PACOTE SERVICOS', 'Tarifas e juros'],
   ['juros', 'Juros, multas e IOF', 'percent', 'financas', 'A', 'JUROS|IOF|MULTA|ENCARGOS|MORA'],
   ['emprestimos', 'Empréstimos e financiamentos', 'hand-coins', 'financas', 'A', 'EMPRESTIMO|FINANCIAMENTO|PARCELA*|CONSIGNADO'],
   ['cartao', 'Fatura de cartão', 'credit-card', 'financas', 'A', 'FATURA|PAGAMENTO FATURA|CARTAO DE CREDITO'],
+  ['consorcio', 'Consórcio', 'landmark', 'financas', 'F', 'CONSORCIO|ADM DE CONSORCIO|ADMINISTRADORA DE CONSORCIO'],
   ['seguros', 'Seguros', 'shield-check', 'financas', 'A', 'SEGURO*|SEGURADORA|MAPFRE|TOKIO MARINE'],
   ['impostos_pf', 'Imposto de renda e tributos pessoais', 'landmark', 'financas', 'F', 'DARF|IMPOSTO DE RENDA|RECEITA FEDERAL|IRPF'],
   ['estrutura', 'Estrutura do escritório (aluguel, condomínio)', 'building-2', 'escritorio', 'J', 'ALUGUEL ESCRIT*|COWORKING|CONDOMINIO ESCRIT*', 'Estrutura'],
@@ -191,7 +195,7 @@ function catPsLista(){
   CAT_FAMILIAS.forEach(function(f){
     var its = CAT_CATALOGO.filter(function(c){
       if (c.fam !== f[0]) return false;
-      if (S.so && !S.todas && S.so.indexOf(c.esc) < 0 && c.label !== atual) return false;
+      if (S.so && !(S.todas && !catSoPessoal()) && S.so.indexOf(c.esc) < 0 && !(c.label === atual && !catSoPessoal())) return false;
       var hay = catNormTxt(c.label + ' ' + f[1] + ' ' + c.pal.map(function(p){ return p.t; }).join(' '));
       return toks.every(function(t){ return hay.indexOf(t) >= 0; });
     });
@@ -208,7 +212,7 @@ function catPsAjusta(){ var bg = qs('catPsBg'); if (!bg || !window.visualViewpor
 function catPsAbrir(btn){
   var w = btn.closest('.cat-ps'), sel = w && w.querySelector('select'); if (!sel) return;
   var so = w.getAttribute('data-catps-so');
-  catPsS = { sel: sel, wrap: w, q: '', todas: false, so: so ? so.split('') : null };
+  catPsS = { sel: sel, wrap: w, q: '', todas: false, so: catSoPessoal() ? ['A', 'F'] : (so ? so.split('') : null) };
   var bg = qs('catPsBg');
   if (!bg){
     bg = document.createElement('div'); bg.id = 'catPsBg'; bg.className = 'cat-ps-bg';
@@ -234,13 +238,14 @@ function catPsEscolher(label){
 
 /* ---------- seletor de categoria da ficha de despesa (PJ e PF) ---------- */
 var catPickS = { aberto: false, q: '', todas: false };
-function catColunaAtual(){ try{ return (formStateDespesa && formStateDespesa.coluna) === 'pf' ? 'pf' : 'pj'; }catch(e){ return 'pj'; } }
+function catSoPessoal(){ try{ return ppFamiliar(); }catch(e){ return false; } }   /* familiar: sem as categorias do escritório (PJ) e sem despesas processuais */
+function catColunaAtual(){ if (catSoPessoal()) return 'pf'; try{ return (formStateDespesa && formStateDespesa.coluna) === 'pf' ? 'pf' : 'pj'; }catch(e){ return 'pj'; } }
 function catListaParaPick(){
   var col = catColunaAtual(), ok = col === 'pf' ? ['A', 'F'] : ['A', 'J'], sel = null;
   try{ sel = formStateDespesa.categoria; }catch(e){}
   var out = [];
   CAT_FAMILIAS.forEach(function(f){
-    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && (catPickS.todas || ok.indexOf(ci.esc) >= 0 || c.id === sel); });
+    var its = CATEGORIAS_LISTA.filter(function(c){ var ci = CAT_POR_ID[c.id]; return ci && ci.fam === f[0] && ((catPickS.todas && !catSoPessoal()) || ok.indexOf(ci.esc) >= 0 || (c.id === sel && !catSoPessoal())); });
     if (its.length) out.push({ nome: f[1], cor: f[2], its: its });
   });
   var meus = CATEGORIAS_LISTA.filter(function(c){ return !CAT_POR_ID[c.id]; });

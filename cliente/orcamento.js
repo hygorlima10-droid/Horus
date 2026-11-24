@@ -101,7 +101,7 @@ function orcRender(){
   if (!orcS.cat || cats.indexOf(orcS.cat) < 0) orcS.cat = com.length ? com[0].k : (cats[0] || null);
   var dir = '', nota = function(n, t){ return '<div class="an-sem-nota"><span>' + n + '</span><div>' + t + '</div></div>'; };
   dir += '<section class="ini-card an-card"><div class="an-tit"><h4>Como funciona</h4></div>' +
-    nota(1, 'O gasto vem <b>dos mesmos lançamentos de hoje</b> (despesas pagas e dia a dia), por categoria, somando PJ e PF. O que ainda vai vencer só aparece como aviso.') +
+    nota(1, 'O gasto vem <b>dos mesmos lançamentos de hoje</b> (despesas pagas e dia a dia), por categoria' + (ppFamiliar() ? '' : ', somando PJ e PF') + '. O que ainda vai vencer só aparece como aviso.') +
     nota(2, 'Alertas em <b>80% e 100%</b>: aparecem aqui e em “Precisa de atenção”, na Visão geral.') +
     nota(3, '<b>O orçamento nunca altera lançamentos.</b> Estourar só avisa.') +
     nota(4, 'Tocar numa linha abre os lançamentos daquela categoria no mês.') + '</section>';

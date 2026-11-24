@@ -21,7 +21,7 @@ await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await pag
 const H = () => page.evaluate(() => window.__horusTeste);
 // 1) o catálogo
 const cat = await page.evaluate(() => { const c = window.__horusTeste.CAT_CATALOGO; return { n: c.length, ids: new Set(c.map(x => x.id)).size, labels: new Set(c.map(x => x.label)).size, semIcone: c.filter(x => !x.ic).length }; });
-check(cat.n === 78 && cat.ids === 78 && cat.labels === 78, 'o catálogo tem 78 categorias, sem repetir id nem nome (tem ' + cat.n + ')');
+check(cat.n === 82 && cat.ids === 82 && cat.labels === 82, 'o catálogo tem 82 categorias, sem repetir id nem nome (tem ' + cat.n + ')');
 check(cat.semIcone === 0, 'toda categoria tem ícone');
 // 2) classificação por palavras
 const cl = await page.evaluate(() => { const h = window.__horusTeste; return ['UBER *TRIP', '99 POP', 'IFOOD *RESTAURANTE', 'NETFLIX.COM', 'Droga Raia', 'SUPERMERCADO BH', 'Coisa sem pista nenhuma', ''].map(t => h.catClassificar(t)); });
@@ -61,7 +61,7 @@ check((await get('despesas', 'a1')).categoria === 'outros', 'antes de aplicar na
 check(await page.evaluate(() => document.querySelectorAll('#overlayCatRc .cat-rc-it .cat-ps .cat-pk-btn').length === 4 && document.querySelectorAll('#overlayCatRc .cat-rc-it select.cat-oculto').length === 4), 'cada sugestão mostra o botão de categoria (com o <select> escondido guardando o valor)');
 await page.evaluate(() => Array.from(document.querySelectorAll('#overlayCatRc .cat-rc-it')).find(l => /Netflix/i.test(l.innerText)).querySelector('.cat-pk-btn').click()); await page.waitForTimeout(250);
 check(await page.evaluate(() => document.getElementById('catPsBg').classList.contains('show') && document.activeElement && document.activeElement.id === 'catPsQ'), 'tocar no botão abre o seletor com a busca já ativa');
-check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 78 && !document.getElementById('catPsRod').innerText.trim()), 'sem filtro de lado: lista as 78 categorias e não mostra o atalho do outro lado');
+check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 82 && !document.getElementById('catPsRod').innerText.trim()), 'sem filtro de lado: lista as 78 categorias e não mostra o atalho do outro lado');
 await page.fill('#catPsQ', 'farm'); await page.waitForTimeout(150);
 check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).map(x => x.innerText.trim()); return l.length >= 1 && l.includes('Farmácia e medicamentos') && l.length < 6; }), 'digitar "farm" acha "Farmácia e medicamentos"');
 await page.fill('#catPsQ', 'uber'); await page.waitForTimeout(150);

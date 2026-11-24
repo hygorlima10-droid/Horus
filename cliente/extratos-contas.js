@@ -29,7 +29,7 @@ function excAbrirContas(){
     if (c.obra && cmp && cmp.app !== null){ var bate = Math.abs(cmp.dif) <= 0.10; sub = 'extrato ' + extMoeda(cmp.extrato) + ' · app ' + fmtMoeda(cmp.app) + ' · ' + (bate ? '<b class="exc-ok">bate</b>' : '<b class="exc-dif">difere ' + fmtMoeda(Math.abs(cmp.dif)) + '</b>'); }
     else sub = g ? 'saldo ' + extMoeda(g.valor) + ' · lido em ' + escapeHtml(extFmtQuando(g.emitido)) : 'ainda sem extrato';
     return '<div class="exc-conta">' + excLogo(k, 44) + '<div class="exc-tx"><input type="text" class="exc-apelido" data-ctaapelido="' + escapeHtml(k) + '" value="' + escapeHtml(c.rotulo || k) + '" maxlength="60" aria-label="Apelido da conta"><span class="saldo-data">' + sub + '</span></div>' + excTipoChip(c) +
-      '<div class="exc-ctl">' + extSelectHtml('data-ctaconf="' + escapeHtml(k) + '"', [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']], c.coluna) +
+      '<div class="exc-ctl">' + extSelectHtml('data-ctaconf="' + escapeHtml(k) + '"', (ppFamiliar() ? [['pf', 'Conta pessoal']] : [['pj', 'PJ (empresa)'], ['pf', 'PF (pessoa física)']]), c.coluna) +
       '<label class="ext-saldo-lab"><input type="checkbox" data-ctaobra="' + escapeHtml(k) + '"' + (c.obra ? ' checked' : '') + '><span>É dinheiro da obra <small>(o saldo é comparado com a aba Construção)</small></span></label></div></div>';
   }).join('');
   extAbrirGen('Contas dos extratos',

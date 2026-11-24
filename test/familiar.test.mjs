@@ -53,6 +53,16 @@ r = await fam2('PUT', '/api/db/despesas/f1', { nome: 'Escola', valor: 900, colun
 check((await fam2('GET', '/api/db/despesas')).j.docs.length === 1 && (await dono('GET', '/api/db/despesas')).j.docs.every((d) => d.data.nome !== 'Escola') && (await fam('GET', '/api/db/despesas')).s === 403, 'e ninguém mais vê (nem o outro familiar)');
 check((await fam2('GET', '/api/db/obraMov')).j.docs.length === 0, 'cada familiar tem a sua obra');
 
+// Atalho do iPhone: só o familiar com Finanças, com código e caixa de entrada só dele
+const envia = async (codigo, nome, tam) => { const bytes = Buffer.alloc(tam, 65); bytes.write('%PDF-1.4\n'); const x = await fetch(B + '/api/enviar', { method: 'POST', headers: { authorization: 'Bearer ' + codigo, 'x-nome': encodeURIComponent(nome), 'content-type': 'application/pdf' }, body: bytes }); let j = null; try { j = await x.json(); } catch (e) { /* sem corpo */ } return { s: x.status, j }; };
+check((await fam('GET', '/api/atalho')).s === 403 && (await fam('GET', '/api/recebidos')).s === 403, 'familiar só com Construção: sem Atalho nem caixa de recebidos');
+r = await fam2('POST', '/api/atalho/gerar'); const cod = r.j && r.j.codigo; check(r.s === 200 && /^[a-z0-9]{4}(-[a-z0-9]{4}){3}$/.test(cod || ''), 'familiar com Finanças gera o código do Atalho');
+check((await envia(cod, 'extrato-caixa.pdf', 2000)).s === 200, 'o envio com o código dele entra');
+r = await fam2('GET', '/api/recebidos'); check(r.s === 200 && r.j.itens.length === 1 && r.j.itens[0].nome === 'extrato-caixa.pdf', 'o arquivo aparece na caixa dele');
+check((await dono('GET', '/api/recebidos')).j.itens.every((i) => i.nome !== 'extrato-caixa.pdf'), 'o proprietário não vê o extrato dele');
+check((await fam2('GET', '/api/atalho/pessoas')).s === 403, 'ele não lista os atalhos dos outros');
+r = await fam2('DELETE', '/api/recebidos/' + (await fam2('GET', '/api/recebidos')).j.itens[0].id); check(r.s === 200, 'e pode apagar o que recebeu');
+
 // proprietário gerencia o acesso
 r = await dono('GET', '/api/usuarios'); const u6 = r.j.usuarios.find((u) => u.id === 'uf6');
 check(u6 && u6.papel === 'familiar' && JSON.stringify(u6.modulos) === '["obra"]', 'o proprietário vê o familiar e os módulos dele na lista de usuários');
