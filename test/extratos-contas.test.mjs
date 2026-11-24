@@ -65,9 +65,9 @@ const linSup = () => page.evaluate(() => { const l = Array.from(document.querySe
 let ls = await linSup();
 check(ls && /Supermercado/.test(ls.btn) && ls.val === 'Supermercado' && ls.lado === 'AF', 'a linha do supermercado (PF) mostra o botão de categoria com "Supermercado" e o lado da conta (A+F)');
 await page.evaluate((i) => document.querySelector('#extLinhas [data-lin="' + i + '"] .cat-pk-btn').click(), ls.idx); await page.waitForTimeout(250);
-check(await page.evaluate(() => { const n = document.querySelectorAll('#catPsL .cat-pk-i').length, rod = document.getElementById('catPsRod').innerText; return n > 20 && n < 78 && /Mostrar também as do outro lado/.test(rod) && !Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).some(x => /Anuidade da OAB/.test(x.innerText)); }), 'no PF o seletor mostra só as categorias do lado pessoal e oferece "Mostrar também as do outro lado"');
+check(await page.evaluate(() => { const n = document.querySelectorAll('#catPsL .cat-pk-i').length, rod = document.getElementById('catPsRod').innerText; return n > 20 && n < 82 && /Mostrar também as do outro lado/.test(rod) && !Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).some(x => /Anuidade da OAB/.test(x.innerText)); }), 'no PF o seletor mostra só as categorias do lado pessoal e oferece "Mostrar também as do outro lado"');
 await page.click('#catPsRod [data-catps-todas]'); await page.waitForTimeout(150);
-check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 78 && /Mostrar só as da pessoa física/.test(document.getElementById('catPsRod').innerText)), 'o atalho abre as 78 categorias (e passa a oferecer voltar só às da pessoa física)');
+check(await page.evaluate(() => document.querySelectorAll('#catPsL .cat-pk-i').length === 82 && /Mostrar só as da pessoa física/.test(document.getElementById('catPsRod').innerText)), 'o atalho abre as 82 categorias (e passa a oferecer voltar só às da pessoa física)');
 await page.fill('#catPsQ', 'uber'); await page.waitForTimeout(150);
 await page.evaluate(() => Array.from(document.querySelectorAll('#catPsL .cat-pk-i')).find(x => /Aplicativos de transporte/.test(x.innerText)).click()); await page.waitForTimeout(250);
 ls = await linSup();

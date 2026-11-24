@@ -64,6 +64,11 @@ for (const [nome, sel] of [['análises', '[data-tab="analises"]'], ['fechamento'
 // Atalho do iPhone aparece em Minha conta (só com Finanças)
 await p.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await p.waitForTimeout(900);
 check(await p.evaluate(() => !!document.querySelector('#cfWrap [data-cf="atalho"]')), 'Minha conta: tem a linha "Atalho do iPhone"');
+check(!(await p.evaluate(() => document.getElementById('cfWrap').innerText)).match(/Audiências no calendário/) && /vencimentos da obra e das contas/.test(await p.evaluate(() => document.getElementById('cfWrap').innerText)), 'Minha conta: sem "Audiências no calendário" e com avisos só de obra e contas');
+await p.click('#cfWrap [data-cf="notif"]'); await p.waitForTimeout(1200);
+const nt = await p.evaluate(() => document.getElementById('ntCorpo').innerText.replace(/\s+/g, ' '));
+check(/Vencimentos de hoje/.test(nt) && !/Prazo ou audiência|Publicações novas|Repasses|responsável/.test(nt), 'tela de avisos do celular: só os vencimentos (sem prazos, publicações, repasses): ' + nt.slice(0, 160));
+await p.evaluate(() => document.querySelectorAll('.overlay.show').forEach((e) => e.classList.remove('show')));
 await p.click('#cfWrap [data-cf="atalho"]'); await p.waitForTimeout(1200);
 check(/Atalho do iPhone/.test(await p.evaluate(() => document.body.innerText)) && p.recusados.length === 0, 'o Atalho abre para ele, sem pedido recusado');
 check(p.erros.length === 0, 'sem erros de script' + (p.erros.length ? ': ' + p.erros.join(' | ') : ''));
