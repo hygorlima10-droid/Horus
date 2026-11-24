@@ -397,6 +397,7 @@ var LeitorGeral = (function(){
     var tit = /COMPROVANTE (DE|DO|DA) ([A-Z ]{3,30})|PIX (ENVIADO|RECEBIDO|AGENDADO)|(TRANSFERENCIA|PAGAMENTO|DEPOSITO|TED|DOC|RECARGA|SAQUE) (REALIZAD[OA]|EFETUAD[OA]|ENVIAD[OA]|RECEBID[OA])/.exec(N);
     if (/PIX/.test(N) || out.e2e) out.tipo = 'pix'; else if (/\bTED\b/.test(N)) out.tipo = 'ted'; else if (/\bDOC\b/.test(N)) out.tipo = 'doc'; else if (/BOLETO|LINHA DIGITAVEL|CODIGO DE BARRAS/.test(N)) out.tipo = 'boleto'; else if (/TRANSFERENCIA/.test(N)) out.tipo = 'transferencia'; else if (tit) out.tipo = 'pagamento';
     if (/PIX RECEBID|VOCE RECEBEU|TRANSFERENCIA RECEBID|DEPOSITO|CREDITO EM CONTA/.test(N)) out.sentido = 'entrada'; else if (/PIX ENVIAD|VOCE (PAGOU|ENVIOU|TRANSFERIU)|TRANSFERENCIA (ENVIAD|REALIZAD|EFETUAD)|PAGAMENTO (REALIZAD|EFETUAD|DE (BOLETO|CONTA|FATURA|TITULO|CONVENIO))|COMPRA|PIX AGENDAD/.test(N)) out.sentido = 'saida';
+    if (!out.sentido && out.tipo) { out.sentido = 'saida'; out.sentidoPresumido = true; }   /* comprovante guardado costuma ser de um pagamento seu; o app avisa que presumiu */
     /* o que o rótulo não pegou: valor, data, ID e boleto em qualquer lugar do texto */
     if (out.valor == null) { var rs = /R\$\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/.exec(txt); if (rs) out.valor = moedaDe(rs[1]); }
     if (!out.data) { var dh2 = dataHoraDe(txt); if (dh2) { out.data = dh2.data; out.hora = out.hora || dh2.hora; } }
