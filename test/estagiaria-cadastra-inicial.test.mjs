@@ -1,8 +1,8 @@
 // A estagiária cadastra uma Inicial pela tela (com e sem responsável marcado, com e sem honorários fixos) e o servidor aceita.
-// Servidor do grupo 'permissoes':  node test/rodar.mjs estagiaria-cadastra-inicial
+// Servidor do grupo 'estagiaria-inicial' (banco novo):  node test/rodar.mjs estagiaria-cadastra-inicial
 import { createRequire } from 'node:module';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
-const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = { caio: 'tok-est-caio-0000000000000000000000004', dono: 'tok-dono-0000000000000000000000000001' };
+const B = process.env.BASE || 'http://127.0.0.1:8821', TOK = { caio: 'tok-est-caio-0000000000000000000000004', dono: 'tok-dono-0000000000000000000000000001' };
 let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
 const api = async (q, m, p) => { const r = await fetch(B + p, { method: m, headers: { cookie: 'sessao=' + TOK[q] } }); let j = null; try { j = await r.json(); } catch (e) { /* sem corpo */ } return { s: r.status, j }; };
 const br = await chromium.launch();
