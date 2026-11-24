@@ -30,4 +30,22 @@ export const PESSOAL = new Set(['despesas', 'receitasManuais', 'saldos', 'metas'
 export const ehAdvogadoAuth = (auth) => !!(auth && auth.usuario && auth.usuario.papel === 'advogado');
 export const ehCofre = (colecao) => String(colecao).includes('@');
 export const baseDoCofre = (colecao) => String(colecao).split('@')[0];
-export const doCofre = (colecao, auth) => (ehAdvogadoAuth(auth) && PESSOAL.has(colecao) ? colecao + '@' + auth.usuario.id : colecao);
+/* Familiar (ex.: irmão do proprietário): conta própria SÓ com os módulos que o proprietário liberou (Construção e/ou Finanças pessoais). Tudo fica no cofre dele
+   (`<coleção>@<id>`): ele não abre nada do escritório nem do proprietário, e o proprietário não lê o cofre dele pelo app. */
+export const ehFamiliarAuth = (auth) => !!(auth && auth.usuario && auth.usuario.papel === 'familiar');
+const modulosDe = (auth) => (Array.isArray(auth.usuario.modulos) ? auth.usuario.modulos : ['obra']);
+export const COL_OBRA = new Set(['obraMov']);
+/* coleções que o familiar pode usar, conforme os módulos (o documento `config` guarda as preferências e a personalização dele) */
+export function colecoesDoFamiliar(auth) {
+  const m = modulosDe(auth), s = new Set(['config', 'configDono']);
+  if (m.includes('obra')) for (const c of COL_OBRA) s.add(c);
+  if (m.includes('financas')) for (const c of PESSOAL) s.add(c);
+  return s;
+}
+export const familiarPodeUsar = (colecao, auth) => colecoesDoFamiliar(auth).has(String(colecao).split('@')[0]);
+export const ehCofreAuth = (auth) => ehAdvogadoAuth(auth) || ehFamiliarAuth(auth);
+export const doCofre = (colecao, auth) => {
+  if (ehAdvogadoAuth(auth) && PESSOAL.has(colecao)) return colecao + '@' + auth.usuario.id;
+  if (ehFamiliarAuth(auth) && familiarPodeUsar(colecao, auth)) return colecao + '@' + auth.usuario.id;
+  return colecao;
+};

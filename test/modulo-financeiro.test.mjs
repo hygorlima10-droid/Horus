@@ -54,7 +54,7 @@ await page.evaluate(() => document.querySelector('#discretoBtn').click()); await
 await page.click('#headFinanceiro [data-mf-aba="patrimonio"]'); await page.waitForTimeout(500);
 // ---- Construção
 await page.evaluate(() => document.querySelector('#drawer [data-tab="obra"]').click()); await page.waitForTimeout(1200);
-check(await on('#obAbas') === 'Resumo' && /Resumo\s*Etapas\s*Gastos\s*Dinheiro e financiamento/.test((await t('#obAbas')).replace(/\n/g, ' ')), 'Construção: sub-abas Resumo, Etapas, Gastos e Dinheiro e financiamento; abre no Resumo');
+check(await on('#obAbas') === 'Resumo' && /Resumo\s*Etapas\s*Gastos\s*Dinheiro e crédito/.test((await t('#obAbas')).replace(/\n/g, ' ')), 'Construção: sub-abas Resumo, Etapas, Gastos e Dinheiro e crédito; abre no Resumo');
 tx = await t('.md-painel[data-mf="obra"]');
 check(/DINHEIRO NA CONTA DA OBRA/i.test(tx) && /R\$\s*5\.500,00/.test(tx) && /R\$\s*450\.000,00/.test(await kpi('Orçamento')) && /R\$\s*24\.500,00/.test(await kpi('Já pago')) && /R\$\s*800,00/.test(await kpi('A pagar')), 'Resumo da obra: conta 5.500, orçamento 450.000, pago 24.500, a pagar 800');
 check(/ORÇADO × REALIZADO POR ETAPA/i.test(tx) && /DE ONDE VEIO O DINHEIRO/i.test(tx) && /Terraplanagem/.test(tx) && /estourou o orçado/.test(tx), 'gráfico por etapa, origem do dinheiro e aviso da etapa estourada');

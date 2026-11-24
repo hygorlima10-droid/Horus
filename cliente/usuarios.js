@@ -4,7 +4,10 @@
    O servidor decide tudo (/api/usuarios); a tela só mostra e pede. O proprietário nunca vê nem define a senha de ninguém.
    ============================================================ */
 var usS = { tela: 'lista', dados: null, oabsCad: [], sel: null, form: null, link: null, ocupado: false, sessoes: [], msg: '' };
-var US_PAPEL = { proprietario: 'proprietário', advogado: 'advogado', estagiario: 'estagiário' };
+var US_PAPEL = { proprietario: 'proprietário', advogado: 'advogado', estagiario: 'estagiário', familiar: 'familiar' };
+var US_MODULOS = [['obra', 'Construção', 'orçamento, gastos, etapas, consórcio/financiamento e calculadora da obra dele'], ['financas', 'Finanças pessoais', 'salário, gastos, extratos, orçamento, metas e análises (sem PJ nem jurídico)']];
+function usModulosTxt(m){ return (m || []).map(function(x){ return (US_MODULOS.filter(function(y){ return y[0] === x; })[0] || [x, x])[1]; }).join(', ') || 'nenhum'; }
+function usModulosHtml(sel, atr){ return US_MODULOS.map(function(m){ return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" ' + atr + '="' + m[0] + '"' + (sel.indexOf(m[0]) >= 0 ? ' checked' : '') + '><span class="ad-t"><b>' + m[1] + '</b><br><span class="saldo-data">' + m[2] + '</span></span></label>'; }).join(''); }
 var US_PERMS = [
   { k: 'verPublicacoes', t: 'Ver as publicações de todo o escritório', s: 'só leitura', para: ['estagiario'] },
   { k: 'verAgendas', t: 'Ver as agendas de todo o escritório', s: 'inclui as tarefas pessoais de todos', para: ['estagiario'] },
@@ -20,6 +23,8 @@ function usAbrir(){
     ov.addEventListener('input', function(e){ var t = e.target; if (t && t.getAttribute && t.getAttribute('data-usf') && usS.form){ usS.form[t.getAttribute('data-usf')] = t.value; } });
     ov.addEventListener('change', function(e){ var t = e.target; if (!t || !t.getAttribute) return;
       var p = t.getAttribute('data-usp'); if (p){ usPermMudou(p, t.checked); return; }
+      var mn = t.getAttribute('data-usmn'); if (mn && usS.form){ var ix = usS.form.modulos.indexOf(mn); if (t.checked && ix < 0) usS.form.modulos.push(mn); if (!t.checked && ix >= 0) usS.form.modulos.splice(ix, 1); return; }
+      var um = t.getAttribute('data-usm'); if (um){ var pu = usPessoa(usS.sel); if (pu){ var ms = (pu.modulos || []).filter(function(x){ return x !== um; }); if (t.checked) ms.push(um); if (!ms.length){ t.checked = true; toast('O familiar precisa de ao menos um módulo. Para tirar o acesso, desative a pessoa.'); return; } usPut({ modulos: ms }, 'Módulos atualizados.'); } return; }
       var o = t.getAttribute('data-uso'); if (o){ usOabMarcou(o, t.checked); return; }
       if (t.getAttribute('data-usf') === 'papel-ficha') usPapelFicha(t.value);
     });
@@ -46,7 +51,7 @@ function usHtmlLista(){
   var d = usS.dados, h = '<div class="pb-sec"><div class="pb-sec-t">Pessoas com acesso (' + d.usuarios.length + ')</div></div>';
   h += d.usuarios.map(function(u){
     var info = u.emUso ? 'em uso agora' : (u.ultimoAcesso ? 'último acesso ' + sgDataHora(u.ultimoAcesso) + (u.aparelho ? ' · ' + u.aparelho : '') : 'ainda não entrou');
-    var linha2 = US_PAPEL[u.papel] + (u.papel === 'advogado' ? ' · OAB ' + (u.oabs.length ? u.oabs.join(', ') : 'não indicada') : (u.papel === 'proprietario' ? ' · todas as OABs' : ''));
+    var linha2 = US_PAPEL[u.papel] + (u.papel === 'advogado' ? ' · OAB ' + (u.oabs.length ? u.oabs.join(', ') : 'não indicada') : (u.papel === 'proprietario' ? ' · todas as OABs' : (u.papel === 'familiar' ? ' · módulos: ' + usModulosTxt(u.modulos) : '')));
     return '<div class="pb-card" style="--pb-bar:' + (u.papel === 'proprietario' ? '#C98500' : u.ativo ? '#2A78D6' : '#8A93AD') + '"><div class="pb-l1"><span><b>' + escapeHtml(u.nome) + '</b>' + (u.emUso ? ' <span class="saldo-data">(você)</span>' : '') + '</span><span>' + usChip(US_PAPEL[u.papel], u.papel === 'proprietario' ? 'at' : '') + (u.ativo ? '' : usChip('desativado', 'at')) + '</span></div>' +
       '<div class="pb-proc">' + escapeHtml(u.email) + '</div><div class="pb-proc">' + escapeHtml(linha2) + '</div><div class="pb-proc">' + escapeHtml(info) + '</div>' +
       (u.papel === 'proprietario' ? '' : '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="abrir" data-k="' + escapeHtml(u.id) + '">Abrir</button></div>') + '</div>';
@@ -62,7 +67,7 @@ function usHtmlLista(){
   return h;
 }
 /* ---------- convidar ---------- */
-function usNovoForm(){ usS.form = { nome: '', email: '', papel: 'estagiario', oabs: [], outraNum: '', outraUf: 'GO', perm: usPadrao('estagiario'), erro: '' }; }
+function usNovoForm(){ usS.form = { modulos: ['obra'], nome: '', email: '', papel: 'estagiario', oabs: [], outraNum: '', outraUf: 'GO', perm: usPadrao('estagiario'), erro: '' }; }
 function usOabsCampo(sel, prefixo){
   var cad = usS.oabsCad.map(function(o){ return { k: usChave(o), t: (o.nome ? o.nome.split(' ')[0] + ' · ' : '') + o.numero + '/' + o.uf }; }), chaves = cad.map(function(c){ return c.k; });
   var extra = sel.filter(function(k){ return chaves.indexOf(k) < 0; }).map(function(k){ return { k: k, t: k }; });
@@ -79,10 +84,11 @@ function usHtmlConvidar(){
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convidar pessoa</div><div class="pb-aviso">Ela recebe um link e cria a própria senha. O e-mail que você informar será o login dela, e ela não consegue trocá-lo.</div></div>' +
     fSec('Quem é', '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
     '<div class="field"><label class="field-label" for="usEmail">E-mail (será o login)</label><input type="email" id="usEmail" data-usf="email" maxlength="120" value="' + escapeHtml(f.email) + '" autocomplete="off"></div>' +
-    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>') +
+    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button><button type="button" class="btn ' + (f.papel === 'familiar' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="familiar">Familiar</button></div></div>') +
+    (f.papel === 'familiar' ? fSec('Módulos liberados', usModulosHtml(f.modulos, 'data-usmn') + '<div class="saldo-data" style="margin-top:4px">Os dados dele ficam separados dos seus e você não os vê pelo app. Você liga ou desliga cada módulo quando quiser.</div>') : '') +
     (f.papel === 'advogado' ? fSec('OAB', '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>') : '') +
-    fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp')) +
-    '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + ' Nenhum dos dois abre as suas finanças pessoais.</div>' +
+    (f.papel === 'familiar' ? '' : fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp'))) +
+    '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'familiar' ? 'O familiar não abre nada do escritório (clientes, processos, publicações, agenda) nem as suas finanças: só os módulos marcados acima, com os dados dele.' : f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + (f.papel === 'familiar' ? '' : ' Nenhum dos dois abre as suas finanças pessoais.') + '</div>' +
     (f.erro ? '<div class="form-error">' + escapeHtml(f.erro) + '</div>' : '') +
     '<div class="f-rod-in"><button type="button" class="btn btn-primary" data-us="gerar">Gerar link de convite</button></div>';
 }
@@ -91,8 +97,9 @@ function usGerar(){
   if (f.nome.trim().length < 2) { f.erro = 'Informe o nome da pessoa.'; return usDesenhar(); }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.trim())) { f.erro = 'Informe um e-mail válido.'; return usDesenhar(); }
   if (f.papel === 'advogado' && !f.oabs.length) { f.erro = 'Marque ao menos uma OAB para o advogado.'; return usDesenhar(); }
+  if (f.papel === 'familiar' && !f.modulos.length) { f.erro = 'Libere ao menos um módulo para o familiar.'; return usDesenhar(); }
   usS.ocupado = true;
-  sgApi('/api/usuarios', 'POST', { nome: f.nome.trim(), email: f.email.trim(), papel: f.papel, oabs: f.papel === 'advogado' ? f.oabs : [], permissoes: f.perm }).then(function(r){
+  sgApi('/api/usuarios', 'POST', { nome: f.nome.trim(), email: f.email.trim(), papel: f.papel, oabs: f.papel === 'advogado' ? f.oabs : [], permissoes: f.papel === 'familiar' ? {} : f.perm, modulos: f.papel === 'familiar' ? f.modulos : undefined }).then(function(r){
     usS.ocupado = false; usS.link = { link: r.link, expira: r.expira, nome: f.nome.trim(), papel: f.papel, copiado: false }; usS.tela = 'link'; usS.dados = null; usDesenhar0(); usCarregar0();
   }).catch(function(e){ usS.ocupado = false; f.erro = e.message; usDesenhar(); });
 }
@@ -111,8 +118,9 @@ function usAbrirFicha(id){ usS.sel = id; usS.tela = 'ficha'; usS.sessoes = []; u
 function usHtmlFicha(){
   var u = usPessoa(usS.sel); if (!u) return usVoltar() + '<div class="pb-aviso">Pessoa não encontrada.</div>';
   var h = usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">' + escapeHtml(u.nome) + '</div><div class="pb-aviso">' + escapeHtml(u.email) + ' · ' + US_PAPEL[u.papel] + (u.ativo ? '' : ' · <b>desativado</b>') + (u.criadoEm ? ' · entrou em ' + escapeHtml(new Date(u.criadoEm).toLocaleDateString('pt-BR')) : '') + '</div></div>';
-  h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
-  h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
+  if (u.papel === 'familiar') h += fSec('Módulos liberados', usModulosHtml(u.modulos || [], 'data-usm') + '<div class="saldo-data" style="margin-top:4px">Marcar ou desmarcar vale na hora. Os dados dele continuam guardados mesmo com o módulo desligado.</div>');
+  else h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
+  if (u.papel !== 'familiar') h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
  h += fSec('Aparelhos conectados', (usS.sessoes.length ? usS.sessoes.map(function(s){
     return '<div class="pb-card" style="--pb-bar:#8A93AD"><div class="pb-l1"><span>' + sgSegIcone(s.rotulo) + ' ' + escapeHtml(s.rotulo) + '</span></div><div class="pb-proc">' + (s.lugar ? escapeHtml(s.lugar) + ' · ' : '') + 'último uso ' + escapeHtml(sgDataHora(s.ultimo)) + '</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="encerrar" data-k="' + escapeHtml(s.id) + '">Encerrar</button></div></div>';
   }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>'));

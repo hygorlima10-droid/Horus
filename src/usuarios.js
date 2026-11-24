@@ -5,14 +5,15 @@
 import { COL_USU, COL_SES, COL_CONV, hashConvite, emailJaTemAcesso, emailOk, stmtDoc, lerDoc } from './acesso.js';
 import { stmtRegistro } from './auditoria.js';
 import { chaveOab } from './advogados.js';
-import { normalizarUsuario, PERMISSOES } from './politica.js';
+import { normalizarUsuario, PERMISSOES, MODULOS_FAMILIAR } from './politica.js';
 
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const erro = (status, code, message) => json({ error: { code, message } }, status);
 const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const HORAS = 48, PAPEIS_CONVIDADO = ['advogado', 'estagiario'], ROTULO = { advogado: 'advogado', estagiario: 'estagiário', proprietario: 'proprietário' };
-const SEM_SEGREDOS = (id, d) => ({ id, nome: d.nome || '', email: d.email || '', papel: d.papel, ativo: d.ativo !== false, criadoEm: d.criadoEm || '', convidadoPor: d.convidadoPor || '', ...(({ oabs, permissoes }) => ({ oabs, permissoes }))(normalizarUsuario({ ...d, id })) });
+const HORAS = 48, PAPEIS_CONVIDADO = ['advogado', 'estagiario', 'familiar'], ROTULO = { advogado: 'advogado', estagiario: 'estagiário', proprietario: 'proprietário', familiar: 'familiar' };
+const lerModulos = (m) => [...new Set((Array.isArray(m) ? m : []).filter((x) => MODULOS_FAMILIAR.includes(x)))];
+const SEM_SEGREDOS = (id, d) => ({ id, nome: d.nome || '', email: d.email || '', papel: d.papel, ativo: d.ativo !== false, criadoEm: d.criadoEm || '', convidadoPor: d.convidadoPor || '', ...(({ oabs, permissoes, modulos }) => ({ oabs, permissoes, modulos }))(normalizarUsuario({ ...d, id })) });
 
 /* OABs digitadas ou escolhidas ("60456/GO" ou { numero, uf }) → chaves canônicas, sem repetir; sem limite de quantidade */
 export function lerOabs(lista) {
@@ -52,7 +53,7 @@ export async function usuariosRotas(request, env, partes, auth) {
     const b = await request.json().catch(() => null) || {}, nome = String(b.nome || '').trim().slice(0, 80), email = String(b.email || '').trim().toLowerCase();
     if (nome.length < 2) return erro(400, 'invalid', 'Informe o nome da pessoa.');
     if (!emailOk(email)) return erro(400, 'invalid', 'Informe um e-mail válido.');
-    if (!PAPEIS_CONVIDADO.includes(b.papel)) return erro(400, 'invalid', 'Escolha o papel: advogado ou estagiário.');
+    if (!PAPEIS_CONVIDADO.includes(b.papel)) return erro(400, 'invalid', 'Escolha o papel: advogado, estagiário ou familiar.');
     const oabs = b.papel === 'advogado' ? lerOabs(b.oabs) : [];
     if (oabs === null) return erro(400, 'invalid', 'Alguma OAB está em formato inválido (use número e UF, como 60456/GO).');
     if (b.papel === 'advogado' && !oabs.length) return erro(400, 'invalid', 'Para advogado, indique ao menos uma OAB.');
@@ -60,7 +61,9 @@ export async function usuariosRotas(request, env, partes, auth) {
     const antigos = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ?').bind(COL_CONV).all();   // um convite pendente por e-mail: o novo substitui o antigo
     const velhos = antigos.results.filter((r) => String(JSON.parse(r.dados).email || '') === email).map((r) => env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_CONV, r.id));
     if (velhos.length) await env.DB.batch(velhos);
-    const r = await novoConvite(env, request, auth, { nome, email, papel: b.papel, oabs, permissoes: lerPermissoes(b.permissoes) });
+    const modulos = b.papel === 'familiar' ? lerModulos(b.modulos) : [];
+    if (b.papel === 'familiar' && !modulos.length) return erro(400, 'invalid', 'Para familiar, libere ao menos um módulo (Construção ou Finanças pessoais).');
+    const r = await novoConvite(env, request, auth, { nome, email, papel: b.papel, oabs, permissoes: lerPermissoes(b.permissoes), ...(b.papel === 'familiar' ? { modulos } : {}) });
     await stmtRegistro(env, { op: 'criou', por: auth.usuario.nome, rotulo: 'Acesso', titulo: 'Convite para ' + nome + ' (' + ROTULO[b.papel] + ')' }).run();
     return json(r);
   }
@@ -100,6 +103,7 @@ export async function usuariosRotas(request, env, partes, auth) {
       if (b.papel !== undefined) { if (!PAPEIS_CONVIDADO.includes(b.papel)) return erro(400, 'invalid', 'Papel inválido.'); if (b.papel !== doc.papel) { novo.papel = b.papel; mud.push('papel: ' + ROTULO[b.papel]); } }
       if (b.oabs !== undefined) { const o = lerOabs(b.oabs); if (o === null) return erro(400, 'invalid', 'Alguma OAB está em formato inválido.'); novo.oabs = o; mud.push('OABs'); }
       if (novo.papel === 'advogado' && !(novo.oabs || []).length) return erro(400, 'invalid', 'Para advogado, indique ao menos uma OAB.');
+      if (b.modulos !== undefined) { if ((novo.papel || doc.papel) !== 'familiar') return erro(400, 'invalid', 'Módulos são só do familiar.'); const mo = lerModulos(b.modulos); if (!mo.length) return erro(400, 'invalid', 'Libere ao menos um módulo.'); novo.modulos = mo; mud.push('módulos: ' + mo.join(', ')); }
       if (b.permissoes !== undefined) { novo.permissoes = { ...(doc.permissoes || {}), ...lerPermissoes(b.permissoes) }; mud.push('permissões'); }
       if (typeof b.ativo === 'boolean' && b.ativo !== (doc.ativo !== false)) { novo.ativo = b.ativo; mud.push(b.ativo ? 'reativado' : 'desativado'); }
       const cmds = [stmtDoc(env, COL_USU, a, novo)];

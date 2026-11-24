@@ -324,7 +324,7 @@ async function conviteRotas(request, env, deps, token) {
   const pegou = await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind(COL_CONV, id).run();
   if (!(pegou && pegou.meta && pegou.meta.changes > 0)) return CONVITE_INVALIDO();
   const uid = 'u' + hex(crypto.getRandomValues(new Uint8Array(5))), cred = await credencial(env, senha), ctx = contexto(request);
-  const usuario = { nome: c.nome, email: c.email, papel: c.papel, ativo: true, alertas: true, oabs: c.oabs || [], permissoes: c.permissoes || {}, criadoEm: new Date().toISOString(), convidadoPor: c.por || '', conhecidos: [ctx.rotulo + '|' + ctx.lugar], ...cred };
+  const usuario = { nome: c.nome, email: c.email, papel: c.papel, ativo: true, alertas: true, oabs: c.oabs || [], permissoes: c.permissoes || {}, ...(c.papel === 'familiar' ? { modulos: Array.isArray(c.modulos) ? c.modulos : ['obra'] } : {}), criadoEm: new Date().toISOString(), convidadoPor: c.por || '', conhecidos: [ctx.rotulo + '|' + ctx.lugar], ...cred };
   await stmtDoc(env, COL_USU, uid, usuario).run();
   await limparTent(env, chave);
   const sessao = await criarSessaoBanco(env, request, uid);

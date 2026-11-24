@@ -13,6 +13,28 @@ function ob7Medicoes(){
   return l;
 }
 
+/* ---------- parcelas do consórcio (custo do crédito) ---------- */
+function ob7Parcelas(){ return obraMov.filter(function(m){ return m.tipo === 'parcela'; }).sort(function(a, b){ return String(b.data || '').localeCompare(String(a.data || '')); }); }
+function ob7HtmlParcelas(cfg){
+  var fin = cfg.financiamento; if (fin.tipo !== 'consorcio') return '';
+  var cs = fin.consorcio || {}, ps = ob7Parcelas(), pago = r2(ps.reduce(function(t, x){ return t + (Number(x.valor) || 0); }, 0)), prazo = fin.prazoMeses || 0;
+  var previsto = cs.parcela > 0 && prazo > 0 ? r2(cs.parcela * prazo + (cs.seguro > 0 ? cs.seguro * prazo : 0)) : 0, custo = previsto > 0 && fin.valor > 0 ? r2(previsto - fin.valor) : null;
+  var corpo = '<div class="plan-linha"><span>Parcelas pagas</span><strong>' + ps.length + (prazo ? ' de ' + prazo : '') + ' · ' + fmtMoeda(pago) + '</strong></div>' +
+    (previsto > 0 ? '<div class="plan-linha"><span>Total previsto das parcelas' + (cs.seguro > 0 ? ' (com seguro)' : '') + '</span><strong>' + fmtMoeda(previsto) + '</strong></div>' : '<div class="saldo-data">Informe a parcela e o prazo em Editar a obra para ver o total previsto.</div>') +
+    (custo !== null ? '<div class="plan-linha"><span>Custo previsto do crédito (parcelas − carta)</span><strong>' + fmtMoeda(custo) + '</strong></div><div class="saldo-data">Estimativa a partir do que você informou; confira com o contrato (reajustes e taxas podem mudar o valor).</div>' : '') +
+    '<div class="financeiro-secao-head" style="margin-top:12px;"><h4>Parcelas lançadas</h4><button type="button" class="btn-text" data-ob7="par-nova">Lançar parcela paga</button></div>' +
+    (ps.length ? ps.slice(0, 12).map(function(m){ return '<div class="plan-linha"><span>' + escapeHtml(fmtData(m.data)) + (m.obs ? ' · ' + escapeHtml(m.obs) : '') + '</span><strong>' + fmtMoeda(m.valor) + '</strong><button type="button" class="btn-text" data-ob7="par-del" data-id="' + escapeHtml(m.id) + '">Excluir</button></div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma parcela lançada ainda.</div>');
+  return ob7Sec('par', 'Parcelas do consórcio', ps.length + (prazo ? ' de ' + prazo : '') + ' pagas', corpo);
+}
+function ob7AbrirParcela(){
+  var cfg = ob7Cfg(), cs = cfg.financiamento.consorcio || {}, n = ob7Parcelas().length + 1;
+  var html = obCampo('Valor da parcela (R$)', obInput('valor', 'number', cs.parcela || '', 'min="0" step="0.01" inputmode="decimal"')) + obCampo('Data do pagamento', obInput('data', 'date', todayISO())) + obCampo('Observação (opcional)', obInput('obs', 'text', 'Parcela ' + n));
+  obraAbrirForm('Parcela do consórcio', html, function(){
+    var valor = r2(obNum('valor')), data = obFid('data').value;
+    if (!(valor > 0)) return 'Informe o valor da parcela.'; if (!data) return 'Informe a data.';
+    return obraGravar(uid(), { tipo: 'parcela', data: data, valor: valor, obs: obFid('obs').value.trim(), criadoEm: new Date().toISOString() });
+  });
+}
 /* ---------- juros de obra ---------- */
 function ob7SaldoLiberadoAte(fimISO){
   var t = 0;
@@ -73,20 +95,29 @@ function ob7Sec(chave, titulo, resumo, corpo){
   return '<details class="ini-card ob7-sec" data-ob7-sec="' + chave + '"' + (ob7Abertos[chave] ? ' open' : '') + '><summary>' + fvIc(i[0], i[1]) + '<span class="ob7-tx"><b>' + titulo + '</b><span class="fp-nota">' + resumo + '</span></span></summary><div class="ob7-corpo">' + corpo + '</div></details>';
 }
 function ob7HtmlFin(cfg, r){
-  var fin = cfg.financiamento, liberado = r.liberado || 0, meds = ob7Medicoes(), prox = meds.filter(function(m){ return m.status !== 'liberada'; })[0];
+  var fin = cfg.financiamento, liberado = r.liberado || 0, meds = ob7Medicoes(), prox = meds.filter(function(m){ return m.status !== 'liberada'; })[0], cons = fin.tipo === 'consorcio', rot = obRotCred(fin.tipo), cs = fin.consorcio || {};
   var pct = fin.valor > 0 ? Math.min(100, liberado / fin.valor * 100) : 0;
   var corpo = '';
-  if (!(fin.valor > 0)) corpo += '<div class="financeiro-vazio">Informe o valor do financiamento em <b>Editar a obra</b> para acompanhar as liberações.</div>';
+  if (fin.tipo === 'proprio') return ob7Sec('fin', 'Recursos próprios', 'sem crédito', '<div class="financeiro-vazio">A obra é paga só com recursos próprios: não há crédito nem liberações. Registre o dinheiro que você coloca na conta da obra em <b>Aporte</b>. Para usar financiamento ou consórcio, abra <b>Editar a obra</b>.</div>');
+  if (!(fin.valor > 0)) corpo += '<div class="financeiro-vazio">Informe o valor ' + (cons ? 'da carta de crédito' : 'do financiamento') + ' em <b>Editar a obra</b> para acompanhar as liberações.</div>';
   else {
-    corpo += '<div class="plan-linha"><span>Financiamento (' + (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ')</span><strong>' + fmtMoeda(fin.valor) + '</strong></div>' +
-      obBarra(liberado, 0, fin.valor) + '<div class="saldo-data">Liberado: <b>' + fmtMoeda(liberado) + '</b> (' + fmtPerc(pct) + ') · falta liberar ' + fmtMoeda(Math.max(0, r2(fin.valor - liberado))) + '</div>' +
-      (fin.taxaAnual > 0 ? '<div class="plan-linha"><span>Taxa de juros</span><strong>' + String(fin.taxaAnual).replace('.', ',') + '% ao ano</strong></div>' : '<div class="saldo-data">Informe a taxa em Editar a obra para calcular os juros de obra.</div>') +
-      '<div class="plan-linha"><span>Sistema · prazo</span><strong>' + (fin.sistema === 'price' ? 'Price' : 'SAC') + ' · ' + fin.prazoMeses + ' meses</strong></div>' +
-      (fin.inicioObra ? '<div class="plan-linha"><span>Prazo da obra</span><strong>' + fin.prazoObraMeses + ' meses (até ' + escapeHtml(mesLabel(deslocarMes(ob7Mes(fin.inicioObra), Math.max(1, fin.prazoObraMeses) - 1))) + ')</strong></div>' : '') +
+    corpo += '<div class="plan-linha"><span>' + rot + ' (' + obSitCred(fin) + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ')</span><strong>' + fmtMoeda(fin.valor) + '</strong></div>' +
+      obBarra(liberado, 0, fin.valor) + '<div class="saldo-data">Liberado: <b>' + fmtMoeda(liberado) + '</b> (' + fmtPerc(pct) + ') · falta liberar ' + fmtMoeda(Math.max(0, r2(fin.valor - liberado))) + '</div>';
+    if (cons){
+      corpo += '<div class="plan-linha"><span>Prazo · parcela</span><strong>' + fin.prazoMeses + ' meses' + (cs.parcela > 0 ? ' · ' + fmtMoeda(cs.parcela) : '') + '</strong></div>' +
+        (cs.taxaAdm > 0 || cs.fundoReserva > 0 ? '<div class="plan-linha"><span>Taxa de administração · fundo de reserva</span><strong>' + String(cs.taxaAdm || 0).replace('.', ',') + '% · ' + String(cs.fundoReserva || 0).replace('.', ',') + '%</strong></div>' : '') +
+        (cs.seguro > 0 ? '<div class="plan-linha"><span>Seguro</span><strong>' + fmtMoeda(cs.seguro) + '/mês</strong></div>' : '') +
+        (cs.dataContemplacao ? '<div class="plan-linha"><span>Contemplação</span><strong>' + escapeHtml(fmtData(cs.dataContemplacao)) + ' · ' + (cs.forma === 'lance' ? 'lance' : 'sorteio') + '</strong></div>' : '') +
+        (cs.obs ? '<div class="saldo-data" style="white-space:pre-wrap">' + escapeHtml(cs.obs) + '</div>' : '');
+    } else {
+      corpo += (fin.taxaAnual > 0 ? '<div class="plan-linha"><span>Taxa de juros</span><strong>' + String(fin.taxaAnual).replace('.', ',') + '% ao ano</strong></div>' : '<div class="saldo-data">Informe a taxa em Editar a obra para calcular os juros de obra.</div>') +
+        '<div class="plan-linha"><span>Sistema · prazo</span><strong>' + (fin.sistema === 'price' ? 'Price' : 'SAC') + ' · ' + fin.prazoMeses + ' meses</strong></div>';
+    }
+    corpo += (fin.inicioObra ? '<div class="plan-linha"><span>Prazo da obra</span><strong>' + fin.prazoObraMeses + ' meses (até ' + escapeHtml(mesLabel(deslocarMes(ob7Mes(fin.inicioObra), Math.max(1, fin.prazoObraMeses) - 1))) + ')</strong></div>' : '') +
       (fin.contrapartida > 0 ? '<div class="plan-linha"><span>Recursos próprios exigidos</span><strong>' + fmtMoeda(fin.contrapartida) + '</strong></div><div class="plan-linha"><span>Já aportado por você</span><strong style="color:var(--success)">' + fmtMoeda(r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0))) + '</strong></div>' : '');
   }
   corpo += '<div class="financeiro-secao-head" style="margin-top:12px;"><h4>Medições</h4><button type="button" class="btn-text" data-ob7="med-nova">Adicionar medição</button></div>';
-  if (!meds.length) corpo += '<div class="financeiro-vazio">Nenhuma medição cadastrada. Cadastre o cronograma de liberações que o banco combinou.</div>';
+  if (!meds.length) corpo += '<div class="financeiro-vazio">Nenhuma medição cadastrada. Cadastre o cronograma de liberações combinado com ' + (cons ? 'a administradora do consórcio' : 'o banco') + '.</div>';
   var hoje = todayISO();
   meds.forEach(function(m){
     var lib = m.status === 'liberada' || !!m.liberacaoId, etapas = (m.etapaIds || []).map(function(id){ return cfg.etapas.filter(function(e){ return e.id === id; })[0]; }).filter(Boolean);
@@ -96,10 +127,11 @@ function ob7HtmlFin(cfg, r){
       (!lib && faltam.length ? '<span class="saldo-data" style="color:var(--tutela)">Faltam concluir: ' + faltam.map(function(e){ return escapeHtml(e.nome); }).join(', ') + '</span>' : '') + '</div>' +
       '<div class="ob-gasto-val"><strong>' + fmtMoeda(m.valor) + '</strong><span>' + (lib ? '' : '<button type="button" class="btn-text acao-pagar" data-ob7="med-lib" data-id="' + escapeHtml(m.id) + '">Registrar liberação</button>') + '<button type="button" class="btn-text" data-ob7="med-edit" data-id="' + escapeHtml(m.id) + '">Editar</button><button type="button" class="btn-text acao-excluir" data-ob7="med-del" data-id="' + escapeHtml(m.id) + '">Excluir</button></span></div></div>';
   });
-  var resumo = (fin.valor > 0 ? fmtPerc(pct) + ' liberado' : 'sem financiamento') + (prox ? ' · próxima: ' + fmtData(prox.data) : '');
-  return ob7Sec('fin', 'Financiamento e medições', resumo, corpo);
+  var resumo = (fin.valor > 0 ? fmtPerc(pct) + ' liberado' : 'sem ' + rot.toLowerCase()) + (prox ? ' · próxima: ' + fmtData(prox.data) : '');
+  return ob7Sec('fin', rot + ' e medições', resumo, corpo);
 }
 function ob7HtmlJuros(cfg){
+  if (cfg.financiamento.tipo !== 'financiamento') return '';   /* consórcio e recursos próprios não têm juros de obra */
   var j = ob7Juros();
   if (!j) return ob7Sec('jur', 'Juros de obra', 'informe a taxa do financiamento', '<div class="financeiro-vazio">Para estimar os juros de obra, informe o <b>valor</b> e a <b>taxa de juros ao ano</b> do financiamento em <b>Editar a obra</b>.</div>');
   if (!j.rows.length) return ob7Sec('jur', 'Juros de obra', 'sem liberações ainda', '<div class="financeiro-vazio">Os juros de obra começam a contar depois da primeira liberação ou medição cadastrada.</div>');
@@ -119,8 +151,8 @@ function ob7HtmlCaixa(cfg){
     '<div class="plan-linha"><span>Total que você ainda precisa colocar</span><strong>' + fmtMoeda(c.total) + '</strong></div>' +
     (!c.temCronograma && c.semDistribuir > 0 ? '<div class="plan-linha"><span>Orçamento ainda sem data (não entra na conta)</span><strong>' + fmtMoeda(c.semDistribuir) + '</strong></div>' : '') +
     (c.pior ? '<div class="plan-linha"><span>Mês mais pesado</span><strong style="color:var(--urgente)">' + escapeHtml(mesLabel(c.pior.mes)) + ': ' + fmtMoeda(c.pior.aportar) + '</strong></div>' : '<div class="saldo-data" style="color:var(--success)">Com o que há na conta da obra e as liberações previstas, não falta caixa nos próximos meses.</div>') +
-    '<div class="plan-linha"><span>Sobra prevista na sua conta (Análises)</span><strong>' + fmtMoeda(c.sobra) + '/mês</strong></div>' +
-    (c.pior && c.sobra < c.pior.aportar  ? '<div class="plan-alerta aviso">Em ' + escapeHtml(mesLabel(c.pior.mes)) + ' a obra pede ' + fmtMoeda(c.pior.aportar) + ' e o seu caixa livre prevê ' + fmtMoeda(c.sobra) + ' por mês. Não cobre sem usar a reserva ou um alvará.' + (paTemSample() ? ' <button type="button" class="btn-text" data-pa-abrir="Consigo aportar ' + Math.round(c.pior.aportar) + ' reais na obra em ' + escapeHtml(mesLabel(c.pior.mes)) + '?">Perguntar ao app</button>' : '') + '</div>' : '');
+    (obSoObra() ? '' : '<div class="plan-linha"><span>Sobra prevista na sua conta (Análises)</span><strong>' + fmtMoeda(c.sobra) + '/mês</strong></div>') +
+    (!obSoObra() && c.pior && c.sobra < c.pior.aportar  ? '<div class="plan-alerta aviso">Em ' + escapeHtml(mesLabel(c.pior.mes)) + ' a obra pede ' + fmtMoeda(c.pior.aportar) + ' e o seu caixa livre prevê ' + fmtMoeda(c.sobra) + ' por mês. Não cobre sem usar a reserva ou um alvará.' + (paTemSample() ? ' <button type="button" class="btn-text" data-pa-abrir="Consigo aportar ' + Math.round(c.pior.aportar) + ' reais na obra em ' + escapeHtml(mesLabel(c.pior.mes)) + '?">Perguntar ao app</button>' : '') + '</div>' : '');
   return ob7Sec('cx', 'Caixa próprio necessário', c.pior ? 'pior mês: ' + mesLabel(c.pior.mes) + ' · ' + fmtMoeda(c.pior.aportar) : (c.total > 0 ? 'total ' + fmtMoeda(c.total) : 'sem falta de caixa'), corpo);
 }
 var OB7_PADRAO = [
@@ -164,7 +196,7 @@ function ob7Extras(){
   var cfg = ob7Cfg(); if (!cfg.criada) return;
   var r = obraResumo(), cards = el.querySelector('.ob-cards'); if (!cards) return;
   Array.prototype.forEach.call(el.querySelectorAll('[data-ob7-sec]'), function(e){ e.remove(); });
-  cards.insertAdjacentHTML('afterend', ob7HtmlFin(cfg, r) + ob7HtmlJuros(cfg) + ob7HtmlCaixa(cfg));
+  cards.insertAdjacentHTML('afterend', ob7HtmlFin(cfg, r) + ob7HtmlParcelas(cfg) + ob7HtmlJuros(cfg) + ob7HtmlCaixa(cfg));
   el.insertAdjacentHTML('beforeend', ob7HtmlChecklist(cfg) + ob7HtmlExtrato(cfg));
 }
 (function(){
@@ -198,7 +230,7 @@ function ob7AbrirMedicao(id){
 }
 function ob7Liberar(id){
   var cfg = ob7Cfg(), m = ob7Medicoes().filter(function(x){ return x.id === id; })[0]; if (!m) return;
-  if (cfg.financiamento.status !== 'aprovado'){ toast('O financiamento ainda está como estimado. Em "Editar a obra", marque como aprovado para registrar liberações.'); return; }
+  if (cfg.financiamento.status !== 'aprovado'){ toast('O ' + obRotCred(cfg.financiamento.tipo).toLowerCase() + ' ainda está como ' + (cfg.financiamento.tipo === 'consorcio' ? 'aguardando contemplação' : 'estimado') + '. Em "Editar a obra", marque como ' + (cfg.financiamento.tipo === 'consorcio' ? 'contemplado' : 'aprovado') + ' para registrar liberações.'); return; }
   var html = obCampo('Valor liberado (R$)', obInput('valor', 'number', m.valor, 'min="0" step="0.01" inputmode="decimal"'), 'Dinheiro que o banco liberou para a conta da obra. Não é receita.') +
     obCampo('Data da liberação', obInput('data', 'date', todayISO())) + obCampo('Observação', obInput('obs', 'text', m.numero + 'ª medição'));
   obraAbrirForm('Registrar liberação — ' + m.numero + 'ª medição', html, function(){
@@ -250,7 +282,7 @@ function ob7AbrirItem(id){
 document.addEventListener('click', function(ev){
   var t = ev.target.closest ? ev.target.closest('[data-ob7]') : null; if (!t || t.tagName === 'INPUT') return;
   var a = t.getAttribute('data-ob7'), id = t.getAttribute('data-id');
-  if (a === 'med-nova') ob7AbrirMedicao(); else if (a === 'med-edit') ob7AbrirMedicao(id); else if (a === 'med-lib') ob7Liberar(id); else if (a === 'med-del') ob7ExcluirMedicao(id);
+  if (a === 'par-nova') ob7AbrirParcela(); else if (a === 'par-del'){ if (confirm('Excluir esta parcela lançada?')) obraApagar(id); } else if (a === 'med-nova') ob7AbrirMedicao(); else if (a === 'med-edit') ob7AbrirMedicao(id); else if (a === 'med-lib') ob7Liberar(id); else if (a === 'med-del') ob7ExcluirMedicao(id);
   else if (a === 'jur-lancar') ob7LancarJuros(t.getAttribute('data-mes'));
   else if (a === 'chk-novo') ob7AbrirItem(); else if (a === 'chk-edit') ob7AbrirItem(id);
   else if (a === 'chk-padrao'){ var cfg = ob7Cfg(); ob7SalvarLista('checklist', OB7_PADRAO.map(function(p){ return { id: uid(), fase: p[0], titulo: p[1], prazo: null, feito: false }; })); }
@@ -293,7 +325,7 @@ function ob7DesenharAnexos(msg){
     (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? ico('file-text', 16) : ico('file-text', 16)) + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
     '<input type="file" id="anArq" accept="image/*,application/pdf" style="display:none;">' +
     (l.length < OB7_MAX_ANEXOS ? '<button type="button" class="btn btn-primary" data-an="add" style="width:100%;justify-content:center;">Anexar foto ou PDF</button>' : '') +
-    (temImg && paTemSample() ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
+    (temImg && paTemSample() && !(typeof ppFamiliar === 'function' && ppFamiliar()) ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
     (msg ? '<div class="saldo-data" role="status">' + escapeHtml(msg) + '</div>' : '');
 }
 function ob7AbrirAnexos(id){ ob7MontarAnexos(); ob7Gasto = id; ob7DesenharAnexos(''); qs('overlayAnexos').classList.add('show'); }
@@ -354,6 +386,13 @@ function ob7Avisos(){
   });
   (cfg.checklist || []).forEach(function(x){ if (!x.feito && x.prazo && x.prazo <= lim) a.push({ tipo: 'check', id: x.id, d: x.prazo, titulo: 'Obra · ' + x.titulo, detalhe: (x.prazo < hoje ? 'Prazo venceu em ' : 'Prazo em ') + fmtData(x.prazo), valor: null, atraso: x.prazo < hoje }); });
   ob7Medicoes().forEach(function(m){ if (m.status !== 'liberada' && !m.liberacaoId && m.data && m.data <= somarDias(hoje, 15)) a.push({ tipo: 'med', id: m.id, d: m.data, titulo: 'Obra · ' + m.numero + 'ª medição', detalhe: (m.data < hoje ? 'Prevista para ' : 'Liberação prevista em ') + fmtData(m.data) + (m.status === 'solicitada' ? ' · já pedida ao banco' : ' · peça ao banco'), valor: Number(m.valor) || 0, atraso: m.data < hoje }); });
+  var fc = cfg.financiamento, cc = fc.consorcio || {};
+  if (fc.tipo === 'consorcio' && cc.diaVenc > 0){   /* parcela do consórcio: avisa perto do vencimento, se o mês ainda não tem parcela lançada */
+    var pad2 = function(n){ return String(n).padStart(2, '0'); }, dia = Math.min(cc.diaVenc, 28), mm = hoje.slice(0, 7), pagaMes = function(m2){ return ob7Parcelas().some(function(x){ return String(x.data || '').slice(0, 7) === m2; }); };
+    if (pagaMes(mm)) mm = deslocarMes(mm, 1);
+    var dv = mm + '-' + pad2(dia);
+    if (dv <= lim) a.push({ tipo: 'parcela', id: mm, d: dv, titulo: 'Obra · parcela do consórcio', detalhe: (dv < hoje ? 'Venceu em ' : 'Vence em ') + fmtData(dv) + (cc.parcela > 0 ? ' · ' + fmtMoeda(cc.parcela) : ''), atraso: dv < hoje });
+  }
   var j = null; try{ j = ob7Juros(); }catch(e){}
   if (j){ var at = j.rows.filter(function(x){ return x.situacao === 'atual' && !x.lancado && x.juros > 0.004; })[0]; if (at && todayISO().slice(8, 10) >= '05') a.push({ tipo: 'juros', id: at.mes, d: hoje, titulo: 'Obra · juros de ' + mesLabel(at.mes).toLowerCase(), detalhe: 'Estimado; confira com o boleto do banco', valor: at.juros, atraso: false }); }
   try{ var atr = mfAtrasado(); if (atr) a.push({ tipo: 'calc', id: 'refs', d: hoje, titulo: 'Obra · valores de referência sem atualizar', detalhe: 'A busca automática do IBGE parou em ' + mfMesCurto(atr.ultimo) + '.', valor: null, atraso: false }); }catch(e){}
@@ -394,6 +433,7 @@ var ob7AvisoAtual = null;
 document.addEventListener('click', function(ev){
   var el = ev.target.closest ? ev.target.closest('[data-ob7-aviso]') : null; if (!el) return;
   var p = el.getAttribute('data-ob7-aviso').split('|'), a = ob7Avisos().filter(function(x){ return x.tipo === p[0] && String(x.id) === p[1]; })[0]; if (!a) return;
+  if (a.tipo === 'parcela'){ ob7AbrirParcela(); return; }   /* parcela do consórcio: abre o lançamento da parcela */
   if (a.tipo === 'calc'){ try{ setActiveTab('obra'); mfS.obra = 'calc'; renderObra(); }catch(e){} return; }   /* lembrete mensal: abre a Calculadora */
   ob7MontarEscolha(); ob7AvisoAtual = a;
   qs('obAvTitulo').textContent = a.titulo; qs('obAvInfo').textContent = a.detalhe + (a.valor != null ? ' · ' + fmtMoeda(a.valor) : '');

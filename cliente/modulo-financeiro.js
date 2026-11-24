@@ -147,7 +147,14 @@ function mfResumo(){
 }
 
 /* ---------------- CONSTRUÇÃO ---------------- */
-var MF_OBRA_ABAS = [['resumo', 'Resumo'], ['etapas', 'Etapas'], ['gastos', 'Gastos'], ['caixa', 'Dinheiro e financiamento'], ['calc', 'Calculadora']];
+/* familiar não tem Início nem Central de atenção: os avisos da obra (contas a vencer, medições, parcela do consórcio, checklist) ficam no topo do Resumo */
+function mfAvisosObra(){
+  if (typeof ppFamiliar !== 'function' || !ppFamiliar() || typeof ob7Avisos !== 'function') return '';
+  var l = []; try{ var lim = somarDias(todayISO(), 10); l = ob7Avisos().filter(function(a){ return a.d <= lim && a.tipo !== 'calc'; }).slice(0, 6); }catch(e){}
+  if (!l.length) return '';
+  return '<div class="ini-card" id="obAvisosCard"><div class="financeiro-secao-head"><h4>Avisos da obra · ' + l.length + '</h4></div>' + l.map(ob7LinhaAviso).join('') + '</div>';
+}
+var MF_OBRA_ABAS = [['resumo', 'Resumo'], ['etapas', 'Etapas'], ['gastos', 'Gastos'], ['caixa', 'Dinheiro e crédito'], ['calc', 'Calculadora']];
 var MF_OB7 = { fin: 'caixa', jur: 'caixa', cx: 'caixa', chk: 'etapas', ext: 'gastos' };
 /* roda depois de renderObra() (e dos quadros extras do obra7): separa a tela em sub-abas e monta o Resumo */
 function mfObra(){
@@ -171,7 +178,7 @@ function mfObra(){
   }
   if (sub !== 'resumo') return;
   var p = document.createElement('div'); p.className = 'md-painel'; p.setAttribute('data-mf', 'obra');
-  try{ p.innerHTML = mfObraResumo(r, cfg); }catch(e){ console.error('resumo da obra', e); p.innerHTML = '<div class="empty"><strong>Não consegui montar o resumo</strong>As outras sub-abas continuam funcionando.</div>'; }
+  try{ p.innerHTML = mfAvisosObra() + mfObraResumo(r, cfg); }catch(e){ console.error('resumo da obra', e); p.innerHTML = '<div class="empty"><strong>Não consegui montar o resumo</strong>As outras sub-abas continuam funcionando.</div>'; }
   var tiles = el.querySelector(':scope > .ob-tiles'); if (tiles && tiles.nextSibling) el.insertBefore(p, tiles.nextSibling); else el.appendChild(p);
 }
 /* a calculadora tem campos de digitar: se a tela for redesenhada (outra gravação, atualização dos dados) enquanto a pessoa digita, o que ela escreveu e o cursor ficam */
@@ -208,16 +215,16 @@ function mfObraResumo(r, cfg){
   var finV = fin.valor > 0 ? fin.valor : 0, proprios = Math.max(0, r2(custo - finV));
   var aportado = r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0) + (r.aportes.terceiro || 0) - (r.retirado || 0)), falta = Math.max(0, r2(proprios - aportado));
   var cProprios = '<div class="md-card mf-proprios"><div class="md-h"><span class="md-k">' + mdIc('coins', MD_COR.verde) + '<span>Recursos próprios necessários</span></span></div><b class="mf-big">' + fmtMoeda(proprios) + '</b>' +
-    '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − financiamento ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + ')</em>' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio') + '</div>' +
-    cal('Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
-    '<div class="md-foot">Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.</div></div>';
+    '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − ' + (fin.tipo === 'consorcio' ? 'consórcio' : 'financiamento') + ' ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + obSitCred(fin) + ')</em>' : (fin.tipo === 'consorcio' ? 'sem valor de consórcio informado: o custo estimado inteiro é recurso próprio' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio')) + '</div>' +
+    cal(obSoObra() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
+    '<div class="md-foot">' + (obSoObra() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
   var nAPagar = obraMov.filter(function(m){ return m.tipo === 'gasto' && m.status === 'apagar'; }).length;
   var kp = [
     { ir: 'sub:etapas', ic: 'hard-hat', cor: MD_COR.ouro, rot: 'Orçamento', v: fmtMoeda(r.orcamento), foot: r.orcamento > 0 ? fmtPerc(r.detalhado / r.orcamento * 100) + ' detalhado em etapas' : 'sem orçamento definido' },
     { ir: 'gastos:pago', ic: 'receipt', cor: MD_COR.azul, rot: 'Já pago', v: fmtMoeda(r.pago), foot: fmtPerc(perc) + ' do orçamento' },
     { ir: 'gastos:apagar', ic: 'calendar-clock', cor: r.aPagar > 0.004 ? MD_COR.verm : MD_COR.cinza, rot: 'A pagar', v: fmtMoeda(r.aPagar), cls: r.aPagar > 0.004 ? 'neg' : '', foot: nAPagar ? nAPagar + (nAPagar === 1 ? ' gasto lançado e não pago' : ' gastos lançados e não pagos') : 'nenhum gasto em aberto' },
     { ir: 'sub:etapas', ic: 'hammer', cor: MD_COR.roxo, rot: 'Ainda a gastar nas etapas', v: fmtMoeda(r.faltaGastar), foot: 'orçado das etapas menos o que já foi pago' },
-    { ir: 'sub:caixa', ic: 'landmark', cor: MD_COR.verde, rot: 'Financiamento', v: fin.valor > 0 ? fmtMoeda(fin.valor) : '—', foot: (fin.valor > 0 ? (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ' · ' : '') + 'liberado ' + fmtMoeda(r.liberado) },
+    { ir: 'sub:caixa', ic: 'landmark', cor: MD_COR.verde, rot: obRotCred(fin.tipo), v: fin.valor > 0 ? fmtMoeda(fin.valor) : '—', foot: (fin.valor > 0 ? obSitCred(fin) + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ' · ' : '') + 'liberado ' + fmtMoeda(r.liberado) },
     { ir: 'sub:etapas', ic: 'layers', cor: MD_COR.cinza, rot: 'Falta detalhar', v: fmtMoeda(r.semDetalhar || 0), foot: 'do orçamento ainda sem etapa' }];
   var h = hero + '<div class="mf-duas">' + cCusto + cProprios + '</div><div class="md-kpis mf-kp6">' + kp.map(mdKpi).join('') + '</div>';
   var ets = r.etapas.filter(function(x){ return x.orcado > 0.004 || x.pago > 0.004 || x.aPagar > 0.004; }).slice(0, 8), sel = mfS.sel.obra; if (sel != null && sel >= ets.length) sel = mfS.sel.obra = null;
@@ -225,7 +232,7 @@ function mfObraResumo(r, cfg){
   var g = mdCard('Orçado × realizado por etapa', !ets.length ? '<div class="md-vazio">Nenhuma etapa com valor. Use “Adicionar etapa” na sub-aba Etapas.</div>' :
     mdBarras(ets.map(function(x){ return x.e.id; }), ets.map(function(x){ return x.orcado; }), ets.map(function(x){ return r2(x.pago + x.aPagar); }), { sel: sel, ca: '#B9B7AE', cb: MD_COR.ouro, ra: 'orçado', rb: 'realizado', rot: function(i){ return curto(ets[i].e.nome); }, tit: function(i){ return String(ets[i].e.nome).slice(0, 16); }, titulo: 'Orçado e realizado por etapa' }) +
     mdLeg([['#B9B7AE', 'Orçado'], [MD_COR.ouro, 'Realizado (pago + a pagar)']]) + '<div class="md-foot">' + (sel != null ? 'Toque de novo em <b>' + escapeHtml(ets[sel].e.nome) + '</b> para ver os gastos dessa etapa.' : 'Toque numa etapa para ver os valores.') + '</div>', ['sub:etapas', 'abrir as etapas']);
-  var fontes = [['Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], ['Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
+  var fontes = [[obSoObra() ? 'Recursos próprios' : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
   var totF = fontes.reduce(function(t, x){ return t + x[1]; }, 0);
   g += mdCard('De onde veio o dinheiro', !fontes.length ? '<div class="md-vazio">Nenhum aporte ou liberação ainda.</div>' : (discreto ? mdOculto() :
     '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center">' + mdRosca(fontes, mdCompacto(totF), 'entrou na obra') + '<div style="flex:1;min-width:170px">' + fontes.map(function(x){ return '<button type="button" class="md-fase" style="grid-template-columns:minmax(0,1fr) auto" data-md-ir="sub:caixa"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + x[2] + ';margin-right:7px"></i>' + escapeHtml(x[0]) + '</span><b>' + fmtMoeda(x[1]) + '</b></button>'; }).join('') + '</div></div>'), ['sub:caixa', 'ver entradas']);

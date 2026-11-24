@@ -114,6 +114,7 @@ es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/quadros.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/peticoes.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/familiar.js', encoding='utf-8').read()   # conta do familiar (Minha conta: exportar os dados)
 es = es + '\n' + open(R + 'cliente/atalho.js', encoding='utf-8').read()   # Configurações › Atalho do iPhone (código e caixa de entrada por pessoa)
 es = es + '\n' + open(R + 'cliente/peticoes-leitor.js', encoding='utf-8').read()   # leitor do texto da petição e comentários no trecho (nível 2)   # petição para correção/revisão (R2): precisa vir depois de quadros.js e delegadas.js
 es = es + '\n' + open(R + 'cliente/catalogo.js', encoding='utf-8').read()   # catálogo único de categorias de despesa (precisa vir depois de todos os módulos acima: no fim ele refaz a lista)
@@ -588,3 +589,7 @@ print('montado')
 
 # (o rcDiv_* das fichas de Inicial, Acordo e Alvará agora faz parte do HTML fixo, no bloco Responsáveis)
 # ---------- Fase 5, etapa 5.4: advogados responsáveis e escopo "Meus | Escritório" (ganchos; cliente/responsaveis.js tem a lógica) ----------
+
+# ---------- Familiar: a barra de baixo do celular ganha "Construção" (só aparece para o familiar com o módulo; ver cliente/papel.js) ----------
+rep('<button type="button" class="bt-it" id="btMais">', '<button type="button" class="bt-it bt-fam" data-tab="obra"><svg><use href="#ic-house"/></svg><span>Construção</span></button>\n    <button type="button" class="bt-it" id="btMais">')
+open(R + 'public/index.html', 'w', encoding='utf-8').write(s)

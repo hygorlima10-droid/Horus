@@ -7,7 +7,8 @@
    Regra de ouro: o que não está liberado aqui é recusado (negar por padrão). */
 import { chaveOab } from './advogados.js';
 
-export const PAPEIS = ['proprietario', 'advogado', 'estagiario'];
+export const PAPEIS = ['proprietario', 'advogado', 'estagiario', 'familiar'];
+export const MODULOS_FAMILIAR = ['obra', 'financas'];   // o que o proprietário pode liberar a um familiar (nunca o jurídico)
 export const PERMISSOES = ['excluir', 'verTotais', 'verPublicacoes', 'verAgendas'];   // excluir: apagar registros; verTotais: totais e indicadores de honorários; verPublicacoes / verAgendas: o estagiário vê as publicações e as agendas de todo o escritório
 const LIGADAS = { estagiario: new Set(['verPublicacoes', 'verAgendas']), advogado: new Set(['verTotais']) };   // ligadas por padrão (o proprietário desliga por pessoa): estagiário vê publicações e agendas; advogado vê os totais dos seus processos
 const PARTICIPACAO = new Set(['casos', 'termosAcordo', 'alvaras', 'processos']);   // registros que têm `advogados`
@@ -26,7 +27,8 @@ export function normalizarUsuario(u) {
   const oabs = [...new Set((Array.isArray(u.oabs) ? u.oabs : []).map((o) => (typeof o === 'string' ? chaveOab(o.split('/')[0], o.split('/')[1]) : o && chaveOab(o.numero, o.uf))).filter((k) => k && k.length > 3))];
   const perm = u.permissoes && typeof u.permissoes === 'object' ? u.permissoes : {};
   const permissoes = {}; for (const p of PERMISSOES) permissoes[p] = papel === 'proprietario' ? true : (LIGADAS[papel] && LIGADAS[papel].has(p) ? perm[p] !== false : perm[p] === true);
-  return { id: u.id, nome: u.nome || '', papel, oabs, permissoes };
+  const modulos = papel === 'familiar' ? [...new Set((Array.isArray(u.modulos) ? u.modulos : ['obra']).filter((m) => MODULOS_FAMILIAR.includes(m)))] : [];
+  return { id: u.id, nome: u.nome || '', papel, oabs, permissoes, modulos };
 }
 export const ehDono = (auth) => !auth || !auth.usuario || auth.usuario.papel === 'proprietario';
 const usu = (auth) => normalizarUsuario(auth && auth.usuario);

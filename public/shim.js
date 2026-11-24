@@ -8,14 +8,31 @@
   var DONO = { despesas: 1, receitasManuais: 1, saldos: 1, metas: 1, extratos: 1, obraMov: 1, configDono: 1 };
   var EU = window.__horusEu = { papel: 'proprietario', pronto: false, permissoes: {} };
   var EUP = fetch('/api/eu', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-    if (j && j.papel) { EU.papel = j.papel; EU.nome = j.nome; EU.id = j.id; EU.oabs = j.oabs || []; EU.permissoes = j.permissoes || {}; }
+    if (j && j.papel) { EU.papel = j.papel; EU.nome = j.nome; EU.id = j.id; EU.oabs = j.oabs || []; EU.permissoes = j.permissoes || {}; EU.modulos = j.modulos || []; }
     window.__papel = EU.papel;
     var h = document.documentElement.classList, so = EU.papel !== 'proprietario';
     h.toggle('so-central', so); h.toggle('papel-advogado', EU.papel === 'advogado'); h.toggle('papel-estagiario', EU.papel === 'estagiario');
+    h.toggle('papel-familiar', EU.papel === 'familiar'); h.toggle('fam-obra', EU.papel === 'familiar' && EU.modulos.indexOf('obra') >= 0); h.toggle('fam-fin', EU.papel === 'familiar' && EU.modulos.indexOf('financas') >= 0);
     h.toggle('sem-totais', so && !EU.permissoes.verTotais);
   }).catch(function () { }).then(function () { EU.pronto = true; try { window.dispatchEvent(new CustomEvent('horus-eu')); } catch (e) { } });
   /* advogado: as finanças dele (despesas, receitas, saldos, metas, extratos, configurações) existem — o servidor as guarda num cofre só dele; só a Construção continua do proprietário */
-  function semAcesso(nome) { return !!DONO[nome] && EU.papel !== 'proprietario' && !(EU.papel === 'advogado' && nome !== 'obraMov'); }
+  /* familiar: só as coleções dos módulos liberados (Construção: obraMov; Finanças: as financeiras); o resto (escritório) nasce vazio, sem pedir nada ao servidor */
+  function famPermite(nome) { var m = EU.modulos || []; if (nome === 'config' || nome === 'configDono') return true; if (nome === 'obraMov') return m.indexOf('obra') >= 0; if (DONO[nome]) return m.indexOf('financas') >= 0; return false; }
+  function semAcesso(nome) { if (EU.papel === 'familiar') return !famPermite(nome); return !!DONO[nome] && EU.papel !== 'proprietario' && !(EU.papel === 'advogado' && nome !== 'obraMov'); }
+  /* familiar: pedido a uma área que não é dele nem chega ao servidor (responde 403 de mentira, como o app já espera de quem não tem acesso); nenhum erro, nenhum pedido recusado */
+  var ROTAS_FAM = { db: 1, lote: 1, eu: 1, seguranca: 1, notif: 1, indices: 1, anexos: 1, exportar: 1 };
+  var fetchOrig = window.fetch.bind(window);
+  window.fetch = function (entrada, opcoes) {
+    var url = typeof entrada === 'string' ? entrada : (entrada && entrada.url) || '';
+    if (url.charAt(0) !== '/' || url.indexOf('/api/') !== 0) return fetchOrig(entrada, opcoes);
+    var decidir = function () {
+      if (EU.papel !== 'familiar') return fetchOrig(entrada, opcoes);
+      var partes = url.slice(5).split('?')[0].split('/'), ok = !!ROTAS_FAM[partes[0]] && (partes[0] !== 'db' || famPermite(partes[1]));
+      if (ok) return fetchOrig(entrada, opcoes);
+      return Promise.resolve(new Response(JSON.stringify({ error: { code: 'forbidden', message: 'Esta área não está liberada para o seu acesso.' } }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8' } }));
+    };
+    return url.indexOf('/api/eu') === 0 || EU.pronto ? decidir() : EUP.then(decidir);
+  };
   function req(metodo, caminho, corpo) {
     return fetch(caminho, { method: metodo, headers: corpo !== undefined ? { 'content-type': 'application/json' } : undefined, body: corpo !== undefined ? JSON.stringify(corpo) : undefined, credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) {

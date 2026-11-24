@@ -20,7 +20,12 @@ function ppVerTotais(){ if (ppDono()) return true; var e = window.__horusEu; ret
 function ppPodeReceber(){ return ppPapel() !== 'estagiario'; }
 function ppPodeCobrar(){ var p = ppPapel(); return p === 'proprietario' || p === 'advogado'; }
 /* o advogado tem Finanças, Análises e Extratos (no cofre dele); só a Construção é do proprietário */
-function ppTelaPermitida(tab){ return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
+/* familiar: só os módulos que o proprietário liberou (Construção e/ou Finanças) e a conta dele */
+function ppFamiliar(){ return ppPapel() === 'familiar'; }
+function ppFamModulos(){ var e = window.__horusEu; return (e && e.modulos) || []; }
+function ppFamTela(tab){ var m = ppFamModulos(); if (tab === 'configuracoes') return true; if (tab === 'obra') return m.indexOf('obra') >= 0; if (tab === 'financeiro' || tab === 'analises' || tab === 'extratos') return m.indexOf('financas') >= 0; return false; }
+function ppFamInicial(){ return ppFamTela('obra') ? 'obra' : (ppFamTela('financeiro') ? 'financeiro' : 'configuracoes'); }
+function ppTelaPermitida(tab){ if (ppFamiliar()) return ppFamTela(tab); return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
 /* nome da PJ no menu e nos textos: o da pessoa logada (o proprietário continua "Hygor") */
 function ppNomePj(){ var e = window.__horusEu, n = e && e.papel !== 'proprietario' && e.nome ? String(e.nome).trim().split(/\s+/)[0] : 'Hygor'; return n + ' (PJ)'; }
 /* a aba de quem pediu: devolve uma aba que a pessoa pode abrir (usada ao trocar de aba) */
@@ -30,7 +35,7 @@ function ppDonoP(){
   if (e && e.pronto) return Promise.resolve(e.papel === 'proprietario');
   return new Promise(function(res){ window.addEventListener('horus-eu', function(){ res(window.__horusEu.papel === 'proprietario'); }, { once: true }); });
 }
-function ppAbaValida(tab){ return ppTelaPermitida(tab) ? tab : 'inicio'; }
+function ppAbaValida(tab){ return ppTelaPermitida(tab) ? tab : (ppFamiliar() ? ppFamInicial() : 'inicio'); }
 /* itens da Central de atenção que a pessoa pode ver */
 function ppItemAtencaoOk(x){
   if (ppDono()) return true;
@@ -82,19 +87,24 @@ function ppPor(n){
   var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
   /* e só o estagiário perde o resto das Finanças (o advogado usa o cofre dele) */
   var finEst = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos'];
-  st.textContent = finTodos.map(function(s){ return '.so-central ' + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
+  st.textContent = finTodos.map(function(s){ return (/obra/i.test(s) ? '.so-central:not(.fam-obra) ' : '.so-central ') + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
     '.so-central:not(.pd-murilo) #abrirRelMuriloBtn,.papel-estagiario #abrirRelMuriloBtn{display:none!important}' +
     '.papel-estagiario [data-baixa-doc],.papel-estagiario [data-pf="baixa"],.papel-estagiario [data-arq-act="baixa"],.papel-estagiario [data-acordo-status],.papel-estagiario [data-alvara-status],.papel-estagiario [data-receita-receber]{display:none!important}' +
     '.papel-estagiario input[data-avista],.papel-estagiario input[data-parcela],.papel-estagiario input[data-acordo-parcela],.papel-estagiario input[data-exavista],.papel-estagiario input[data-exparcela]{pointer-events:none;opacity:.55}' +
     '.papel-estagiario #abrirCobrancaMenuBtn,.papel-estagiario #abrirCobrancaProprioBtn,.papel-estagiario [data-cli-cobrar],.papel-estagiario [data-pf="cobrar"]{display:none!important}' +
     '.sem-totais .ini-hero,.sem-totais .ini-kpi,.sem-totais #rsPainel,.sem-totais .rs-wrap,.sem-totais #stats{display:none!important}' +
     '#inicioAcoes{display:flex;flex-wrap:wrap;gap:8px;max-width:none}#inicioAcoes .acao{flex:0 0 auto;min-width:104px;padding:9px 16px}' +
+    /* familiar: o menu e a barra de baixo mostram só o que foi liberado; o resto do escritório não aparece */
+    '.papel-familiar #drawer .dr-it,.papel-familiar #drawer .dr-grp,.papel-familiar #btbar .bt-it:not(#btMais):not(.bt-fam),.papel-familiar #fabNew,.papel-familiar #finFabMenu,.papel-familiar #menuNav .dr-n{display:none!important}' +
+    '.papel-familiar.fam-obra #drawer .dr-it[data-tab="obra"],.papel-familiar #drawer .dr-it[data-tab="configuracoes"],.papel-familiar #drawer #sairBtn,.papel-familiar.fam-obra #btbar .bt-fam{display:flex!important}' +
+    '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="analises"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="extratos"],.papel-familiar.fam-fin #drawer .dr-it#abrirFechamentoBtn,.papel-familiar.fam-fin #btbar .bt-it[data-tab="financeiro"]{display:flex!important}' +
+    '.bt-fam{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
   /* quando o servidor responde quem é a pessoa: sai de uma tela que não é dela e ajusta os rótulos */
   function aplicar(){
     if (ppDono()) return;
-    try{ if (typeof activeTab !== 'undefined' && !ppTelaPermitida(activeTab)) setActiveTab('inicio'); }catch(e){}
+    try{ if (typeof activeTab !== 'undefined' && !ppTelaPermitida(activeTab)) setActiveTab(ppFamiliar() ? ppFamInicial() : 'inicio'); }catch(e){}
     var cf = document.querySelector('#drawer [data-tab="configuracoes"] .lab'); if (cf) cf.textContent = 'Minha conta';
     try{ if (typeof TITULOS_TELA !== 'undefined') TITULOS_TELA.configuracoes = 'Minha conta'; if (typeof atualizarTituloTela === 'function') atualizarTituloTela(); }catch(e){}
     try{ if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){}

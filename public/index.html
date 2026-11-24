@@ -1954,6 +1954,17 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -2020,6 +2031,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     <button type="button" class="bt-it" data-tab="alvaras"><svg><use href="#ic-stamp"/></svg><span>Alvarás</span></button>
     <button type="button" class="bt-it bt-so" data-tab="agenda"><svg><use href="#ic-agenda"/></svg><span>Agenda</span></button>
     <button type="button" class="bt-it" data-tab="financeiro"><svg><use href="#ic-pie"/></svg><span>Finanças</span></button>
+    <button type="button" class="bt-it bt-fam" data-tab="obra"><svg><use href="#ic-house"/></svg><span>Construção</span></button>
     <button type="button" class="bt-it" id="btMais"><svg><use href="#ic-menu"/></svg><span>Mais</span><span class="bt-n" id="btBadgeMais"></span></button>
   </nav>
   <div class="scrim" id="drawerScrim" aria-hidden="true"></div>
@@ -14232,6 +14244,7 @@ function extObraComparacao(docs){
   return { extrato: total, emitido: emits[0], app: app, dif: criada ? r2(total / 100 - app) : null, faltam: faltam };
 }
 function extObraComparacaoHtml(){
+  if (typeof ppFamiliar === 'function' && ppFamiliar()) return '';   /* familiar não tem a aba Extratos nesta etapa */
   var c = extObraComparacao(extPendentes()); if (!c) return '';   /* extrato já lido e ainda não conferido também vale */
   if (c.app === null) return 'O extrato da conta da obra mostra ' + extMoeda(c.extrato) + ' (de ' + extFmtQuando(c.emitido) + '). Cadastre a obra na aba Construção para comparar.';
   return 'Extrato da conta da obra: <b>' + extMoeda(c.extrato) + '</b> (de ' + extFmtQuando(c.emitido) + ') · aba Construção: <b>' + fmtMoeda(c.app) + '</b> · ' + (Math.abs(c.dif) <= 0.10 ? '<b>bate</b>' + (Math.abs(c.dif) >= 0.005 ? ' (diferença de centavos)' : '') : 'diferença de <b>' + fmtMoeda(Math.abs(c.dif)) + '</b> (' + (c.dif > 0 ? 'o extrato tem mais' : 'o app tem mais') + ')');
@@ -15043,7 +15056,7 @@ var anObraPicker = false;
 function ehObraUn(u){ var d = anDocDaUnidade(u); return !!(d && d.atipica); }
 /* aportes "virtuais": cada recebimento de uma entrada marcada como dinheiro da obra entra direto na conta da obra */
 function obraAportesRecebidos(){
-  var out = [];
+  var out = []; if (typeof ppFamiliar === 'function' && ppFamiliar()) return out;   /* familiar não tem honorários */
   listarUnidades().forEach(function(u){
     if (!ehObraUn(u)) return;
     recebimentosUn(u).forEach(function(rc, i){
@@ -16110,7 +16123,7 @@ function obraAbrirPagMO(id){
   var cfg = obraCfg(), k = cfg.contratos.filter(function(x){ return x.id === id; })[0];
   if (!k) return;
   var c = obraContratoResumo(k), hojeIso = todayISO();
-  var formas = [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']];
+  var formas = obFormasPag();
   var html = '<div class="parcela-sum">Contrato <b>' + escapeHtml(k.nome) + '</b>: combinado ' + fmtMoedaReal(k.valor) + ' · pago ' + fmtMoedaReal(c.pago) + ' · falta ' + fmtMoedaReal(c.falta) + '</div>' +
     obCampo('Valor pago (R$)', obInput('valor', 'number', k.semanal > 0 ? (c.falta > 0.004 && c.falta < k.semanal ? c.falta : k.semanal) : (k.forma === 'final' && c.falta > 0.004 ? c.falta : ''), 'min="0" step="0.01" inputmode="decimal"'), k.semanal > 0 ? 'Vem com o valor semanal (' + fmtMoedaReal(k.semanal) + '). Mude se pagar outro valor nesta semana.' : (k.forma === 'final' ? 'Pagamento ao final do serviço: vem com o que falta (' + fmtMoedaReal(c.falta) + '). Se for um adiantamento, mude o valor.' : '')) +
     obCampo('Data do pagamento', obInput('data', 'date', hojeIso)) +
@@ -16147,7 +16160,7 @@ function obraAbrirAbaterMO(id){
   var cfg = obraCfg(), k = cfg.contratos.filter(function(x){ return x.id === id; })[0];
   if (!k) return;
   var c = obraContratoResumo(k), hojeIso = todayISO();
-  var formas = [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']];
+  var formas = obFormasPag();
   var html = '<div class="parcela-sum">Contrato <b>' + escapeHtml(k.nome) + '</b>: combinado ' + fmtMoedaReal(k.valor) + ' · pago ' + fmtMoedaReal(c.pago) + ' · falta ' + fmtMoedaReal(c.falta) + (k.semanal > 0 ? ' · semanal ' + fmtMoedaReal(k.semanal) : '') + (k.fim ? ' · término previsto ' + escapeHtml(fmtData(k.fim)) : '') + '</div>' +
     obCampo('Valor a abater agora (R$)', obInput('valor', 'number', '', 'min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 1500"'), 'O que o profissional pediu para receber nesta semana.') +
     obCampo('Data do pagamento', obInput('data', 'date', hojeIso)) +
@@ -16208,13 +16221,26 @@ function obraExcluirContrato(id){
   }, 'Excluir', true);
 }
 
+/* Familiar só com a Construção: sem PF/PJ (ele não tem PJ nem as contas do Financeiro). Com o módulo Finanças ligado, volta "Conta PF". */
+function obSoObra(){ try{ return ppFamiliar() && ppFamModulos().indexOf('financas') < 0; }catch(e){ return false; } }
+function obFormasPag(){ return obSoObra() ? [['obra', 'Saldo da conta da obra'], ['pf', 'Recursos próprios (cria um aporte junto)']] : [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']]; }
+function obOrigemOpts(){ return obSoObra() ? [['pf', 'Recursos próprios (meu dinheiro)'], ['externo', 'Já está na conta da obra'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ'], ['externo', 'Já está na conta da obra (não mexe na PF/PJ)'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']]; }
+function obDestinoOpts(){ return obSoObra() ? [['pf', 'Para mim']] : [['pf', 'Conta PF'], ['pj', 'Conta PJ']]; }
+/* consórcio: tudo preenchido à mão por quem tem o contrato (prazo, parcela, taxas, contemplação) */
+function obConsorcioNorm(c){
+  c = c && typeof c === 'object' ? c : {};
+  var n = function(x){ return Number(x) >= 0 ? Number(x) : 0; };
+  return { parcela: n(c.parcela), taxaAdm: n(c.taxaAdm), fundoReserva: n(c.fundoReserva), seguro: n(c.seguro), diaVenc: Math.min(31, Math.max(0, Math.round(n(c.diaVenc)))), dataContemplacao: /^\d{4}-\d{2}-\d{2}$/.test(c.dataContemplacao || '') ? c.dataContemplacao : '', forma: c.forma === 'lance' ? 'lance' : 'sorteio', obs: String(c.obs || '').slice(0, 600) };
+}
+function obSitCred(f){ return f.tipo === 'consorcio' ? (f.status === 'aprovado' ? 'contemplado' : 'aguardando contemplação') : (f.tipo === 'proprio' ? 'sem crédito' : (f.status === 'aprovado' ? 'aprovado' : 'estimado')); }
+function obRotCred(tipo){ return tipo === 'consorcio' ? 'Consórcio' : (tipo === 'proprio' ? 'Recursos próprios' : 'Financiamento'); }
 function obraCfg(){
   var c = config.obra || {}, f = c.financiamento || {}, ex = c.extrato || {};
   return {
     criada: !!c.criadoEm,
     nome: c.nome || 'Casa',
     orcamentoTotal: Number(c.orcamentoTotal) > 0 ? Number(c.orcamentoTotal) : 0,
-    financiamento: { status: f.status === 'aprovado' ? 'aprovado' : 'estimado', valor: Number(f.valor) > 0 ? Number(f.valor) : 0, banco: f.banco || '',
+    financiamento: { tipo: (f.tipo === 'consorcio' || f.tipo === 'proprio') ? f.tipo : 'financiamento', consorcio: obConsorcioNorm(f.consorcio), status: f.status === 'aprovado' ? 'aprovado' : 'estimado', valor: Number(f.valor) > 0 ? Number(f.valor) : 0, banco: f.banco || '',
       taxaAnual: Number(f.taxaAnual) > 0 ? Number(f.taxaAnual) : 0, sistema: f.sistema === 'price' ? 'price' : 'sac', prazoMeses: Number(f.prazoMeses) > 0 ? Math.round(Number(f.prazoMeses)) : 360,
       inicioObra: /^\d{4}-\d{2}-\d{2}$/.test(f.inicioObra || '') ? f.inicioObra : '', prazoObraMeses: Number(f.prazoObraMeses) > 0 ? Math.round(Number(f.prazoObraMeses)) : 12, contrapartida: Number(f.contrapartida) > 0 ? Number(f.contrapartida) : 0 },
     medicoes: Array.isArray(c.medicoes) ? c.medicoes.filter(function(x){ return x && x.id && x.data; }) : [],
@@ -16341,25 +16367,36 @@ function obraNomesFornecedores(){
 }
 
 function obraAbrirObra(){
-  var cfg = obraCfg(), novo = !cfg.criada;
+  var cfg = obraCfg(), novo = !cfg.criada, fam = typeof ppFamiliar === 'function' && ppFamiliar(), f = cfg.financiamento, cs = f.consorcio;
+  var tipoIni = novo ? (fam ? 'consorcio' : 'financiamento') : f.tipo, g = function(grupo, rot, ctl, dica){ return '<div data-fg="' + grupo + '">' + obCampo(rot, ctl, dica) + '</div>'; };
   var html = obCampo('Nome da obra', obInput('nome', 'text', novo ? 'Casa' : cfg.nome)) +
-    obCampo('Orçamento total estimado da construção (R$)', obInput('orc', 'number', novo ? 450000 : (cfg.orcamentoTotal || ''), 'min="0" step="0.01" inputmode="decimal"'), 'Só a construção (o terreno não entra). As etapas detalham aos poucos; o que ainda não foi detalhado aparece como "falta detalhar".') +
-    obCampo('Financiamento', obSelect('fstatus', [['estimado', 'Estimado (ainda não aprovado)'], ['aprovado', 'Aprovado']], cfg.financiamento.status)) +
-    obCampo('Valor do financiamento (R$)', obInput('fval', 'number', novo ? 500000 : (cfg.financiamento.valor || ''), 'min="0" step="0.01" inputmode="decimal"'), 'Enquanto for estimado, não entra dinheiro na obra. Depois de aprovado, você lança cada liberação do banco.') +
-    obCampo('Banco (opcional)', obInput('fbanco', 'text', cfg.financiamento.banco, 'placeholder="Ex.: Caixa"')) +
-    obCampo('Taxa de juros do financiamento (% ao ano)', obInput('ftaxa', 'number', cfg.financiamento.taxaAnual || '', 'min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 11,5"'), 'Usada para estimar os juros de obra. Veja no contrato.') +
-    obCampo('Sistema de amortização', obSelect('fsis', [['sac', 'SAC (parcelas decrescentes)'], ['price', 'Price (parcelas iguais)']], cfg.financiamento.sistema)) +
-    obCampo('Prazo do financiamento (meses)', obInput('fprazo', 'number', cfg.financiamento.prazoMeses, 'min="1" step="1" inputmode="numeric"')) +
-    obCampo('Início da obra (opcional)', obInput('fini', 'date', cfg.financiamento.inicioObra)) +
-    obCampo('Prazo da obra (meses)', obInput('fobra', 'number', cfg.financiamento.prazoObraMeses, 'min="1" step="1" inputmode="numeric"')) +
-    obCampo('Recursos próprios exigidos pelo banco (R$, opcional)', obInput('fcont', 'number', cfg.financiamento.contrapartida || '', 'min="0" step="0.01" inputmode="decimal"')) +
-    (novo ? obCampo('Primeira etapa', obInput('etnome', 'text', 'Terraplanagem')) + obCampo('Orçamento da primeira etapa (R$)', obInput('etorc', 'number', 22000, 'min="0" step="0.01" inputmode="decimal"')) : '') +
-    obCampo('Como a conta da obra aparece nos extratos (opcional)', '<textarea id="of_palavras" placeholder="Ex.: CAIXA ECONOMICA; MINHA OBRA">' + escapeHtml(cfg.extrato.palavras) + '</textarea>', 'Palavras separadas por ponto e vírgula. Uma saída da PF/PJ com uma delas vira sugestão de "aporte na obra" ao conferir os extratos.');
+    obCampo('Orçamento total estimado da construção (R$)', obInput('orc', 'number', novo ? (fam ? '' : 450000) : (cfg.orcamentoTotal || ''), 'min="0" step="0.01" inputmode="decimal"'), 'Só a construção (o terreno não entra). As etapas detalham aos poucos; o que ainda não foi detalhado aparece como "falta detalhar".') +
+    obCampo('Como a obra é paga', obSelect('ftipo', [['financiamento', 'Financiamento'], ['consorcio', 'Consórcio'], ['proprio', 'Só recursos próprios (sem crédito)']], tipoIni), 'O consórcio não tem juros: o custo são a taxa de administração, o fundo de reserva e o seguro. Dá para trocar depois.') +
+    g('cred', 'Situação', obSelect('fstatus', [['estimado', 'Estimado (ainda não aprovado)'], ['aprovado', 'Aprovado']], f.status)) +
+    g('cred', '<span data-rot="valor">Valor do financiamento (R$)</span>', obInput('fval', 'number', novo ? (fam ? '' : 500000) : (f.valor || ''), 'min="0" step="0.01" inputmode="decimal"'), 'Enquanto não estiver aprovado, não entra dinheiro na obra. Depois, você lança cada liberação (por medição).') +
+    g('cred', 'Banco (opcional)', obInput('fbanco', 'text', f.banco || (novo && fam ? 'Caixa' : ''), 'placeholder="Ex.: Caixa"')) +
+    g('fin', 'Taxa de juros do financiamento (% ao ano)', obInput('ftaxa', 'number', f.taxaAnual || '', 'min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 11,5"'), 'Usada para estimar os juros de obra. Veja no contrato.') +
+    g('fin', 'Sistema de amortização', obSelect('fsis', [['sac', 'SAC (parcelas decrescentes)'], ['price', 'Price (parcelas iguais)']], f.sistema)) +
+    g('cons', 'Parcela mensal do consórcio (R$)', obInput('cparcela', 'number', cs.parcela || '', 'min="0" step="0.01" inputmode="decimal"')) +
+    g('cons', 'Dia do vencimento da parcela', obInput('cdia', 'number', cs.diaVenc || '', 'min="1" max="31" step="1" inputmode="numeric" placeholder="Ex.: 10"'), 'Com ele o Horus avisa quando a parcela está perto de vencer.') +
+    g('cons', 'Taxa de administração (% do crédito)', obInput('ctaxa', 'number', cs.taxaAdm || '', 'min="0" step="0.01" inputmode="decimal"')) +
+    g('cons', 'Fundo de reserva (% do crédito)', obInput('cfundo', 'number', cs.fundoReserva || '', 'min="0" step="0.01" inputmode="decimal"')) +
+    g('cons', 'Seguro (R$ por mês, se houver)', obInput('cseguro', 'number', cs.seguro || '', 'min="0" step="0.01" inputmode="decimal"')) +
+    g('cons', 'Data da contemplação (se já foi)', obInput('cdata', 'date', cs.dataContemplacao)) +
+    g('cons', 'Contemplado por', obSelect('cforma', [['sorteio', 'Sorteio'], ['lance', 'Lance']], cs.forma)) +
+    g('cons', 'Observações do contrato (opcional)', '<textarea id="of_cobs" placeholder="Ex.: regras de liberação por medição, documentos exigidos">' + escapeHtml(cs.obs) + '</textarea>') +
+    g('cred', '<span data-rot="prazo">Prazo do financiamento (meses)</span>', obInput('fprazo', 'number', f.prazoMeses, 'min="1" step="1" inputmode="numeric"')) +
+    g('cred', 'Início da obra (opcional)', obInput('fini', 'date', f.inicioObra)) +
+    g('cred', 'Prazo da obra (meses)', obInput('fobra', 'number', f.prazoObraMeses, 'min="1" step="1" inputmode="numeric"')) +
+    g('cred', 'Recursos próprios exigidos pelo banco (R$, opcional)', obInput('fcont', 'number', f.contrapartida || '', 'min="0" step="0.01" inputmode="decimal"')) +
+    (novo ? obCampo('Primeira etapa', obInput('etnome', 'text', 'Terraplanagem')) + obCampo('Orçamento da primeira etapa (R$)', obInput('etorc', 'number', fam ? '' : 22000, 'min="0" step="0.01" inputmode="decimal"')) : '') +
+    (fam ? '' : obCampo('Como a conta da obra aparece nos extratos (opcional)', '<textarea id="of_palavras" placeholder="Ex.: CAIXA ECONOMICA; MINHA OBRA">' + escapeHtml(cfg.extrato.palavras) + '</textarea>', 'Palavras separadas por ponto e vírgula. Uma saída da PF/PJ com uma delas vira sugestão de "aporte na obra" ao conferir os extratos.'));
   obraAbrirForm(novo ? 'Criar a obra' : 'Editar a obra', html, function(){
-    var nome = obFid('nome').value.trim() || 'Casa', orc = obNum('orc'), fval = obNum('fval');
+    var nome = obFid('nome').value.trim() || 'Casa', orc = obNum('orc'), fval = obNum('fval'), tipo = obFid('ftipo').value;
     if (!(orc > 0)) return 'Informe o orçamento total estimado.';
-    var patch = { nome: nome, orcamentoTotal: orc, financiamento: { status: obFid('fstatus').value, valor: fval, banco: obFid('fbanco').value.trim(), taxaAnual: obNum('ftaxa') || 0, sistema: obFid('fsis').value, prazoMeses: Math.round(obNum('fprazo')) || 360, inicioObra: obFid('fini').value || '', prazoObraMeses: Math.round(obNum('fobra')) || 12, contrapartida: obNum('fcont') || 0 },
-                  extrato: { palavras: qs('of_palavras').value.trim(), regras: cfg.extrato.regras } };
+    var patch = { nome: nome, orcamentoTotal: orc, financiamento: { tipo: tipo, status: obFid('fstatus').value, valor: tipo === 'proprio' ? 0 : fval, banco: obFid('fbanco').value.trim(), taxaAnual: tipo === 'financiamento' ? (obNum('ftaxa') || 0) : 0, sistema: obFid('fsis').value, prazoMeses: Math.round(obNum('fprazo')) || 360, inicioObra: obFid('fini').value || '', prazoObraMeses: Math.round(obNum('fobra')) || 12, contrapartida: obNum('fcont') || 0,
+        consorcio: { parcela: obNum('cparcela'), diaVenc: Math.round(obNum('cdia')), taxaAdm: obNum('ctaxa'), fundoReserva: obNum('cfundo'), seguro: obNum('cseguro'), dataContemplacao: obFid('cdata').value || '', forma: obFid('cforma').value, obs: obFid('cobs').value.trim() } },
+                  extrato: fam ? { palavras: cfg.extrato.palavras, regras: cfg.extrato.regras } : { palavras: qs('of_palavras').value.trim(), regras: cfg.extrato.regras } };
     if (novo){
       var enome = obFid('etnome').value.trim(), eorc = obNum('etorc');
       patch.criadoEm = new Date().toISOString();
@@ -16367,6 +16404,16 @@ function obraAbrirObra(){
     }
     return persistObraCfg(patch);
   }, novo ? 'Criar' : 'Salvar');
+  /* o tipo de crédito mostra só os campos dele e troca os rótulos (consórcio: sem juros, com parcela e taxas) */
+  var aplicarTipo = function(){
+    var t = obFid('ftipo').value, corpo = qs('obraFormCorpo');
+    Array.prototype.forEach.call(corpo.querySelectorAll('[data-fg]'), function(el){ var gr = el.getAttribute('data-fg'); el.style.display = (gr === 'cred' ? t !== 'proprio' : (gr === 'fin' ? t === 'financiamento' : t === 'consorcio')) ? '' : 'none'; });
+    var rv = corpo.querySelector('[data-rot="valor"]'), rp = corpo.querySelector('[data-rot="prazo"]'), st = obFid('fstatus');
+    if (rv) rv.textContent = t === 'consorcio' ? 'Valor da carta de crédito (R$)' : 'Valor do financiamento (R$)';
+    if (rp) rp.textContent = t === 'consorcio' ? 'Prazo do consórcio (meses)' : 'Prazo do financiamento (meses)';
+    if (st) { st.options[0].textContent = t === 'consorcio' ? 'Aguardando contemplação' : 'Estimado (ainda não aprovado)'; st.options[1].textContent = t === 'consorcio' ? 'Contemplado (crédito disponível)' : 'Aprovado'; }
+  };
+  obFid('ftipo').addEventListener('change', aplicarTipo); aplicarTipo();
 }
 function obraAbrirEtapa(id){
   var cfg = obraCfg(), e = id ? cfg.etapas.filter(function(x){ return x.id === id; })[0] : null;
@@ -16393,7 +16440,7 @@ function obraExcluirEtapa(id){
 }
 function obraSaldoAviso(valor){
   var s = obraSaldoEm();
-  return valor > s + 0.005 ? 'O dinheiro na conta da obra (' + fmtMoedaReal(s) + ') não cobre este gasto: ficaria em ' + fmtMoedaReal(r2(s - valor)) + '. Faça antes um aporte, ou escolha pagar direto da conta PF/PJ.' : '';
+  return valor > s + 0.005 ? 'O dinheiro na conta da obra (' + fmtMoedaReal(s) + ') não cobre este gasto: ficaria em ' + fmtMoedaReal(r2(s - valor)) + '. Faça antes um aporte, ou escolha pagar direto ' + (obSoObra() ? 'com recursos próprios.' : 'da conta PF/PJ.') : '';
 }
 /* ---------- campos de valor em R$: aceitam 1.000,00 / 1000,00 / 1000 e põem os pontos sozinhos ---------- */
 var moneyDesc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
@@ -17353,6 +17400,28 @@ function ob7Medicoes(){
   return l;
 }
 
+/* ---------- parcelas do consórcio (custo do crédito) ---------- */
+function ob7Parcelas(){ return obraMov.filter(function(m){ return m.tipo === 'parcela'; }).sort(function(a, b){ return String(b.data || '').localeCompare(String(a.data || '')); }); }
+function ob7HtmlParcelas(cfg){
+  var fin = cfg.financiamento; if (fin.tipo !== 'consorcio') return '';
+  var cs = fin.consorcio || {}, ps = ob7Parcelas(), pago = r2(ps.reduce(function(t, x){ return t + (Number(x.valor) || 0); }, 0)), prazo = fin.prazoMeses || 0;
+  var previsto = cs.parcela > 0 && prazo > 0 ? r2(cs.parcela * prazo + (cs.seguro > 0 ? cs.seguro * prazo : 0)) : 0, custo = previsto > 0 && fin.valor > 0 ? r2(previsto - fin.valor) : null;
+  var corpo = '<div class="plan-linha"><span>Parcelas pagas</span><strong>' + ps.length + (prazo ? ' de ' + prazo : '') + ' · ' + fmtMoeda(pago) + '</strong></div>' +
+    (previsto > 0 ? '<div class="plan-linha"><span>Total previsto das parcelas' + (cs.seguro > 0 ? ' (com seguro)' : '') + '</span><strong>' + fmtMoeda(previsto) + '</strong></div>' : '<div class="saldo-data">Informe a parcela e o prazo em Editar a obra para ver o total previsto.</div>') +
+    (custo !== null ? '<div class="plan-linha"><span>Custo previsto do crédito (parcelas − carta)</span><strong>' + fmtMoeda(custo) + '</strong></div><div class="saldo-data">Estimativa a partir do que você informou; confira com o contrato (reajustes e taxas podem mudar o valor).</div>' : '') +
+    '<div class="financeiro-secao-head" style="margin-top:12px;"><h4>Parcelas lançadas</h4><button type="button" class="btn-text" data-ob7="par-nova">Lançar parcela paga</button></div>' +
+    (ps.length ? ps.slice(0, 12).map(function(m){ return '<div class="plan-linha"><span>' + escapeHtml(fmtData(m.data)) + (m.obs ? ' · ' + escapeHtml(m.obs) : '') + '</span><strong>' + fmtMoeda(m.valor) + '</strong><button type="button" class="btn-text" data-ob7="par-del" data-id="' + escapeHtml(m.id) + '">Excluir</button></div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma parcela lançada ainda.</div>');
+  return ob7Sec('par', 'Parcelas do consórcio', ps.length + (prazo ? ' de ' + prazo : '') + ' pagas', corpo);
+}
+function ob7AbrirParcela(){
+  var cfg = ob7Cfg(), cs = cfg.financiamento.consorcio || {}, n = ob7Parcelas().length + 1;
+  var html = obCampo('Valor da parcela (R$)', obInput('valor', 'number', cs.parcela || '', 'min="0" step="0.01" inputmode="decimal"')) + obCampo('Data do pagamento', obInput('data', 'date', todayISO())) + obCampo('Observação (opcional)', obInput('obs', 'text', 'Parcela ' + n));
+  obraAbrirForm('Parcela do consórcio', html, function(){
+    var valor = r2(obNum('valor')), data = obFid('data').value;
+    if (!(valor > 0)) return 'Informe o valor da parcela.'; if (!data) return 'Informe a data.';
+    return obraGravar(uid(), { tipo: 'parcela', data: data, valor: valor, obs: obFid('obs').value.trim(), criadoEm: new Date().toISOString() });
+  });
+}
 /* ---------- juros de obra ---------- */
 function ob7SaldoLiberadoAte(fimISO){
   var t = 0;
@@ -17413,20 +17482,29 @@ function ob7Sec(chave, titulo, resumo, corpo){
   return '<details class="ini-card ob7-sec" data-ob7-sec="' + chave + '"' + (ob7Abertos[chave] ? ' open' : '') + '><summary>' + fvIc(i[0], i[1]) + '<span class="ob7-tx"><b>' + titulo + '</b><span class="fp-nota">' + resumo + '</span></span></summary><div class="ob7-corpo">' + corpo + '</div></details>';
 }
 function ob7HtmlFin(cfg, r){
-  var fin = cfg.financiamento, liberado = r.liberado || 0, meds = ob7Medicoes(), prox = meds.filter(function(m){ return m.status !== 'liberada'; })[0];
+  var fin = cfg.financiamento, liberado = r.liberado || 0, meds = ob7Medicoes(), prox = meds.filter(function(m){ return m.status !== 'liberada'; })[0], cons = fin.tipo === 'consorcio', rot = obRotCred(fin.tipo), cs = fin.consorcio || {};
   var pct = fin.valor > 0 ? Math.min(100, liberado / fin.valor * 100) : 0;
   var corpo = '';
-  if (!(fin.valor > 0)) corpo += '<div class="financeiro-vazio">Informe o valor do financiamento em <b>Editar a obra</b> para acompanhar as liberações.</div>';
+  if (fin.tipo === 'proprio') return ob7Sec('fin', 'Recursos próprios', 'sem crédito', '<div class="financeiro-vazio">A obra é paga só com recursos próprios: não há crédito nem liberações. Registre o dinheiro que você coloca na conta da obra em <b>Aporte</b>. Para usar financiamento ou consórcio, abra <b>Editar a obra</b>.</div>');
+  if (!(fin.valor > 0)) corpo += '<div class="financeiro-vazio">Informe o valor ' + (cons ? 'da carta de crédito' : 'do financiamento') + ' em <b>Editar a obra</b> para acompanhar as liberações.</div>';
   else {
-    corpo += '<div class="plan-linha"><span>Financiamento (' + (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ')</span><strong>' + fmtMoeda(fin.valor) + '</strong></div>' +
-      obBarra(liberado, 0, fin.valor) + '<div class="saldo-data">Liberado: <b>' + fmtMoeda(liberado) + '</b> (' + fmtPerc(pct) + ') · falta liberar ' + fmtMoeda(Math.max(0, r2(fin.valor - liberado))) + '</div>' +
-      (fin.taxaAnual > 0 ? '<div class="plan-linha"><span>Taxa de juros</span><strong>' + String(fin.taxaAnual).replace('.', ',') + '% ao ano</strong></div>' : '<div class="saldo-data">Informe a taxa em Editar a obra para calcular os juros de obra.</div>') +
-      '<div class="plan-linha"><span>Sistema · prazo</span><strong>' + (fin.sistema === 'price' ? 'Price' : 'SAC') + ' · ' + fin.prazoMeses + ' meses</strong></div>' +
-      (fin.inicioObra ? '<div class="plan-linha"><span>Prazo da obra</span><strong>' + fin.prazoObraMeses + ' meses (até ' + escapeHtml(mesLabel(deslocarMes(ob7Mes(fin.inicioObra), Math.max(1, fin.prazoObraMeses) - 1))) + ')</strong></div>' : '') +
+    corpo += '<div class="plan-linha"><span>' + rot + ' (' + obSitCred(fin) + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ')</span><strong>' + fmtMoeda(fin.valor) + '</strong></div>' +
+      obBarra(liberado, 0, fin.valor) + '<div class="saldo-data">Liberado: <b>' + fmtMoeda(liberado) + '</b> (' + fmtPerc(pct) + ') · falta liberar ' + fmtMoeda(Math.max(0, r2(fin.valor - liberado))) + '</div>';
+    if (cons){
+      corpo += '<div class="plan-linha"><span>Prazo · parcela</span><strong>' + fin.prazoMeses + ' meses' + (cs.parcela > 0 ? ' · ' + fmtMoeda(cs.parcela) : '') + '</strong></div>' +
+        (cs.taxaAdm > 0 || cs.fundoReserva > 0 ? '<div class="plan-linha"><span>Taxa de administração · fundo de reserva</span><strong>' + String(cs.taxaAdm || 0).replace('.', ',') + '% · ' + String(cs.fundoReserva || 0).replace('.', ',') + '%</strong></div>' : '') +
+        (cs.seguro > 0 ? '<div class="plan-linha"><span>Seguro</span><strong>' + fmtMoeda(cs.seguro) + '/mês</strong></div>' : '') +
+        (cs.dataContemplacao ? '<div class="plan-linha"><span>Contemplação</span><strong>' + escapeHtml(fmtData(cs.dataContemplacao)) + ' · ' + (cs.forma === 'lance' ? 'lance' : 'sorteio') + '</strong></div>' : '') +
+        (cs.obs ? '<div class="saldo-data" style="white-space:pre-wrap">' + escapeHtml(cs.obs) + '</div>' : '');
+    } else {
+      corpo += (fin.taxaAnual > 0 ? '<div class="plan-linha"><span>Taxa de juros</span><strong>' + String(fin.taxaAnual).replace('.', ',') + '% ao ano</strong></div>' : '<div class="saldo-data">Informe a taxa em Editar a obra para calcular os juros de obra.</div>') +
+        '<div class="plan-linha"><span>Sistema · prazo</span><strong>' + (fin.sistema === 'price' ? 'Price' : 'SAC') + ' · ' + fin.prazoMeses + ' meses</strong></div>';
+    }
+    corpo += (fin.inicioObra ? '<div class="plan-linha"><span>Prazo da obra</span><strong>' + fin.prazoObraMeses + ' meses (até ' + escapeHtml(mesLabel(deslocarMes(ob7Mes(fin.inicioObra), Math.max(1, fin.prazoObraMeses) - 1))) + ')</strong></div>' : '') +
       (fin.contrapartida > 0 ? '<div class="plan-linha"><span>Recursos próprios exigidos</span><strong>' + fmtMoeda(fin.contrapartida) + '</strong></div><div class="plan-linha"><span>Já aportado por você</span><strong style="color:var(--success)">' + fmtMoeda(r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0))) + '</strong></div>' : '');
   }
   corpo += '<div class="financeiro-secao-head" style="margin-top:12px;"><h4>Medições</h4><button type="button" class="btn-text" data-ob7="med-nova">Adicionar medição</button></div>';
-  if (!meds.length) corpo += '<div class="financeiro-vazio">Nenhuma medição cadastrada. Cadastre o cronograma de liberações que o banco combinou.</div>';
+  if (!meds.length) corpo += '<div class="financeiro-vazio">Nenhuma medição cadastrada. Cadastre o cronograma de liberações combinado com ' + (cons ? 'a administradora do consórcio' : 'o banco') + '.</div>';
   var hoje = todayISO();
   meds.forEach(function(m){
     var lib = m.status === 'liberada' || !!m.liberacaoId, etapas = (m.etapaIds || []).map(function(id){ return cfg.etapas.filter(function(e){ return e.id === id; })[0]; }).filter(Boolean);
@@ -17436,10 +17514,11 @@ function ob7HtmlFin(cfg, r){
       (!lib && faltam.length ? '<span class="saldo-data" style="color:var(--tutela)">Faltam concluir: ' + faltam.map(function(e){ return escapeHtml(e.nome); }).join(', ') + '</span>' : '') + '</div>' +
       '<div class="ob-gasto-val"><strong>' + fmtMoeda(m.valor) + '</strong><span>' + (lib ? '' : '<button type="button" class="btn-text acao-pagar" data-ob7="med-lib" data-id="' + escapeHtml(m.id) + '">Registrar liberação</button>') + '<button type="button" class="btn-text" data-ob7="med-edit" data-id="' + escapeHtml(m.id) + '">Editar</button><button type="button" class="btn-text acao-excluir" data-ob7="med-del" data-id="' + escapeHtml(m.id) + '">Excluir</button></span></div></div>';
   });
-  var resumo = (fin.valor > 0 ? fmtPerc(pct) + ' liberado' : 'sem financiamento') + (prox ? ' · próxima: ' + fmtData(prox.data) : '');
-  return ob7Sec('fin', 'Financiamento e medições', resumo, corpo);
+  var resumo = (fin.valor > 0 ? fmtPerc(pct) + ' liberado' : 'sem ' + rot.toLowerCase()) + (prox ? ' · próxima: ' + fmtData(prox.data) : '');
+  return ob7Sec('fin', rot + ' e medições', resumo, corpo);
 }
 function ob7HtmlJuros(cfg){
+  if (cfg.financiamento.tipo !== 'financiamento') return '';   /* consórcio e recursos próprios não têm juros de obra */
   var j = ob7Juros();
   if (!j) return ob7Sec('jur', 'Juros de obra', 'informe a taxa do financiamento', '<div class="financeiro-vazio">Para estimar os juros de obra, informe o <b>valor</b> e a <b>taxa de juros ao ano</b> do financiamento em <b>Editar a obra</b>.</div>');
   if (!j.rows.length) return ob7Sec('jur', 'Juros de obra', 'sem liberações ainda', '<div class="financeiro-vazio">Os juros de obra começam a contar depois da primeira liberação ou medição cadastrada.</div>');
@@ -17459,8 +17538,8 @@ function ob7HtmlCaixa(cfg){
     '<div class="plan-linha"><span>Total que você ainda precisa colocar</span><strong>' + fmtMoeda(c.total) + '</strong></div>' +
     (!c.temCronograma && c.semDistribuir > 0 ? '<div class="plan-linha"><span>Orçamento ainda sem data (não entra na conta)</span><strong>' + fmtMoeda(c.semDistribuir) + '</strong></div>' : '') +
     (c.pior ? '<div class="plan-linha"><span>Mês mais pesado</span><strong style="color:var(--urgente)">' + escapeHtml(mesLabel(c.pior.mes)) + ': ' + fmtMoeda(c.pior.aportar) + '</strong></div>' : '<div class="saldo-data" style="color:var(--success)">Com o que há na conta da obra e as liberações previstas, não falta caixa nos próximos meses.</div>') +
-    '<div class="plan-linha"><span>Sobra prevista na sua conta (Análises)</span><strong>' + fmtMoeda(c.sobra) + '/mês</strong></div>' +
-    (c.pior && c.sobra < c.pior.aportar  ? '<div class="plan-alerta aviso">Em ' + escapeHtml(mesLabel(c.pior.mes)) + ' a obra pede ' + fmtMoeda(c.pior.aportar) + ' e o seu caixa livre prevê ' + fmtMoeda(c.sobra) + ' por mês. Não cobre sem usar a reserva ou um alvará.' + (paTemSample() ? ' <button type="button" class="btn-text" data-pa-abrir="Consigo aportar ' + Math.round(c.pior.aportar) + ' reais na obra em ' + escapeHtml(mesLabel(c.pior.mes)) + '?">Perguntar ao app</button>' : '') + '</div>' : '');
+    (obSoObra() ? '' : '<div class="plan-linha"><span>Sobra prevista na sua conta (Análises)</span><strong>' + fmtMoeda(c.sobra) + '/mês</strong></div>') +
+    (!obSoObra() && c.pior && c.sobra < c.pior.aportar  ? '<div class="plan-alerta aviso">Em ' + escapeHtml(mesLabel(c.pior.mes)) + ' a obra pede ' + fmtMoeda(c.pior.aportar) + ' e o seu caixa livre prevê ' + fmtMoeda(c.sobra) + ' por mês. Não cobre sem usar a reserva ou um alvará.' + (paTemSample() ? ' <button type="button" class="btn-text" data-pa-abrir="Consigo aportar ' + Math.round(c.pior.aportar) + ' reais na obra em ' + escapeHtml(mesLabel(c.pior.mes)) + '?">Perguntar ao app</button>' : '') + '</div>' : '');
   return ob7Sec('cx', 'Caixa próprio necessário', c.pior ? 'pior mês: ' + mesLabel(c.pior.mes) + ' · ' + fmtMoeda(c.pior.aportar) : (c.total > 0 ? 'total ' + fmtMoeda(c.total) : 'sem falta de caixa'), corpo);
 }
 var OB7_PADRAO = [
@@ -17504,7 +17583,7 @@ function ob7Extras(){
   var cfg = ob7Cfg(); if (!cfg.criada) return;
   var r = obraResumo(), cards = el.querySelector('.ob-cards'); if (!cards) return;
   Array.prototype.forEach.call(el.querySelectorAll('[data-ob7-sec]'), function(e){ e.remove(); });
-  cards.insertAdjacentHTML('afterend', ob7HtmlFin(cfg, r) + ob7HtmlJuros(cfg) + ob7HtmlCaixa(cfg));
+  cards.insertAdjacentHTML('afterend', ob7HtmlFin(cfg, r) + ob7HtmlParcelas(cfg) + ob7HtmlJuros(cfg) + ob7HtmlCaixa(cfg));
   el.insertAdjacentHTML('beforeend', ob7HtmlChecklist(cfg) + ob7HtmlExtrato(cfg));
 }
 (function(){
@@ -17538,7 +17617,7 @@ function ob7AbrirMedicao(id){
 }
 function ob7Liberar(id){
   var cfg = ob7Cfg(), m = ob7Medicoes().filter(function(x){ return x.id === id; })[0]; if (!m) return;
-  if (cfg.financiamento.status !== 'aprovado'){ toast('O financiamento ainda está como estimado. Em "Editar a obra", marque como aprovado para registrar liberações.'); return; }
+  if (cfg.financiamento.status !== 'aprovado'){ toast('O ' + obRotCred(cfg.financiamento.tipo).toLowerCase() + ' ainda está como ' + (cfg.financiamento.tipo === 'consorcio' ? 'aguardando contemplação' : 'estimado') + '. Em "Editar a obra", marque como ' + (cfg.financiamento.tipo === 'consorcio' ? 'contemplado' : 'aprovado') + ' para registrar liberações.'); return; }
   var html = obCampo('Valor liberado (R$)', obInput('valor', 'number', m.valor, 'min="0" step="0.01" inputmode="decimal"'), 'Dinheiro que o banco liberou para a conta da obra. Não é receita.') +
     obCampo('Data da liberação', obInput('data', 'date', todayISO())) + obCampo('Observação', obInput('obs', 'text', m.numero + 'ª medição'));
   obraAbrirForm('Registrar liberação — ' + m.numero + 'ª medição', html, function(){
@@ -17590,7 +17669,7 @@ function ob7AbrirItem(id){
 document.addEventListener('click', function(ev){
   var t = ev.target.closest ? ev.target.closest('[data-ob7]') : null; if (!t || t.tagName === 'INPUT') return;
   var a = t.getAttribute('data-ob7'), id = t.getAttribute('data-id');
-  if (a === 'med-nova') ob7AbrirMedicao(); else if (a === 'med-edit') ob7AbrirMedicao(id); else if (a === 'med-lib') ob7Liberar(id); else if (a === 'med-del') ob7ExcluirMedicao(id);
+  if (a === 'par-nova') ob7AbrirParcela(); else if (a === 'par-del'){ if (confirm('Excluir esta parcela lançada?')) obraApagar(id); } else if (a === 'med-nova') ob7AbrirMedicao(); else if (a === 'med-edit') ob7AbrirMedicao(id); else if (a === 'med-lib') ob7Liberar(id); else if (a === 'med-del') ob7ExcluirMedicao(id);
   else if (a === 'jur-lancar') ob7LancarJuros(t.getAttribute('data-mes'));
   else if (a === 'chk-novo') ob7AbrirItem(); else if (a === 'chk-edit') ob7AbrirItem(id);
   else if (a === 'chk-padrao'){ var cfg = ob7Cfg(); ob7SalvarLista('checklist', OB7_PADRAO.map(function(p){ return { id: uid(), fase: p[0], titulo: p[1], prazo: null, feito: false }; })); }
@@ -17633,7 +17712,7 @@ function ob7DesenharAnexos(msg){
     (l.length ? l.map(function(a){ return '<div class="plan-linha"><span>' + (/^image\//.test(a.tipo) ? ico('file-text', 16) : ico('file-text', 16)) + escapeHtml(a.nome) + '<em>' + Math.round(a.tam / 1024) + ' KB</em></span><span><button type="button" class="btn-text" data-an="ver" data-id="' + escapeHtml(a.id) + '">Ver</button><button type="button" class="btn-text acao-excluir" data-an="rem" data-id="' + escapeHtml(a.id) + '">Remover</button></span></div>'; }).join('') : '<div class="financeiro-vazio">Nenhum comprovante ainda.</div>') +
     '<input type="file" id="anArq" accept="image/*,application/pdf" style="display:none;">' +
     (l.length < OB7_MAX_ANEXOS ? '<button type="button" class="btn btn-primary" data-an="add" style="width:100%;justify-content:center;">Anexar foto ou PDF</button>' : '') +
-    (temImg && paTemSample() ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
+    (temImg && paTemSample() && !(typeof ppFamiliar === 'function' && ppFamiliar()) ? '<button type="button" class="btn btn-ghost" data-an="ler" style="width:100%;justify-content:center;">Ler a nota e preencher o gasto</button>' : '') +
     (msg ? '<div class="saldo-data" role="status">' + escapeHtml(msg) + '</div>' : '');
 }
 function ob7AbrirAnexos(id){ ob7MontarAnexos(); ob7Gasto = id; ob7DesenharAnexos(''); qs('overlayAnexos').classList.add('show'); }
@@ -17694,6 +17773,13 @@ function ob7Avisos(){
   });
   (cfg.checklist || []).forEach(function(x){ if (!x.feito && x.prazo && x.prazo <= lim) a.push({ tipo: 'check', id: x.id, d: x.prazo, titulo: 'Obra · ' + x.titulo, detalhe: (x.prazo < hoje ? 'Prazo venceu em ' : 'Prazo em ') + fmtData(x.prazo), valor: null, atraso: x.prazo < hoje }); });
   ob7Medicoes().forEach(function(m){ if (m.status !== 'liberada' && !m.liberacaoId && m.data && m.data <= somarDias(hoje, 15)) a.push({ tipo: 'med', id: m.id, d: m.data, titulo: 'Obra · ' + m.numero + 'ª medição', detalhe: (m.data < hoje ? 'Prevista para ' : 'Liberação prevista em ') + fmtData(m.data) + (m.status === 'solicitada' ? ' · já pedida ao banco' : ' · peça ao banco'), valor: Number(m.valor) || 0, atraso: m.data < hoje }); });
+  var fc = cfg.financiamento, cc = fc.consorcio || {};
+  if (fc.tipo === 'consorcio' && cc.diaVenc > 0){   /* parcela do consórcio: avisa perto do vencimento, se o mês ainda não tem parcela lançada */
+    var pad2 = function(n){ return String(n).padStart(2, '0'); }, dia = Math.min(cc.diaVenc, 28), mm = hoje.slice(0, 7), pagaMes = function(m2){ return ob7Parcelas().some(function(x){ return String(x.data || '').slice(0, 7) === m2; }); };
+    if (pagaMes(mm)) mm = deslocarMes(mm, 1);
+    var dv = mm + '-' + pad2(dia);
+    if (dv <= lim) a.push({ tipo: 'parcela', id: mm, d: dv, titulo: 'Obra · parcela do consórcio', detalhe: (dv < hoje ? 'Venceu em ' : 'Vence em ') + fmtData(dv) + (cc.parcela > 0 ? ' · ' + fmtMoeda(cc.parcela) : ''), atraso: dv < hoje });
+  }
   var j = null; try{ j = ob7Juros(); }catch(e){}
   if (j){ var at = j.rows.filter(function(x){ return x.situacao === 'atual' && !x.lancado && x.juros > 0.004; })[0]; if (at && todayISO().slice(8, 10) >= '05') a.push({ tipo: 'juros', id: at.mes, d: hoje, titulo: 'Obra · juros de ' + mesLabel(at.mes).toLowerCase(), detalhe: 'Estimado; confira com o boleto do banco', valor: at.juros, atraso: false }); }
   try{ var atr = mfAtrasado(); if (atr) a.push({ tipo: 'calc', id: 'refs', d: hoje, titulo: 'Obra · valores de referência sem atualizar', detalhe: 'A busca automática do IBGE parou em ' + mfMesCurto(atr.ultimo) + '.', valor: null, atraso: false }); }catch(e){}
@@ -17734,6 +17820,7 @@ var ob7AvisoAtual = null;
 document.addEventListener('click', function(ev){
   var el = ev.target.closest ? ev.target.closest('[data-ob7-aviso]') : null; if (!el) return;
   var p = el.getAttribute('data-ob7-aviso').split('|'), a = ob7Avisos().filter(function(x){ return x.tipo === p[0] && String(x.id) === p[1]; })[0]; if (!a) return;
+  if (a.tipo === 'parcela'){ ob7AbrirParcela(); return; }   /* parcela do consórcio: abre o lançamento da parcela */
   if (a.tipo === 'calc'){ try{ setActiveTab('obra'); mfS.obra = 'calc'; renderObra(); }catch(e){} return; }   /* lembrete mensal: abre a Calculadora */
   ob7MontarEscolha(); ob7AvisoAtual = a;
   qs('obAvTitulo').textContent = a.titulo; qs('obAvInfo').textContent = a.detalhe + (a.valor != null ? ' · ' + fmtMoeda(a.valor) : '');
@@ -22591,7 +22678,10 @@ function sgSegAlertas(ativo){ sgApi('/api/seguranca/alertas', 'PUT', { ativo: !!
    O servidor decide tudo (/api/usuarios); a tela só mostra e pede. O proprietário nunca vê nem define a senha de ninguém.
    ============================================================ */
 var usS = { tela: 'lista', dados: null, oabsCad: [], sel: null, form: null, link: null, ocupado: false, sessoes: [], msg: '' };
-var US_PAPEL = { proprietario: 'proprietário', advogado: 'advogado', estagiario: 'estagiário' };
+var US_PAPEL = { proprietario: 'proprietário', advogado: 'advogado', estagiario: 'estagiário', familiar: 'familiar' };
+var US_MODULOS = [['obra', 'Construção', 'orçamento, gastos, etapas, consórcio/financiamento e calculadora da obra dele'], ['financas', 'Finanças pessoais', 'salário, gastos, extratos, orçamento, metas e análises (sem PJ nem jurídico)']];
+function usModulosTxt(m){ return (m || []).map(function(x){ return (US_MODULOS.filter(function(y){ return y[0] === x; })[0] || [x, x])[1]; }).join(', ') || 'nenhum'; }
+function usModulosHtml(sel, atr){ return US_MODULOS.map(function(m){ return '<label class="ad-it" style="border:0;padding:4px 0"><input type="checkbox" ' + atr + '="' + m[0] + '"' + (sel.indexOf(m[0]) >= 0 ? ' checked' : '') + '><span class="ad-t"><b>' + m[1] + '</b><br><span class="saldo-data">' + m[2] + '</span></span></label>'; }).join(''); }
 var US_PERMS = [
   { k: 'verPublicacoes', t: 'Ver as publicações de todo o escritório', s: 'só leitura', para: ['estagiario'] },
   { k: 'verAgendas', t: 'Ver as agendas de todo o escritório', s: 'inclui as tarefas pessoais de todos', para: ['estagiario'] },
@@ -22607,6 +22697,8 @@ function usAbrir(){
     ov.addEventListener('input', function(e){ var t = e.target; if (t && t.getAttribute && t.getAttribute('data-usf') && usS.form){ usS.form[t.getAttribute('data-usf')] = t.value; } });
     ov.addEventListener('change', function(e){ var t = e.target; if (!t || !t.getAttribute) return;
       var p = t.getAttribute('data-usp'); if (p){ usPermMudou(p, t.checked); return; }
+      var mn = t.getAttribute('data-usmn'); if (mn && usS.form){ var ix = usS.form.modulos.indexOf(mn); if (t.checked && ix < 0) usS.form.modulos.push(mn); if (!t.checked && ix >= 0) usS.form.modulos.splice(ix, 1); return; }
+      var um = t.getAttribute('data-usm'); if (um){ var pu = usPessoa(usS.sel); if (pu){ var ms = (pu.modulos || []).filter(function(x){ return x !== um; }); if (t.checked) ms.push(um); if (!ms.length){ t.checked = true; toast('O familiar precisa de ao menos um módulo. Para tirar o acesso, desative a pessoa.'); return; } usPut({ modulos: ms }, 'Módulos atualizados.'); } return; }
       var o = t.getAttribute('data-uso'); if (o){ usOabMarcou(o, t.checked); return; }
       if (t.getAttribute('data-usf') === 'papel-ficha') usPapelFicha(t.value);
     });
@@ -22633,7 +22725,7 @@ function usHtmlLista(){
   var d = usS.dados, h = '<div class="pb-sec"><div class="pb-sec-t">Pessoas com acesso (' + d.usuarios.length + ')</div></div>';
   h += d.usuarios.map(function(u){
     var info = u.emUso ? 'em uso agora' : (u.ultimoAcesso ? 'último acesso ' + sgDataHora(u.ultimoAcesso) + (u.aparelho ? ' · ' + u.aparelho : '') : 'ainda não entrou');
-    var linha2 = US_PAPEL[u.papel] + (u.papel === 'advogado' ? ' · OAB ' + (u.oabs.length ? u.oabs.join(', ') : 'não indicada') : (u.papel === 'proprietario' ? ' · todas as OABs' : ''));
+    var linha2 = US_PAPEL[u.papel] + (u.papel === 'advogado' ? ' · OAB ' + (u.oabs.length ? u.oabs.join(', ') : 'não indicada') : (u.papel === 'proprietario' ? ' · todas as OABs' : (u.papel === 'familiar' ? ' · módulos: ' + usModulosTxt(u.modulos) : '')));
     return '<div class="pb-card" style="--pb-bar:' + (u.papel === 'proprietario' ? '#C98500' : u.ativo ? '#2A78D6' : '#8A93AD') + '"><div class="pb-l1"><span><b>' + escapeHtml(u.nome) + '</b>' + (u.emUso ? ' <span class="saldo-data">(você)</span>' : '') + '</span><span>' + usChip(US_PAPEL[u.papel], u.papel === 'proprietario' ? 'at' : '') + (u.ativo ? '' : usChip('desativado', 'at')) + '</span></div>' +
       '<div class="pb-proc">' + escapeHtml(u.email) + '</div><div class="pb-proc">' + escapeHtml(linha2) + '</div><div class="pb-proc">' + escapeHtml(info) + '</div>' +
       (u.papel === 'proprietario' ? '' : '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="abrir" data-k="' + escapeHtml(u.id) + '">Abrir</button></div>') + '</div>';
@@ -22649,7 +22741,7 @@ function usHtmlLista(){
   return h;
 }
 /* ---------- convidar ---------- */
-function usNovoForm(){ usS.form = { nome: '', email: '', papel: 'estagiario', oabs: [], outraNum: '', outraUf: 'GO', perm: usPadrao('estagiario'), erro: '' }; }
+function usNovoForm(){ usS.form = { modulos: ['obra'], nome: '', email: '', papel: 'estagiario', oabs: [], outraNum: '', outraUf: 'GO', perm: usPadrao('estagiario'), erro: '' }; }
 function usOabsCampo(sel, prefixo){
   var cad = usS.oabsCad.map(function(o){ return { k: usChave(o), t: (o.nome ? o.nome.split(' ')[0] + ' · ' : '') + o.numero + '/' + o.uf }; }), chaves = cad.map(function(c){ return c.k; });
   var extra = sel.filter(function(k){ return chaves.indexOf(k) < 0; }).map(function(k){ return { k: k, t: k }; });
@@ -22666,10 +22758,11 @@ function usHtmlConvidar(){
   return usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">Convidar pessoa</div><div class="pb-aviso">Ela recebe um link e cria a própria senha. O e-mail que você informar será o login dela, e ela não consegue trocá-lo.</div></div>' +
     fSec('Quem é', '<div class="field"><label class="field-label" for="usNome">Nome</label><input type="text" id="usNome" data-usf="nome" maxlength="80" value="' + escapeHtml(f.nome) + '" autocomplete="off"></div>' +
     '<div class="field"><label class="field-label" for="usEmail">E-mail (será o login)</label><input type="email" id="usEmail" data-usf="email" maxlength="120" value="' + escapeHtml(f.email) + '" autocomplete="off"></div>' +
-    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button></div></div>') +
+    '<div class="field"><label class="field-label">Papel</label><div class="pb-acts" style="justify-content:flex-start;margin:0"><button type="button" class="btn ' + (f.papel === 'advogado' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="advogado">Advogado</button><button type="button" class="btn ' + (f.papel === 'estagiario' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="estagiario">Estagiário</button><button type="button" class="btn ' + (f.papel === 'familiar' ? 'btn-primary' : 'btn-ghost') + ' pb-b" data-us="papel" data-k="familiar">Familiar</button></div></div>') +
+    (f.papel === 'familiar' ? fSec('Módulos liberados', usModulosHtml(f.modulos, 'data-usmn') + '<div class="saldo-data" style="margin-top:4px">Os dados dele ficam separados dos seus e você não os vê pelo app. Você liga ou desliga cada módulo quando quiser.</div>') : '') +
     (f.papel === 'advogado' ? fSec('OAB', '<div class="field"><label class="field-label">De quem é a OAB?</label>' + usOabsCampo(f.oabs, 'novo') + '<div class="saldo-data" style="margin-top:4px">É o que decide quais processos ele enxerga. Marque quantas forem necessárias.</div></div>') : '') +
-    fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp')) +
-    '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + ' Nenhum dos dois abre as suas finanças pessoais.</div>' +
+    (f.papel === 'familiar' ? '' : fSec('O que ' + (f.papel === 'advogado' ? 'o advogado' : 'o estagiário') + ' pode', usPermsHtml(f.papel, f.perm, 'data-usp'))) +
+    '<div class="pb-aviso" style="margin:6px 4px">' + (f.papel === 'familiar' ? 'O familiar não abre nada do escritório (clientes, processos, publicações, agenda) nem as suas finanças: só os módulos marcados acima, com os dados dele.' : f.papel === 'advogado' ? 'O advogado vê, lança e cobra só os processos em que está cadastrado e marca o recebimento dos honorários deles.' : 'O estagiário lança e edita Iniciais, Acordos e Alvarás e faz cobrança, mas <b>não marca recebimento</b> de honorários e <b>não abre</b> finanças, configurações nem backup.') + (f.papel === 'familiar' ? '' : ' Nenhum dos dois abre as suas finanças pessoais.') + '</div>' +
     (f.erro ? '<div class="form-error">' + escapeHtml(f.erro) + '</div>' : '') +
     '<div class="f-rod-in"><button type="button" class="btn btn-primary" data-us="gerar">Gerar link de convite</button></div>';
 }
@@ -22678,8 +22771,9 @@ function usGerar(){
   if (f.nome.trim().length < 2) { f.erro = 'Informe o nome da pessoa.'; return usDesenhar(); }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.trim())) { f.erro = 'Informe um e-mail válido.'; return usDesenhar(); }
   if (f.papel === 'advogado' && !f.oabs.length) { f.erro = 'Marque ao menos uma OAB para o advogado.'; return usDesenhar(); }
+  if (f.papel === 'familiar' && !f.modulos.length) { f.erro = 'Libere ao menos um módulo para o familiar.'; return usDesenhar(); }
   usS.ocupado = true;
-  sgApi('/api/usuarios', 'POST', { nome: f.nome.trim(), email: f.email.trim(), papel: f.papel, oabs: f.papel === 'advogado' ? f.oabs : [], permissoes: f.perm }).then(function(r){
+  sgApi('/api/usuarios', 'POST', { nome: f.nome.trim(), email: f.email.trim(), papel: f.papel, oabs: f.papel === 'advogado' ? f.oabs : [], permissoes: f.papel === 'familiar' ? {} : f.perm, modulos: f.papel === 'familiar' ? f.modulos : undefined }).then(function(r){
     usS.ocupado = false; usS.link = { link: r.link, expira: r.expira, nome: f.nome.trim(), papel: f.papel, copiado: false }; usS.tela = 'link'; usS.dados = null; usDesenhar0(); usCarregar0();
   }).catch(function(e){ usS.ocupado = false; f.erro = e.message; usDesenhar(); });
 }
@@ -22698,8 +22792,9 @@ function usAbrirFicha(id){ usS.sel = id; usS.tela = 'ficha'; usS.sessoes = []; u
 function usHtmlFicha(){
   var u = usPessoa(usS.sel); if (!u) return usVoltar() + '<div class="pb-aviso">Pessoa não encontrada.</div>';
   var h = usVoltar() + '<div class="pb-sec"><div class="pb-sec-t">' + escapeHtml(u.nome) + '</div><div class="pb-aviso">' + escapeHtml(u.email) + ' · ' + US_PAPEL[u.papel] + (u.ativo ? '' : ' · <b>desativado</b>') + (u.criadoEm ? ' · entrou em ' + escapeHtml(new Date(u.criadoEm).toLocaleDateString('pt-BR')) : '') + '</div></div>';
-  h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
-  h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
+  if (u.papel === 'familiar') h += fSec('Módulos liberados', usModulosHtml(u.modulos || [], 'data-usm') + '<div class="saldo-data" style="margin-top:4px">Marcar ou desmarcar vale na hora. Os dados dele continuam guardados mesmo com o módulo desligado.</div>');
+  else h += fSec('Papel e OAB', '<div class="field"><label class="field-label" for="usPapelFicha">Papel</label><select id="usPapelFicha" class="filter-select" data-usf="papel-ficha" style="width:100%"><option value="advogado"' + (u.papel === 'advogado' ? ' selected' : '') + '>Advogado</option><option value="estagiario"' + (u.papel === 'estagiario' ? ' selected' : '') + '>Estagiário</option></select></div>' + (u.papel === 'advogado' ? '<div class="field"><label class="field-label">OABs vinculadas</label>' + usOabsCampo(u.oabs, 'ficha') + '</div>' : ''));
+  if (u.papel !== 'familiar') h += fSec('Permissões', usPermsHtml(u.papel, u.permissoes, 'data-usp'));
  h += fSec('Aparelhos conectados', (usS.sessoes.length ? usS.sessoes.map(function(s){
     return '<div class="pb-card" style="--pb-bar:#8A93AD"><div class="pb-l1"><span>' + sgSegIcone(s.rotulo) + ' ' + escapeHtml(s.rotulo) + '</span></div><div class="pb-proc">' + (s.lugar ? escapeHtml(s.lugar) + ' · ' : '') + 'último uso ' + escapeHtml(sgDataHora(s.ultimo)) + '</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-us="encerrar" data-k="' + escapeHtml(s.id) + '">Encerrar</button></div></div>';
   }).join('') : '<div class="saldo-data">Nenhum aparelho conectado agora.</div>'));
@@ -24345,6 +24440,34 @@ function ptUsoAbrir(){
 })();
 
 /* ============================================================
+   FAMILIAR (prefixo fam) — conta de um familiar do proprietário (ex.: irmão) só com os módulos liberados (Construção e/ou Finanças pessoais).
+   Os dados dele ficam num cofre próprio (o servidor separa); aqui: "Minha conta" com a exportação dos dados dele.
+   ============================================================ */
+function famExportar(){
+  toast('Preparando a cópia dos seus dados…');
+  fetch('/api/exportar?anexos=1', { credentials: 'same-origin', cache: 'no-store' }).then(function(r){ if (!r.ok) throw new Error('Não consegui gerar a cópia (erro ' + r.status + ').'); return r.blob(); })
+    .then(function(b){
+      var a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = 'horus-meus-dados-' + todayISO() + '.json'; document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 4000); toast('Cópia dos seus dados baixada.');
+    }).catch(function(e){ toast(e.message); });
+}
+(function(){
+  if (typeof CF_LINHAS !== 'undefined') CF_LINHAS.push({ id: 'exportar', ic: 'file-up', t: 'Exportar meus dados', s: 'baixa uma cópia de segurança de tudo que é seu', go: function(){ famExportar(); } });
+  if (typeof cfRender === 'function'){
+    var cfOrig2 = cfRender;
+    cfRender = function(){
+      cfOrig2.apply(this, arguments);
+      try{
+        var w = qs('cfWrap'), m = w && w.querySelector('.pb-menu'), ex = m && m.querySelector('[data-cf="exportar"]');
+        if (!ppFamiliar()){ if (ex) ex.remove(); return; }   /* a exportação do cofre é só do familiar */
+        if (m && !ex) m.insertAdjacentHTML('beforeend', cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'exportar'; })[0], false));
+      }catch(e){}
+    };
+  }
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { famExportar: famExportar });
+})();
+
+/* ============================================================
    ATALHO DO IPHONE (prefixo atl) — Configurações › Atalho do iPhone
    Cada pessoa (proprietário e advogados) tem o SEU código e a SUA caixa de entrada: o extrato mandado pelo iPhone chega só para ela.
    O servidor (src/atalho.js) guarda o código e o arquivo (R2, até 25 MB); o app lê os recebidos na aba Extratos.
@@ -25878,7 +26001,12 @@ function ppVerTotais(){ if (ppDono()) return true; var e = window.__horusEu; ret
 function ppPodeReceber(){ return ppPapel() !== 'estagiario'; }
 function ppPodeCobrar(){ var p = ppPapel(); return p === 'proprietario' || p === 'advogado'; }
 /* o advogado tem Finanças, Análises e Extratos (no cofre dele); só a Construção é do proprietário */
-function ppTelaPermitida(tab){ return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
+/* familiar: só os módulos que o proprietário liberou (Construção e/ou Finanças) e a conta dele */
+function ppFamiliar(){ return ppPapel() === 'familiar'; }
+function ppFamModulos(){ var e = window.__horusEu; return (e && e.modulos) || []; }
+function ppFamTela(tab){ var m = ppFamModulos(); if (tab === 'configuracoes') return true; if (tab === 'obra') return m.indexOf('obra') >= 0; if (tab === 'financeiro' || tab === 'analises' || tab === 'extratos') return m.indexOf('financas') >= 0; return false; }
+function ppFamInicial(){ return ppFamTela('obra') ? 'obra' : (ppFamTela('financeiro') ? 'financeiro' : 'configuracoes'); }
+function ppTelaPermitida(tab){ if (ppFamiliar()) return ppFamTela(tab); return ppDono() || (ppPapel() === 'advogado' ? tab !== 'obra' : !PP_TELAS_DONO[tab]); }
 /* nome da PJ no menu e nos textos: o da pessoa logada (o proprietário continua "Hygor") */
 function ppNomePj(){ var e = window.__horusEu, n = e && e.papel !== 'proprietario' && e.nome ? String(e.nome).trim().split(/\s+/)[0] : 'Hygor'; return n + ' (PJ)'; }
 /* a aba de quem pediu: devolve uma aba que a pessoa pode abrir (usada ao trocar de aba) */
@@ -25888,7 +26016,7 @@ function ppDonoP(){
   if (e && e.pronto) return Promise.resolve(e.papel === 'proprietario');
   return new Promise(function(res){ window.addEventListener('horus-eu', function(){ res(window.__horusEu.papel === 'proprietario'); }, { once: true }); });
 }
-function ppAbaValida(tab){ return ppTelaPermitida(tab) ? tab : 'inicio'; }
+function ppAbaValida(tab){ return ppTelaPermitida(tab) ? tab : (ppFamiliar() ? ppFamInicial() : 'inicio'); }
 /* itens da Central de atenção que a pessoa pode ver */
 function ppItemAtencaoOk(x){
   if (ppDono()) return true;
@@ -25940,19 +26068,24 @@ function ppPor(n){
   var finTodos = ['[data-tab="obra"]', '#bodyObra', '#abrirRelMuriloBtn2', '#backupBtn', '#exportBtn', '#abrirLerDocBtn', '#avisoSistema', '#relModoSeg', '#inicioAbrirDivisao', '#inicioAbrirExtratos'];
   /* e só o estagiário perde o resto das Finanças (o advogado usa o cofre dele) */
   var finEst = ['[data-tab="financeiro"]', '[data-tab="analises"]', '[data-tab="extratos"]', '#drGrpFin', '#abrirRecebiBtn', '#abrirFechamentoBtn', '#finFabMenu', '#bodyFinanceiro', '#bodyAnalises', '#bodyExtratos'];
-  st.textContent = finTodos.map(function(s){ return '.so-central ' + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
+  st.textContent = finTodos.map(function(s){ return (/obra/i.test(s) ? '.so-central:not(.fam-obra) ' : '.so-central ') + s; }).concat(finEst.map(function(s){ return '.papel-estagiario ' + s; })).join(',') + '{display:none!important}' +
     '.so-central:not(.pd-murilo) #abrirRelMuriloBtn,.papel-estagiario #abrirRelMuriloBtn{display:none!important}' +
     '.papel-estagiario [data-baixa-doc],.papel-estagiario [data-pf="baixa"],.papel-estagiario [data-arq-act="baixa"],.papel-estagiario [data-acordo-status],.papel-estagiario [data-alvara-status],.papel-estagiario [data-receita-receber]{display:none!important}' +
     '.papel-estagiario input[data-avista],.papel-estagiario input[data-parcela],.papel-estagiario input[data-acordo-parcela],.papel-estagiario input[data-exavista],.papel-estagiario input[data-exparcela]{pointer-events:none;opacity:.55}' +
     '.papel-estagiario #abrirCobrancaMenuBtn,.papel-estagiario #abrirCobrancaProprioBtn,.papel-estagiario [data-cli-cobrar],.papel-estagiario [data-pf="cobrar"]{display:none!important}' +
     '.sem-totais .ini-hero,.sem-totais .ini-kpi,.sem-totais #rsPainel,.sem-totais .rs-wrap,.sem-totais #stats{display:none!important}' +
     '#inicioAcoes{display:flex;flex-wrap:wrap;gap:8px;max-width:none}#inicioAcoes .acao{flex:0 0 auto;min-width:104px;padding:9px 16px}' +
+    /* familiar: o menu e a barra de baixo mostram só o que foi liberado; o resto do escritório não aparece */
+    '.papel-familiar #drawer .dr-it,.papel-familiar #drawer .dr-grp,.papel-familiar #btbar .bt-it:not(#btMais):not(.bt-fam),.papel-familiar #fabNew,.papel-familiar #finFabMenu,.papel-familiar #menuNav .dr-n{display:none!important}' +
+    '.papel-familiar.fam-obra #drawer .dr-it[data-tab="obra"],.papel-familiar #drawer .dr-it[data-tab="configuracoes"],.papel-familiar #drawer #sairBtn,.papel-familiar.fam-obra #btbar .bt-fam{display:flex!important}' +
+    '.papel-familiar.fam-fin #drawer .dr-it[data-tab="financeiro"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="analises"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="extratos"],.papel-familiar.fam-fin #drawer .dr-it#abrirFechamentoBtn,.papel-familiar.fam-fin #btbar .bt-it[data-tab="financeiro"]{display:flex!important}' +
+    '.bt-fam{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);
   /* quando o servidor responde quem é a pessoa: sai de uma tela que não é dela e ajusta os rótulos */
   function aplicar(){
     if (ppDono()) return;
-    try{ if (typeof activeTab !== 'undefined' && !ppTelaPermitida(activeTab)) setActiveTab('inicio'); }catch(e){}
+    try{ if (typeof activeTab !== 'undefined' && !ppTelaPermitida(activeTab)) setActiveTab(ppFamiliar() ? ppFamInicial() : 'inicio'); }catch(e){}
     var cf = document.querySelector('#drawer [data-tab="configuracoes"] .lab'); if (cf) cf.textContent = 'Minha conta';
     try{ if (typeof TITULOS_TELA !== 'undefined') TITULOS_TELA.configuracoes = 'Minha conta'; if (typeof atualizarTituloTela === 'function') atualizarTituloTela(); }catch(e){}
     try{ if (typeof renderPainelAtencao === 'function') renderPainelAtencao(); }catch(e){}
@@ -28172,7 +28305,14 @@ function mfResumo(){
 }
 
 /* ---------------- CONSTRUÇÃO ---------------- */
-var MF_OBRA_ABAS = [['resumo', 'Resumo'], ['etapas', 'Etapas'], ['gastos', 'Gastos'], ['caixa', 'Dinheiro e financiamento'], ['calc', 'Calculadora']];
+/* familiar não tem Início nem Central de atenção: os avisos da obra (contas a vencer, medições, parcela do consórcio, checklist) ficam no topo do Resumo */
+function mfAvisosObra(){
+  if (typeof ppFamiliar !== 'function' || !ppFamiliar() || typeof ob7Avisos !== 'function') return '';
+  var l = []; try{ var lim = somarDias(todayISO(), 10); l = ob7Avisos().filter(function(a){ return a.d <= lim && a.tipo !== 'calc'; }).slice(0, 6); }catch(e){}
+  if (!l.length) return '';
+  return '<div class="ini-card" id="obAvisosCard"><div class="financeiro-secao-head"><h4>Avisos da obra · ' + l.length + '</h4></div>' + l.map(ob7LinhaAviso).join('') + '</div>';
+}
+var MF_OBRA_ABAS = [['resumo', 'Resumo'], ['etapas', 'Etapas'], ['gastos', 'Gastos'], ['caixa', 'Dinheiro e crédito'], ['calc', 'Calculadora']];
 var MF_OB7 = { fin: 'caixa', jur: 'caixa', cx: 'caixa', chk: 'etapas', ext: 'gastos' };
 /* roda depois de renderObra() (e dos quadros extras do obra7): separa a tela em sub-abas e monta o Resumo */
 function mfObra(){
@@ -28196,7 +28336,7 @@ function mfObra(){
   }
   if (sub !== 'resumo') return;
   var p = document.createElement('div'); p.className = 'md-painel'; p.setAttribute('data-mf', 'obra');
-  try{ p.innerHTML = mfObraResumo(r, cfg); }catch(e){ console.error('resumo da obra', e); p.innerHTML = '<div class="empty"><strong>Não consegui montar o resumo</strong>As outras sub-abas continuam funcionando.</div>'; }
+  try{ p.innerHTML = mfAvisosObra() + mfObraResumo(r, cfg); }catch(e){ console.error('resumo da obra', e); p.innerHTML = '<div class="empty"><strong>Não consegui montar o resumo</strong>As outras sub-abas continuam funcionando.</div>'; }
   var tiles = el.querySelector(':scope > .ob-tiles'); if (tiles && tiles.nextSibling) el.insertBefore(p, tiles.nextSibling); else el.appendChild(p);
 }
 /* a calculadora tem campos de digitar: se a tela for redesenhada (outra gravação, atualização dos dados) enquanto a pessoa digita, o que ela escreveu e o cursor ficam */
@@ -28233,16 +28373,16 @@ function mfObraResumo(r, cfg){
   var finV = fin.valor > 0 ? fin.valor : 0, proprios = Math.max(0, r2(custo - finV));
   var aportado = r2((r.aportes.pf || 0) + (r.aportes.pj || 0) + (r.aportes.externo || 0) + (r.aportes.terceiro || 0) - (r.retirado || 0)), falta = Math.max(0, r2(proprios - aportado));
   var cProprios = '<div class="md-card mf-proprios"><div class="md-h"><span class="md-k">' + mdIc('coins', MD_COR.verde) + '<span>Recursos próprios necessários</span></span></div><b class="mf-big">' + fmtMoeda(proprios) + '</b>' +
-    '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − financiamento ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + ')</em>' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio') + '</div>' +
-    cal('Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
-    '<div class="md-foot">Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.</div></div>';
+    '<div class="md-foot">' + (finV > 0 ? 'custo estimado ' + fmtMoeda(custo) + ' − ' + (fin.tipo === 'consorcio' ? 'consórcio' : 'financiamento') + ' ' + fmtMoeda(finV) + ' <em style="font-style:normal">(' + obSitCred(fin) + ')</em>' : (fin.tipo === 'consorcio' ? 'sem valor de consórcio informado: o custo estimado inteiro é recurso próprio' : 'sem financiamento informado: o custo estimado inteiro é recurso próprio')) + '</div>' +
+    cal(obSoObra() ? 'Já aportado' : 'Já aportado (PF, PJ e outras origens)', aportado) + cal(falta > 0.004 ? 'Falta colocar' : 'Já cobre o que é necessário', falta, true) +
+    '<div class="md-foot">' + (obSoObra() ? 'Fica junto do cartão “Caixa próprio necessário”, na sub-aba Dinheiro e crédito. Não cria saldo nem altera o orçamento.' : 'Fica junto do cartão “Caixa próprio necessário” e da tabela de juros, na sub-aba Dinheiro e financiamento. Não cria saldo nem altera o orçamento.') + '</div></div>';
   var nAPagar = obraMov.filter(function(m){ return m.tipo === 'gasto' && m.status === 'apagar'; }).length;
   var kp = [
     { ir: 'sub:etapas', ic: 'hard-hat', cor: MD_COR.ouro, rot: 'Orçamento', v: fmtMoeda(r.orcamento), foot: r.orcamento > 0 ? fmtPerc(r.detalhado / r.orcamento * 100) + ' detalhado em etapas' : 'sem orçamento definido' },
     { ir: 'gastos:pago', ic: 'receipt', cor: MD_COR.azul, rot: 'Já pago', v: fmtMoeda(r.pago), foot: fmtPerc(perc) + ' do orçamento' },
     { ir: 'gastos:apagar', ic: 'calendar-clock', cor: r.aPagar > 0.004 ? MD_COR.verm : MD_COR.cinza, rot: 'A pagar', v: fmtMoeda(r.aPagar), cls: r.aPagar > 0.004 ? 'neg' : '', foot: nAPagar ? nAPagar + (nAPagar === 1 ? ' gasto lançado e não pago' : ' gastos lançados e não pagos') : 'nenhum gasto em aberto' },
     { ir: 'sub:etapas', ic: 'hammer', cor: MD_COR.roxo, rot: 'Ainda a gastar nas etapas', v: fmtMoeda(r.faltaGastar), foot: 'orçado das etapas menos o que já foi pago' },
-    { ir: 'sub:caixa', ic: 'landmark', cor: MD_COR.verde, rot: 'Financiamento', v: fin.valor > 0 ? fmtMoeda(fin.valor) : '—', foot: (fin.valor > 0 ? (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ' · ' : '') + 'liberado ' + fmtMoeda(r.liberado) },
+    { ir: 'sub:caixa', ic: 'landmark', cor: MD_COR.verde, rot: obRotCred(fin.tipo), v: fin.valor > 0 ? fmtMoeda(fin.valor) : '—', foot: (fin.valor > 0 ? obSitCred(fin) + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + ' · ' : '') + 'liberado ' + fmtMoeda(r.liberado) },
     { ir: 'sub:etapas', ic: 'layers', cor: MD_COR.cinza, rot: 'Falta detalhar', v: fmtMoeda(r.semDetalhar || 0), foot: 'do orçamento ainda sem etapa' }];
   var h = hero + '<div class="mf-duas">' + cCusto + cProprios + '</div><div class="md-kpis mf-kp6">' + kp.map(mdKpi).join('') + '</div>';
   var ets = r.etapas.filter(function(x){ return x.orcado > 0.004 || x.pago > 0.004 || x.aPagar > 0.004; }).slice(0, 8), sel = mfS.sel.obra; if (sel != null && sel >= ets.length) sel = mfS.sel.obra = null;
@@ -28250,7 +28390,7 @@ function mfObraResumo(r, cfg){
   var g = mdCard('Orçado × realizado por etapa', !ets.length ? '<div class="md-vazio">Nenhuma etapa com valor. Use “Adicionar etapa” na sub-aba Etapas.</div>' :
     mdBarras(ets.map(function(x){ return x.e.id; }), ets.map(function(x){ return x.orcado; }), ets.map(function(x){ return r2(x.pago + x.aPagar); }), { sel: sel, ca: '#B9B7AE', cb: MD_COR.ouro, ra: 'orçado', rb: 'realizado', rot: function(i){ return curto(ets[i].e.nome); }, tit: function(i){ return String(ets[i].e.nome).slice(0, 16); }, titulo: 'Orçado e realizado por etapa' }) +
     mdLeg([['#B9B7AE', 'Orçado'], [MD_COR.ouro, 'Realizado (pago + a pagar)']]) + '<div class="md-foot">' + (sel != null ? 'Toque de novo em <b>' + escapeHtml(ets[sel].e.nome) + '</b> para ver os gastos dessa etapa.' : 'Toque numa etapa para ver os valores.') + '</div>', ['sub:etapas', 'abrir as etapas']);
-  var fontes = [['Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], ['Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
+  var fontes = [[obSoObra() ? 'Recursos próprios' : 'Aportes da PF', r.aportes.pf, MD_COR.azul], ['Aportes da PJ', r.aportes.pj, MD_COR.ouro], ['Já estava na conta da obra', r.aportes.externo, MD_COR.cinza], ['Aportes de terceiros', r.aportes.terceiro, MD_COR.roxo], [fin.tipo === 'consorcio' ? 'Liberações do consórcio' : 'Liberações do financiamento', r.liberado, MD_COR.verde]].filter(function(x){ return x[1] > 0.004; });
   var totF = fontes.reduce(function(t, x){ return t + x[1]; }, 0);
   g += mdCard('De onde veio o dinheiro', !fontes.length ? '<div class="md-vazio">Nenhum aporte ou liberação ainda.</div>' : (discreto ? mdOculto() :
     '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center">' + mdRosca(fontes, mdCompacto(totF), 'entrou na obra') + '<div style="flex:1;min-width:170px">' + fontes.map(function(x){ return '<button type="button" class="md-fase" style="grid-template-columns:minmax(0,1fr) auto" data-md-ir="sub:caixa"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + x[2] + ';margin-right:7px"></i>' + escapeHtml(x[0]) + '</span><b>' + fmtMoeda(x[1]) + '</b></button>'; }).join('') + '</div></div>'), ['sub:caixa', 'ver entradas']);
@@ -30247,7 +30387,7 @@ function obraAbrirGasto(id, pagarId){
   var visiveis = obraEtapasVisiveis(cfg, g ? g.etapaId : '');
   var etapaPadrao = g ? g.etapaId : ((ultima && visiveis.some(function(e){ return e.id === ultima.etapaId; })) ? ultima.etapaId : (visiveis.filter(function(e){ return e.status === 'andamento'; })[0] || visiveis[0]).id);
   var pago = g ? g.status !== 'apagar' : true, hojeIso = todayISO();
-  var formas = [['obra', 'Saldo da conta da obra'], ['pf', 'Conta PF (cria um aporte junto)'], ['pj', 'Conta PJ (cria um aporte junto)']];
+  var formas = obFormasPag();
   var html = (pagando ? '<div class="parcela-sum"><b>' + escapeHtml(g.descricao || '') + '</b> · ' + fmtMoedaReal(g.valor) + '</div>' :
       obCampo('Etapa', obSelect('etapa', visiveis.map(function(e){ return [e.id, e.nome]; }), etapaPadrao)) +
       obCampo('O que foi', obInput('desc', 'text', g ? g.descricao : '', 'placeholder="Ex.: Aluguel da máquina, 20 h"')) +
@@ -30303,7 +30443,7 @@ function obraAbrirGasto(id, pagarId){
 }
 function obraAbrirAporte(){
   var cfg = obraCfg(), hojeIso = todayISO();
-  var html = obCampo('De onde vem o dinheiro', obSelect('origem', [['pf', 'Conta PF'], ['pj', 'Conta PJ'], ['externo', 'Já está na conta da obra (não mexe na PF/PJ)'], ['terceiro', 'Terceiro (ex.: vizinho) — dinheiro de outra pessoa']], 'pf'), 'Da PF ou da PJ, o valor sai do caixa daquela conta. De terceiro, o valor entra direto na conta da obra e não passa pela PF/PJ nem conta como receita. Se o terceiro pagou primeiro a você (e o dinheiro já está na PF/PJ), lance como aporte da PF/PJ.') +
+  var html = obCampo('De onde vem o dinheiro', obSelect('origem', obOrigemOpts(), 'pf'), obSoObra() ? 'Recursos próprios é dinheiro seu que entra na conta da obra. De terceiro, o valor entra direto na conta da obra e não conta como receita.' : 'Da PF ou da PJ, o valor sai do caixa daquela conta. De terceiro, o valor entra direto na conta da obra e não passa pela PF/PJ nem conta como receita. Se o terceiro pagou primeiro a você (e o dinheiro já está na PF/PJ), lance como aporte da PF/PJ.') +
     obCampo('Nome do terceiro (se a origem for terceiro)', obInput('pessoa', 'text', '', 'placeholder="Ex.: Vizinho João"')) +
     obCampo('Valor (R$)', obInput('valor', 'number', '', 'min="0" step="0.01" inputmode="decimal"')) +
     obCampo('Data', obInput('data', 'date', hojeIso)) +
@@ -30332,12 +30472,12 @@ function obraAbrirLiberacao(){
 function obraAbrirRetirada(){
   var r = obraResumo(), hojeIso = todayISO();
   var html = '<div class="parcela-sum">Dinheiro na conta da obra: <b>' + fmtMoedaReal(r.saldo) + '</b> · ainda falta gastar nas etapas: <b>' + fmtMoedaReal(r.faltaGastar) + '</b> · sobra estimada: <b>' + fmtMoedaReal(r.sobra) + '</b>' + (r.semDetalhar > 0.004 ? '<br>Atenção: ainda há ' + fmtMoedaReal(r.semDetalhar) + ' do orçamento sem detalhar em etapas, que não entram nessa conta.' : '') + '</div>' +
-    obCampo('Devolver para', obSelect('destino', [['pf', 'Conta PF'], ['pj', 'Conta PJ']], 'pf'), 'O valor sai da conta da obra e entra no caixa da conta escolhida. Não é receita nem entra no recebido do mês.') +
+    obCampo('Devolver para', obSelect('destino', obDestinoOpts(), 'pf'), obSoObra() ? 'O valor sai da conta da obra e volta para você. Não é receita.' : 'O valor sai da conta da obra e entra no caixa da conta escolhida. Não é receita nem entra no recebido do mês.') +
     obCampo('Valor (R$)', obInput('valor', 'number', r.sobra > 0.004 ? r.sobra : '', 'min="0" step="0.01" inputmode="decimal"')) +
     obCampo('Data', obInput('data', 'date', hojeIso)) +
     obCampo('Observação (opcional)', obInput('obs', 'text', '', 'placeholder="Ex.: sobra do muro"')) +
     '<div class="saldo-data" id="of_aviso" style="color:var(--danger)"></div>';
-  obraAbrirForm('Devolver sobra à PF/PJ', html, function(){
+  obraAbrirForm(obSoObra() ? 'Devolver sobra para mim' : 'Devolver sobra à PF/PJ', html, function(){
     var valor = r2(obNum('valor')), data = obFid('data').value, atual = obraResumo();
     if (!(valor > 0)) return 'Informe o valor.';
     if (!data) return 'Informe a data.';
@@ -30356,7 +30496,7 @@ function obraAbrirRetirada(){
 function obraConfirmarExcluir(id){
   var m = obraMov.filter(function(x){ return x.id === id; })[0]; if (!m) return;
   var par = m.grupo ? obraMov.filter(function(x){ return x.grupo === m.grupo && x.id !== id; }).length : 0;
-  var rot = m.tipo === 'gasto' ? 'o gasto "' + (m.descricao || '') + '"' : (m.tipo === 'liberacao' ? 'esta liberação' : (m.tipo === 'retirada' ? 'esta devolução à PF/PJ' : 'este aporte'));
+  var rot = m.tipo === 'gasto' ? 'o gasto "' + (m.descricao || '') + '"' : (m.tipo === 'liberacao' ? 'esta liberação' : (m.tipo === 'retirada' ? (obSoObra() ? 'esta devolução' : 'esta devolução à PF/PJ') : 'este aporte'));
   obraAbrirForm('Excluir lançamento', '<div class="parcela-sum">Excluir ' + escapeHtml(rot) + ' de ' + fmtMoedaReal(m.valor) + '?' + (par ? ' Como foi lançado "pago direto da conta", o aporte (ou o gasto) ligado a ele também será excluído.' : '') + '</div>', function(){ return obraExcluirGrupo(id); }, 'Excluir', true);
 }
 
@@ -30417,12 +30557,12 @@ function renderObra(){
   var r = obraResumo(), h = '';
   var perc = r.orcamento > 0 ? r.pago / r.orcamento * 100 : 0, fin = cfg.financiamento;
   var folga = (fin.valor > 0 && cfg.orcamentoTotal > 0) ? r2(fin.valor - cfg.orcamentoTotal) : null;
-  var notaSaldo = 'aportes ' + fmtMoeda(r.aportado) + (r.liberado > 0.004 ? ' + liberações ' + fmtMoeda(r.liberado) : '') + (r.retirado > 0.004 ? ' − devolvido à PF/PJ ' + fmtMoeda(r.retirado) : '') + ' − gastos pagos' + (r.sobra > 0.004 && r.etapas.length ? '<br>Sobra acima do que falta gastar nas etapas: <b id="obSobra">' + fmtMoeda(r.sobra) + '</b>' : '') + (r.faltaGastar > 0.004 ? '<br>Ainda a gastar nas etapas: ' + fmtMoeda(r.faltaGastar) + (r.saldo < r.faltaGastar - 0.004 ? ' · <b id="obFaltaDinheiro">faltam ' + fmtMoeda(r2(r.faltaGastar - r.saldo)) + ' de dinheiro</b>' : ' · o dinheiro cobre') : '');
+  var notaSaldo = 'aportes ' + fmtMoeda(r.aportado) + (r.liberado > 0.004 ? ' + liberações ' + fmtMoeda(r.liberado) : '') + (r.retirado > 0.004 ? (obSoObra() ? ' − devolvido a você ' : ' − devolvido à PF/PJ ') + fmtMoeda(r.retirado) : '') + ' − gastos pagos' + (r.sobra > 0.004 && r.etapas.length ? '<br>Sobra acima do que falta gastar nas etapas: <b id="obSobra">' + fmtMoeda(r.sobra) + '</b>' : '') + (r.faltaGastar > 0.004 ? '<br>Ainda a gastar nas etapas: ' + fmtMoeda(r.faltaGastar) + (r.saldo < r.faltaGastar - 0.004 ? ' · <b id="obFaltaDinheiro">faltam ' + fmtMoeda(r2(r.faltaGastar - r.saldo)) + ' de dinheiro</b>' : ' · o dinheiro cobre') : '');
   var chipGasto = '<span class="fv-chip ' + (r.pago > 0.004 ? 'pend' : '') + '">Gasto ' + fmtMoeda(r.pago) + ' · ' + fmtPerc(perc) + ' do orçamento</span>' + (r.aPagar > 0.004 ? ' <span class="fv-chip neg">a pagar ' + fmtMoeda(r.aPagar) + '</span>' : '');
   h += '<div class="ob-cards ob-novo"><div class="financeiro-bloco rs-hero"><span class="fv-k">Dinheiro na conta da obra</span><button type="button" class="info-btn" data-ob-info="1" aria-expanded="false" aria-label="Mais informações"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".16"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.4" fill="currentColor"/></svg></button><div class="fv-big' + (r.saldo < -0.004 ? ' neg' : '') + '">' + fmtMoeda(r.saldo) + '</div><div class="fv-pat-l"><span>' + chipGasto + '</span></div>' +
     obBarra(r.pago, r.aPagar, r.orcamento) + '<div class="info-nota fp-nota" data-ob-nota="1"><div>Escuro = pago · claro = a pagar</div><div style="margin-top:6px;">' + notaSaldo + '</div></div></div>' +
     '<div class="rs-tiles"><div class="fv-tile"><span class="fv-tl">' + fvIc('hammer', '#B7791E') + 'Orçamento</span><b>' + fmtMoeda(r.orcamento) + '</b><small>' + (r.orcamento > 0 ? fmtPerc(r.detalhado / r.orcamento * 100) + ' detalhado em etapas' : 'sem orçamento') + '</small></div>' +
-    '<div class="fv-tile"><span class="fv-tl">' + fvIc('bank', '#2A78D6') + 'Financiamento</span><b>' + (fin.valor > 0 ? fmtMoeda(fin.valor) : '—') + '</b><small>' + (fin.status === 'aprovado' ? 'aprovado' : 'estimado') + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + '</small></div></div>' +
+    '<div class="fv-tile"><span class="fv-tl">' + fvIc('bank', '#2A78D6') + obRotCred(fin.tipo) + '</span><b>' + (fin.valor > 0 ? fmtMoeda(fin.valor) : '—') + '</b><small>' + obSitCred(fin) + (fin.banco ? ' · ' + escapeHtml(fin.banco) : '') + '</small></div></div>' +
     '<div class="fp-nota ob-notas">' + (extObraComparacaoHtml() ? extObraComparacaoHtml() + '<br>' : '') + 'Detalhado em etapas: ' + fmtMoeda(r.detalhado) + (r.semDetalhar > 0.004 ? ' · falta detalhar ' + fmtMoeda(r.semDetalhar) : '') + (folga !== null ? '<br>Financiamento: ' + (folga >= 0 ? 'folga de ' + fmtMoeda(folga) + ' sobre o orçamento' : 'faltam ' + fmtMoeda(-folga) + ' para o orçamento') : '') + '</div></div>';
   h = '<div class="ini-acoes ob-tiles"><button type="button" class="acao acao-ouro" id="obraGastoBtn" title="Lançar gasto"><svg><use href="#ic-receipt"/></svg><span>Gasto</span></button><button type="button" class="acao" id="obraAporteBtn"><svg><use href="#ic-plus"/></svg><span>Aporte</span></button><button type="button" class="acao" id="obraLiberacaoBtn"><svg><use href="#ic-bank"/></svg><span>Liberação</span></button><button type="button" class="acao" id="obraRetiradaBtn" title="Devolver sobra à PF/PJ"><svg><use href="#ic-undo"/></svg><span>Devolver</span></button></div><div class="ob-edit"><button type="button" class="btn-text" id="obraEditarBtn">Editar a obra</button></div>' + h;
 
@@ -30461,8 +30601,8 @@ function renderObra(){
 
   /* dinheiro da obra */
   var din = obraMovTodos().filter(function(m){ return m.tipo === 'aporte' || m.tipo === 'liberacao' || m.tipo === 'retirada'; }).sort(function(a, b){ return String(b.data || '').localeCompare(String(a.data || '')) || String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')); });
-  var origemTxt = { pf: 'aporte da conta PF', pj: 'aporte da conta PJ', externo: 'já estava na conta da obra', terceiro: 'aporte de terceiro' };
-  h += '<div class="ini-card"><div class="financeiro-secao-head"><h4>Dinheiro da obra</h4></div><div class="saldo-data" style="margin-bottom:6px;">Aportes: PF ' + fmtMoeda(r.aportes.pf) + ' · PJ ' + fmtMoeda(r.aportes.pj) + ' · direto na conta da obra ' + fmtMoeda(r.aportes.externo) + (r.aportes.terceiro > 0.004 ? ' · terceiros ' + fmtMoeda(r.aportes.terceiro) : '') + (r.liberado > 0.004 ? ' · liberações ' + fmtMoeda(r.liberado) : '') + (r.retirado > 0.004 ? ' · devolvido à PF/PJ ' + fmtMoeda(r.retirado) : '') + '</div>';
+  var origemTxt = { pf: obSoObra() ? 'aporte de recursos próprios' : 'aporte da conta PF', pj: 'aporte da conta PJ', externo: 'já estava na conta da obra', terceiro: 'aporte de terceiro' };
+  h += '<div class="ini-card"><div class="financeiro-secao-head"><h4>Dinheiro da obra</h4></div><div class="saldo-data" style="margin-bottom:6px;">' + (obSoObra() ? 'Aportes: recursos próprios ' + fmtMoeda(r.aportes.pf) : 'Aportes: PF ' + fmtMoeda(r.aportes.pf) + ' · PJ ' + fmtMoeda(r.aportes.pj)) + ' · direto na conta da obra ' + fmtMoeda(r.aportes.externo) + (r.aportes.terceiro > 0.004 ? ' · terceiros ' + fmtMoeda(r.aportes.terceiro) : '') + (r.liberado > 0.004 ? ' · liberações ' + fmtMoeda(r.liberado) : '') + (r.retirado > 0.004 ? (obSoObra() ? ' · devolvido a você ' : ' · devolvido à PF/PJ ') + fmtMoeda(r.retirado) : '') + '</div>';
   if (!din.length) h += '<div class="financeiro-vazio">Nenhum aporte ou liberação ainda.</div>';
   din.forEach(function(m){
     h += '<div class="ob-gasto">' + fvIc(m.tipo === 'retirada' ? 'arrows' : (m.tipo === 'liberacao' ? 'bank' : 'wallet'), m.tipo === 'retirada' ? '#D93B3B' : (m.tipo === 'liberacao' ? '#2A78D6' : '#17895A')) + '<div class="ob-gasto-info"><b>' + (m.tipo === 'liberacao' ? 'Liberação do financiamento' : (m.tipo === 'retirada' ? 'Devolução à conta ' + (m.destino === 'pj' ? 'PJ' : 'PF') : (m.origem === 'terceiro' ? 'Aporte de ' + escapeHtml(m.pessoa || 'terceiro') : 'Aporte'))) + '</b><span class="saldo-data">' + escapeHtml(fmtData(String(m.data || '').slice(0, 10))) + (m.tipo === 'aporte' && m.origem !== 'terceiro' ? ' · ' + (origemTxt[m.origem] || '') : '') + (m.obs ? ' · ' + escapeHtml(m.obs) : '') + '</span></div>' +

@@ -6,7 +6,7 @@ import { gerarChavesVapid, enviarPush } from './push.js';
 import { djenRotas, lerDjen, relerSePreciso, pubsParaAvisar, pubsDaPessoa, pubsDoProprietario, marcarAvisadas } from './djen.js';
 import { datajudRotas } from './datajud.js';
 import { loteRotas } from './lote.js';
-import { checarColecao, resolverColecao, ehProprietario, doCofre, ehCofre, baseDoCofre, ehAdvogadoAuth, PESSOAL } from './colecoes.js';
+import { checarColecao, resolverColecao, ehProprietario, doCofre, ehCofre, baseDoCofre, ehAdvogadoAuth, ehFamiliarAuth, familiarPodeUsar, PESSOAL } from './colecoes.js';
 import { checarRotaDjen, checarAcessoColecao, linhasVisiveis, autorizarGravacao, autorizarExclusao, normalizarUsuario, ehDono, carimbarAutor, escopoDoAdvogado } from './politica.js';
 import { garantirMigracoes } from './migracao.js';
 import { restauracaoRotas } from './restauracao.js';
@@ -189,7 +189,21 @@ export async function fazerBackup(env) {
   for (let i = 0; i < total; i++) await gravar(env, '_backups', `${dia}-${String(i).padStart(2, '0')}`, { dia, parte: i, total, docs: docs.length, b64: b64.slice(i * PARTE_B64, (i + 1) * PARTE_B64) });
   const todos = await env.DB.prepare("SELECT DISTINCT substr(id,1,10) AS d FROM docs WHERE colecao = '_backups' ORDER BY d DESC").all();
   for (const x of todos.results.slice(GUARDAR_BACKUPS)) await env.DB.prepare("DELETE FROM docs WHERE colecao = '_backups' AND id LIKE ?").bind(x.d + '-%').run();
+  try { await backupCofres(env, dia); } catch (e) { console.error('backup dos cofres', e); }
   return { dia, partes: total, docs: docs.length };
+}
+/* backup SEPARADO dos cofres dos familiares (o cofre fica fora do backup geral, para o proprietário não ler o que é deles): um arquivo compactado por pessoa e por dia, em `_backups_cofres`; guarda os últimos 14 */
+async function backupCofres(env, dia) {
+  const { results: us } = await env.DB.prepare('SELECT id, dados FROM docs WHERE colecao = ?').bind('_usuarios').all();
+  for (const u of us) {
+    if (JSON.parse(u.dados).papel !== 'familiar') continue;
+    const { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao LIKE ? ESCAPE '\\\\'").bind('%@' + u.id.replace(/[%_\\\\]/g, '\\\\$&')).all();
+    const docs = results.map((r) => ({ colecao: r.colecao, id: r.id, dados: JSON.parse(r.dados) }));
+    if (!docs.length) continue;
+    await gravar(env, '_backups_cofres', u.id + '|' + dia, { uid: u.id, dia, docs: docs.length, b64: await gzipB64(JSON.stringify({ versao: 1, exportadoEm: new Date().toISOString(), docs })) });
+    const todos = await env.DB.prepare('SELECT id FROM docs WHERE colecao = ? AND id LIKE ? ORDER BY id DESC').bind('_backups_cofres', u.id + '|%').all();
+    for (const x of todos.results.slice(14)) await env.DB.prepare('DELETE FROM docs WHERE colecao = ? AND id = ?').bind('_backups_cofres', x.id).run();
+  }
 }
 const VERSAO_BACKUP_APP = 1;
 function backupNoFormatoDoApp(docs, exportadoEm) {
@@ -296,24 +310,36 @@ async function recebidos(request, env, partes, auth) {
   return erro(405, 'method', 'Método não permitido.');
 }
 
-async function anexos(request, env, partes) {
+/* comprovantes da obra: cada pessoa só abre os dela (registro sem `uid` = do proprietário, de antes) */
+async function anexos(request, env, partes, auth) {
+  const uid = auth && auth.usuario && auth.usuario.id ? auth.usuario.id : (await donoId(env)) || '', ehDonoA = !auth || !auth.usuario || auth.usuario.papel === 'proprietario';
+  const meu = (d) => (d.uid ? d.uid === uid : ehDonoA);
   const id = partes[1];
   if (!id && request.method === 'POST') {
     const b = await request.json().catch(() => null);
     if (!b || typeof b.b64 !== 'string' || !/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(b.tipo || '')) return erro(400, 'invalid', 'Arquivo inválido.');
     if (b.b64.length > MAX_B64) return erro(413, 'quota_exceeded', 'Arquivo grande demais (limite de uns 600 KB).');
     const novo = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
-    await gravar(env, '_anexos', novo, { nome: String(b.nome || 'nota').slice(0, 80), tipo: b.tipo, b64: b.b64, em: new Date().toISOString() });
+    await gravar(env, '_anexos', novo, { nome: String(b.nome || 'nota').slice(0, 80), tipo: b.tipo, b64: b.b64, em: new Date().toISOString(), uid });
     return json({ ok: true, id: novo });
   }
   if (!id || !NOME.test(id)) return erro(400, 'invalid', 'Identificador inválido.');
-  if (request.method === 'GET') {
-    const r = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = '_anexos' AND id = ?").bind(id).first();
-    if (!r) return erro(404, 'not_found', 'Comprovante não encontrado.');
-    const d = JSON.parse(r.dados); return json({ nome: d.nome, tipo: d.tipo, b64: d.b64 });
-  }
+  const r = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = '_anexos' AND id = ?").bind(id).first(), d = r ? JSON.parse(r.dados) : null;
+  if (!d || !meu(d)) return erro(404, 'not_found', 'Comprovante não encontrado.');
+  if (request.method === 'GET') return json({ nome: d.nome, tipo: d.tipo, b64: d.b64 });
   if (request.method === 'DELETE') { await env.DB.prepare("DELETE FROM docs WHERE colecao = '_anexos' AND id = ?").bind(id).run(); return json({ ok: true }); }
   return erro(405, 'method', 'Método não permitido.');
+}
+
+/* "Exportar": o familiar baixa uma cópia dos próprios dados (o cofre dele fica fora do backup do proprietário) */
+async function exportarCofre(request, env, partes, auth) {
+  if (!ehFamiliarAuth(auth)) return erro(403, 'forbidden', 'A exportação do cofre é de cada familiar para os próprios dados.');
+  if (request.method !== 'GET') return erro(405, 'method', 'Método não permitido.');
+  const uid = auth.usuario.id, { results } = await env.DB.prepare("SELECT colecao, id, dados FROM docs WHERE colecao LIKE ? ESCAPE '\\' ORDER BY colecao, id").bind('%@' + uid.replace(/[%_\\]/g, '\\$&')).all();
+  const docs = results.map((r) => ({ colecao: r.colecao.split('@')[0], id: r.id, dados: JSON.parse(r.dados) }));
+  const comAnexos = new URL(request.url).searchParams.get('anexos') === '1', an = await env.DB.prepare("SELECT id, dados FROM docs WHERE colecao = '_anexos'").all();
+  const anexosDele = an.results.map((r) => ({ id: r.id, d: JSON.parse(r.dados) })).filter((x) => x.d.uid === uid).map((x) => ({ id: x.id, nome: x.d.nome, tipo: x.d.tipo, em: x.d.em, ...(comAnexos ? { b64: x.d.b64 } : {}) }));
+  return json({ versao: 1, tipo: 'cofre-familiar', exportadoEm: new Date().toISOString(), docs, anexos: anexosDele });
 }
 
 
@@ -487,7 +513,8 @@ async function api(request, env, partes, auth) {
   const id = partes[2];
   if (id !== undefined && !NOME.test(id)) return erro(400, 'invalid', 'Identificador inválido.');
   const pedida = resolverColecao(partes[1], id);   // config/<documento do proprietário> vai para configDono (compatível com o app já aberto)
-  const colecao = doCofre(pedida, auth);   // advogado: as finanças dele ficam no cofre próprio (despesas@<id>)
+  if (ehFamiliarAuth(auth) && !familiarPodeUsar(pedida, auth)) return erro(403, 'forbidden', 'Esta área não está liberada para o seu acesso.');
+  const colecao = doCofre(pedida, auth);   // advogado e familiar: os dados deles ficam no cofre próprio (despesas@<id>)
   const recusa = ehCofre(colecao) ? null : (checarColecao(colecao, auth) || checarAcessoColecao(colecao, auth)); if (recusa) return recusa;
   if (colecao === 'config' && !ehDono(auth) && id && metodo !== 'GET') { const rc = await autorizarGravacao(env, colecao, id, null, {}, auth); if (rc) return rc; }
   else if (colecao === 'config' && !ehDono(auth) && !id && metodo !== 'GET') return erro(403, 'forbidden', 'Só o proprietário pode gravar isto.');
@@ -496,6 +523,7 @@ async function api(request, env, partes, auth) {
     const sp = new URL(request.url).searchParams;
     if (!ehDono(auth)) {   // quem não é proprietário recebe só o que a política libera (a lista inteira é filtrada aqui, na leitura)
       let vis = await linhasVisiveis(env, colecao, auth);
+      if (ehFamiliarAuth(auth) && baseDoCofre(colecao) === 'config') { const meusF = await env.DB.prepare('SELECT id, dados, atualizado FROM docs WHERE colecao = ? ORDER BY id').bind('configDono@' + auth.usuario.id).all(); vis = [...vis, ...meusF.results].sort((a, b) => (a.id < b.id ? -1 : 1)); }
       if (colecao === 'config' && ehAdvogadoAuth(auth)) { const meus = await env.DB.prepare('SELECT id, dados, atualizado FROM docs WHERE colecao = ? ORDER BY id').bind(doCofre('configDono', auth)).all(); vis = [...vis, ...meus.results].sort((a, b) => (a.id < b.id ? -1 : 1)); }   // os documentos financeiros dele vêm na lista de config, como acontece com o proprietário
       const tt = vis.reduce((m, r) => Math.max(m, r.atualizado || 0), 0);
       if (sp.get('resumo') === '1') return json({ n: vis.length, t: tt });
@@ -550,7 +578,7 @@ async function api(request, env, partes, auth) {
     /* ?mesclar=1 (documentos de trabalho do proprietário, como config/obra e config/extratos): o app manda só as chaves que mudou e o servidor junta ao documento
        que está gravado agora, em vez de substituir o documento inteiro por uma cópia antiga (auditoria F-05). Na mesma chave vale a última gravação. */
     let mesclado = mescladoCedo;
-    if (new URL(request.url).searchParams.get('mesclar') === '1' && (baseDoCofre(colecao) === 'configDono' || colecao === 'config' || colecao === 'delegadas')) {
+    if (new URL(request.url).searchParams.get('mesclar') === '1' && (baseDoCofre(colecao) === 'configDono' || baseDoCofre(colecao) === 'config' || colecao === 'delegadas')) {
       const atualM = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(colecao, id).first();
       dados = { ...(atualM ? JSON.parse(atualM.dados) : {}), ...dados }; mesclado = true;
     }
@@ -617,18 +645,19 @@ const ICONES = new Set(['/apple-touch-icon.png', '/icon-192.png', '/icon-512.png
 /* Tabela única de rotas da API: cada raiz declara quem pode usar ("sessao" = qualquer acesso logado; "proprietario" = só o proprietário).
    Raiz que não está aqui é recusada; /api/enviar é a única pública (tem token próprio). */
 const ROTAS = {
-  ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['sessao', (r, e, p, a) => recebidos(r, e, p, a)], atalho: ['sessao', (r, e, p, a) => atalhoRotas(r, e, p, a)], anexos: ['proprietario', (r, e, p) => anexos(r, e, p)],
+  ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['sessao', (r, e, p, a) => recebidos(r, e, p, a)], atalho: ['sessao', (r, e, p, a) => atalhoRotas(r, e, p, a)], anexos: ['sessao', (r, e, p, a) => (ehDono(a) || ehFamiliarAuth(a) ? anexos(r, e, p, a) : erro(403, 'forbidden', 'Só o proprietário pode usar isto.'))], exportar: ['sessao', (r, e, p, a) => exportarCofre(r, e, p, a)],
   notif: ['sessao', (r, e, p, a) => notif(r, e, p, a)], djen: ['sessao', (r, e, p, au) => checarRotaDjen(p, r.method, au) || djenRotas(r, e, p, au)], datajud: ['sessao', (r, e, p) => datajudRotas(r, e, p)],   // para os demais papéis só quando tiverem filtro próprio (etapa 5.3)
   db: ['sessao', (r, e, p, au) => api(r, e, p, au)],
-  lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
+  lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, ehFamiliarAuth, familiarPodeUsar, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
   backup: ['proprietario', (r, e, p, au) => api(r, e, p, au)], backups: ['proprietario', (r, e, p) => backups(r, e, p)], restaurar: ['proprietario', (r, e, p) => restauracaoRotas(r, e, p)],
   lixeira: ['proprietario', (r, e, p) => lixeiraRotas(r, e, p)], historico: ['sessao', async (r, e, p, a) => historicoRotas(r, e, p, a, a && a.usuario && a.usuario.papel === 'advogado' ? await escopoDoAdvogado(e, a) : null)], auditoria: ['proprietario', (r, e, p) => auditoriaRotas(r, e, p)],
   seguranca: ['sessao', (r, e, p, a) => segurancaRotas(r, e, p, a)], usuarios: ['proprietario', (r, e, p, a) => usuariosRotas(r, e, p, a)],
-  indices: ['proprietario', (r, e, p) => indicesRotas(r, e, p)], calendario: ['sessao', (r, e, p, a) => calendarioRotas(r, e, p, a)], planilha: ['sessao', (r, e, p, a) => planilhaRotas(r, e, p, a)], equipe: ['sessao', (r, e) => equipeRotas(r, e)], agenda: ['sessao', (r, e, p, a) => agendaRotas(r, e, p, a)], 'sem-advogado': ['proprietario', (r, e, p, a) => semAdvogadoRotas(r, e, p, a)],
+  indices: ['sessao', (r, e, p, a) => (ehDono(a) || ehFamiliarAuth(a) ? indicesRotas(r, e, p, a) : erro(403, 'forbidden', 'Só o proprietário pode usar isto.'))], calendario: ['sessao', (r, e, p, a) => calendarioRotas(r, e, p, a)], planilha: ['sessao', (r, e, p, a) => planilhaRotas(r, e, p, a)], equipe: ['sessao', (r, e) => equipeRotas(r, e)], agenda: ['sessao', (r, e, p, a) => agendaRotas(r, e, p, a)], 'sem-advogado': ['proprietario', (r, e, p, a) => semAdvogadoRotas(r, e, p, a)],
   peticoes: ['sessao', (r, e, p, a) => peticoesRotas(r, e, p, a, { enviarAviso, donoId })],
-  eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes }) => ({ id, papel, nome, oabs, permissoes }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
+  eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes, modulos }) => ({ id, papel, nome, oabs, permissoes, modulos }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
 };
 export const RAIZES_API = Object.keys(ROTAS);
+const ROTAS_FAMILIAR = new Set(['db', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
 
 /* aviso curto no celular (entrada em aparelho novo, senha errada, indicado como responsável, repasse…). `uid` vazio = proprietário.
    `pref` = a opção da pessoa que precisa estar ligada ("indicado", "repasses"…); `aviso.equipe` = a chave de equipe do proprietário ("exclusao", "desfeito"…). */
@@ -689,6 +718,7 @@ async function tratar(request, env, ctx) {
     const partes = url.pathname.slice(5).split('/').filter(Boolean), rota = ROTAS[partes[0]];
     if (!rota) return erro(404, 'not_found', 'Não encontrado.');
     if (rota[0] === 'proprietario' && auth && auth.usuario.papel !== 'proprietario') return erro(403, 'forbidden', 'Só o proprietário pode usar isto.');
+    if (auth && auth.usuario && auth.usuario.papel === 'familiar' && !ROTAS_FAMILIAR.has(partes[0])) return erro(403, 'forbidden', 'Esta área não está liberada para o seu acesso.');   // familiar: só os dados dele, a conta, os índices da calculadora, comprovantes e o aviso no celular
     try { return await rota[1](request, env, partes, auth); }
     catch (e) { console.error(e); return erro(500, 'server', 'Erro no servidor.'); }
   }

@@ -7,7 +7,7 @@ const MAX_OPS = 25;
 const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const erro = (status, code, message) => json({ error: { code, message } }, status);
 
-export async function loteRotas(request, env, partes, auth, { stmtGravar, NOME, MAX_DOC, checarColecao, resolverColecao, doCofre, ehAdvogadoAuth, PESSOAL, autorizarGravacao, autorizarExclusao, atividade, CONFLITO }) {
+export async function loteRotas(request, env, partes, auth, { stmtGravar, NOME, MAX_DOC, checarColecao, resolverColecao, doCofre, ehAdvogadoAuth, ehFamiliarAuth, familiarPodeUsar, PESSOAL, autorizarGravacao, autorizarExclusao, atividade, CONFLITO }) {
   if (request.method !== 'POST') return erro(405, 'method', 'Use POST.');
   const txt = await request.text();
   if (txt.length > MAX_DOC * 4) return erro(413, 'quota_exceeded', 'Lote grande demais.');
@@ -18,7 +18,8 @@ export async function loteRotas(request, env, partes, auth, { stmtGravar, NOME, 
   for (const o of ops) {
     if (o && typeof o === 'object' && typeof o.colecao === 'string' && typeof o.id === 'string') {
       o.colecao = resolverColecao(o.colecao, o.id);
-      const proprio = ehAdvogadoAuth(auth) && PESSOAL.has(o.colecao);   // finanças do advogado: vão para o cofre dele, sem a checagem do proprietário
+      if (ehFamiliarAuth(auth) && !familiarPodeUsar(o.colecao, auth)) return erro(403, 'forbidden', 'Esta área não está liberada para o seu acesso.');
+      const proprio = (ehAdvogadoAuth(auth) && PESSOAL.has(o.colecao)) || (ehFamiliarAuth(auth) && familiarPodeUsar(o.colecao, auth));   // finanças do advogado: vão para o cofre dele, sem a checagem do proprietário
       if (!proprio) { const recusa = checarColecao(o.colecao, auth); if (recusa) return recusa; }
       o.colecao = doCofre(o.colecao, auth);
     }
