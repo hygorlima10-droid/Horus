@@ -10,6 +10,7 @@ const itensMenu = (p) => p.evaluate(() => [...document.querySelectorAll('#drawer
 const aba = async (p, k) => { await p.evaluate((x) => document.querySelector('#drawer .dr-it[data-fin="' + x + '"]').click(), k); await p.waitForTimeout(900); return p.evaluate(() => document.getElementById('bodyFinanceiro').innerText.replace(/\s+/g, ' ')); };
 const FOTO = process.env.FOTO;
 
+const visivel = (pg, sel) => pg.evaluate((q) => { const e = document.querySelector(q); return !!e && e.offsetParent !== null; }, sel);
 const p = await abrir('fam2');
 check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos, sem Fechamento do mês (' + (await itensMenu(p)).join(' | ') + ')');
 for (const k of ['resumo', 'geral', 'pf', 'patrimonio', 'orcamento']) {
@@ -43,6 +44,16 @@ if (FOTO) await p.screenshot({ path: FOTO + '/fin-divisao.png' });
 await p.click('[data-ffn="plano"]'); await p.waitForSelector('#of_ffn_fixos'); await p.fill('#of_ffn_fixos', '20'); await p.click('#obraFormSalvar'); await p.waitForTimeout(1200);
 check(/plano 20%/.test(await p.evaluate(() => document.getElementById('bodyFinanceiro').innerText)), 'o plano em % é guardado e aparece ao lado');
 
+// "Dinheiro da obra a receber" mora na Divisão do salário (não mais nas Análises) e funciona de lá
+const gtxt = () => p.evaluate(() => document.getElementById('finGeral').innerText.replace(/\s+/g, ' '));
+check(/Dinheiro da obra a receber/.test(await gtxt()) && await visivel(p, '#anObraPickerBtn'), 'Divisão do salário: tem o cartão "Dinheiro da obra a receber"');
+await p.click('#anObraPickerBtn'); await p.waitForTimeout(600);
+check(/Escolha a entrada que é para a obra/.test(await gtxt()), 'o botão "Marcar uma entrada como dinheiro da obra" abre a lista, dentro da Divisão do salário');
+await p.click('#anObraPickerBtn'); await p.waitForTimeout(400);
+await p.setViewportSize({ width: 390, height: 800 }); await p.waitForTimeout(500);
+check(await p.evaluate(() => { const b = document.querySelector('[data-ffn="plano"]').getBoundingClientRect(); return b.left >= 0 && b.right <= window.innerWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth + 1; }), 'no celular o botão "Ajustar plano" cabe na tela (não sai para fora)');
+await p.setViewportSize({ width: 1280, height: 900 }); await p.waitForTimeout(300);
+
 // visão geral e patrimônio com o salário
 const rs = await aba(p, 'resumo');
 check(/VAI (SOBRAR|FALTAR) NO FIM DO MÊS/i.test(rs), 'visão geral: "vai sobrar/faltar no fim do mês"');
@@ -61,6 +72,9 @@ for (const [nome, sel] of [['análises', '[data-tab="analises"]']]) {
   check(!/\bPJ\b|pró-labore|honorários|Honorários|alvará|Alvará/.test(t), nome + ' sem PJ, pró-labore, honorários nem alvarás' + (/\bPJ\b|ró-labore|onorários|lvará/.test(t) ? ': ' + (t.match(/.{40}(\bPJ\b|ró-labore|onorários|lvará).{40}/) || [''])[0] : ''));
   await p.keyboard.press('Escape'); await p.evaluate(() => document.querySelectorAll('.overlay.show').forEach((e) => e.classList.remove('show')));
 }
+await p.evaluate(() => document.querySelector('#drawer [data-tab="analises"]').click()); await p.waitForTimeout(900);
+await p.evaluate(() => { const b = document.querySelector('[data-an-periodo="fut"]'); if (b) b.click(); }); await p.waitForTimeout(900);
+check(!/Dinheiro da obra a receber/.test(await p.evaluate(() => document.getElementById('bodyAnalises').innerText)) && /Principais entradas e saídas previstas/.test(await p.evaluate(() => document.getElementById('bodyAnalises').innerText)), 'Análises (futuro): sem o cartão "Dinheiro da obra a receber", que foi para a Divisão do salário');
 // Atalho do iPhone aparece em Minha conta (só com Finanças)
 await p.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await p.waitForTimeout(900);
 check(await p.evaluate(() => !!document.querySelector('#cfWrap [data-cf="atalho"]')), 'Minha conta: tem a linha "Atalho do iPhone"');

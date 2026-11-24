@@ -57,6 +57,7 @@ const c = await abrir('fam2', 390, 800);
 const barra = await c.evaluate(() => [...document.querySelectorAll('#btbar .bt-it')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim().replace(/\d+$/, '')));
 check(barra.join('|') === 'Início|Finanças|Construção|Mais', 'barra de baixo do celular: Início, Finanças, Construção e Mais (' + barra.join('|') + ')');
 check(await c.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no celular a tela cabe na largura');
+check(await c.evaluate(() => { const a = document.querySelector('.fmi-fil .fmi-f').getBoundingClientRect(), b = document.querySelector('.fmi-jan').getBoundingClientRect(); return Math.abs(a.left - b.left) < 2 && b.top > a.bottom; }), 'no celular as duas fileiras de botões (Tudo/Pessoal/Obra e 7/15/30 dias) começam alinhadas à esquerda, uma sob a outra');
 const cl = await itens(c); check(cl.length >= 4 && /Energia elétrica/.test(cl[0]), 'no celular a lista aparece com o mesmo conteúdo (' + cl.length + ' itens)');
 if (process.env.FOTO) { await c.screenshot({ path: process.env.FOTO + '/familiar-inicio-celular.png' }); await p.screenshot({ path: process.env.FOTO + '/familiar-inicio-pc.png' }); }
 check(c.erros.length === 0, 'celular: sem erros de script');

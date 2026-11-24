@@ -34,8 +34,9 @@ function ffnPct(v, base){ return base > 0.004 ? Math.round(v / base * 100) : 0; 
 function ffnDivisaoHtml(){
   var ccq = (typeof ccqResumoDivisao === 'function') ? ccqResumoDivisao() : '';
   var d = ffnDados(), pl = ffnPlano(), base = d.entrada, tem = base > 0.004;
-  var cab = '<div class="financeiro-secao-head"><h4>Divisão do salário · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn-text" data-ffn="plano">Ajustar plano</button></div>';
-  if (!tem) return ccq + '<div class="financeiro-bloco">' + cab + '<div class="financeiro-vazio">Ainda não há salário nem outra entrada lançada neste mês. Em <b>Salário e fixos</b>, use “Lançar receita” (marque <b>recorrente</b> para o salário se repetir todo mês).</div><button type="button" class="btn btn-ghost" data-ffn="ir-pf">Ir para Salário e fixos</button></div>';
+  var cab = '<div class="financeiro-secao-head" style="flex-wrap:wrap"><h4 style="white-space:normal;min-width:0;flex:1 1 180px">Divisão do salário · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn-text" data-ffn="plano" style="flex:0 0 auto">Ajustar plano</button></div>';
+  var obra = ffnObraReceberHtml();
+  if (!tem) return ccq + '<div class="financeiro-bloco">' + cab + '<div class="financeiro-vazio">Ainda não há salário nem outra entrada lançada neste mês. Em <b>Salário e fixos</b>, use “Lançar receita” (marque <b>recorrente</b> para o salário se repetir todo mês).</div><button type="button" class="btn btn-ghost" data-ffn="ir-pf">Ir para Salário e fixos</button></div>' + obra;
   var partes = FFN_PARTES.filter(function(p){ return d.v[p[0]] > 0.004 || Number(pl[p[0]]) > 0; });
   var barra = discreto ? '' : '<div class="mf-stk">' + partes.map(function(p){ return '<i style="width:' + Math.max(0, d.v[p[0]] / base * 100) + '%;background:' + p[2] + '" title="' + escapeHtml(p[1]) + '"></i>'; }).join('') + (d.livre > 0 ? '<i style="width:' + (d.livre / base * 100) + '%;background:#B9B7AE" title="Livre"></i>' : '') + '</div>';
   var linhas = partes.map(function(p){
@@ -45,7 +46,11 @@ function ffnDivisaoHtml(){
   var sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
   return ccq + '<div class="financeiro-bloco">' + cab + '<div class="fv-k">Salário e entradas do mês</div><div class="fv-big">' + fmtMoeda(base) + '</div>' +
     '<div class="saldo-data">Já recebido ' + fmtMoeda(d.recebido) + (base - d.recebido > 0.004 ? ' · ainda a receber ' + fmtMoeda(base - d.recebido) : '') + '</div>' + barra + linhas + sobra +
-    '<div class="saldo-data" style="margin-top:8px">Os percentuais do plano são opcionais e só servem de comparação (fica vermelho quando passa). “Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>';
+    '<div class="saldo-data" style="margin-top:8px">Os percentuais do plano são opcionais e só servem de comparação (fica vermelho quando passa). “Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>' + obra;
+}
+/* "Dinheiro da obra a receber" (antes nas Análises): entradas que vão para a construção e saem do caixa do dia a dia; só com o módulo Construção */
+function ffnObraReceberHtml(){
+  try{ if (ppFamModulos().indexOf('obra') < 0 || typeof anCardObra !== 'function') return ''; return '<div id="ffnObraReceber">' + anCardObra(anProjecao(3)) + '</div>'; }catch(e){ console.error('dinheiro da obra a receber', e); return ''; }
 }
 function ffnAbrirPlano(){
   var pl = ffnPlano();
@@ -62,6 +67,11 @@ function ffnAbrirPlano(){
   });
 }
 document.addEventListener('click', function(e){
+  var box = e.target.closest && e.target.closest('#ffnObraReceber');
+  if (box){   /* o cartão veio das Análises: os cliques dele são tratados aqui */
+    var pk = e.target.closest('[data-an-obra-picker]'); if (pk){ anObraPicker = !anObraPicker; renderFinGeral(); return; }
+    var at = e.target.closest('[data-an-atip]'); if (at){ anMarcarObra(at.getAttribute('data-an-atip')); return; }
+  }
   var b = e.target.closest && e.target.closest('[data-ffn]'); if (!b) return;
   var k = b.getAttribute('data-ffn');
   if (k === 'plano') ffnAbrirPlano(); else if (k === 'ir-pf') irParaFinTab('pf');

@@ -1994,6 +1994,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -15152,7 +15153,7 @@ function anMarcarObra(chave){
   var doc = (tipo === 'caso' ? casos : (tipo === 'acordo' ? acordos : alvaras)).filter(function(x){ return x.id === id; })[0];
   if (!doc) return;
   Promise.resolve(persistPatchDoc(tipo, doc, { atipica: marcar ? true : null })).then(function(){
-    renderAnalises();
+    renderAnalises(); try{ if (typeof renderFinGeral === 'function') renderFinGeral(); }catch(e){}
     toast(marcar ? 'Marcado como dinheiro da obra: saiu do caixa do dia a dia na projeção.' : 'Voltou para o caixa do dia a dia na projeção.');
   }).catch(function(err){ console.error('erro ao marcar', err); toast('Não consegui salvar. Tente de novo.'); });
 }
@@ -15283,6 +15284,18 @@ function renderAnaliseUltimo(el){
   el.innerHTML = h + '<div id="anTip" class="an-tip" role="status" style="display:none;"></div>';
   anTipEl = qs('anTip');
 }
+/* cartão "Dinheiro da obra a receber": nas Análises (proprietário e advogado) e, para o familiar, na "Divisão do salário" */
+function anCardObra(pr){
+  var corpoObra = pr.obra.itens.length
+    ? anListaEventos(pr.obra.itens.slice().sort(function(a, b){ return String(a.data || '9999').localeCompare(String(b.data || '9999')); }), '', '+', 'desmarcar') +
+      '<div class="saldo-data an-nota">Total: <b>' + fmtMoeda(pr.obra.total) + '</b>, sendo ' + fmtMoeda(pr.obra.comData) + ' com data prevista e ' + fmtMoeda(pr.obra.semData) + ' sem previsão. Quando você registrar o recebimento (em "Recebi R$" ou na própria lista), o valor vai direto para o aporte da obra: não entra no recebido do mês nem na Divisão do mês.</div>'
+    : '<div class="financeiro-vazio">Nenhuma entrada marcada. Marque aqui o que vai para a construção (por exemplo, um acordo ou alvará grande) e o valor sai do caixa do dia a dia.</div>';
+  corpoObra += '<div class="ob-acoes"><button type="button" class="btn btn-ghost" id="anObraPickerBtn" data-an-obra-picker="1">' + (anObraPicker ? 'Fechar a lista' : 'Marcar uma entrada como dinheiro da obra') + '</button></div>';
+  if (anObraPicker){
+    corpoObra += '<div class="plano-tit" style="margin-top:12px;">Escolha a entrada que é para a obra</div>' + anListaEventos(pr.candidatas.slice(0, 15), 'Não há outras entradas a receber cadastradas.', '+', 'marcar');
+  }
+  return anCard('Dinheiro da obra a receber', 'O que você marcar aqui sai do caixa do dia a dia e dos cenários acima, porque não é para as despesas correntes.', corpoObra);
+}
 /* os próximos 3 meses (caixa), repaginado para viver dentro de "Futuro"; devolve o HTML */
 function anHtmlProximos3(w){
   var wm = (w + 30) >= 680 ? Math.floor((w + 30 - 12) / 2) - 34 : w, S1 = 'var(--an-1)', S2 = 'var(--an-2)', S3 = 'var(--an-3)', m0 = todayISO().slice(0, 7);
@@ -15317,20 +15330,12 @@ function anHtmlProximos3(w){
   h += '<div class="an-duas">' + cEntra + cSai + '</div>';
   /* principais entradas e saídas */
   var topo = function(lista){ return lista.slice().sort(function(a, b){ return b.valor - a.valor; }).slice(0, 6).sort(function(a, b){ return String(a.data || '9999').localeCompare(String(b.data || '9999')); }); };
-  var corpoObra = pr.obra.itens.length
-    ? anListaEventos(pr.obra.itens.slice().sort(function(a, b){ return String(a.data || '9999').localeCompare(String(b.data || '9999')); }), '', '+', 'desmarcar') +
-      '<div class="saldo-data an-nota">Total: <b>' + fmtMoeda(pr.obra.total) + '</b>, sendo ' + fmtMoeda(pr.obra.comData) + ' com data prevista e ' + fmtMoeda(pr.obra.semData) + ' sem previsão. Quando você registrar o recebimento (em "Recebi R$" ou na própria lista), o valor vai direto para o aporte da obra: não entra no recebido do mês nem na Divisão do mês.</div>'
-    : '<div class="financeiro-vazio">Nenhuma entrada marcada. Marque aqui o que vai para a construção (por exemplo, um acordo ou alvará grande) e o valor sai do caixa do dia a dia.</div>';
-  corpoObra += '<div class="ob-acoes"><button type="button" class="btn btn-ghost" id="anObraPickerBtn" data-an-obra-picker="1">' + (anObraPicker ? 'Fechar a lista' : 'Marcar uma entrada como dinheiro da obra') + '</button></div>';
-  if (anObraPicker){
-    corpoObra += '<div class="plano-tit" style="margin-top:12px;">Escolha a entrada que é para a obra</div>' + anListaEventos(pr.candidatas.slice(0, 15), 'Não há outras entradas a receber cadastradas.', '+', 'marcar');
-  }
-  var cObra = anCard('Dinheiro da obra a receber', 'O que você marcar aqui sai do caixa do dia a dia e dos cenários acima, porque não é para as despesas correntes.', corpoObra);
+  var cObra = anCardObra(pr);
   var cPrinc = anCard('Principais entradas e saídas previstas', 'As maiores, em ordem de data, nos próximos 3 meses.',
     '<div class="plano-tit">Entradas</div>' + anListaEventos(topo(pr.eventos.entradas), 'Nenhuma entrada com data prevista.', '+') +
     '<div class="plano-tit" style="margin-top:12px;">Saídas</div>' + anListaEventos(topo(pr.eventos.saidas), 'Nenhuma despesa a pagar prevista.', '−'));
-  h += '<div class="an-duas">' + cObra + cPrinc + '</div>';
-  if (pr.semDataLista.length) h += anCard('A receber sem data prevista', 'Não entram nos cenários porque não têm data. Se for dinheiro da construção, marque no cartão "Dinheiro da obra a receber".', anListaEventos(pr.semDataLista.slice(0, 8), '', '+'));
+  h += '<div class="an-duas">' + (ppFamiliar() ? '' : cObra) + cPrinc + '</div>';   /* o familiar vê o cartão da obra na "Divisão do salário" */
+  if (pr.semDataLista.length) h += anCard('A receber sem data prevista', 'Não entram nos cenários porque não têm data. Se for dinheiro da construção, marque no cartão "Dinheiro da obra a receber"' + (ppFamiliar() ? ', em "Divisão do salário"' : '') + '.', anListaEventos(pr.semDataLista.slice(0, 8), '', '+'));
   h += '<div class="saldo-data an-nota">O que não entra nesta projeção: a obra (aportes, gastos e contratos), ' + (ppFamiliar() ? '' : 'as transferências entre PF e PJ, ') + 'os aportes na reserva e impostos. ' +
     (pr.repasseHoje > 0.004 ? 'O caixa de hoje já está sem os ' + fmtMoeda(pr.repasseHoje) + ' que você deve a advogados parceiros. ' : '') +
     (pr.semData > 0.004 ? 'Ficam de fora ' + fmtMoeda(pr.semData) + ' a receber sem data prevista.' : '') + '</div>';
@@ -24584,8 +24589,9 @@ function ffnPct(v, base){ return base > 0.004 ? Math.round(v / base * 100) : 0; 
 function ffnDivisaoHtml(){
   var ccq = (typeof ccqResumoDivisao === 'function') ? ccqResumoDivisao() : '';
   var d = ffnDados(), pl = ffnPlano(), base = d.entrada, tem = base > 0.004;
-  var cab = '<div class="financeiro-secao-head"><h4>Divisão do salário · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn-text" data-ffn="plano">Ajustar plano</button></div>';
-  if (!tem) return ccq + '<div class="financeiro-bloco">' + cab + '<div class="financeiro-vazio">Ainda não há salário nem outra entrada lançada neste mês. Em <b>Salário e fixos</b>, use “Lançar receita” (marque <b>recorrente</b> para o salário se repetir todo mês).</div><button type="button" class="btn btn-ghost" data-ffn="ir-pf">Ir para Salário e fixos</button></div>';
+  var cab = '<div class="financeiro-secao-head" style="flex-wrap:wrap"><h4 style="white-space:normal;min-width:0;flex:1 1 180px">Divisão do salário · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn-text" data-ffn="plano" style="flex:0 0 auto">Ajustar plano</button></div>';
+  var obra = ffnObraReceberHtml();
+  if (!tem) return ccq + '<div class="financeiro-bloco">' + cab + '<div class="financeiro-vazio">Ainda não há salário nem outra entrada lançada neste mês. Em <b>Salário e fixos</b>, use “Lançar receita” (marque <b>recorrente</b> para o salário se repetir todo mês).</div><button type="button" class="btn btn-ghost" data-ffn="ir-pf">Ir para Salário e fixos</button></div>' + obra;
   var partes = FFN_PARTES.filter(function(p){ return d.v[p[0]] > 0.004 || Number(pl[p[0]]) > 0; });
   var barra = discreto ? '' : '<div class="mf-stk">' + partes.map(function(p){ return '<i style="width:' + Math.max(0, d.v[p[0]] / base * 100) + '%;background:' + p[2] + '" title="' + escapeHtml(p[1]) + '"></i>'; }).join('') + (d.livre > 0 ? '<i style="width:' + (d.livre / base * 100) + '%;background:#B9B7AE" title="Livre"></i>' : '') + '</div>';
   var linhas = partes.map(function(p){
@@ -24595,7 +24601,11 @@ function ffnDivisaoHtml(){
   var sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
   return ccq + '<div class="financeiro-bloco">' + cab + '<div class="fv-k">Salário e entradas do mês</div><div class="fv-big">' + fmtMoeda(base) + '</div>' +
     '<div class="saldo-data">Já recebido ' + fmtMoeda(d.recebido) + (base - d.recebido > 0.004 ? ' · ainda a receber ' + fmtMoeda(base - d.recebido) : '') + '</div>' + barra + linhas + sobra +
-    '<div class="saldo-data" style="margin-top:8px">Os percentuais do plano são opcionais e só servem de comparação (fica vermelho quando passa). “Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>';
+    '<div class="saldo-data" style="margin-top:8px">Os percentuais do plano são opcionais e só servem de comparação (fica vermelho quando passa). “Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>' + obra;
+}
+/* "Dinheiro da obra a receber" (antes nas Análises): entradas que vão para a construção e saem do caixa do dia a dia; só com o módulo Construção */
+function ffnObraReceberHtml(){
+  try{ if (ppFamModulos().indexOf('obra') < 0 || typeof anCardObra !== 'function') return ''; return '<div id="ffnObraReceber">' + anCardObra(anProjecao(3)) + '</div>'; }catch(e){ console.error('dinheiro da obra a receber', e); return ''; }
 }
 function ffnAbrirPlano(){
   var pl = ffnPlano();
@@ -24612,6 +24622,11 @@ function ffnAbrirPlano(){
   });
 }
 document.addEventListener('click', function(e){
+  var box = e.target.closest && e.target.closest('#ffnObraReceber');
+  if (box){   /* o cartão veio das Análises: os cliques dele são tratados aqui */
+    var pk = e.target.closest('[data-an-obra-picker]'); if (pk){ anObraPicker = !anObraPicker; renderFinGeral(); return; }
+    var at = e.target.closest('[data-an-atip]'); if (at){ anMarcarObra(at.getAttribute('data-an-atip')); return; }
+  }
   var b = e.target.closest && e.target.closest('[data-ffn]'); if (!b) return;
   var k = b.getAttribute('data-ffn');
   if (k === 'plano') ffnAbrirPlano(); else if (k === 'ir-pf') irParaFinTab('pf');
@@ -25697,13 +25712,13 @@ function fmiCss(){
   if (document.getElementById('fmiCss')) return;
   var st = document.createElement('style'); st.id = 'fmiCss';
   st.textContent = '.fmi-card{background:var(--surface);border-radius:20px;padding:6px 20px 12px;box-shadow:0 1px 3px rgba(20,25,50,.06);margin-top:6px}.fmi-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 0 6px}.fmi-hd h2{font-size:var(--t5);margin:0;display:flex;gap:8px;align-items:center}.fmi-badge{background:var(--accent);color:#fff;border-radius:99px;font-size:var(--t1);padding:2px 8px;font-weight:800}' +
-    '.fmi-fil{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px;align-items:center}.fmi-f{border:1.5px solid var(--border);border-radius:99px;padding:5px 13px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);background:transparent;cursor:pointer}.fmi-f.on{background:#12172A;color:#fff;border-color:#12172A}.fmi-jan{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:var(--t1);color:var(--ink-soft)}' +
+    '.fmi-fil{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px;align-items:center}.fmi-f{border:1.5px solid var(--border);border-radius:99px;padding:5px 13px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);background:transparent;cursor:pointer}.fmi-f.on{background:#12172A;color:#fff;border-color:#12172A}.fmi-jan{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:var(--t1);color:var(--ink-soft)}' +
     '.fmi-it{display:grid;grid-template-columns:54px minmax(0,1fr) auto;column-gap:14px;align-items:center;padding:12px 2px;border-top:1px solid var(--border);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;font:inherit;color:inherit}.fmi-it:first-of-type{border-top:0}' +
     '.fmi-d{width:54px;height:56px;border-radius:16px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}.fmi-d b{font-size:var(--t6);font-weight:700}.fmi-d span{font-size:var(--t1);font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px}.fmi-d.atr{background:rgba(217,59,59,.14)}.fmi-d.atr b{color:var(--urgente)}.fmi-d.hoje{background:rgba(237,161,0,.2)}.fmi-d.hoje b{color:var(--accent)}' +
     '.fmi-t{font-size:var(--t4);font-weight:700}.fmi-w{font-size:var(--t2);color:var(--ink-soft);margin-top:2px}.fmi-w.atr{color:var(--urgente);font-weight:700}.fmi-w.hoje{color:var(--accent);font-weight:700}.fmi-v{font-size:var(--t4);font-weight:800;text-align:right;white-space:nowrap}.fmi-v.pos{color:#16683A}.fmi-v small{display:block;font-size:var(--t1);color:var(--ink-soft);font-weight:600}' +
     '.fmi-tag{display:inline-block;border-radius:99px;padding:1px 8px;font-size:var(--t1);font-weight:800;margin-left:6px;vertical-align:1px}.fmi-tp{background:#E6EEFB;color:#1e5ab3}.fmi-to{background:#FBEFD2;color:#8A5A0B}.fmi-tr{background:#DDF3E5;color:#16683A}' +
     '.fmi-rod{font-size:var(--t2);color:var(--ink-soft);padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.fmi-vazio{padding:18px 4px;color:var(--ink-soft)}.fmi-vazio b{color:var(--ink)}' +
-    '@media(max-width:700px){.fmi-card{padding:4px 14px 10px;border-radius:18px}.fmi-it{grid-template-columns:48px minmax(0,1fr);row-gap:2px}.fmi-d{width:48px;height:50px;grid-row:1/3}.fmi-v{grid-column:2;text-align:left;font-size:var(--t3);margin-top:1px}.fmi-t{font-size:var(--t3)}}';
+    '@media(max-width:700px){.fmi-fil{gap:8px 8px}.fmi-jan{margin-left:0;width:100%}.fmi-card{padding:4px 14px 10px;border-radius:18px}.fmi-it{grid-template-columns:48px minmax(0,1fr);row-gap:2px}.fmi-d{width:48px;height:50px;grid-row:1/3}.fmi-v{grid-column:2;text-align:left;font-size:var(--t3);margin-top:1px}.fmi-t{font-size:var(--t3)}}';
   document.head.appendChild(st);
 }
 function fmiLinha(x, hoje){
