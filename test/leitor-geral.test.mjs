@@ -179,6 +179,17 @@ const CC = ['Nome Órgão   Município', 'POLÍCIA MILITAR   PLANALTINA', 'Unida
   // OCR sem os totais legíveis: nunca dá verde (não há como conferir)
   const semTot = LeitorGeral.lerContracheque(ocr.filter((x) => !/11\.769,35/.test(x)).concat(['PROVENTOS/DESCONTOS   QTDE   VALOR']));
   check(semTot && semTot.selo === 'amarelo' && /não achei os totais/.test(semTot.provas.join(' ')), 'sem os totais do rodapé: selo AMARELO ("não achei os totais"), nunca verde');
+  // OCR do contracheque real (PDF desenhado como imagem): "580,64" no lugar de 680,64 e total "8.922 32" (espaço no lugar da vírgula)
+  const ocr2 = fs.readFileSync(new URL('./fixtures/contracheque-ocr-pdf.txt', import.meta.url), 'utf8').split(/\r?\n/).filter((x) => x.trim());
+  const o2 = LeitorGeral.lerContracheque(ocr2);
+  check(LeitorGeral.classificar(ocr2).tipo === 'contracheque' && o2 && o2.itens.length === 19 && o2.totais.rendimentos === 1176935 && o2.totais.descontos === 892232 && o2.totais.liquido === 284703, 'OCR com total "8.922 32" e um dígito errado: 19 linhas e os três totais lidos');
+  check(o2.itens.find((x) => /IPASGO/.test(x.desc)).valor === 68064 && /corrigi "IPASGO/.test(o2.provas.join(' ')) && o2.selo === 'amarelo', 'dígito lido errado (580,64): corrigido para 680,64 pela conta dos totais, avisado, e o selo fica AMARELO');
+  // valor totalmente ilegível numa linha: sai pela diferença
+  const o3 = LeitorGeral.lerContracheque(ocr2.map((x) => x.replace('414,70', '414, /0').replace('580,64', '680,64')));
+  check(o3.itens.length === 19 && o3.itens.find((x) => /SAFRA - EMPRESTIMO 01/.test(x.desc)).valor === 41470 && /não consegui ler o valor de "BANCO SAFRA - EMPRESTIMO 01"/.test(o3.provas.join(' ')), 'valor ilegível ("414, /0"): deduzido (414,70) pelo que falta para os totais e avisado');
+  // linhas sem a coluna QTDE (PDF com texto de verdade, células vazias)
+  const sq = LeitorGeral.lerContracheque(['200027   SUBSIDIO EFETIVO   1.000,00', '200041   ABONO FARDAMENTO   100,00', '800004   IRRF   300,00', '900044   IPASGO BASICO   200,00', 'Rendimentos   Descontos   Líquido   Valor FGTS', '1.100,00   500,00   600,00   0,00']);
+  check(sq && sq.itens.length === 4 && sq.selo === 'verde', 'linhas sem a coluna QTDE (vazia) também são lidas');
   // QTDE ilegível na foto
   const q = LeitorGeral.lerContracheque(['200027   SUBSIDIO EFETIVO   200   1.000,00', '200041   ABONO FARDAMENTO   jo)   100,00', '800004   IRRF   o   300,00', '900044   IPASGO BASICO   0   200,00', '0,00   1.100,00   500,00   600,00']);
   check(q && q.itens.length === 4 && q.totais.liquido === 60000 && q.selo === 'verde', 'QTDE ilegível ("jo)") vira 0 e a linha continua valendo');

@@ -1987,6 +1987,13 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -13170,15 +13177,16 @@ var EX = (function(){
   function ehDoc(s){ return /^(\d{2,3}\.\d{3}\.\d{3}[\/ -]?\d{0,4}-?\d{2}|\*{3}\.\d{3}\.\d{3}-\*{2})$/.test(String(s).trim()); }
 
   /* PDF -> linhas de texto, pela posição de cada pedaço (pdf.js) */
-  async function pdfLinhas(pdfjsLib, bytes, senha){
+  async function pdfLinhas(pdfjsLib, bytes, senha, tolerante){   /* tolerante: PDFs com texto de OCR têm as palavras de uma mesma linha em alturas um pouco diferentes; agrupa pela altura da letra */
     var doc = await pdfjsLib.getDocument({ data: bytes, password: senha || undefined }).promise;
     var out = []; out.x = [];
     for (var p = 1; p <= doc.numPages; p++){
       var page = await doc.getPage(p), tc = await page.getTextContent();
-      var its = tc.items.filter(function(i){ return i.str && i.str.trim(); }).map(function(i){ return { s: i.str, x: i.transform[4], y: Math.round(i.transform[5]), w: i.width }; });
+      var its = tc.items.filter(function(i){ return i.str && i.str.trim(); }).map(function(i){ return { s: i.str, x: i.transform[4], y: tolerante ? i.transform[5] : Math.round(i.transform[5]), w: i.width, h: i.height || Math.abs(i.transform[3]) || 0 }; });
       its.sort(function(a, b){ return b.y - a.y || a.x - b.x; });
+      var hs = its.map(function(i){ return i.h; }).filter(function(h){ return h > 0; }).sort(function(a, b){ return a - b; }), tol = tolerante ? Math.max(3, (hs.length ? hs[hs.length >> 1] : 8) * 0.6) : 2;
       var rows = [], cur = null;
-      its.forEach(function(it){ if (!cur || Math.abs(cur.y - it.y) > 2){ cur = { y: it.y, its: [] }; rows.push(cur); } cur.its.push(it); });
+      its.forEach(function(it){ if (!cur || Math.abs(cur.y - it.y) > tol){ cur = { y: it.y, its: [], n: 0 }; rows.push(cur); } cur.its.push(it); if (tolerante){ cur.n++; cur.y += (it.y - cur.y) / cur.n; } });
       rows.forEach(function(r){
         r.its.sort(function(a, b){ return a.x - b.x; });
         (out.itens = out.itens || []).push(r.its.map(function(i){ return { s: i.s, x: i.x, w: i.w }; }));   /* posição de cada pedaço: o leitor geral acha as colunas por aí */
@@ -14612,16 +14620,27 @@ function impAbrirZip(buf){
 function impLerBytes(nome, buf){
   var u = new Uint8Array(buf), ehPdf = u.length > 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
   if (ehPdf){
-    var abrir = function(senha){ return extCarregarPdfJs().then(function(pdfjs){ return EX.pdfLinhas(pdfjs, new Uint8Array(buf.slice(0)), senha); }); };
+    var abrir = function(senha, tol){ return extCarregarPdfJs().then(function(pdfjs){ return EX.pdfLinhas(pdfjs, new Uint8Array(buf.slice(0)), senha, tol); }); };
+    var senhaUsada;
     return abrir().catch(function(e){
       if (!(e && e.name === 'PasswordException')) throw e;
-      return impComSenha('Este PDF tem senha.', function(s){ return abrir(s).catch(function(e2){ if (e2 && e2.name === 'PasswordException') throw impErroSenha(); throw e2; }); });
+      return impComSenha('Este PDF tem senha.', function(s){ senhaUsada = s; return abrir(s).catch(function(e2){ if (e2 && e2.name === 'PasswordException') throw impErroSenha(); throw e2; }); });
     }).then(function(L){
+      if (window.__dcmDebug) console.log('DCM-PDF ' + JSON.stringify({ n: L.length, linhas: L.slice(0, 70) }));
+      var pode = typeof dcmDeLinhas === 'function' && dcmPode();
+      /* contracheque tem datas e valores como um extrato, mas não é extrato: lê por conta própria (texto do PDF, texto de OCR bagunçado ou a página como imagem) */
+      if (pode && typeof LeitorGeral !== 'undefined' && LeitorGeral.pareceContracheque(L)) return dcmLerPdfContracheque(nome, buf, senhaUsada, L, abrir);
       var r = EX.ler(L);
       if (!r){   /* não é extrato: pode ser boleto ou comprovante (leitor geral) */
-        var dd = (typeof dcmDeLinhas === 'function' && dcmPode()) ? dcmDeLinhas(L, L.itens) : null;
+        var dd = pode ? dcmDeLinhas(L, L.itens) : null;
         if (dd) return { doc: dd, sig: EX.fnv(L.join('\n')) };
-        throw new Error('Não consegui ler este PDF como extrato, boleto ou comprovante (não achei as colunas de data, histórico e valor). Se puder, envie o OFX do banco.');
+        if (!pode) throw new Error('Não consegui ler este PDF como extrato, boleto ou comprovante (não achei as colunas de data, histórico e valor). Se puder, envie o OFX do banco.');
+        /* 2ª tentativa: PDF com texto de OCR (palavras em alturas diferentes) */
+        return abrir(senhaUsada, true).then(function(L2){
+          var d2 = dcmDeLinhas(L2, L2.itens); if (d2) return { doc: d2, sig: EX.fnv(L.join('\n')) };
+          /* 3ª tentativa: lê o PDF como imagem (OCR no aparelho), como numa foto */
+          return dcmLerPdfComoImagem(nome, buf, senhaUsada).then(function(x){ if (x) return x; throw new Error(dcmErroPdf(L)); });
+        });
       }
       return { r: r, sig: EX.fnv(L.join('\n')) };
     });
@@ -25084,18 +25103,18 @@ var LeitorGeral = (function(){
      SEM coluna de sinal. Quem é provento e quem é desconto sai da CONTA: os totais do rodapé (Rendimentos, Descontos, Líquido) têm de fechar com a
      soma das linhas (primeiro tenta as primeiras linhas, depois qualquer combinação). Se fechar: selo verde. Entrada: linhas de texto (PDF ou foto).
      ============================================================ */
-  var CC_ITEM = /^([0-9A-Za-z]{6})\s+(.+?)\s+(\d+\s+de\s+\d+|\S{1,4})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;   /* QTDE ilegível na foto (ex.: "jo)") vira 0 */
-  function ccLinhaItem(l){ var m = CC_ITEM.exec(l.trim()); if (!m || (m[1].match(/\d/g) || []).length < 3 || !/[A-Za-zÀ-ÿ]{3}/.test(m[2])) return null; var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); return { codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : (/^\d+$/.test(m[3]) ? +m[3] : 0), parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }; }
+  var CC_ITEM = /^([0-9A-Za-z]{6})\s+(.+?)(?:\s+(\d+\s+de\s+\d+|\S{1,4}))?\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;   /* QTDE ilegível na foto (ex.: "jo)") vira 0 */
+  function ccLinhaItem(l){ l = String(l).trim().replace(/[\]\)\|\s]+$/, '').replace(/(\d)\/(\d{2})$/, '$1,$2'); var m = CC_ITEM.exec(l); if (!m || (m[1].match(/\d/g) || []).length < 3 || !/[A-Za-zÀ-ÿ]{3}/.test(m[2])) return null; var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); return { codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : (/^\d+$/.test(m[3]) ? +m[3] : 0), parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }; }
   /* totais sem depender dos rótulos: uma linha com valores em que rendimentos − descontos = líquido (com ou sem o FGTS na frente) */
   function ccTotaisPorConta(L){
     for (var i = L.length - 1; i >= 0; i--){
-      var vs = (L[i].match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(ccCentavos); if (vs.length < 3 || vs.length > 5) continue;
+      var vs = (L[i].replace(/(\d{1,3}(?:\.\d{3})*) (\d{2})(?=\s|$)/g, '$1,$2').match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(ccCentavos); if (vs.length < 3 || vs.length > 5) continue;
       for (var k = 0; k + 2 < vs.length; k++) if (vs[k] > 0 && vs[k] - vs[k + 1] === vs[k + 2] && vs[k + 2] > 0) return { rendimentos: vs[k], descontos: vs[k + 1], liquido: vs[k + 2], fgts: k > 0 ? vs[k - 1] : null };
     }
     return null;
   }
   var CC_MESES = 'JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO';
-  function ccCentavos(t){ var v = lerValor(String(t).replace(/\s+/g, '')); return v ? v.c : null; }
+  function ccCentavos(t){ t = String(t).trim().replace(/^(\d{1,3}(?:\.\d{3})*)\s(\d{2})$/, '$1,$2'); var v = lerValor(t.replace(/\s+/g, '')); return v ? v.c : null; }
   function ccCategoria(desc, tipo, parcela){
     var n = norm(desc);
     if (tipo === 'provento'){
@@ -25125,10 +25144,18 @@ var LeitorGeral = (function(){
     while (t2 > 0){ var k = alc[t2]; res[k] = true; t2 -= valores[k]; }
     return res;
   }
+  /* "parece contracheque": rótulos da tabela, ou várias linhas começando por código de 6 dígitos (mesmo que o texto do PDF esteja bagunçado) */
+  function pareceContracheque(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), N = norm(L.join('\n'));
+    if (/PROVENTOS ?\/ ?DESCONTOS|ROVENTOS ?\/ ?DESCONTO/.test(N)) return true;
+    if (/(RENDIMENTOS|PROVENTOS)/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N)) return true;
+    return L.filter(function(l){ return /^\d{6}\s+[A-Za-zÀ-ÿ]{3}/.test(l.trim()) && /\d,\d{2}|\d \d{2}/.test(l); }).length >= 5;
+  }
   function lerContracheque(linhas){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).map(function(x){ return x.replace(/\s+$/, ''); }).filter(function(x){ return x.trim(); });
     var N = norm(L.join('\n')), itens = [], i;
-    L.forEach(function(l){ var it = ccLinhaItem(l); if (it) itens.push(it); });
+    var entradas = [];   /* na ordem das linhas; a linha cujo valor a foto não deixou ler entra vazia e é resolvida pela conta dos totais */
+    L.forEach(function(l){ var it = ccLinhaItem(l); if (it){ itens.push(it); entradas.push(it); } else if (/^\d{6}\s+[A-Za-zÀ-ÿ]{3}/.test(l.trim()) && !/\d{1,3}(?:\.\d{3})*,\d{2}\s*$/.test(l.trim())){ var rest = l.trim().replace(/^\d{6}\s+/, ''), mq = /(\d+)\s+de\s+(\d+)/.exec(rest); entradas.push({ codigo: l.trim().slice(0, 6), desc: (mq ? rest.slice(0, mq.index) : rest.split(/\s{2,}/)[0]).replace(/[^A-Za-zÀ-ÿ0-9%.\/ -]+/g, ' ').replace(/\s+/g, ' ').trim(), qtde: 0, parcela: mq ? { n: +mq[1], m: +mq[2] } : null, valor: null }); } });
     if (itens.length < 3) return null;
     var T = { rendimentos: null, descontos: null, liquido: null, fgts: null, baseIrrf: null }, margem = { consignavel: null, cartao: null };
     for (i = 0; i < L.length; i++){
@@ -25142,7 +25169,33 @@ var LeitorGeral = (function(){
     }
     if (T.rendimentos == null){ var pc = ccTotaisPorConta(L); if (pc){ T.rendimentos = pc.rendimentos; T.descontos = pc.descontos; T.liquido = pc.liquido; if (pc.fgts != null) T.fgts = pc.fgts; } }
     if (T.rendimentos == null){ var m1 = /RENDIMENTOS\s+([\d.,]+)/.exec(N), m2 = /DESCONTOS\s+([\d.,]+)/.exec(N), m3 = /LIQUIDO\s+([\d.,]+)/.exec(N); if (m1) T.rendimentos = ccCentavos(m1[1]); if (m2) T.descontos = ccCentavos(m2[1]); if (m3) T.liquido = ccCentavos(m3[1]); }
-    var provas = [], selo = 'amarelo', marca = null, totaisLidos = T.rendimentos != null && T.descontos != null && T.liquido != null;
+    var provas = [], vazias = entradas.filter(function(x){ return x.valor === null; });
+    if (vazias.length === 1 && T.rendimentos != null && T.descontos != null){   /* uma só linha ilegível: o valor que falta é o que fecha (proventos + descontos − as outras linhas) */
+      var lido = itens.reduce(function(t, x){ return t + x.valor; }, 0), falta = T.rendimentos + T.descontos - lido;
+      if (falta > 0 && falta < T.rendimentos + T.descontos){ vazias[0].valor = falta; vazias[0].deduzido = true; itens = entradas.filter(function(x){ return x.valor !== null; }); provas.push('não consegui ler o valor de "' + vazias[0].desc + '" na imagem: usei ' + (falta / 100).toFixed(2).replace('.', ',') + ', o que falta para os totais fecharem. Confira'); }
+    } else if (vazias.length) provas.push('não consegui ler o valor de ' + vazias.length + ' linha(s) (' + vazias.map(function(x){ return x.desc || x.codigo; }).join(', ') + '): confira');
+    if (T.rendimentos != null && T.descontos != null && T.liquido != null){
+      var S0 = itens.reduce(function(t, x){ return t + x.valor; }, 0), r0 = T.rendimentos, d0 = T.descontos, l0 = T.liquido, fmt0 = function(v){ return (v / 100).toFixed(2).replace('.', ','); };
+      if (r0 - d0 !== l0){   /* um dos três totais foi lido errado (foto): o que fecha com a soma das linhas vale */
+        if (r0 + (r0 - l0) === S0){ provas.push('o total "Descontos" saiu ' + fmt0(d0) + ' na leitura; usei ' + fmt0(r0 - l0) + ' (rendimentos − líquido, que fecha com as linhas). Confira'); T.descontos = r0 - l0; }
+        else if (l0 + 2 * d0 === S0){ provas.push('o total "Rendimentos" saiu ' + fmt0(r0) + ' na leitura; usei ' + fmt0(l0 + d0) + ' (líquido + descontos, que fecha com as linhas). Confira'); T.rendimentos = l0 + d0; }
+        else if (r0 + d0 === S0){ provas.push('o total "Líquido" saiu ' + fmt0(l0) + ' na leitura; usei ' + fmt0(r0 - d0) + ' (rendimentos − descontos). Confira'); T.liquido = r0 - d0; }
+      }
+      var delta = T.rendimentos + T.descontos - S0;
+      if (delta !== 0 && T.rendimentos - T.descontos === T.liquido){   /* totais conferem entre si, mas as linhas não: um valor lido com um dígito errado */
+        var um = function(a, b){ var x = String(a), y = String(b); if (x.length !== y.length) return false; var n = 0; for (var q = 0; q < x.length; q++) if (x[q] !== y[q]) n++; return n === 1; };
+        var CONF = ['06', '08', '09', '56', '35', '38', '68', '17', '27', '49', '58'];   /* pares de dígitos que a leitura de foto costuma trocar */
+        var plaus = function(a, b){ var x = String(a), y = String(b); for (var q = 0; q < x.length; q++) if (x[q] !== y[q]) return CONF.indexOf(x[q] < y[q] ? x[q] + y[q] : y[q] + x[q]) >= 0; return false; };
+        var cands = itens.filter(function(x){ return x.valor + delta > 0 && um(x.valor, x.valor + delta) && plaus(x.valor, x.valor + delta); });
+        if (cands.length > 1){   /* vários servem: fica o que também deixa separar proventos e descontos pelos totais */
+          var boas = cands.filter(function(c){ var acc = 0, ok = false; itens.forEach(function(x){ acc += (x === c ? x.valor + delta : x.valor); if (acc === T.rendimentos) ok = true; }); return ok; });   /* proventos vêm primeiro na tabela */
+          if (boas.length === 1) cands = boas;
+        }
+        if (cands.length === 1){ provas.push('corrigi "' + cands[0].desc + '" de ' + fmt0(cands[0].valor) + ' para ' + fmt0(cands[0].valor + delta) + ': um dígito foi lido errado e esse é o único valor que fecha com os totais. Confira'); cands[0].valor += delta; cands[0].corrigido = true; }
+      }
+    }
+    var ajustou = provas.length > 0;   /* valor deduzido ou corrigido pela conta: nunca selo verde */
+    var selo = 'amarelo', marca = null, totaisLidos = T.rendimentos != null && T.descontos != null && T.liquido != null;
     if (T.rendimentos != null) marca = ccSeparar(itens.map(function(x){ return x.valor; }), T.rendimentos);
     if (!marca){ marca = itens.map(function(x){ return /^2/.test(x.codigo) && !/FARDAMENTO$|^FAS/.test(norm(x.desc)); }); provas.push('não consegui separar proventos e descontos pelos totais: confira'); }
     itens.forEach(function(x, k){ x.tipo = marca[k] ? 'provento' : 'desconto'; x.cat = ccCategoria(x.desc, x.tipo, x.parcela); });
@@ -25150,7 +25203,7 @@ var LeitorGeral = (function(){
     if (T.rendimentos == null) T.rendimentos = sp; if (T.descontos == null) T.descontos = sd; if (T.liquido == null) T.liquido = T.rendimentos - T.descontos;
     var fechaP = sp === T.rendimentos, fechaD = sd === T.descontos, fechaL = T.rendimentos - T.descontos === T.liquido;
     if (!totaisLidos) provas.push('não achei os totais do rodapé (rendimentos, descontos e líquido) para conferir: confira linha a linha');
-    else if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
+    else if (fechaP && fechaD && fechaL){ selo = ajustou ? 'amarelo' : 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas' + (ajustou ? ' (depois dos ajustes acima)' : '')); }
     else { if (!fechaP) provas.push('a soma dos proventos (' + (sp / 100).toFixed(2).replace('.', ',') + ') difere do total "Rendimentos"'); if (!fechaD) provas.push('a soma dos descontos (' + (sd / 100).toFixed(2).replace('.', ',') + ') difere do total "Descontos"'); if (!fechaL) provas.push('rendimentos − descontos não dá o líquido'); }
     var out = { referencia: null, itens: itens, totais: T, margem: margem, servidor: '', cargo: '', orgao: '', selo: selo, provas: provas };
     var mr = new RegExp('REFERENCIA[\\s\\S]{0,160}?(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N) || new RegExp('(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N);
@@ -25160,7 +25213,7 @@ var LeitorGeral = (function(){
     return out;
   }
 
-  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
+  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, pareceContracheque: pareceContracheque, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LeitorGeral;
 
@@ -25223,16 +25276,17 @@ function dcmOcrCarregar(){
   return dcmOcrP;
 }
 /* prepara a imagem para o OCR: amplia (print pequeno vira ~2400 px de largura, no máximo 3×), tons de cinza e contraste. Sem isso, um print de 860 px perde vírgulas e dígitos. */
-function dcmPreparar(buf){
+function dcmPreparar(buf, op){
+  op = op || {}; var alvo = op.alvo || 2400, contr = op.contraste || 1.6;
   return new Promise(function(res){
     var orig = new Blob([buf]), url = URL.createObjectURL(orig), img = new Image();
     img.onload = function(){
       try{
-        var e = img.width >= 2400 ? 1 : Math.min(3, 2400 / img.width); if (img.height * e > 5000) e = 5000 / img.height;
+        var e = img.width >= alvo ? 1 : Math.min(4, alvo / img.width); if (img.height * e > 6500) e = 6500 / img.height;
         var c = document.createElement('canvas'); c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
         var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
         var d = x.getImageData(0, 0, c.width, c.height), px = d.data;
-        for (var i = 0; i < px.length; i += 4){ var g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2], v = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128)); px[i] = px[i + 1] = px[i + 2] = v; }
+        for (var i = 0; i < px.length; i += 4){ var g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2], v = Math.max(0, Math.min(255, (g - 128) * contr + 128)); px[i] = px[i + 1] = px[i + 2] = v; }
         x.putImageData(d, 0, 0); URL.revokeObjectURL(url);
         c.toBlob(function(b){ res(b || orig); }, 'image/png');
       }catch(err){ URL.revokeObjectURL(url); res(orig); }
@@ -25248,17 +25302,37 @@ function dcmOcrRodar(T, blob, psm){
       .then(function(r){ return w.terminate().then(function(){ return (r && r.data && r.data.text) || ''; }); });
   });
 }
+/* contracheque que não fechou de primeira (um dígito lido errado, um total ilegível): lê de novo com outro tamanho e contraste e fica com a melhor leitura (a que fecha sem ajuste) */
+function dcmNotaContra(r){
+  var d = r && r.d; if (!d || d.kind !== 'contracheque') return 9;
+  var pr = ((d.dados && d.dados.provas) || []).join(' ');
+  if (d.dados.selo === 'verde') return 0;
+  return /corrigi|não consegui ler|usei|difere|não achei os totais|não consegui separar/.test(pr) ? 2 : 1;
+}
+function dcmRefinar(T, buf, melhor){
+  if (dcmNotaContra(melhor) === 0 || dcmNotaContra(melhor) === 9) return Promise.resolve(melhor);
+  var variantes = [{ alvo: 3200, contraste: 1.2 }, { alvo: 1800, contraste: 2.2 }, { alvo: 2800, contraste: 1.0 }];
+  function prox(i){
+    if (i >= variantes.length || dcmNotaContra(melhor) === 0) return Promise.resolve(melhor);
+    impEstado.info = 'Conferindo a leitura do contracheque de novo (' + (i + 1) + ' de ' + variantes.length + ')…'; renderExtratos();
+    return dcmPreparar(buf, variantes[i]).then(function(b){ return dcmOcrRodar(T, b, '6'); }).then(function(t){
+      var d = dcmDeTexto(t), c = { texto: t, d: d }; if (dcmNotaContra(c) < dcmNotaContra(melhor)) melhor = c; return prox(i + 1);
+    }).catch(function(){ return prox(i + 1); });
+  }
+  return prox(0);
+}
 function dcmLerImagem(nome, buf){
   var teste = window.__dcmOcrTeste;   /* os testes entram aqui com um texto pronto */
   var obter = teste ? Promise.resolve(teste(nome)).then(function(t){ return { texto: t, d: dcmDeTexto(t) }; }) : dcmOcrCarregar().then(function(T){
     impEstado.info = 'Lendo a foto (na primeira vez baixa o motor de leitura, alguns MB; pode levar um pouco)…'; renderExtratos();
     return dcmPreparar(buf).then(function(blob){
       /* 1ª leitura em modo de tabela (extrato, contracheque); se não reconhecer, 2ª em modo automático (comprovantes de app) */
-      return dcmOcrRodar(T, blob, '6').then(function(t1){ var d1 = dcmDeTexto(t1); if (d1) return { texto: t1, d: d1 }; return dcmOcrRodar(T, blob, '3').then(function(t2){ return { texto: t2, d: dcmDeTexto(t2) }; }); });
+      return dcmOcrRodar(T, blob, '6').then(function(t1){ var d1 = dcmDeTexto(t1); if (d1) return dcmRefinar(T, buf, { texto: t1, d: d1 }); return dcmOcrRodar(T, blob, '3').then(function(t2){ return { texto: t2, d: dcmDeTexto(t2) }; }); });
     });
   });
   return obter.then(function(r){
     var d = r.d;
+    if (window.__dcmDebug) console.log('DCM-OCR\n' + r.texto);
     if (!d){
       var pareceContra = typeof LeitorGeral !== 'undefined' && /PROVENTOS|RENDIMENTOS|CONTRA ?CHEQUE|SERVIDOR/.test(LeitorGeral.norm(r.texto || ''));
       throw new Error(pareceContra ? 'Parece um contracheque, mas a foto não ficou nítida o bastante para eu conferir os valores. Envie o PDF do contracheque (do portal) ou uma foto ou print maior, reta e sem reflexo.' : 'Li a foto, mas não reconheci como extrato, boleto, comprovante ou contracheque. Tente uma foto mais nítida e reta, ou envie o PDF.');
@@ -25266,6 +25340,58 @@ function dcmLerImagem(nome, buf){
     d.dados.viaFoto = true; if (d.dados.selo === 'verde') d.dados.selo = 'amarelo'; (d.dados.provas = d.dados.provas || []).push('lido de foto: confira os valores');
     return { doc: d, sig: EX.fnv('img|' + String(r.texto).replace(/\s+/g, ' ').slice(0, 2000)) };
   });
+}
+
+/* PDF que é só imagem (escaneado, "imprimir em PDF" de um print) ou cujo texto de OCR veio bagunçado: desenha cada página e lê como uma foto (OCR no aparelho) */
+function dcmPdfPaginasPng(buf, senha, max){
+  return extCarregarPdfJs().then(function(pdfjs){
+    return pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)), password: senha || undefined }).promise.then(function(doc){
+      var n = Math.min(doc.numPages, max || 3), out = [];
+      function pagina(i){
+        if (i > n) return Promise.resolve(out);
+        return doc.getPage(i).then(function(pg){
+          var v1 = pg.getViewport({ scale: 1 }), sc = Math.max(1.5, Math.min(4, 2400 / v1.width)); if (v1.height * sc > 5000) sc = 5000 / v1.height;
+          var v = pg.getViewport({ scale: sc }), c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+          var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+          return pg.render({ canvasContext: x, viewport: v }).promise.then(function(){
+            return new Promise(function(res){ c.toBlob(function(b){ res(b); }, 'image/png'); });
+          }).then(function(b){ return b ? b.arrayBuffer() : null; }).then(function(ab){ if (ab) out.push(ab); return pagina(i + 1); });
+        });
+      }
+      return pagina(1);
+    });
+  });
+}
+function dcmLerPdfComoImagem(nome, buf, senha){
+  impEstado.info = 'Este PDF não tem texto que eu consiga ler direto; lendo como imagem (pode levar um pouco)…'; renderExtratos();
+  return dcmPdfPaginasPng(buf, senha, 3).then(function(pgs){
+    var i = 0;
+    function prox(){
+      if (i >= pgs.length) return Promise.resolve(null);
+      var k = ++i;
+      return dcmLerImagem(nome + ' (pág. ' + k + ')', pgs[k - 1]).catch(function(){ return null; }).then(function(r){ return r || prox(); });
+    }
+    return prox();
+  }).catch(function(){ return null; });
+}
+/* contracheque em PDF: tenta o texto do PDF; se não fechar com os totais, o texto com linhas agrupadas pela altura da letra; por fim a página como imagem (OCR). Fica a melhor leitura */
+function dcmLerPdfContracheque(nome, buf, senha, L, abrir){
+  var melhor = null, sig = EX.fnv(L.join('\n'));
+  function considerar(d, s){ if (!d || d.kind !== 'contracheque') return; var c = { d: d, sig: s || sig }; if (!melhor || dcmNotaContra(c) < dcmNotaContra(melhor)) melhor = c; }
+  function fim(){ return melhor && dcmNotaContra(melhor) === 0; }
+  function resultado(){ if (melhor) return { doc: melhor.d, sig: melhor.sig }; throw new Error(dcmErroPdf(L)); }
+  considerar(dcmDeLinhas(L, L.itens));
+  if (fim()) return Promise.resolve(resultado());
+  return abrir(senha, true).then(function(L2){
+    considerar(dcmDeLinhas(L2, L2.itens));
+    if (fim()) return resultado();
+    return dcmLerPdfComoImagem(nome, buf, senha).then(function(x){ if (x) considerar(x.doc, x.sig); return resultado(); });
+  });
+}
+function dcmErroPdf(L){
+  var n = (L || []).length, parece = typeof LeitorGeral !== 'undefined' && /PROVENTOS|RENDIMENTOS|CONTRA ?CHEQUE/.test(LeitorGeral.norm((L || []).join('\n')));
+  return parece ? 'Parece um contracheque, mas não consegui conferir os valores (li ' + n + ' linhas do PDF e também tentei lê-lo como imagem). Envie o PDF original do portal, ou uma foto ou print maior, reto e sem reflexo.'
+    : 'Não consegui ler este PDF como extrato, boleto, comprovante ou contracheque (li ' + n + ' linhas de texto, sem as colunas esperadas, e também tentei lê-lo como imagem). Se puder, envie o OFX do banco ou uma foto ou print do documento.';
 }
 
 /* ---------- a tela: cartões "Para conferir" ---------- */

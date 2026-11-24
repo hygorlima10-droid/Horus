@@ -57,16 +57,17 @@ function dcmOcrCarregar(){
   return dcmOcrP;
 }
 /* prepara a imagem para o OCR: amplia (print pequeno vira ~2400 px de largura, no máximo 3×), tons de cinza e contraste. Sem isso, um print de 860 px perde vírgulas e dígitos. */
-function dcmPreparar(buf){
+function dcmPreparar(buf, op){
+  op = op || {}; var alvo = op.alvo || 2400, contr = op.contraste || 1.6;
   return new Promise(function(res){
     var orig = new Blob([buf]), url = URL.createObjectURL(orig), img = new Image();
     img.onload = function(){
       try{
-        var e = img.width >= 2400 ? 1 : Math.min(3, 2400 / img.width); if (img.height * e > 5000) e = 5000 / img.height;
+        var e = img.width >= alvo ? 1 : Math.min(4, alvo / img.width); if (img.height * e > 6500) e = 6500 / img.height;
         var c = document.createElement('canvas'); c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
         var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
         var d = x.getImageData(0, 0, c.width, c.height), px = d.data;
-        for (var i = 0; i < px.length; i += 4){ var g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2], v = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128)); px[i] = px[i + 1] = px[i + 2] = v; }
+        for (var i = 0; i < px.length; i += 4){ var g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2], v = Math.max(0, Math.min(255, (g - 128) * contr + 128)); px[i] = px[i + 1] = px[i + 2] = v; }
         x.putImageData(d, 0, 0); URL.revokeObjectURL(url);
         c.toBlob(function(b){ res(b || orig); }, 'image/png');
       }catch(err){ URL.revokeObjectURL(url); res(orig); }
@@ -82,17 +83,37 @@ function dcmOcrRodar(T, blob, psm){
       .then(function(r){ return w.terminate().then(function(){ return (r && r.data && r.data.text) || ''; }); });
   });
 }
+/* contracheque que não fechou de primeira (um dígito lido errado, um total ilegível): lê de novo com outro tamanho e contraste e fica com a melhor leitura (a que fecha sem ajuste) */
+function dcmNotaContra(r){
+  var d = r && r.d; if (!d || d.kind !== 'contracheque') return 9;
+  var pr = ((d.dados && d.dados.provas) || []).join(' ');
+  if (d.dados.selo === 'verde') return 0;
+  return /corrigi|não consegui ler|usei|difere|não achei os totais|não consegui separar/.test(pr) ? 2 : 1;
+}
+function dcmRefinar(T, buf, melhor){
+  if (dcmNotaContra(melhor) === 0 || dcmNotaContra(melhor) === 9) return Promise.resolve(melhor);
+  var variantes = [{ alvo: 3200, contraste: 1.2 }, { alvo: 1800, contraste: 2.2 }, { alvo: 2800, contraste: 1.0 }];
+  function prox(i){
+    if (i >= variantes.length || dcmNotaContra(melhor) === 0) return Promise.resolve(melhor);
+    impEstado.info = 'Conferindo a leitura do contracheque de novo (' + (i + 1) + ' de ' + variantes.length + ')…'; renderExtratos();
+    return dcmPreparar(buf, variantes[i]).then(function(b){ return dcmOcrRodar(T, b, '6'); }).then(function(t){
+      var d = dcmDeTexto(t), c = { texto: t, d: d }; if (dcmNotaContra(c) < dcmNotaContra(melhor)) melhor = c; return prox(i + 1);
+    }).catch(function(){ return prox(i + 1); });
+  }
+  return prox(0);
+}
 function dcmLerImagem(nome, buf){
   var teste = window.__dcmOcrTeste;   /* os testes entram aqui com um texto pronto */
   var obter = teste ? Promise.resolve(teste(nome)).then(function(t){ return { texto: t, d: dcmDeTexto(t) }; }) : dcmOcrCarregar().then(function(T){
     impEstado.info = 'Lendo a foto (na primeira vez baixa o motor de leitura, alguns MB; pode levar um pouco)…'; renderExtratos();
     return dcmPreparar(buf).then(function(blob){
       /* 1ª leitura em modo de tabela (extrato, contracheque); se não reconhecer, 2ª em modo automático (comprovantes de app) */
-      return dcmOcrRodar(T, blob, '6').then(function(t1){ var d1 = dcmDeTexto(t1); if (d1) return { texto: t1, d: d1 }; return dcmOcrRodar(T, blob, '3').then(function(t2){ return { texto: t2, d: dcmDeTexto(t2) }; }); });
+      return dcmOcrRodar(T, blob, '6').then(function(t1){ var d1 = dcmDeTexto(t1); if (d1) return dcmRefinar(T, buf, { texto: t1, d: d1 }); return dcmOcrRodar(T, blob, '3').then(function(t2){ return { texto: t2, d: dcmDeTexto(t2) }; }); });
     });
   });
   return obter.then(function(r){
     var d = r.d;
+    if (window.__dcmDebug) console.log('DCM-OCR\n' + r.texto);
     if (!d){
       var pareceContra = typeof LeitorGeral !== 'undefined' && /PROVENTOS|RENDIMENTOS|CONTRA ?CHEQUE|SERVIDOR/.test(LeitorGeral.norm(r.texto || ''));
       throw new Error(pareceContra ? 'Parece um contracheque, mas a foto não ficou nítida o bastante para eu conferir os valores. Envie o PDF do contracheque (do portal) ou uma foto ou print maior, reta e sem reflexo.' : 'Li a foto, mas não reconheci como extrato, boleto, comprovante ou contracheque. Tente uma foto mais nítida e reta, ou envie o PDF.');
@@ -100,6 +121,58 @@ function dcmLerImagem(nome, buf){
     d.dados.viaFoto = true; if (d.dados.selo === 'verde') d.dados.selo = 'amarelo'; (d.dados.provas = d.dados.provas || []).push('lido de foto: confira os valores');
     return { doc: d, sig: EX.fnv('img|' + String(r.texto).replace(/\s+/g, ' ').slice(0, 2000)) };
   });
+}
+
+/* PDF que é só imagem (escaneado, "imprimir em PDF" de um print) ou cujo texto de OCR veio bagunçado: desenha cada página e lê como uma foto (OCR no aparelho) */
+function dcmPdfPaginasPng(buf, senha, max){
+  return extCarregarPdfJs().then(function(pdfjs){
+    return pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)), password: senha || undefined }).promise.then(function(doc){
+      var n = Math.min(doc.numPages, max || 3), out = [];
+      function pagina(i){
+        if (i > n) return Promise.resolve(out);
+        return doc.getPage(i).then(function(pg){
+          var v1 = pg.getViewport({ scale: 1 }), sc = Math.max(1.5, Math.min(4, 2400 / v1.width)); if (v1.height * sc > 5000) sc = 5000 / v1.height;
+          var v = pg.getViewport({ scale: sc }), c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+          var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+          return pg.render({ canvasContext: x, viewport: v }).promise.then(function(){
+            return new Promise(function(res){ c.toBlob(function(b){ res(b); }, 'image/png'); });
+          }).then(function(b){ return b ? b.arrayBuffer() : null; }).then(function(ab){ if (ab) out.push(ab); return pagina(i + 1); });
+        });
+      }
+      return pagina(1);
+    });
+  });
+}
+function dcmLerPdfComoImagem(nome, buf, senha){
+  impEstado.info = 'Este PDF não tem texto que eu consiga ler direto; lendo como imagem (pode levar um pouco)…'; renderExtratos();
+  return dcmPdfPaginasPng(buf, senha, 3).then(function(pgs){
+    var i = 0;
+    function prox(){
+      if (i >= pgs.length) return Promise.resolve(null);
+      var k = ++i;
+      return dcmLerImagem(nome + ' (pág. ' + k + ')', pgs[k - 1]).catch(function(){ return null; }).then(function(r){ return r || prox(); });
+    }
+    return prox();
+  }).catch(function(){ return null; });
+}
+/* contracheque em PDF: tenta o texto do PDF; se não fechar com os totais, o texto com linhas agrupadas pela altura da letra; por fim a página como imagem (OCR). Fica a melhor leitura */
+function dcmLerPdfContracheque(nome, buf, senha, L, abrir){
+  var melhor = null, sig = EX.fnv(L.join('\n'));
+  function considerar(d, s){ if (!d || d.kind !== 'contracheque') return; var c = { d: d, sig: s || sig }; if (!melhor || dcmNotaContra(c) < dcmNotaContra(melhor)) melhor = c; }
+  function fim(){ return melhor && dcmNotaContra(melhor) === 0; }
+  function resultado(){ if (melhor) return { doc: melhor.d, sig: melhor.sig }; throw new Error(dcmErroPdf(L)); }
+  considerar(dcmDeLinhas(L, L.itens));
+  if (fim()) return Promise.resolve(resultado());
+  return abrir(senha, true).then(function(L2){
+    considerar(dcmDeLinhas(L2, L2.itens));
+    if (fim()) return resultado();
+    return dcmLerPdfComoImagem(nome, buf, senha).then(function(x){ if (x) considerar(x.doc, x.sig); return resultado(); });
+  });
+}
+function dcmErroPdf(L){
+  var n = (L || []).length, parece = typeof LeitorGeral !== 'undefined' && /PROVENTOS|RENDIMENTOS|CONTRA ?CHEQUE/.test(LeitorGeral.norm((L || []).join('\n')));
+  return parece ? 'Parece um contracheque, mas não consegui conferir os valores (li ' + n + ' linhas do PDF e também tentei lê-lo como imagem). Envie o PDF original do portal, ou uma foto ou print maior, reto e sem reflexo.'
+    : 'Não consegui ler este PDF como extrato, boleto, comprovante ou contracheque (li ' + n + ' linhas de texto, sem as colunas esperadas, e também tentei lê-lo como imagem). Se puder, envie o OFX do banco ou uma foto ou print do documento.';
 }
 
 /* ---------- a tela: cartões "Para conferir" ---------- */
