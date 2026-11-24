@@ -11,7 +11,7 @@ const aba = async (p, k) => { await p.evaluate((x) => document.querySelector('#d
 const FOTO = process.env.FOTO;
 
 const p = await abrir('fam2');
-check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Fechamento do mês', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos + Fechamento (' + (await itensMenu(p)).join(' | ') + ')');
+check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos, sem Fechamento do mês (' + (await itensMenu(p)).join(' | ') + ')');
 for (const k of ['resumo', 'geral', 'pf', 'patrimonio', 'orcamento']) {
   const t = await aba(p, k);
   check(!/\bPJ\b|pró-labore|Pró-labore|honorários|Recebi R\$/.test(t), 'aba ' + k + ' sem PJ, pró-labore nem honorários' + (/\bPJ\b|ró-labore|onorários/.test(t) ? ': ' + (t.match(/.{30}(\bPJ\b|ró-labore|onorários).{30}/) || [''])[0] : ''));
@@ -53,8 +53,8 @@ await p.evaluate(() => document.querySelector('#drawer [data-tab="extratos"]').c
 const ex = await p.evaluate(() => document.getElementById('bodyExtratos').innerText.replace(/\s+/g, ' '));
 check(/PDF, foto ou arquivo OFX, de qualquer banco/.test(ex) && !/Itaú|Sicoob/.test(ex), 'extratos: texto geral (qualquer banco)');
 
-// análises e fechamento: sem PJ
-for (const [nome, sel] of [['análises', '[data-tab="analises"]'], ['fechamento', '#abrirFechamentoBtn']]) {
+// análises: sem PJ (o fechamento do mês não existe para o familiar)
+for (const [nome, sel] of [['análises', '[data-tab="analises"]']]) {
   await p.evaluate((q) => { document.querySelector('#drawer ' + q).click(); }, sel); await p.waitForTimeout(1400);
   const t = await p.evaluate(() => { const o = [...document.querySelectorAll('.overlay.show')].map((e) => e.innerText).join(' || '); return (o || document.getElementById('bodyAnalises').innerText).replace(/\s+/g, ' '); });
   if (process.env.DEBUG_FT) console.log('DEBUG-' + nome, t.slice(0, 900));
