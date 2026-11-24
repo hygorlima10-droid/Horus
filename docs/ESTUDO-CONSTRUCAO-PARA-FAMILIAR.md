@@ -55,3 +55,21 @@ Proposta para a tela "Dinheiro e crédito": escolha de **Tipo de crédito: Finan
 4. Comprovantes por pessoa? (sugestão: sim) Leitura por IA? (sugestão: fora)
 5. Ele constrói em Goiás (calculadora)?
 6. Avisos no celular dele (vencimentos)?
+
+## 8. Respostas do proprietário (24/11) e ajustes no plano da Construção
+1. **Consórcio:** o irmão preenche **à mão** (prazo, taxa de administração, fundo de reserva, parcela, forma de contemplação). O consórcio dele **já foi contemplado** e **ainda não houve liberação**; as liberações serão **por medições, como no financiamento**. Logo, no tipo "Consórcio" a tela mantém **medições e liberações** (como hoje) e **retira só os juros de obra, SAC e Price**; "contemplado" já vem como situação inicial.
+2. **Backup:** automático e separado + botão "Exportar" para ele (aprovado).
+3. **O proprietário não vê a obra dele** (aprovado).
+4. **Comprovantes liberados**, cada pessoa só vê os dela. **Leitura de foto/PDF só se não usar IA** (a leitura local de extratos já é sem IA; o cadastro por foto/PDF com IA fica fora).
+5. **Goiás** confirmado: a calculadora (SINAPI-GO e INCC) serve como está.
+6. **Avisos no celular dele:** vencimentos de parcela e de contas da obra (aprovado). Exige instalar o Horus na tela inicial do iPhone e ligar os avisos.
+
+## 9. Complemento: Finanças pessoais para ele (esboço `docs/esboco-financas-irmao.png`)
+Ele é servidor público: salário fixo, gastos fixos e dinheiro guardado; sem PJ, honorários ou jurídico. **Cada módulo (Construção, Finanças) é ligado ou desligado pelo proprietário** na tela de convite: o papel passa de "Obra" para **"Familiar"**, com caixinhas de módulos (Jurídico nunca).
+- **Base já existente:** o cofre financeiro dos advogados (`despesas@id`, `receitasManuais@id`, `saldos@id`, `metas@id`, `extratos@id`, `configDono@id`) serve também para ele, sem criar rota nova; o trabalho é **modo "só PF"** na tela e o que segue.
+- **Tira:** aba PJ, transferência PF↔PJ, margem da PJ, Recebi R$, honorários, repasses, Relatório do Murilo, leitura por foto/PDF com IA e "Pergunte ao app".
+- **Troca:** "Divisão do mês" (hoje parte do caixa da PJ: pró-labore, lucros, margem da PJ) por **"Divisão do salário"** (salário líquido → gastos fixos, parcela do consórcio, aporte na obra, reserva, livre), com percentuais definidos por ele. Não dá para reaproveitar o cálculo atual (`computeDivisao`), é uma parte nova e menor.
+- **Mantém (centro):** PF com **receitas fixas** (salário líquido com dia de pagamento, 13º, adicional de férias, valores informados por ele) e **despesas fixas**; Patrimônio e metas; Orçamento; Fechamento do mês; **Análises** (Último mês, Histórico, Semanas, Simulador, Futuro; "De onde veio" passa a mostrar salário e outras receitas, e somem alvarás e parcelas de clientes).
+- **Extratos:** leitura local de PDF/OFX, conferência, categorias e regras, só contas pessoais. Já há leitura de Itaú, Sicoob, C6 e OFX; se ele usa **Caixa ou Banco do Brasil**, é preciso **um extrato de exemplo** para criar a leitura do PDF (até lá, OFX). O **Atalho do iPhone** (código e caixa por pessoa) também vale para ele.
+- **Obra + Finanças:** com Finanças ligadas, a Construção volta a poder dizer "Conta PF" (some só "PJ"); sem Finanças, é "Recursos próprios". **Verificado no código:** hoje o aporte "Conta PF" da sua obra **não** debita o caixa da PF (a obra fica separada; a ligação é pela conta da obra marcada nos extratos). Decisão: para ele, o aporte e a parcela do consórcio lançam saída nas Finanças, ou ficam separados como na sua obra?
+- **Pontos a decidir:** módulos independentes (sugestão: sim; começa só com a Construção); partes da Divisão do salário (quer IR, previdência complementar?); banco dele; aporte/parcela em um lançamento ou separados.
