@@ -144,4 +144,33 @@ console.log('\n— Boleto impresso (PDF do boleto) e classificação do document
   check(LeitorGeral.classificar(ext).tipo === 'extrato', 'classifica: extrato (várias linhas com data e valor)');
   check(LeitorGeral.classificar(['Olá, tudo bem?']).tipo === null, 'texto qualquer: não classifica (null)');
 }
+
+console.log('\n— Contracheque de servidor (modelo padrão do Estado de Goiás; nomes e valores do exemplo enviado)');
+const CC = ['Nome Órgão   Município', 'POLÍCIA MILITAR   PLANALTINA', 'Unidade Administrativa', '21º BATALHAO DE POLICIA MILITAR DO ESTADO DE GOIAS', 'Nome Servidor   CPF', 'JOSE MARIA DURAES DA SILVA   635.424.391-34', 'PIS/PASEP   Cart. Identidade   Data Início Exercício   Referência', '125.12756.30-2   28673   01/04/1996   Abril/2024', 'Cargo   Diploma Legal', 'Primeiro Sargento - Lei 15.668   Lei 15668',
+  'Atividade Função   Regime Jurídico   Sit. Func.   Tipo Cargo   Vínculo', 'Militar   Ativo   Cargo Efetivo   33693', 'PROVENTOS/DESCONTOS   QTDE   VALOR',
+  '200027   SUBSIDIO EFETIVO   200   11.167,31', '200041   ABONO FARDAMENTO   0   50,04', '200044   LOCALIDADE - AC3   55   552,00', '200042   FARDAMENTO   0   50,04', '200045   FAS - MILITAR - ATIVO   0   59,29', '800004   IRRF   0   1.852,55', '800338   CONTRIBUICAO PENSAO E INATIVIDADE   0   1.172,57', '900044   IPASGO BASICO - 6,81%   0   680,64',
+  '900128   BANCO INTERMEDIUM - EMPRESTIMO 01   25 de 96   294,00', '900235   BANCO SAFRA - EMPRESTIMO 01   31 de 96   414,70', '900236   BRB - EMPRESTIMO 01   13 de 96   790,05', '900378   UNIMIL - CONTRIBUICAO   1   82,00', '900407   BRB - EMPRESTIMO 02   13 de 96   342,40', '900414   BRB - EMPRESTIMO 03   13 de 96   263,11', '900415   BRB - EMPRESTIMO 04   13 de 96   1.092,60', '900424   BANCO SAFRA - EMPRESTIMO 02   15 de 96   492,90', '900507   BANCO SANTANDER BRASIL - EMPRESTIMO 02   10 de 96   107,74', '900508   BANCO SANTANDER BRASIL - EMPRESTIMO 03   6 de 96   111,00', '900685   VEMCARD - CARTAO BENEFICIO - SAQUE - LEI 22.449   1   1.116,73',
+  'Valor FGTS   Rendimentos   Descontos   Líquido', '0,00   11.769,35   8.922,32   2.847,03', 'Base IRRF   Dependentes IRRF   Dependentes SF', '9.994,74   0   0', 'Valor Limite Consig   Valor Limite Cartão', 'Facult   Benefício', '3.908,56   1.116,73'];
+{
+  check(LeitorGeral.classificar(CC).tipo === 'contracheque', 'classifica o documento como contracheque (e não como extrato nem comprovante)');
+  const c = LeitorGeral.lerContracheque(CC);
+  check(c && c.referencia === '2024-04' && c.servidor === 'JOSE MARIA DURAES DA SILVA' && /Primeiro Sargento/.test(c.cargo) && c.orgao === 'POLÍCIA MILITAR', 'referência abril/2024, servidor, cargo e órgão lidos (CPF, PIS e identidade não são guardados)');
+  check(c.totais.rendimentos === 1176935 && c.totais.descontos === 892232 && c.totais.liquido === 284703, 'totais: rendimentos 11.769,35, descontos 8.922,32 e líquido 2.847,03');
+  const prov = c.itens.filter((x) => x.tipo === 'provento'), desc = c.itens.filter((x) => x.tipo === 'desconto');
+  check(prov.length === 3 && prov.map((x) => x.codigo).join() === '200027,200041,200044', 'separou os 3 proventos (subsídio, abono fardamento, localidade) mesmo sem coluna de sinal');
+  check(desc.length === 16 && desc.some((x) => x.codigo === '200042') && desc.some((x) => x.codigo === '200045'), 'e os 16 descontos, inclusive FARDAMENTO e FAS, que têm código começando com 2 mas são desconto (a conta dos totais decide)');
+  check(c.selo === 'verde' && /fecham/.test(c.provas.join(' ')), 'selo VERDE: proventos, descontos e líquido fecham com a soma das linhas');
+  const cons = c.itens.filter((x) => x.cat === 'consignado');
+  check(cons.length === 9 && cons.every((x) => x.parcela) && c.itens.find((x) => x.codigo === '900685').cat === 'cartao' && c.itens.find((x) => x.codigo === '900378').cat === 'outro', 'consignados: os 9 empréstimos (todos com "parcela de total"); cartão benefício e contribuição da associação ficam de fora');
+  const bi = c.itens.find((x) => x.codigo === '900128'); check(bi.parcela.n === 25 && bi.parcela.m === 96 && bi.valor === 29400, 'Intermedium: parcela 25 de 96, R$ 294,00 (restam 71)');
+  check(c.margem.consignavel === 390856 && c.margem.cartao === 111673, 'margem consignável R$ 3.908,56 e limite do cartão benefício R$ 1.116,73');
+  check(c.itens.find((x) => x.codigo === '800004').cat === 'imposto' && c.itens.find((x) => x.codigo === '800338').cat === 'previdencia' && c.itens.find((x) => x.codigo === '900044').cat === 'saude' && c.itens.find((x) => x.codigo === '200027').cat === 'base', 'categorias: imposto de renda, previdência, plano de saúde e subsídio base');
+  // extras (SERV EXTRAORDINARIO, AC4), 13º, férias e abono entram como proventos e são reconhecidos pelo nome
+  const com = ['Referência', 'Dezembro/2026', 'PROVENTOS/DESCONTOS   QTDE   VALOR', '200027   SUBSIDIO EFETIVO   200   8.000,00', '200310   SERV EXTRAORDINARIO   20   900,00', '200311   AC4 - ATIVIDADE COMPLEMENTAR   10   450,00', '200500   13 SALARIO   1   8.000,00', '200510   1/3 CONSTITUCIONAL FERIAS   1   2.666,67', '200520   ABONO PERMANENCIA   1   300,00', '800004   IRRF   0   2.100,00', '900044   IPASGO BASICO   0   700,00', 'Valor FGTS   Rendimentos   Descontos   Líquido', '0,00   20.316,67   2.800,00   17.516,67'];
+  const e = LeitorGeral.lerContracheque(com);
+  check(e && e.selo === 'verde' && e.referencia === '2026-12' && e.itens.filter((x) => x.cat === 'extra').length === 2 && e.itens.some((x) => x.cat === 'decimo') && e.itens.some((x) => x.cat === 'ferias') && e.itens.some((x) => x.cat === 'abono'), 'SERV EXTRAORDINARIO e AC4 como extras; 13º salário, 1/3 de férias e abono reconhecidos pelo nome');
+  const ruim = LeitorGeral.lerContracheque(CC.map((x) => x.replace('8.922,32', '8.922,00')));
+  check(ruim.selo === 'amarelo' && ruim.provas.some((p) => /Descontos/.test(p)), 'total que não fecha (descontos 8.922,00): selo AMARELO apontando a diferença');
+  check(LeitorGeral.lerContracheque(['Olá', 'nada aqui']) === null, 'texto sem tabela de proventos e descontos: não é contracheque');
+}
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

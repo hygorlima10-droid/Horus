@@ -421,6 +421,7 @@ var LeitorGeral = (function(){
     var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), txt = L.join('\n'), N = norm(txt);
     if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
     var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
+    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
     var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
     var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
     if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
@@ -444,6 +445,78 @@ var LeitorGeral = (function(){
     return out;
   }
 
-  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
+
+  /* ============================================================
+     F. CONTRACHEQUE DE SERVIDOR (modelo padrão do Estado de Goiás e parecidos) — sem modelo por órgão
+     A lista "PROVENTOS/DESCONTOS" mistura tudo numa tabela única: código (6 dígitos), descrição, QTDE (horas, ou "parcela de total" nos empréstimos) e valor,
+     SEM coluna de sinal. Quem é provento e quem é desconto sai da CONTA: os totais do rodapé (Rendimentos, Descontos, Líquido) têm de fechar com a
+     soma das linhas (primeiro tenta as primeiras linhas, depois qualquer combinação). Se fechar: selo verde. Entrada: linhas de texto (PDF ou foto).
+     ============================================================ */
+  var CC_ITEM = /^(\d{6})\s+(.+?)\s+(\d+(?:\s+de\s+\d+)?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  var CC_MESES = 'JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO';
+  function ccCentavos(t){ var v = lerValor(String(t).replace(/\s+/g, '')); return v ? v.c : null; }
+  function ccCategoria(desc, tipo, parcela){
+    var n = norm(desc);
+    if (tipo === 'provento'){
+      if (/SERV(ICO)?\.? ?EXTRA|EXTRAORDINARI|\bAC ?4\b|HORA EXTRA|PLANTAO EXTRA/.test(n)) return 'extra';
+      if (/13 ?(O|º)? ?SAL|DECIMO|NATALINA|13\.? SALARIO/.test(n)) return 'decimo';
+      if (/FERIAS|1\/3 CONST|TERCO CONST/.test(n)) return 'ferias';
+      if (/ABONO(?! FARDAMENTO)/.test(n)) return 'abono';
+      if (/SUBSIDIO|VENCIMENTO|SOLDO|SALARIO BASE|REMUNERACAO/.test(n)) return 'base';
+      return 'adicional';
+    }
+    if (parcela || /EMPRESTIMO|CONSIGNAD|FINANCIAMENTO/.test(n)) return 'consignado';
+    if (/IRRF|IMPOSTO DE RENDA/.test(n)) return 'imposto';
+    if (/CONTRIBUICAO (PENSAO|PREVIDENCI)|PREVIDENCI|PENSAO MILITAR|IPREV|INATIVIDADE/.test(n)) return 'previdencia';
+    if (/IPASGO|PLANO DE SAUDE|SAUDE|ASSISTENCIA|FAS /.test(n)) return 'saude';
+    if (/CARTAO BENEFICIO|VEMCARD/.test(n)) return 'cartao';
+    return 'outro';
+  }
+  /* separa proventos de descontos pela conta dos totais; devolve um vetor de booleanos (true = provento) ou null */
+  function ccSeparar(valores, rend){
+    var s = 0, n = valores.length, i;
+    for (i = 0; i < n; i++){ s += valores[i]; if (s === rend){ return valores.map(function(_, k){ return k <= i; }); } if (s > rend) break; }
+    if (n > 40 || rend > 5000000) return null;   /* subconjunto com soma igual ao total (poucas linhas) */
+    var alc = new Array(rend + 1).fill(-1); alc[0] = n;   /* alc[soma] = índice do item que a alcançou */
+    for (i = 0; i < n; i++){ for (var t = rend; t >= valores[i]; t--) if (alc[t] === -1 && alc[t - valores[i]] !== -1 && alc[t - valores[i]] > i) alc[t] = i; }
+    if (alc[rend] === -1) return null;
+    var res = valores.map(function(){ return false; }), t2 = rend;
+    while (t2 > 0){ var k = alc[t2]; res[k] = true; t2 -= valores[k]; }
+    return res;
+  }
+  function lerContracheque(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).map(function(x){ return x.replace(/\s+$/, ''); }).filter(function(x){ return x.trim(); });
+    var N = norm(L.join('\n')), itens = [], i;
+    L.forEach(function(l){ var m = CC_ITEM.exec(l.trim()); if (m){ var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); itens.push({ codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : +m[3], parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }); } });
+    if (itens.length < 3) return null;
+    var T = { rendimentos: null, descontos: null, liquido: null, fgts: null, baseIrrf: null }, margem = { consignavel: null, cartao: null };
+    for (i = 0; i < L.length; i++){
+      var ln = norm(L[i]);
+      if (/RENDIMENTOS/.test(ln) && /DESCONTOS/.test(ln) && /LIQUIDO/.test(ln)){
+        var rotulos = L[i].split(/\s{2,}/).map(norm), vals = (L[i + 1] || '').split(/\s{2,}/).map(function(x){ return ccCentavos(x); });
+        rotulos.forEach(function(r, k){ if (vals[k] == null) return; if (/FGTS/.test(r)) T.fgts = vals[k]; else if (/RENDIMENTOS/.test(r)) T.rendimentos = vals[k]; else if (/DESCONTOS/.test(r)) T.descontos = vals[k]; else if (/LIQUIDO/.test(r)) T.liquido = vals[k]; });
+      }
+      if (/BASE IRRF/.test(ln)){ var bv = (L[i + 1] || '').split(/\s{2,}/)[0]; T.baseIrrf = ccCentavos(bv); }
+      if (/LIMITE CONSIG/.test(ln)){ for (var k2 = i + 1; k2 < Math.min(L.length, i + 4); k2++){ var vs = L[k2].split(/\s{2,}/).map(function(x){ return ccCentavos(x); }).filter(function(x){ return x != null; }); if (vs.length){ margem.consignavel = vs[0]; margem.cartao = vs.length > 1 ? vs[1] : null; break; } } }
+    }
+    if (T.rendimentos == null){ var m1 = /RENDIMENTOS\s+([\d.,]+)/.exec(N), m2 = /DESCONTOS\s+([\d.,]+)/.exec(N), m3 = /LIQUIDO\s+([\d.,]+)/.exec(N); if (m1) T.rendimentos = ccCentavos(m1[1]); if (m2) T.descontos = ccCentavos(m2[1]); if (m3) T.liquido = ccCentavos(m3[1]); }
+    var provas = [], selo = 'amarelo', marca = null;
+    if (T.rendimentos != null) marca = ccSeparar(itens.map(function(x){ return x.valor; }), T.rendimentos);
+    if (!marca){ marca = itens.map(function(x){ return /^2/.test(x.codigo) && !/FARDAMENTO$|^FAS/.test(norm(x.desc)); }); provas.push('não consegui separar proventos e descontos pelos totais: confira'); }
+    itens.forEach(function(x, k){ x.tipo = marca[k] ? 'provento' : 'desconto'; x.cat = ccCategoria(x.desc, x.tipo, x.parcela); });
+    var sp = itens.filter(function(x){ return x.tipo === 'provento'; }).reduce(function(t, x){ return t + x.valor; }, 0), sd = itens.filter(function(x){ return x.tipo === 'desconto'; }).reduce(function(t, x){ return t + x.valor; }, 0);
+    if (T.rendimentos == null) T.rendimentos = sp; if (T.descontos == null) T.descontos = sd; if (T.liquido == null) T.liquido = T.rendimentos - T.descontos;
+    var fechaP = sp === T.rendimentos, fechaD = sd === T.descontos, fechaL = T.rendimentos - T.descontos === T.liquido;
+    if (fechaP && fechaD && fechaL){ selo = 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas'); }
+    else { if (!fechaP) provas.push('a soma dos proventos (' + (sp / 100).toFixed(2).replace('.', ',') + ') difere do total "Rendimentos"'); if (!fechaD) provas.push('a soma dos descontos (' + (sd / 100).toFixed(2).replace('.', ',') + ') difere do total "Descontos"'); if (!fechaL) provas.push('rendimentos − descontos não dá o líquido'); }
+    var out = { referencia: null, itens: itens, totais: T, margem: margem, servidor: '', cargo: '', orgao: '', selo: selo, provas: provas };
+    var mr = new RegExp('REFERENCIA[\\s\\S]{0,160}?(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N) || new RegExp('(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N);
+    if (mr){ var mes = MESL[mr[1]]; if (mes) out.referencia = mr[2] + '-' + pad(mes, 2); }
+    for (i = 0; i < L.length; i++){ var nl = norm(L[i]); if (/^NOME SERVIDOR/.test(nl)) out.servidor = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); else if (/^CARGO\b/.test(nl) && !out.cargo) out.cargo = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); else if (/^NOME ORGAO/.test(nl)) out.orgao = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); }
+    if (!out.referencia) provas.push('não achei o mês de referência: informe ao confirmar');
+    return out;
+  }
+
+  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LeitorGeral;
