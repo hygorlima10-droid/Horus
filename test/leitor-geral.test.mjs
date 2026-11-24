@@ -103,4 +103,45 @@ console.log('\n— Extrato com colunas Crédito e Débito (sem sinal), sem saldo
   check(r && r.lanc.length === 4 && r.lanc[0].valor === 300000 && r.lanc[1].valor === -21050 && r.lanc[3].valor === 10000 && r.lanc[0].data === '2026-03-02', 'colunas Crédito/Débito pelo cabeçalho: entradas positivas e saídas negativas; o ano vem do período');
   check(r.saldoAtual === 300000 && r.selo === 'verde', 'saldo anterior 500 + entradas 3.100 − saídas 600 = saldo final 3.000: selo VERDE (' + (r && r.provas.join('; ')) + ')');
 }
+
+console.log('\n— Comprovantes de Pix e de pagamento (rótulos e tipo do dado, estilos diferentes)');
+{
+  // estilo 1: rótulo numa linha e valor na de baixo (app de banco digital)
+  const nu = ['Comprovante de transferência', '10 NOV 2026 - 09:42:10', 'Valor', 'R$ 1.350,00', 'Tipo de transferência', 'Pix', 'Destino', 'Nome', 'Caixa Consórcios Ltda', 'CPF/CNPJ', '00.360.305/****-**', 'Instituição', 'CAIXA ECONÔMICA FEDERAL', 'Origem', 'Nome', 'Hygor L A', 'CPF/CNPJ', '***.456.789-**', 'Instituição', 'NU PAGAMENTOS - IP', 'ID da transação', 'E18236120202611101242s0a1b2c3d4e'];
+  const a = LeitorGeral.lerComprovante(nu);
+  check(a.valor === 135000 && a.data === '2026-11-10' && a.hora === '09:42' && a.tipo === 'pix', 'estilo 1 (rótulo e valor em linhas separadas): valor R$ 1.350,00, 10/11/2026 09:42, Pix');
+  check(a.destino.nome === 'Caixa Consórcios Ltda' && a.destino.doc === '00.360.305/****-**' && a.destino.inst === 'CAIXA ECONÔMICA FEDERAL' && a.origem.nome === 'Hygor L A' && a.origem.doc === '***.456.789-**', 'quem recebeu e quem pagou ficam separados pela seção (Destino / Origem)');
+  check(a.e2e && a.e2e.ispb === '18236120' && a.e2e.data === '2026-11-10' && a.selo === 'verde', 'ID E2E confere com a data (10/11/2026): selo VERDE');
+  // estilo 2: "Rótulo: valor" na mesma linha, em PDF de internet banking
+  const cx = ['COMPROVANTE DE PIX ENVIADO', 'Data: 10/11/2026 09:42', 'Valor: R$ 89,90', 'Dados do recebedor', 'Nome: PADARIA PAO QUENTE LTDA', 'CPF/CNPJ: 12.345.678/0001-95', 'Instituição: BANCO DO BRASIL', 'Chave: padaria@exemplo.com.br', 'Dados do pagador', 'Nome: LEONARDO ALVES ALMEIDA', 'ID da transação: E00360305202611101242abcdef12345'];
+  const b = LeitorGeral.lerComprovante(cx);
+  check(b.valor === 8990 && b.sentido === 'saida' && b.destino.nome === 'PADARIA PAO QUENTE LTDA' && b.destino.chave === 'padaria@exemplo.com.br' && b.origem.nome === 'LEONARDO ALVES ALMEIDA' && b.nome === 'PADARIA PAO QUENTE LTDA', 'estilo 2 ("Rótulo: valor"): saída de R$ 89,90 para a padaria, com a chave Pix');
+  // estilo 3: duas colunas (célula do rótulo e da valor separadas por espaços), pagamento de boleto
+  const it = ['Comprovante de pagamento', 'Pagamento de boleto', 'Beneficiário   EQUATORIAL GOIAS DISTRIBUIDORA', 'CNPJ do beneficiário   01.543.032/0001-04', 'Vencimento   12/12/2026', 'Valor   R$ 412,87', 'Data do pagamento   10/12/2026', 'Linha digitável   00190.50095 40144.816069 06809.350314 3 37370000000100', 'Autenticação   9A8B7C6D5E4F3G2H1I0J'];
+  const c = LeitorGeral.lerComprovante(it);
+  check(c.tipo === 'boleto' && c.valor === 41287 && c.data === '2026-12-10' && c.venc === '2026-12-12' && c.destino.nome === 'EQUATORIAL GOIAS DISTRIBUIDORA' && c.auth === '9A8B7C6D5E4F3G2H1I0J', 'estilo 3 (duas colunas): pagamento de boleto, vencimento 12/12, pago em 10/12, autenticação lida');
+  check(c.boleto && c.boleto.ok && c.selo === 'verde', 'a linha digitável do boleto pago confere');
+  // sem ID nem autenticação: amarelo; sem valor: vermelho
+  check(LeitorGeral.lerComprovante(['Pix enviado', 'Valor R$ 50,00', 'Data 03/12/2026', 'Para', 'Fulano']).selo === 'amarelo', 'sem ID de transação nem autenticação: selo AMARELO (confira)');
+  check(LeitorGeral.lerComprovante(['Qualquer coisa', 'sem número']).selo === 'vermelho', 'sem valor nem data: selo VERMELHO');
+  // a data do ID não bate com a data lida
+  const d = LeitorGeral.lerComprovante(['Pix enviado', 'Valor R$ 50,00', 'Data 03/12/2026', 'Para', 'Fulano de Tal', 'ID da transação', 'E18236120202601101242s0a1b2c3d4e']);
+  check(d.divergeData && d.selo === 'amarelo', 'a data dentro do ID (10/01/2026) difere da data lida (03/12/2026): selo AMARELO');
+  check(LeitorGeral.lerComprovante(['Você recebeu um Pix', 'R$ 200,00', '15/11/2026', 'De', 'Maria Souza', 'ID E18236120202611151030s0a1b2c3d4e']).sentido === 'entrada', 'Pix recebido: sentido de entrada, valor achado mesmo sem rótulo');
+}
+console.log('\n— Boleto impresso (PDF do boleto) e classificação do documento');
+{
+  const bol = ['Banco do Brasil', '00190.50095 40144.816069 06809.350314 3 37370000000100', 'Beneficiário', 'ESCRITORIO EXEMPLO LTDA', 'CPF/CNPJ do beneficiário', '11.222.333/0001-81', 'Pagador', 'FULANO DE TAL', 'Vencimento', '31/12/2007', 'Valor do documento', 'R$ 1,00', 'Nosso número', '12345678'];
+  const b = LeitorGeral.lerBoletoDoc(bol, '2008-01-01');
+  check(b && b.banco === '001' && b.valor === 100 && b.vencimento === '2007-12-31' && b.beneficiario === 'ESCRITORIO EXEMPLO LTDA' && b.pagador === 'FULANO DE TAL' && b.selo === 'verde', 'boleto: banco 001, R$ 1,00, vencimento, beneficiário e pagador pelos rótulos; a linha confere');
+  const b2 = LeitorGeral.lerBoletoDoc(bol.map((x) => x === 'R$ 1,00' ? 'R$ 25,00' : x), '2008-01-01');
+  check(b2.selo === 'amarelo' && b2.valorDocumento === 2500 && /multa|juros|desconto/.test(b2.provas.join(' ')), 'valor escrito diferente da linha digitável: selo AMARELO avisando (multa, juros ou desconto)');
+  check(LeitorGeral.classificar(bol).tipo === 'boleto', 'classifica: boleto');
+  check(LeitorGeral.classificar(['Comprovante de transferência', 'Valor', 'R$ 10,00', 'Destino', 'Fulano', 'ID da transação', 'E18236120202611101242s0a1b2c3d4e']).tipo === 'comprovante', 'classifica: comprovante (ID de Pix)');
+  check(LeitorGeral.classificar(['Pague com Pix', '00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D']).tipo === 'pix_copia_cola', 'classifica: Pix copia e cola');
+  check(LeitorGeral.classificar(['OFXHEADER:100', '<OFX><STMTTRN>']).tipo === 'ofx', 'classifica: OFX');
+  const ext = ['Extrato', ...['01/10/2026 PIX 10,00', '02/10/2026 PIX 20,00', '03/10/2026 PIX 30,00', '04/10/2026 PIX 40,00', '05/10/2026 PIX 50,00']];
+  check(LeitorGeral.classificar(ext).tipo === 'extrato', 'classifica: extrato (várias linhas com data e valor)');
+  check(LeitorGeral.classificar(['Olá, tudo bem?']).tipo === null, 'texto qualquer: não classifica (null)');
+}
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

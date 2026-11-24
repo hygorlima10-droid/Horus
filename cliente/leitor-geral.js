@@ -320,6 +320,129 @@ var LeitorGeral = (function(){
     return r;
   }
 
-  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
+
+  /* ============================================================
+     C. COMPROVANTE (Pix, transferência, pagamento) E BOLETO IMPRESSO — por rótulos e tipo do dado, sem modelo por banco
+     Todo comprovante mostra os mesmos campos (valor, data e hora, quem pagou, quem recebeu, CPF/CNPJ, banco, ID da transação, autenticação),
+     só muda o desenho. Cada rótulo tem sinônimos ("Favorecido", "Recebedor", "Para", "Destino"…); o valor fica na mesma linha, ao lado, ou na linha de baixo.
+     Entrada: linhas de texto (PDF: células da linha separadas por 3 espaços; foto: linhas do OCR).
+     ============================================================ */
+  var ROT = [
+    ['valor', /^(valor( pago| total| cobrado| nominal| do documento| da (transferencia|transacao|operacao|parcela|fatura|conta)| do pagamento| \(r\$\))?|total( pago| a pagar)?|montante)$/],
+    ['venc', /^(vencimento|data (de )?vencimento|vence em)$/],
+    ['data', /^(data( e hora| \/ hora)?( d[aeo] ?(transferencia|transacao|operacao|pagamento|efetivacao|debito|credito|agendamento)?)?|efetivad[oa] em|realizad[oa] em|pago em|data\/hora|horario|quando)$/],
+    ['nome', /^(nome( completo| do (favorecido|beneficiario|recebedor|pagador))?|razao social|favorecido|recebedor|titular)$/],
+    ['doc', /^(cpf( ?\/ ?cnpj)?|cnpj|cpf\/cnpj|documento|cpf\/cnpj do (favorecido|beneficiario|pagador))$/],
+    ['inst', /^(instituicao( financeira)?|banco)$/], ['ag', /^(agencia|ag)$/], ['conta', /^(conta( corrente| poupanca| de pagamento)?|numero da conta|tipo de conta)$/], ['chave', /^(chave( pix)?|tipo de chave|chave do favorecido)$/],
+    ['id', /^(id( da (transacao|operacao|transferencia))?|e2e|end ?to ?end ?id|endtoendid|(numero|n[o°]?) (da|do) (transacao|comprovante|protocolo|operacao)|protocolo|codigo (da|de) (transacao|operacao))$/],
+    ['auth', /^(autenticacao( bancaria)?|codigo de autenticacao|numero de autenticacao|autent\.?)$/],
+    ['desc', /^(descricao|mensagem|observacao|finalidade)$/], ['tipoOp', /^(tipo( de (transferencia|operacao|pagamento|pix))?|forma de pagamento|modalidade)$/], ['nosso', /^nosso numero$/]
+  ];
+  var SEC_ORIGEM = /^(origem|quem pagou|de|dados (de|do|da) (quem pagou|pagador|origem|conta de origem|remetente)|pagador|sacado|conta de origem|remetente|debitado de|debitado da conta|quem enviou)$/;
+  var SEC_DESTINO = /^(destino|quem recebeu|para|dados (de|do|da) (quem recebeu|recebedor|favorecido|destino|beneficiario|conta de destino)|favorecido|beneficiario|cedente|recebedor|conta de destino|creditado em|quem vai receber)$/;
+  function limpaRot(t){ return norm(t).toLowerCase().replace(/[:\-–.]+$/, '').trim(); }
+  function rotuloDe(t){ var n = limpaRot(t); for (var i = 0; i < ROT.length; i++) if (ROT[i][1].test(n)) return ROT[i][0]; return null; }
+  function secaoDe(t){ var n = limpaRot(t); return SEC_ORIGEM.test(n) ? 'origem' : (SEC_DESTINO.test(n) ? 'destino' : null); }
+  function celulasTxt(s){ return String(s == null ? '' : s).split(/\s{2,}|\t/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function moedaDe(txt){ var m = /(?:R\$\s*)?([+-]?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/.exec(String(txt || '')); if (!m) return null; var v = lerValor(m[1].replace(/\s+/g, '')); return v ? v.c : null; }
+  /* "10/11/2026 09:42", "10 NOV 2026 - 09:42:10", "10 de novembro de 2026 às 09:42", "2026-11-10 09:42:10" -> { data: 'AAAA-MM-DD', hora: 'HH:MM' } */
+  function dataHoraDe(txt){
+    var t = String(txt || ''), m, data = null, hora = null;
+    if ((m = /(\d{2})[\/.-](\d{2})[\/.-](\d{4})/.exec(t))) data = dataIso(+m[3], +m[2], +m[1]);
+    else if ((m = /(\d{4})-(\d{2})-(\d{2})/.exec(t))) data = dataIso(+m[1], +m[2], +m[3]);
+    else if ((m = /(\d{1,2})\s+(?:DE\s+)?([A-Za-zçÇãÃ]{3,9})\.?\s+(?:DE\s+)?(\d{4})/i.exec(t))) { var nm = norm(m[2]), mes = MESL[nm] || (nm.length === 3 ? MES3[nm] : MES3[nm.slice(0, 3)]); if (mes) data = dataIso(+m[3], mes, +m[1]); }
+    if ((m = /(\d{2}):(\d{2})(?::\d{2})?/.exec(t))) hora = m[1] + ':' + m[2];
+    return data ? { data: data, hora: hora } : null;
+  }
+  function limpaDoc(t){ var m = /(\*{3}\.\d{3}\.\d{3}-\*{2}|\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\*{4}-\*{2}|[\d*]{3}\.[\d*]{3}\.[\d*]{3}-[\d*]{2}|\d{11}|\d{14})/.exec(String(t || '')); return m ? m[1] : ''; }
+  function lerComprovante(linhas, hoje){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).filter(function(x){ return x.trim(); });
+    var txt = L.join('\n'), N = norm(txt), out = { origem: {}, destino: {}, valor: null, data: null, hora: null, id: '', e2e: null, auth: '', descricao: '', tipoOp: '', tipo: '', sentido: '', venc: null, boletos: [], provas: [], selo: 'vermelho' };
+    var sec = null, i = 0;
+    var atribui = function(k, val, s){
+      val = String(val || '').trim(); if (!val) return;
+      var alvo = out[s || 'destino'];
+      if (k === 'valor') { var c = moedaDe(val); if (c != null && out.valor == null) out.valor = c; }
+      else if (k === 'venc') { var dv = dataHoraDe(val); if (dv) out.venc = dv.data; }
+      else if (k === 'data') { var dh = dataHoraDe(val); if (dh && !out.data) { out.data = dh.data; out.hora = dh.hora; } else if (dh && !out.hora && dh.hora) out.hora = dh.hora; }
+      else if (k === 'nome') { if (!alvo.nome) alvo.nome = val.replace(/\s+/g, ' '); }
+      else if (k === 'doc') { var d = limpaDoc(val); if (d && !alvo.doc) alvo.doc = d; }
+      else if (k === 'inst') { if (!alvo.inst) alvo.inst = val; }
+      else if (k === 'ag') { if (!alvo.ag) alvo.ag = val; }
+      else if (k === 'conta') { if (!alvo.conta && /\d/.test(val)) alvo.conta = val; }
+      else if (k === 'chave') { if (!alvo.chave && !/^(cpf|cnpj|e-?mail|telefone|celular|aleatoria|evp)$/i.test(val)) alvo.chave = val; }
+      else if (k === 'id') { var e = lerE2E(val.replace(/\s+/g, '')); if (e && !out.e2e) out.e2e = e; else if (!out.id) out.id = val; }
+      else if (k === 'auth') { if (!out.auth) out.auth = val.replace(/\s+/g, ''); }
+      else if (k === 'desc') { if (!out.descricao) out.descricao = val; }
+      else if (k === 'tipoOp') { if (!out.tipoOp) out.tipoOp = val; }
+    };
+    while (i < L.length) {
+      var cs = celulasTxt(L[i]), first = cs[0] || '', resto = cs.slice(1).join(' '), m = /^([^:]{2,45}):\s*(.*)$/.exec(first);
+      if (m && (rotuloDe(m[1]) || secaoDe(m[1]))) { first = m[1]; resto = (m[2] + ' ' + resto).trim(); }
+      var sx = secaoDe(first), k = rotuloDe(first);
+      if (sx && !resto) {
+        sec = sx;
+        if (/^(beneficiario|pagador|favorecido|recebedor|cedente|sacado|remetente)$/.test(limpaRot(first)) && i + 1 < L.length) { var pn = celulasTxt(L[i + 1]); if (pn.length && !rotuloDe(pn[0]) && !secaoDe(pn[0]) && !/^([^:]{2,45}):/.test(pn[0]) && !/^\d/.test(pn[0])) { atribui('nome', pn.join(' '), sec); i++; } }   /* "Beneficiário" numa linha e o nome na de baixo */
+        i++; continue;
+      }
+      if (sx && resto) { sec = sx; atribui('nome', resto, sec); i++; continue; }
+      if (k) {
+        var val = resto;
+        if (!val && i + 1 < L.length) { var prox = celulasTxt(L[i + 1]); if (prox.length && !rotuloDe(prox[0]) && !secaoDe(prox[0]) && !/^([^:]{2,45}):/.test(prox[0])) { val = prox.join(' '); i++; } }
+        atribui(k, val, sec);
+      }
+      i++;
+    }
+    /* título e sentido */
+    var tit = /COMPROVANTE (DE|DO|DA) ([A-Z ]{3,30})|PIX (ENVIADO|RECEBIDO|AGENDADO)|(TRANSFERENCIA|PAGAMENTO|DEPOSITO|TED|DOC|RECARGA|SAQUE) (REALIZAD[OA]|EFETUAD[OA]|ENVIAD[OA]|RECEBID[OA])/.exec(N);
+    if (/PIX/.test(N) || out.e2e) out.tipo = 'pix'; else if (/\bTED\b/.test(N)) out.tipo = 'ted'; else if (/\bDOC\b/.test(N)) out.tipo = 'doc'; else if (/BOLETO|LINHA DIGITAVEL|CODIGO DE BARRAS/.test(N)) out.tipo = 'boleto'; else if (/TRANSFERENCIA/.test(N)) out.tipo = 'transferencia'; else if (tit) out.tipo = 'pagamento';
+    if (/PIX RECEBID|VOCE RECEBEU|TRANSFERENCIA RECEBID|DEPOSITO|CREDITO EM CONTA/.test(N)) out.sentido = 'entrada'; else if (/PIX ENVIAD|VOCE (PAGOU|ENVIOU|TRANSFERIU)|TRANSFERENCIA (ENVIAD|REALIZAD|EFETUAD)|PAGAMENTO (REALIZAD|EFETUAD|DE (BOLETO|CONTA|FATURA|TITULO|CONVENIO))|COMPRA|PIX AGENDAD/.test(N)) out.sentido = 'saida';
+    /* o que o rótulo não pegou: valor, data, ID e boleto em qualquer lugar do texto */
+    if (out.valor == null) { var rs = /R\$\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/.exec(txt); if (rs) out.valor = moedaDe(rs[1]); }
+    if (!out.data) { var dh2 = dataHoraDe(txt); if (dh2) { out.data = dh2.data; out.hora = out.hora || dh2.hora; } }
+    if (!out.e2e) out.e2e = acharE2E(txt);
+    out.boletos = acharBoletos(txt, hoje);
+    if (out.boletos.length) { var b0 = out.boletos[0]; if (!out.tipo || out.tipo === 'pagamento') out.tipo = 'boleto'; out.boleto = b0; if (!out.sentido) out.sentido = 'saida'; }
+    /* prova */
+    var temNome = !!(out.destino.nome || out.origem.nome), temId = !!(out.e2e && out.e2e.dataOk) || (!!out.auth && out.auth.length >= 12) || (out.boleto && out.boleto.ok);
+    if (out.e2e && out.e2e.dataOk) out.provas.push('ID da transação no formato do Pix (' + out.e2e.data + ')');
+    if (out.boleto && out.boleto.ok) out.provas.push('linha digitável do boleto confere');
+    if (out.e2e && out.e2e.dataOk && out.data && out.e2e.data !== out.data) out.provas.push('a data do ID (' + out.e2e.data + ') difere da data lida (' + out.data + '): confira');
+    out.divergeData = !!(out.e2e && out.e2e.dataOk && out.data && Math.abs(difDias(out.e2e.data, out.data)) > 1);
+    if (out.valor != null && out.valor > 0 && out.data) out.selo = (temNome && temId && !out.divergeData) ? 'verde' : 'amarelo'; else out.selo = 'vermelho';
+    if (out.selo !== 'verde') { if (!out.valor) out.provas.push('não achei o valor'); if (!out.data) out.provas.push('não achei a data'); if (!temNome) out.provas.push('não achei o nome de quem pagou ou recebeu'); if (!temId) out.provas.push('sem ID de transação nem autenticação para conferir'); }
+    out.nome = out.sentido === 'entrada' ? (out.origem.nome || out.destino.nome || '') : (out.destino.nome || out.origem.nome || '');
+    return out;
+  }
+
+  /* ---------- que documento é? (pelo conteúdo, não pelo banco) ---------- */
+  function classificar(linhas, rows){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), txt = L.join('\n'), N = norm(txt);
+    if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
+    var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
+    var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
+    var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
+    if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
+    var datasValores = 0; (rows || []).forEach(function(r){ var cs = celulasDaLinha(r); if (cs.some(function(c){ return c.tipo === 'data'; }) && cs.some(function(c){ return c.tipo === 'valor'; })) datasValores++; });
+    if (!rows) L.forEach(function(l){ if (/(\d{2}\/\d{2}(\/\d{2,4})?)\s.*(\d{1,3}(\.\d{3})*,\d{2})/.test(l)) datasValores++; });
+    if (datasValores >= 4 && !(temComp && datasValores < 6)) return { tipo: 'extrato', pistas: [datasValores + ' linhas com data e valor'] };
+    if (e2e || (temComp && rot >= 2) || rot >= 3) return { tipo: 'comprovante', pistas: [e2e ? 'ID de transação do Pix' : 'campos de comprovante'] };
+    if (bol.length) return { tipo: 'boleto', pistas: ['linha digitável válida'] };
+    return { tipo: null, pistas: [] };
+  }
+  /* boleto impresso (PDF do boleto): a linha digitável é a verdade (valor, vencimento, banco); os rótulos dão o beneficiário e conferem o valor */
+  function lerBoletoDoc(linhas, hoje){
+    var c = lerComprovante(linhas, hoje), b = c.boleto || null;
+    if (!b) return null;
+    var out = { linha: b.linha, linhaFmt: fmtLinha(b), banco: b.banco, bancoNome: b.bancoNome, valor: b.valor, vencimento: b.vencimento || c.venc, vencimentoAlt: b.vencimentoAlternativo, semVencimento: b.semVencimento, tipo: b.tipo, beneficiario: (c.destino.nome || ''), beneficiarioDoc: c.destino.doc || '', pagador: c.origem.nome || '', provas: ['linha digitável confere nos dígitos verificadores'], selo: 'verde' };
+    if (c.valor != null && b.valor != null && c.valor !== b.valor) { out.provas.push('o "valor do documento" (' + (c.valor / 100).toFixed(2).replace('.', ',') + ') difere do valor da linha digitável: pode haver multa, juros ou desconto'); out.valorDocumento = c.valor; out.selo = 'amarelo'; }
+    if (c.venc && b.vencimento && c.venc !== b.vencimento && b.vencimentoAlternativo === c.venc) { out.vencimento = c.venc; out.provas.push('vencimento escrito no boleto (' + c.venc + ') usado no lugar do calculado pelo fator'); }
+    else if (c.venc && b.vencimento && c.venc !== b.vencimento) { out.provas.push('o vencimento escrito (' + c.venc + ') difere do calculado pelo fator (' + b.vencimento + '): confira'); out.selo = 'amarelo'; out.vencimentoEscrito = c.venc; }
+    if (!out.beneficiario) out.provas.push('não achei o nome do beneficiário: informe ao lançar');
+    if (b.tipo === 'arrecadacao' && b.valor == null) out.provas.push('conta de consumo/tributo sem valor na linha: informe o valor');
+    return out;
+  }
+
+  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LeitorGeral;
