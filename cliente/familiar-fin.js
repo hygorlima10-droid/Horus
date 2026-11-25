@@ -7,8 +7,8 @@
    - a parcela do consórcio (Construção) sai do caixa dele: um lançamento vale nos dois módulos.
    ============================================================ */
 function ffnAtivo(){ try{ return ppFamiliar() && ppFamModulos().indexOf('financas') >= 0; }catch(e){ return false; } }
-var FFN_ABAS = [['resumo', 'Visão geral'], ['pf', 'Salário e fixos'], ['geral', 'Divisão do salário'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
-var FFN_ROT = { resumo: 'Visão geral', geral: 'Divisão do salário', pf: 'Salário e fixos', patrimonio: 'Patrimônio e metas', orcamento: 'Orçamento', analises: 'Análises' };
+var FFN_ABAS = [['resumo', 'Visão geral'], ['pf', 'Salário e fixos'], ['despesas', 'Despesas'], ['geral', 'Divisão do salário'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
+var FFN_ROT = { resumo: 'Visão geral', geral: 'Divisão do salário', pf: 'Salário e fixos', despesas: 'Despesas', patrimonio: 'Patrimônio e metas', orcamento: 'Orçamento', analises: 'Análises' };
 var FFN_PARTES = [['fixos', 'Gastos fixos', '#4F46E5'], ['consorcio', 'Parcela do consórcio', '#C98500'], ['aporte', 'Aporte na obra', '#B7791E'], ['outros', 'Outros gastos', '#DB2777'], ['reserva', 'Reserva', '#17895A']];
 
 /* o que entrou, saiu e foi separado no mês escolhido (só pessoa física) */

@@ -6,11 +6,11 @@
      anPatrimonioEm, anProjecao, ctColetar e obraResumo. Projeção aparece tracejada e nunca é somada ao dinheiro disponível.
    ============================================================ */
 var mfS = { sel: {}, obra: null };
-var MF_ABAS = [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['patrimonio', 'Patrimônio'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
+var MF_ABAS = [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['despesas', 'Despesas'], ['patrimonio', 'Patrimônio'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
 /* chamada no começo de setActiveTab: na primeira vez decide em que sub-aba o Financeiro abre (lê o armazenamento direto, porque roda antes do resto carregar) */
 function mfInit(){
   if (mfInit.ok) return; mfInit.ok = 1;
-  try{ var o = JSON.parse(localStorage.getItem('horus.subaba.v1') || '{}'), s0 = o && o.sub && o.sub.financeiro; finTab = ['geral', 'pj', 'pf', 'patrimonio', 'orcamento'].indexOf(s0) >= 0 ? s0 : 'resumo'; }catch(e){ finTab = 'resumo'; }
+  try{ var o = JSON.parse(localStorage.getItem('horus.subaba.v1') || '{}'), s0 = o && o.sub && o.sub.financeiro; finTab = ['geral', 'pj', 'pf', 'despesas', 'patrimonio', 'orcamento'].indexOf(s0) >= 0 ? s0 : 'resumo'; }catch(e){ finTab = 'resumo'; }
 }
 function mfLembrar(){ try{ mdLembrar('financeiro', finTab); }catch(e){} }
 function mfIr(v){

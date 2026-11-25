@@ -120,6 +120,7 @@ es = es + '\n' + open(R + 'cliente/leitor-geral.js', encoding='utf-8').read()   
 es = es + '\n' + open(R + 'cliente/documentos.js', encoding='utf-8').read()   # "Enviar documentos": boleto, Pix copia e cola e comprovante
 es = es + '\n' + open(R + 'cliente/contracheque.js', encoding='utf-8').read()   # contracheque de servidor (familiar com Finanças)
 es = es + '\n' + open(R + 'cliente/fatura.js', encoding='utf-8').read()   # fatura do cartão (CSV/PDF): aba Cartão de crédito em Extratos
+es = es + '\n' + open(R + 'cliente/despesas.js', encoding='utf-8').read()   # sub-aba Despesas (lançamento de despesas + conta e cartão)
 es = es + '\n' + open(R + 'cliente/familiar-inicio.js', encoding='utf-8').read()   # Início do familiar: saudação e central de atenção
 es = es + '\n' + open(R + 'cliente/atalho.js', encoding='utf-8').read()   # Configurações › Atalho do iPhone (código e caixa de entrada por pessoa)
 es = es + '\n' + open(R + 'cliente/peticoes-leitor.js', encoding='utf-8').read()   # leitor do texto da petição e comentários no trecho (nível 2)   # petição para correção/revisão (R2): precisa vir depois de quadros.js e delegadas.js

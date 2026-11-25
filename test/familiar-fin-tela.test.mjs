@@ -12,7 +12,7 @@ const FOTO = process.env.FOTO;
 
 const visivel = (pg, sel) => pg.evaluate((q) => { const e = document.querySelector(q); return !!e && e.offsetParent !== null; }, sel);
 const p = await abrir('fam2');
-check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos, sem Fechamento do mês (' + (await itensMenu(p)).join(' | ') + ')');
+check(JSON.stringify(await itensMenu(p)) === JSON.stringify(['Início', 'Visão geral', 'Divisão do salário', 'Salário e fixos', 'Despesas', 'Patrimônio e metas', 'Orçamento', 'Análises', 'Construção', 'Extratos do banco', 'Minha conta', 'Sair']), 'menu dele: Finanças só PF + Construção + Extratos, sem Fechamento do mês (' + (await itensMenu(p)).join(' | ') + ')');
 for (const k of ['resumo', 'geral', 'pf', 'patrimonio', 'orcamento']) {
   const t = await aba(p, k);
   check(!/\bPJ\b|pró-labore|Pró-labore|honorários|Recebi R\$/.test(t), 'aba ' + k + ' sem PJ, pró-labore nem honorários' + (/\bPJ\b|ró-labore|onorários/.test(t) ? ': ' + (t.match(/.{30}(\bPJ\b|ró-labore|onorários).{30}/) || [''])[0] : ''));
@@ -25,7 +25,7 @@ await p.click('[data-nova-receita="pf"]'); await p.waitForSelector('#receitaDesc
 check(!(await p.evaluate(() => { const f = document.getElementById('segReceitaColuna').closest('.field'); return f.offsetParent !== null; })), 'receita: sem a escolha PF/PJ');
 await p.fill('#receitaDescInput', 'Salário'); await p.click('#segReceitaFreq [data-value="recorrente"]'); await p.fill('#receitaValorInput', '9800'); await p.click('#saveBtnReceita'); await p.waitForTimeout(1200);
 // despesa fixa e uma única com categoria dos filhos
-await p.click('[data-nova-despesa="pf"]'); await p.waitForSelector('#despesaNomeInput');
+await aba(p, 'despesas'); await p.click('[data-nova-despesa="pf"]'); await p.waitForSelector('#despesaNomeInput');
 await p.fill('#despesaNomeInput', 'Escola'); await p.click('#segDespesaTipo [data-value="fixa"]'); await p.fill('#despesaValorInput', '1200'); await p.fill('#despesaDiaInput', '5');
 await p.click('#catPickBtn'); await p.waitForTimeout(500);
 const lista = await p.evaluate(() => document.getElementById('catPick').innerText.replace(/\s+/g, ' '));

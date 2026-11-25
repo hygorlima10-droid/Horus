@@ -95,7 +95,7 @@ document.addEventListener('click', function(ev){
   else if (a === 'janela'){ fmiS.janela = Number(b.getAttribute('data-v')); fmiGuardar(); fmiRender(); }
   else if (a === 'financas'){ setActiveTab('financeiro'); }
   else if (a === 'item'){
-    setActiveTab('financeiro'); irParaFinTab('pf');   /* despesa e salário abrem "Salário e fixos", onde ele paga ou marca com confirmação (nada é pago só por tocar aqui) */
+    setActiveTab('financeiro'); irParaFinTab(b.getAttribute('data-fmi-tipo') === 'despesa' ? 'despesas' : 'pf');   /* despesa abre "Despesas" e salário abre "Salário e fixos", onde ele paga ou marca com confirmação (nada é pago só por tocar aqui) */
   }
 });
 (function(){

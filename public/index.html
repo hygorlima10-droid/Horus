@@ -2020,6 +2020,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -2059,6 +2062,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       <button type="button" class="dr-it" data-tab="financeiro" data-fin="geral" title="Divisão do mês"><svg><use href="#ic-pie"/></svg><span class="lab">Divisão do mês</span></button>
       <button type="button" class="dr-it" data-tab="financeiro" data-fin="pj" title="Hygor (PJ)"><svg><use href="#ic-brief"/></svg><span class="lab">Hygor (PJ)</span></button>
       <button type="button" class="dr-it" data-tab="financeiro" data-fin="pf" title="Pessoa física"><svg><use href="#ic-user"/></svg><span class="lab">Pessoa física</span></button>
+      <button type="button" class="dr-it" data-tab="financeiro" data-fin="despesas" title="Despesas do mês: cadastradas, conta e cartão"><svg><use href="#ic-receipt"/></svg><span class="lab">Despesas</span></button>
       <button type="button" class="dr-it" data-tab="financeiro" data-fin="patrimonio" title="Patrimônio e metas"><svg><use href="#ic-trend"/></svg><span class="lab">Patrimônio e metas</span></button>
       <button type="button" class="dr-it" data-tab="financeiro" data-fin="orcamento" title="Orçamento por categoria"><svg><use href="#ic-pie"/></svg><span class="lab">Orçamento</span></button>
       <button type="button" class="dr-it" data-tab="analises" title="Análises e projeção"><svg><use href="#ic-chart"/></svg><span class="lab">Análises</span></button>
@@ -2979,6 +2983,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         <div class="segmented" id="segDespesaTipo">
           <button type="button" class="seg-btn" data-value="fixa">Fixa (todo mês)</button>
           <button type="button" class="seg-btn" data-value="unica">Única (só este mês)</button>
+          <button type="button" class="seg-btn" data-value="parcelada">Parcelada</button>
         </div>
       </div>
       <div class="field" id="campoDespesaValorTipo">
@@ -2995,6 +3000,16 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       <div class="field" id="campoDespesaDia">
         <label class="field-label" for="despesaDiaInput">Dia do vencimento (opcional)</label>
         <input type="number" id="despesaDiaInput" min="1" max="31" step="1" placeholder="Ex.: 10">
+      </div>
+      <div id="campoParcelas" style="display:none;">
+        <div class="field"><label class="field-label">Valor das parcelas</label>
+          <div class="segmented" id="segParcModo"><button type="button" class="seg-btn" data-value="fixo">Valor fixo (o app calcula)</button><button type="button" class="seg-btn" data-value="dif">Valores diferentes (eu informo)</button></div></div>
+        <div style="display:flex;gap:10px"><div class="field" style="flex:1"><label class="field-label" for="despParcN">Número de parcelas</label><input type="number" id="despParcN" min="2" max="120" step="1" placeholder="10"></div>
+          <div class="field" style="flex:1"><label class="field-label" for="despParcAtual">Esta é a parcela nº</label><input type="number" id="despParcAtual" min="1" step="1" value="1"></div></div>
+        <div class="field"><label class="field-label" for="despParcMes">Mês dessa parcela</label><input type="month" id="despParcMes"></div>
+        <div class="field" id="campoParcTotal"><label class="field-label" for="despParcTotal">Valor total (R$) — opcional: o app divide pelas parcelas</label><input type="number" id="despParcTotal" min="0" step="0.01" placeholder="0,00"></div>
+        <div id="despParcValores"></div>
+        <div class="parcela-sum" id="despParcPrevia" style="margin-bottom:8px;"></div>
       </div>
       <div class="field" id="campoDespesaData" style="display:none;">
         <label class="field-label" for="despesaDataInput">Data (opcional)</label>
@@ -6142,8 +6157,19 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     return saldos[coluna] || { coluna:coluna, saldoAtual:0, atualizadoEm:null, historico:[] };
   }
 
+  /* DESPESA PARCELADA: é uma despesa "fixa" com `parcelamento: { n, inicio, valores }` (valores = null quando a parcela é fixa). Só vale de `inicio` até `inicio + n − 1`;
+     depois da última parcela deixa de ser contabilizada. A parcela de cada mês vem de `valores[k]` (parcelas diferentes) ou de `valorPadrao` (fixa). */
+  function idxParcela(d, mes){ if (!d.parcelamento) return -1; var a = String(d.parcelamento.inicio).split('-'), b = String(mes).split('-'); return (+b[0] - +a[0]) * 12 + (+b[1] - +a[1]); }
+  function valorPadraoMes(d, mes){ var p = d.parcelamento; if (p && Array.isArray(p.valores)){ var v = p.valores[idxParcela(d, mes)]; if (v !== undefined && v !== null) return v; } return d.valorPadrao; }
+  function parcelaInfo(d, mes){
+    if (!d.parcelamento) return null; var i = idxParcela(d, mes), n = d.parcelamento.n; if (i < 0 || i >= n) return null;
+    var rest = 0, k; for (k = i + 1; k < n; k++){ var v = (d.parcelamento.valores && d.parcelamento.valores[k] != null) ? d.parcelamento.valores[k] : d.valorPadrao; rest += Number(v) || 0; }
+    return { k: i + 1, n: n, faltam: n - i - 1, restante: r2(rest), ultima: i === n - 1, fim: deslocarMes(d.parcelamento.inicio, n - 1) };
+  }
+  window.parcelaInfo = parcelaInfo;
   function despesaAplicaAoMes(d, mes){
-    if (d.faturaMeses && d.faturaMeses.indexOf(mes) >= 0) return false;   /* trocada pelo detalhe da fatura do cartão naquele mês */
+    if (d.faturaMeses && d.faturaMeses.indexOf(mes) >= 0) return false;
+    if (d.parcelamento){ var ip = idxParcela(d, mes); if (ip < 0 || ip >= d.parcelamento.n) return false; }   /* parcelada: só entre a 1ª e a última parcela */   /* trocada pelo detalhe da fatura do cartão naquele mês */
     if (d.tipo === 'unica') return d.mesReferencia === mes;
     var criadoMes = (d.criadoEm||'').slice(0,7);
     if (criadoMes && mes < criadoMes) return false;
@@ -6156,11 +6182,12 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var registro = (d.pagamentos && d.pagamentos[mes]) || null;
     if (registro){
       /* registro criado só para guardar abatimentos: sem valor próprio, vale o valor padrão da despesa */
-      if (!registro.pago && (registro.valor === undefined || registro.valor === null) && d.valorPadrao !== undefined && d.valorPadrao !== null)
-        return Object.assign({}, registro, { valor: d.valorPadrao });
+      if (!registro.pago && (registro.valor === undefined || registro.valor === null) && valorPadraoMes(d, mes) !== undefined && valorPadraoMes(d, mes) !== null)
+        return Object.assign({}, registro, { valor: valorPadraoMes(d, mes) });
       return registro;
     }
-    return { pago:false, valor: (d.valorPadrao===undefined?null:d.valorPadrao), dataPagamento:null };
+    var vpm = valorPadraoMes(d, mes);
+    return { pago:false, valor: (vpm===undefined?null:vpm), dataPagamento:null };
   }
   /* abatimentos (pagamentos parciais) da despesa no mês: [{id, valor, data}] */
   function parciaisDe(d, mes){
@@ -6466,6 +6493,16 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   function pausarDespesa(id){
     var d = despesas.find(function(x){ return x.id === id; });
     if (d) persistPatchDespesa(d, { ativa:false, pausadaAPartirDeMes: deslocarMes(mesSelecionado, 1) });
+  }
+  /* antecipar: as próximas N parcelas (depois da deste mês) ficam pagas agora */
+  function anteciparParcelas(id){
+    var d = despesas.find(function(x){ return x.id === id; }); if (!d) return;
+    var pi = parcelaInfo(d, mesSelecionado); if (!pi || !pi.faltam){ toast('Não há parcelas para antecipar.'); return; }
+    var s = window.prompt('Quantas parcelas quer antecipar agora? (as próximas, depois da deste mês; faltam ' + pi.faltam + ')', '1'), n = parseInt(s, 10);
+    if (!(n > 0)) return; n = Math.min(n, pi.faltam);
+    var pg = Object.assign({}, d.pagamentos || {}), k, tot = 0;
+    for (k = 1; k <= n; k++){ var m = deslocarMes(mesSelecionado, k), v = Number(valorPadraoMes(d, m)) || 0; tot += v; pg[m] = { pago: true, valor: v, dataPagamento: todayISO(), pagoEm: new Date().toISOString(), parciais: [] }; }
+    persistPatchDespesa(d, { pagamentos: pg }); toast(n + (n === 1 ? ' parcela antecipada' : ' parcelas antecipadas') + ' (' + fmtMoeda(r2(tot)) + ').');
   }
   function reativarDespesa(id){
     var d = despesas.find(function(x){ return x.id === id; });
@@ -7029,13 +7066,15 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
             (!d.transferenciaId && !it.pago ? '<button type="button" data-menu-item="1" data-despesa-abater="'+did+'">Abater</button>' : '') +
             (!d.transferenciaId && it.pago ? '<button type="button" data-menu-item="1" data-despesa-pendente="'+did+'">Marcar pendente</button>' : '') +
             (parcial ? '<button type="button" data-menu-item="1" data-despesa-encerrar="'+did+'">Encerrar com o gasto atual</button>' : '') +
-            (d.tipo==='fixa' ? (d.pausadaAPartirDeMes ? '<button type="button" data-menu-item="1" data-despesa-reativar="'+did+'">Reativar</button>' : '<button type="button" data-menu-item="1" data-despesa-pausar="'+did+'">Pausar</button>') : '') +
+            (d.tipo==='fixa' ? (d.pausadaAPartirDeMes ? '<button type="button" data-menu-item="1" data-despesa-reativar="'+did+'">Reativar</button>' : '<button type="button" data-menu-item="1" data-despesa-pausar="'+did+'">' + (d.parcelamento ? 'Quitar o restante' : 'Pausar') + '</button>') : '') +
+            (d.parcelamento && !d.pausadaAPartirDeMes && parcelaInfo(d, mesSelecionado) && parcelaInfo(d, mesSelecionado).faltam ? '<button type="button" data-menu-item="1" data-despesa-antecipar="'+did+'">Antecipar parcelas</button>' : '') +
             '<button type="button" class="acao-excluir" data-menu-item="1" data-despesa-excluir="'+did+'">Excluir</button></div>' : '');
       }
 
       var catRot = CATEGORIA_LABEL[catIdValida(d.categoria)] || 'Outros', chipSt = '<span class="fv-chip ' + (it.pago ? 'ok' : (vencida ? 'neg' : 'pend')) + '">' + statusTxt + '</span>';
       var linha = '<div class="financeiro-item">' + ctIcone(catRot) + '<div class="financeiro-item-info"><strong>'+escapeHtml(d.nome)+
         (d.tipo==='unica'?' <span class="tag-variavel">única</span>':'') +
+        (function(){ var pi = parcelaInfo(d, mesSelecionado); return pi ? ' <span class="tag-variavel">' + (pi.ultima ? 'última parcela ' : 'parcela ') + pi.k + '/' + pi.n + (pi.faltam ? ' · faltam ' + pi.faltam + ' · ' + fmtMoeda(pi.restante) + ' restantes' : '') + '</span>' : ''; })() +
         (d.transferenciaId ? ' <span class="tag-variavel">transferência</span>' : '') +
         (d.tipo==='fixa' && d.pausadaAPartirDeMes && mesSelecionado < d.pausadaAPartirDeMes ? ' <span class="tag-pausada">será pausada</span>' : '') +
         '</strong><span>' + escapeHtml(catRot) + ' · ' + (it.vencimento ? 'vence ' + it.vencimento.slice(8, 10) + '/' + it.vencimento.slice(5, 7) : 'sem vencimento') + ' · ' + chipSt + '</span>' + subParcial + '</div>' +
@@ -7224,6 +7263,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     });
     Array.prototype.forEach.call(container.querySelectorAll('[data-despesa-editar]'), function(el){
       el.addEventListener('click', function(){ abrirEdicaoDespesa(el.getAttribute('data-despesa-editar')); });
+    });
+    Array.prototype.forEach.call(container.querySelectorAll('[data-despesa-antecipar]'), function(el){
+      el.addEventListener('click', function(){ anteciparParcelas(el.getAttribute('data-despesa-antecipar')); });
     });
     Array.prototype.forEach.call(container.querySelectorAll('[data-despesa-pausar]'), function(el){
       el.addEventListener('click', function(){ pausarDespesa(el.getAttribute('data-despesa-pausar')); });
@@ -8672,15 +8714,44 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ---------- modal: despesa ---------- */
   var formStateDespesa = { coluna:'pj', tipo:'fixa', valorTipo:'fixo', categoria:'outros' };
 
+  /* parcelada: pré-visualização e campos de valores diferentes */
+  var formParc = { modo: 'fixo' };
+  function parcValores(){ return Array.prototype.map.call(document.querySelectorAll('#despParcValores input'), function(i){ return i.value === '' ? null : (parseFloat(i.value) || 0); }); }
+  function atualizarParcelas(){
+    var par = formStateDespesa.tipo === 'parcelada'; qs('campoParcelas').style.display = par ? '' : 'none';
+    if (!par) return;
+    var dif = formParc.modo === 'dif', n = parseInt(qs('despParcN').value, 10) || 0, atual = parseInt(qs('despParcAtual').value, 10) || 1, mesP = qs('despParcMes').value || mesSelecionado, inicio = deslocarMes(mesP, -(atual - 1));
+    qs('campoParcTotal').style.display = dif ? 'none' : '';
+    var vf = qs('despesaValorInput').closest('.field'); if (vf) vf.style.display = dif ? 'none' : '';
+    var box = qs('despParcValores');
+    if (dif && n >= 2 && n <= 120){
+      var antes = parcValores(), h = '';
+      for (var k = 0; k < n; k++) h += '<div class="field" style="margin:4px 0"><label class="field-label">Parcela ' + (k + 1) + ' · ' + mesLabel(deslocarMes(inicio, k)) + ' (R$)</label><input type="number" min="0" step="0.01" inputmode="decimal" value="' + (antes[k] != null ? antes[k] : '') + '"></div>';
+      if (box.getAttribute('data-n') !== String(n) || box.getAttribute('data-i') !== inicio){ box.innerHTML = h; box.setAttribute('data-n', String(n)); box.setAttribute('data-i', inicio); }
+    } else { box.innerHTML = ''; box.removeAttribute('data-n'); }
+    var pv = qs('despParcPrevia');
+    if (n >= 2){
+      var tot = 0, vp = parseFloat(qs('despesaValorInput').value) || 0, tt = parseFloat(qs('despParcTotal').value) || 0;
+      if (dif) parcValores().forEach(function(v){ tot += v || 0; }); else { if (!vp && tt > 0) vp = r2(tt / n); tot = r2(vp * n); }
+      pv.textContent = n + ' parcelas · de ' + mesLabel(inicio) + ' a ' + mesLabel(deslocarMes(inicio, n - 1)) + (tot > 0 ? ' · total ' + fmtMoeda(tot) + (!dif && vp > 0 ? ' (parcela de ' + fmtMoeda(vp) + ')' : '') : '') + '. Depois da última parcela a despesa deixa de ser contabilizada.';
+    } else pv.textContent = 'Informe o número de parcelas.';
+  }
+  ['despParcN', 'despParcAtual', 'despParcMes', 'despParcTotal', 'despesaValorInput'].forEach(function(id){ qs(id).addEventListener('input', atualizarParcelas); });
+  qs('despParcValores').addEventListener('input', atualizarParcelas);
+  Array.prototype.forEach.call(qs('segParcModo').children, function(btn){ btn.addEventListener('click', function(){ formParc.modo = btn.getAttribute('data-value'); setSegValue('segParcModo', formParc.modo); atualizarParcelas(); }); });
   function toggleDespesaTipoCampos(tipo){
-    qs('campoDespesaDia').style.display = tipo === 'fixa' ? '' : 'none';
+    qs('campoDespesaDia').style.display = (tipo === 'fixa' || tipo === 'parcelada') ? '' : 'none';
     qs('campoDespesaData').style.display = tipo === 'unica' ? '' : 'none';
     qs('campoDespesaValorTipo').style.display = tipo === 'fixa' ? '' : 'none';
+    var vf = qs('despesaValorInput').closest('.field'); if (vf && tipo !== 'parcelada') vf.style.display = '';
     atualizarLabelDespesaValor();
+    atualizarParcelas();
   }
   function atualizarLabelDespesaValor(){
     if (formStateDespesa.tipo === 'fixa' && formStateDespesa.valorTipo === 'variavel'){
       qs('labelDespesaValor').textContent = 'Valor deste mês (R$) — opcional; o próximo mês pergunta de novo';
+    } else if (formStateDespesa.tipo === 'parcelada'){
+      qs('labelDespesaValor').textContent = 'Valor de cada parcela (R$)';
     } else if (formStateDespesa.tipo === 'fixa'){
       qs('labelDespesaValor').textContent = 'Valor (R$) — mesmo valor todo mês';
     } else {
@@ -8716,6 +8787,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     setSegValue('segDespesaTipo', 'fixa');
     setSegValue('segDespesaValorTipo', 'fixo');
     setSegValue('segDespesaCategoria', 'outros');
+    formParc.modo = 'fixo'; setSegValue('segParcModo', 'fixo'); qs('despParcN').value = ''; qs('despParcAtual').value = '1'; qs('despParcMes').value = mesSelecionado; qs('despParcTotal').value = ''; qs('despParcValores').innerHTML = ''; qs('despParcValores').removeAttribute('data-n');
     toggleDespesaTipoCampos('fixa');
     qs('despesaNomeInput').value = '';
     qs('despesaValorInput').value = '';
@@ -8733,12 +8805,19 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     editingDespesaId = id;
     qs('modalDespesaTitle').textContent = 'Editar despesa';
     var valorTipoAtual = (d.tipo === 'fixa' && (d.valorPadrao === null || d.valorPadrao === undefined)) ? 'variavel' : 'fixo';
-    formStateDespesa = { coluna: d.coluna, tipo: d.tipo, valorTipo: valorTipoAtual, categoria: catIdValida(d.categoria) };
+    formStateDespesa = { coluna: d.coluna, tipo: d.parcelamento ? 'parcelada' : d.tipo, valorTipo: valorTipoAtual, categoria: catIdValida(d.categoria) };
     setSegValue('segDespesaColuna', d.coluna);
-    setSegValue('segDespesaTipo', d.tipo);
+    setSegValue('segDespesaTipo', formStateDespesa.tipo);
     setSegValue('segDespesaValorTipo', valorTipoAtual);
     setSegValue('segDespesaCategoria', formStateDespesa.categoria);
-    toggleDespesaTipoCampos(d.tipo);
+    if (d.parcelamento){
+      var pe = d.parcelamento, ie = Math.min(Math.max(idxParcela(d, mesSelecionado), 0), pe.n - 1);
+      formParc.modo = Array.isArray(pe.valores) ? 'dif' : 'fixo'; setSegValue('segParcModo', formParc.modo);
+      qs('despParcN').value = pe.n; qs('despParcAtual').value = ie + 1; qs('despParcMes').value = deslocarMes(pe.inicio, ie); qs('despParcTotal').value = '';
+      qs('despParcValores').innerHTML = ''; qs('despParcValores').removeAttribute('data-n');
+      if (Array.isArray(pe.valores)){ atualizarParcelas(); Array.prototype.forEach.call(document.querySelectorAll('#despParcValores input'), function(inp, k){ inp.value = pe.valores[k] != null ? pe.valores[k] : ''; }); }
+    }
+    toggleDespesaTipoCampos(formStateDespesa.tipo);
     qs('despesaNomeInput').value = d.nome || '';
     if (d.tipo === 'fixa'){
       if (valorTipoAtual === 'variavel'){
@@ -8770,6 +8849,14 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var erro = '';
     if (!nome) erro = 'Informe o nome da despesa.';
     else if (formStateDespesa.tipo === 'fixa' && formStateDespesa.valorTipo === 'fixo' && (valor === null || valor <= 0)) erro = 'Informe o valor fixo da despesa.';
+    var parc = null;
+    if (!erro && formStateDespesa.tipo === 'parcelada'){
+      var pn = parseInt(qs('despParcN').value, 10), pa = parseInt(qs('despParcAtual').value, 10) || 1, pmes = qs('despParcMes').value || mesSelecionado, ptot = parseFloat(qs('despParcTotal').value) || 0;
+      if (!(pn >= 2 && pn <= 120)) erro = 'Informe o número de parcelas (de 2 a 120).';
+      else if (pa < 1 || pa > pn) erro = 'A parcela nº deve estar entre 1 e ' + pn + '.';
+      else if (formParc.modo === 'dif'){ var pv = parcValores(); if (pv.length !== pn || pv.some(function(v){ return !(v > 0); })) erro = 'Informe o valor de todas as ' + pn + ' parcelas.'; else parc = { n: pn, inicio: deslocarMes(pmes, -(pa - 1)), valores: pv, valor: pv[Math.min(pa - 1, pn - 1)] }; }
+      else { var pvf = (valor && valor > 0) ? valor : (ptot > 0 ? r2(ptot / pn) : 0); if (!(pvf > 0)) erro = 'Informe o valor da parcela (ou o valor total).'; else parc = { n: pn, inicio: deslocarMes(pmes, -(pa - 1)), valores: null, valor: pvf }; }
+    }
     if (erro){ qs('formErrorDespesa').textContent = erro; return; }
 
     var despesaAnterior = editingDespesaId ? despesas.find(function(x){ return x.id === editingDespesaId; }) : null;
@@ -8780,7 +8867,15 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       categoria: formStateDespesa.categoria || 'outros',
       observacoes: qs('despesaObsInput').value.trim()
     };
-    if (formStateDespesa.tipo === 'fixa'){
+    if (formStateDespesa.tipo === 'parcelada'){   /* parcelada = fixa com `parcelamento`: vale só da 1ª à última parcela */
+      dados.tipo = 'fixa';
+      dados.diaVencimento = qs('despesaDiaInput').value ? parseInt(qs('despesaDiaInput').value,10) : null;
+      dados.ativa = despesaAnterior ? (despesaAnterior.ativa !== false) : true;
+      dados.pausadaAPartirDeMes = despesaAnterior ? (despesaAnterior.pausadaAPartirDeMes || null) : null;
+      dados.pagamentos = despesaAnterior ? Object.assign({}, despesaAnterior.pagamentos || {}) : {};
+      dados.valorPadrao = parc.valor; dados.parcelamento = { n: parc.n, inicio: parc.inicio, valores: parc.valores };
+      dados.mesReferencia = null; dados.data = null; dados.valor = null; dados.pago = false; dados.dataPagamento = null;
+    } else if (formStateDespesa.tipo === 'fixa'){
       dados.diaVencimento = qs('despesaDiaInput').value ? parseInt(qs('despesaDiaInput').value,10) : null;
       dados.ativa = despesaAnterior ? (despesaAnterior.ativa !== false) : true;
       dados.pausadaAPartirDeMes = despesaAnterior ? (despesaAnterior.pausadaAPartirDeMes || null) : null;
@@ -10298,7 +10393,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
      MENU LATERAL, TELA INÍCIO E FILTROS RECOLHIDOS
      ============================================================ */
   var TITULOS_TELA = { inicio:'Início', peticoes:'Iniciais', acordos:'Acordos', alvaras:'Alvarás', clientes:'Clientes', arquivados:'Arquivados', extratos:'Extratos', analises:'Análises', obra:'Construção', publicacoes:'Publicações', agenda:'Agenda', delegadas:'Delegadas', processos:'Processos', delegadas:'Delegadas', processos:'Processos', configuracoes:'Configurações', financeiro:'Financeiro' };
-  var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', patrimonio:'Patrimônio', orcamento:'Orçamento' };
+  var FIN_NOMES = { resumo:'Finanças', geral:'Divisão do mês', get pj(){ return ppNomePj(); }, pf:'Minha PF', despesas:'Despesas', patrimonio:'Patrimônio', orcamento:'Orçamento' };
   var atencaoExpandida = false;
   var menuAberto = false;
   function ehTelaLarga(){ return !!(window.matchMedia && window.matchMedia('(min-width: 1000px)').matches); }
@@ -24621,8 +24716,8 @@ function famExportar(){
    - a parcela do consórcio (Construção) sai do caixa dele: um lançamento vale nos dois módulos.
    ============================================================ */
 function ffnAtivo(){ try{ return ppFamiliar() && ppFamModulos().indexOf('financas') >= 0; }catch(e){ return false; } }
-var FFN_ABAS = [['resumo', 'Visão geral'], ['pf', 'Salário e fixos'], ['geral', 'Divisão do salário'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
-var FFN_ROT = { resumo: 'Visão geral', geral: 'Divisão do salário', pf: 'Salário e fixos', patrimonio: 'Patrimônio e metas', orcamento: 'Orçamento', analises: 'Análises' };
+var FFN_ABAS = [['resumo', 'Visão geral'], ['pf', 'Salário e fixos'], ['despesas', 'Despesas'], ['geral', 'Divisão do salário'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
+var FFN_ROT = { resumo: 'Visão geral', geral: 'Divisão do salário', pf: 'Salário e fixos', despesas: 'Despesas', patrimonio: 'Patrimônio e metas', orcamento: 'Orçamento', analises: 'Análises' };
 var FFN_PARTES = [['fixos', 'Gastos fixos', '#4F46E5'], ['consorcio', 'Parcela do consórcio', '#C98500'], ['aporte', 'Aporte na obra', '#B7791E'], ['outros', 'Outros gastos', '#DB2777'], ['reserva', 'Reserva', '#17895A']];
 
 /* o que entrou, saiu e foi separado no mês escolhido (só pessoa física) */
@@ -25758,6 +25853,8 @@ document.addEventListener('change', function(ev){ var t = ev.target; if (t && t.
      que ele confirma; ao confirmar, o líquido vira a receita "Salário (contracheque)" daquele mês (previsto até ele marcar como recebido);
    - 13º, férias e abono entram como linhas do contracheque, reconhecidas pelo nome;
    - "Copiar do mês passado" faz uma estimativa (sem os extras) enquanto o contracheque novo não sai.
+   - EM LOTE: vários arquivos ou um PDF com vários contracheques (uma página cada, até 24 por arquivo) viram uma tabela de conferência; só os marcados são guardados,
+     e só no HISTÓRICO (não lançam salário recebido); o mês já guardado vem desmarcado. O histórico confere os consignados mês a mês (parcela n anda de 1 em 1).
    Guardado na coleção `extratos` (cofre dele): id cc_AAAA-MM, só o que foi lido (nunca CPF, PIS nem identidade).
    ============================================================ */
 /* REGRA: o contracheque de um mês (referência) é recebido NO ÚLTIMO DIA desse mesmo mês: o de novembro cai em 30/11 (correção do proprietário em 25/11; a regra do mês seguinte foi desfeita) */
@@ -25817,7 +25914,7 @@ function ccqCardDoc(doc){
     '<div class="fv-k" style="margin-top:8px">Proventos · bruto ' + dcmDinheiro(T.rendimentos) + '</div>' + prov.map(ccqLinha).join('') +
     '<div class="fv-k" style="margin-top:8px">Descontos em folha · ' + dcmDinheiro(T.descontos) + (cons.length ? ' (inclui ' + dcmDinheiro(totCons) + ' de consignados)' : '') + '</div>' + desc.map(ccqLinha).join('') +
     '<div class="fp-eq tot" style="margin-top:8px"><span>Líquido (cai na conta)</span><b class="ok">' + dcmDinheiro(T.liquido) + '</b></div>' +
-    '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(doc.ref)) + ': <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>' +
+    (doc.soHistorico ? '<div class="saldo-data">Guardado só no histórico: este contracheque <b>não</b> foi lançado como salário recebido.</div>' : '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(doc.ref)) + ': <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>') +
     (extras > 0 ? '<div class="note" style="margin-top:8px"><b>Serviços extras neste contracheque:</b> ' + dcmDinheiro(extras) + ' (bruto). Já estão dentro do líquido acima.</div>' : '') +
     (especiais.length ? '<div class="saldo-data" style="margin-top:6px">Também no contracheque: ' + especiais.map(function(x){ return escapeHtml(x.desc) + ' ' + dcmDinheiro(x.valor); }).join(' · ') + '</div>' : '');
   if (cons.length) h += '<div class="fv-k" style="margin-top:10px">Consignados · ' + cons.length + ' contratos · ' + dcmDinheiro(totCons) + '/mês' + (T.liquido > 0 ? ' (' + Math.round(totCons / (T.rendimentos || 1) * 100) + '% do bruto)' : '') + '</div>' +
@@ -25836,13 +25933,15 @@ function ccqCardPendente(d){
 /* cartão em "Salário e fixos" (só o familiar com Finanças) */
 function ccqHtml(){
   var refMes = ccqRefDe(mesSelecionado), doc = ccqDoc(refMes), pend = ccqPendentes(), ant = ccqDoc(deslocarMes(refMes, -1));
-  var h = '<div class="financeiro-bloco" id="ccqCard">' + '<input type="file" id="ccqArq" accept=".pdf,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/plain" style="display:none">';
+  var h = '<div class="financeiro-bloco" id="ccqCard">' + '<input type="file" id="ccqArq" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/plain" style="display:none">';
+  h += ccqLoteHtml();
   h += pend.map(ccqCardPendente).join('');
   if (doc) h += ccqCardDoc(doc);
-  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + '. Envie o PDF ou a foto: o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
+  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + '. Envie o PDF ou a foto (ou vários de uma vez): o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="ler">Ler contracheque (PDF ou foto)</button>' + (ant ? '<button type="button" class="btn btn-ghost" data-ccq="copiar">Copiar de ' + escapeHtml(mesLabel(deslocarMes(refMes, -1))) + ' (estimativa)</button>' : '') + '</div>';
   else h += '<div class="ext-acoes"><button type="button" class="btn btn-ghost" data-ccq="ler">Ler outro contracheque</button></div>';
-  return h + '</div>';
+  h += '<div class="saldo-data">Dá para escolher vários arquivos de uma vez, ou um PDF com vários contracheques (uma página cada, até ' + CCQ_MAX_PAG + ' por arquivo): vira uma tabela para você conferir e guardar no histórico.</div>';
+  return h + ccqHistoricoHtml() + '</div>';
 }
 /* resumo no alto de "Divisão do salário" */
 function ccqResumoDivisao(){
@@ -25853,10 +25952,142 @@ function ccqResumoDivisao(){
     '<div class="plan-linha"><span>Líquido (base da divisão)</span><strong>' + dcmDinheiro(T.liquido) + '</strong></div>' +
     (extras > 0 ? '<div class="saldo-data">Dentro do bruto há ' + dcmDinheiro(extras) + ' de serviços extras, que variam de mês para mês: não conte com eles como certos.</div>' : '') + '</div>';
 }
+
+/* ---------- LOTE: vários contracheques de uma vez (só histórico) ---------- */
+var CCQ_MAX_PAG = 24, ccqL = { itens: [], msg: '', ocupado: false, aviso: '' };
+function ccqMesesEntre(a, b){ return (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7)); }
+function ccqNormDesc(d){ return String(d || '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim(); }
+function ccqMsg(t){ ccqL.msg = t; var e = qs('ccqLoteMsg'); if (e) e.textContent = t; }
+function ccqGrupoPagina(L, p){ var g = [], it = []; L.forEach(function(l, i){ if (L.pag[i] === p){ g.push(l); if (L.itens) it.push(L.itens[i]); } }); g.itens = it; return g; }
+function ccqEntrada(nome, pag, cc, total){
+  var ref = cc.referencia || '', ja = ref ? ccqDoc(ref) : null, rotulo = nome + (total > 1 ? ' · pág. ' + pag : '');
+  return { nome: rotulo, ref: ref, cc: ccqCompacto(cc), ja: !!ja, marcar: !!ref && !ja };
+}
+/* lê um arquivo (PDF de uma ou várias páginas, ou foto) e devolve as linhas da tabela de conferência */
+function ccqLerUm(f, buf){
+  var u = new Uint8Array(buf), ehPdf = u.length > 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46;
+  if (!ehPdf){
+    if (typeof dcmEhImagem === 'function' && dcmEhImagem(u)){ ccqMsg('Lendo a foto ' + f.name + '…'); return dcmLerImagem(f.name, buf).then(function(r){ var d = r.doc; return d && d.kind === 'contracheque' ? [ccqEntradaDoc(f.name, 1, d.dados, 1)] : []; }); }
+    var t = new TextDecoder().decode(u), d = typeof dcmDeTexto === 'function' ? dcmDeTexto(t, f.name) : null; return Promise.resolve(d && d.kind === 'contracheque' ? [ccqEntradaDoc(f.name, 1, d.dados, 1)] : []);
+  }
+  var senha, abrir = function(sn){ return extCarregarPdfJs().then(function(pdfjs){ return EX.pdfLinhas(pdfjs, new Uint8Array(buf.slice(0)), sn, false); }); };
+  return abrir().catch(function(e){
+    if (!(e && e.name === 'PasswordException')) throw e;
+    return impComSenha('Este PDF tem senha.', function(sn){ senha = sn; return abrir(sn).catch(function(e2){ if (e2 && e2.name === 'PasswordException') throw impErroSenha(); throw e2; }); });
+  }).then(function(L){
+    var paginas = {}, npag = 0; (L.pag || []).forEach(function(p){ if (!paginas[p]){ paginas[p] = 1; npag++; } });
+    var achados = [], nums = Object.keys(paginas).map(Number).sort(function(a, b){ return a - b; });
+    if (nums.length > CCQ_MAX_PAG) ccqL.aviso += (ccqL.aviso ? ' ' : '') + f.name + ': li só as primeiras ' + CCQ_MAX_PAG + ' páginas de ' + nums.length + '.';
+    nums.slice(0, CCQ_MAX_PAG).forEach(function(p){
+      var g = ccqGrupoPagina(L, p); if (!LeitorGeral.pareceContracheque(g)) return;
+      var cc = LeitorGeral.lerContracheque(g); if (cc) achados.push(ccqEntrada(f.name, p, cc, nums.length));
+    });
+    if (achados.length) { achados.forEach(function(a){ a.nome = nums.length > 1 ? a.nome : f.name; }); return achados; }
+    /* PDF só de imagem: lê cada página como foto (OCR no aparelho; demora, uns 20 segundos por página) */
+    return dcmPdfPaginasPng(buf, senha, CCQ_MAX_PAG).then(function(pgs){
+      var out = [], i = 0;
+      function prox(){
+        if (i >= pgs.length) return Promise.resolve(out);
+        var k = ++i; ccqMsg('Lendo ' + f.name + ': página ' + k + ' de ' + pgs.length + ' (leitura de imagem, pode levar um pouco)…');
+        return dcmLerImagem(f.name + ' (pág. ' + k + ')', pgs[k - 1]).then(function(r){ if (r && r.doc && r.doc.kind === 'contracheque') out.push(ccqEntradaDoc(f.name, k, r.doc.dados, pgs.length)); }, function(){ }).then(prox);
+      }
+      return prox();
+    });
+  });
+}
+function ccqEntradaDoc(nome, pag, dados, total){
+  var ref = dados.ref || '', ja = ref ? ccqDoc(ref) : null, v = dados.selo === 'verde' && !dados.viaFoto;
+  return { nome: nome + (total > 1 ? ' · pág. ' + pag : ''), ref: ref, cc: dados, ja: !!ja, marcar: !!ref && !ja };
+}
+function ccqLote(files){
+  if (ccqL.ocupado) return Promise.resolve();
+  ccqL = { itens: [], msg: '', ocupado: true, aviso: '' };
+  try{ renderFinanceiro(); }catch(e){}
+  var i = 0, sem = [];
+  function prox(){
+    if (i >= files.length) return Promise.resolve();
+    var f = files[i++]; ccqMsg('Lendo ' + f.name + ' (' + i + ' de ' + files.length + ')…');
+    return f.arrayBuffer().then(function(buf){ return ccqLerUm(f, buf); }).then(function(es){ if (!es.length) sem.push(f.name); es.forEach(function(e){ ccqL.itens.push(e); }); }, function(e){ sem.push(f.name + (e && e.message ? ' (' + e.message + ')' : '')); }).then(prox);
+  }
+  return prox().then(function(){
+    /* dois contracheques do mesmo mês no lote: só o primeiro vem marcado */
+    var vistos = {}; ccqL.itens.forEach(function(e){ if (!e.ref) return; if (vistos[e.ref]){ e.marcar = false; e.rep = true; } else vistos[e.ref] = 1; });
+    ccqL.itens.sort(function(a, b){ return String(a.ref || '9').localeCompare(String(b.ref || '9')); });
+    ccqL.ocupado = false; ccqL.msg = ''; if (sem.length) ccqL.aviso += (ccqL.aviso ? ' ' : '') + 'Não reconheci como contracheque: ' + sem.join('; ') + '.';
+    if (!ccqL.itens.length) toast('Não achei contracheque nesses arquivos.'); else toast('Li ' + ccqL.itens.length + ' contracheque' + (ccqL.itens.length > 1 ? 's' : '') + '. Confira a tabela e guarde.');
+    try{ renderFinanceiro(); }catch(e){}
+  }).catch(function(e){ ccqL.ocupado = false; ccqL.msg = ''; toast((e && e.message) || 'Não consegui ler esses arquivos.'); try{ renderFinanceiro(); }catch(e2){} });
+}
+function ccqLoteHtml(){
+  if (!ccqL.ocupado && !ccqL.itens.length && !ccqL.aviso) return '';
+  var h = '<div class="ini-card ext-card" id="ccqLote"><div class="ext-card-top"><b>Contracheques lidos em lote</b><span class="saldo-data">só entram no histórico</span></div>';
+  if (ccqL.ocupado) return h + '<div class="saldo-data" id="ccqLoteMsg">' + escapeHtml(ccqL.msg || 'Lendo…') + '</div></div>';
+  if (ccqL.aviso) h += '<div class="note">' + escapeHtml(ccqL.aviso) + '</div>';
+  if (ccqL.itens.length){
+    h += '<div class="saldo-data">Marque os que quer guardar. Quem já está guardado vem desmarcado (não substituo sem você pedir). Guardar não lança salário recebido: é só o histórico.</div><div class="ccq-tabela"><table class="ccq-t"><thead><tr><th></th><th>Mês</th><th>Bruto</th><th>Descontos</th><th>Líquido</th><th>Extras</th><th>Consig.</th><th></th></tr></thead><tbody>';
+    ccqL.itens.forEach(function(e, k){
+      var T = e.cc.totais, ex = ccqSoma(e.cc.itens, function(x){ return x.cat === 'extra'; }), nc = e.cc.itens.filter(function(x){ return x.cat === 'consignado'; }).length;
+      var selo = e.cc.selo === 'verde' && !e.cc.viaFoto ? '<span class="ext-chip ok" title="' + escapeHtml((e.cc.provas || []).join('; ')) + '">confere</span>' : '<span class="ext-chip bad" title="' + escapeHtml((e.cc.provas || []).join('; ')) + '">confira</span>';
+      var marca = e.ja ? '<span class="saldo-data">já guardado</span>' : (e.rep ? '<span class="saldo-data">mês repetido</span>' : '');
+      h += '<tr data-ccq-lin="' + k + '"><td><input type="checkbox" data-ccq-marca="' + k + '"' + (e.marcar ? ' checked' : '') + (/^\d{4}-\d{2}$/.test(e.ref) ? '' : ' disabled') + ' aria-label="Guardar"></td>' +
+        '<td><input type="month" data-ccq-mes="' + k + '" value="' + escapeHtml(e.ref) + '" aria-label="Mês de referência"></td><td>' + dcmDinheiro(T.rendimentos) + '</td><td>' + dcmDinheiro(T.descontos) + '</td><td><b>' + dcmDinheiro(T.liquido) + '</b></td><td>' + (ex ? dcmDinheiro(ex) : '—') + '</td><td>' + nc + '</td><td>' + selo + ' ' + marca + '<div class="saldo-data">' + escapeHtml(e.nome) + '</div></td></tr>';
+    });
+    var n = ccqL.itens.filter(function(e){ return e.marcar; }).length;
+    h += '</tbody></table></div><div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="lote-guardar"' + (n ? '' : ' disabled') + '>Guardar ' + n + ' no histórico</button><button type="button" class="btn-text" data-ccq="lote-descartar">Descartar</button></div>';
+  } else h += '<div class="ext-acoes"><button type="button" class="btn-text" data-ccq="lote-descartar">Fechar</button></div>';
+  return h + '</div>';
+}
+function ccqLoteGuardar(){
+  var alvo = ccqL.itens.filter(function(e){ return e.marcar && /^\d{4}-\d{2}$/.test(e.ref); }), i = 0, feitos = 0;
+  if (!alvo.length){ toast('Marque ao menos um contracheque.'); return Promise.resolve(); }
+  function prox(){
+    if (i >= alvo.length) return Promise.resolve();
+    var e = alvo[i++], x = e.cc;
+    var doc = { tipo: 'contracheque', ref: e.ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: e.nome, origem: '', soHistorico: true };
+    return extGravar('cc_' + e.ref, doc).then(function(){ feitos++; }).then(prox);
+  }
+  return prox().then(function(){ ccqL = { itens: [], msg: '', ocupado: false, aviso: '' }; toast(feitos + ' contracheque' + (feitos > 1 ? 's guardados' : ' guardado') + ' no histórico (sem lançar salário).'); try{ renderFinanceiro(); }catch(e){} });
+}
+/* histórico: todos os contracheques guardados + conferência dos consignados mês a mês */
+function ccqHistorico(){
+  var docs = extratos.filter(function(d){ return d.tipo === 'contracheque' && !d.copiado && /^\d{4}-\d{2}$/.test(d.ref || ''); }).sort(function(a, b){ return a.ref.localeCompare(b.ref); }), contratos = {}, alertas = [];
+  docs.forEach(function(d){ d.itens.forEach(function(x){ if (x.cat !== 'consignado' || !x.parcela) return; var k = ccqNormDesc(x.desc) + '|' + x.parcela.m; (contratos[k] = contratos[k] || { desc: x.desc, pts: [] }).pts.push({ ref: d.ref, n: x.parcela.n, valor: x.valor }); }); });
+  Object.keys(contratos).forEach(function(k){
+    var c = contratos[k], pts = c.pts;
+    for (var i = 1; i < pts.length; i++){
+      var dm = ccqMesesEntre(pts[i - 1].ref, pts[i].ref), esperado = pts[i - 1].n + dm;
+      if (pts[i].n !== esperado) alertas.push({ tipo: 'parcela', txt: c.desc + ': parcela ' + pts[i - 1].n + ' em ' + mesLabel(pts[i - 1].ref) + ' e parcela ' + pts[i].n + ' em ' + mesLabel(pts[i].ref) + ' (era para ser a ' + esperado + ').' });
+      else if (Math.abs(pts[i].valor - pts[i - 1].valor) > 1) alertas.push({ tipo: 'valor', txt: c.desc + ': o valor da parcela mudou de ' + dcmDinheiro(pts[i - 1].valor) + ' (' + mesLabel(pts[i - 1].ref) + ') para ' + dcmDinheiro(pts[i].valor) + ' (' + mesLabel(pts[i].ref) + ').' });
+    }
+  });
+  /* contrato que sumiu antes da última parcela, ou apareceu no meio */
+  var refs = docs.map(function(d){ return d.ref; });
+  Object.keys(contratos).forEach(function(k){
+    var c = contratos[k], ult = c.pts[c.pts.length - 1], prim = c.pts[0];
+    if (ult.n < +k.split('|')[1]){ var prox = refs.filter(function(r){ return r > ult.ref; })[0]; if (prox) alertas.push({ tipo: 'sumiu', txt: c.desc + ': estava na parcela ' + ult.n + ' de ' + k.split('|')[1] + ' em ' + mesLabel(ult.ref) + ' e não aparece em ' + mesLabel(prox) + ' (quitado ou renegociado?).' }); }
+    var ant = refs.filter(function(r){ return r < prim.ref; }).pop(); if (ant && prim.n > 1) alertas.push({ tipo: 'novo', txt: c.desc + ': aparece em ' + mesLabel(prim.ref) + ' já na parcela ' + prim.n + ', e não estava em ' + mesLabel(ant) + '.' });
+  });
+  return { docs: docs, alertas: alertas };
+}
+function ccqHistoricoHtml(){
+  var H = ccqHistorico(); if (H.docs.length < 2) return '';
+  var linhas = H.docs.slice().reverse().map(function(d){ var T = d.totais, ex = ccqSoma(d.itens, function(x){ return x.cat === 'extra'; }), cons = d.itens.filter(function(x){ return x.cat === 'consignado'; }).reduce(function(t, x){ return t + x.valor; }, 0);
+    return '<tr><td>' + escapeHtml(mesLabel(d.ref)) + (d.soHistorico ? ' <span class="saldo-data">histórico</span>' : '') + '</td><td>' + dcmDinheiro(T.rendimentos) + '</td><td>' + dcmDinheiro(T.descontos) + '</td><td><b>' + dcmDinheiro(T.liquido) + '</b></td><td>' + (ex ? dcmDinheiro(ex) : '—') + '</td><td>' + (cons ? dcmDinheiro(cons) : '—') + '</td></tr>'; }).join('');
+  return '<details class="ini-card ext-card" id="ccqHist"><summary><b>Histórico de contracheques</b> · ' + H.docs.length + ' meses' + (H.alertas.length ? ' · <span class="ext-chip bad">' + H.alertas.length + ' ponto' + (H.alertas.length > 1 ? 's' : '') + ' para conferir</span>' : ' · <span class="ext-chip ok">consignados em ordem</span>') + '</summary>' +
+    '<div class="ccq-tabela"><table class="ccq-t"><thead><tr><th>Mês</th><th>Bruto</th><th>Descontos</th><th>Líquido</th><th>Extras</th><th>Consignados</th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+    (H.alertas.length ? '<div class="fv-k" style="margin-top:8px">Conferência dos consignados</div>' + H.alertas.map(function(a){ return '<div class="plan-linha"><span>' + escapeHtml(a.txt) + '</span></div>'; }).join('') : '<div class="saldo-data">A parcela de cada consignado andou de 1 em 1 a cada mês, sem sumir nem aparecer no meio.</div>') + '</details>';
+}
 function ccqLerArquivos(files){
   var f = files[0]; if (!f) return Promise.resolve();
+  if (files.length > 1) return ccqLote(files);
   toast('Lendo ' + f.name + '…');
-  return f.arrayBuffer().then(function(buf){ return impProcessar(f.name, buf); }).then(function(r){
+  return f.arrayBuffer().then(function(buf){
+    var u = new Uint8Array(buf);
+    if (!(u.length > 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46)) return impProcessar(f.name, buf);
+    /* PDF com mais de uma página de contracheque: vai para o lote (tabela de conferência) */
+    return extCarregarPdfJs().then(function(pdfjs){ return pdfjs.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise.then(function(d){ return d.numPages; }); }).catch(function(){ return 1; }).then(function(np){ return np > 1 ? ccqLote([f]).then(function(){ return { lote: true }; }) : impProcessar(f.name, buf); });
+  }).then(function(r){
+    if (r && r.lote) return;
     if (r && r.jaLido) toast('Esse contracheque já tinha sido lido.');
     else toast('Li o arquivo. Confira e confirme abaixo.');
     try{ renderFinanceiro(); }catch(e){}
@@ -25867,14 +26098,22 @@ document.addEventListener('click', function(ev){
   var a = b.getAttribute('data-ccq'), id = b.getAttribute('data-id');
   if (a === 'ler'){ var i = qs('ccqArq'); if (i) i.click(); return; }
   if (a === 'copiar') return ccqCopiar();
+  if (a === 'lote-guardar') return ccqLoteGuardar();
+  if (a === 'lote-descartar'){ ccqL = { itens: [], msg: '', ocupado: false, aviso: '' }; try{ renderFinanceiro(); }catch(e){} return; }
   if (a === 'recebido'){ var doc = ccqDoc(ccqRefDe(mesSelecionado)), r = receitasManuais.filter(function(x){ return x.ccqSalario; })[0]; if (doc && r) marcarReceitaRecebida(r.id, r2(doc.totais.liquido / 100)); return; }
   if (a === 'apagar'){ if (!confirm('Apagar este contracheque? O salário previsto do mês volta ao valor padrão.')) return; var ccd = extDocPorId(id); return extApagar(id).then(function(){ return ccd && ccd.origem && extDocPorId(ccd.origem) ? extApagar(ccd.origem) : null; }).then(function(){ try{ renderFinanceiro(); }catch(e){} }); }   /* apaga também o registro da leitura: o mesmo arquivo pode ser lido de novo */
   var d = extDocPorId(id); if (!d) return;
   if (a === 'confirmar') return ccqConfirmar(d);
   if (a === 'ignorar') return dcmConcluir(d, { status: 'ignorado' }).then(function(){ try{ renderFinanceiro(); }catch(e){} });
 });
+document.addEventListener('change', function(ev){
+  var t = ev.target; if (!t || !t.getAttribute) return;
+  var m = t.getAttribute('data-ccq-marca'); if (m != null && ccqL.itens[+m]){ ccqL.itens[+m].marcar = t.checked; try{ renderFinanceiro(); }catch(e){} return; }
+  var me = t.getAttribute('data-ccq-mes'); if (me != null && ccqL.itens[+me]){ var e = ccqL.itens[+me]; e.ref = t.value || ''; e.ja = !!(e.ref && ccqDoc(e.ref)); e.marcar = !!e.ref && !e.ja; try{ renderFinanceiro(); }catch(e2){} return; }
+});
 document.addEventListener('change', function(ev){ var t = ev.target; if (t && t.id === 'ccqArq'){ var fs = Array.prototype.slice.call(t.files || []); t.value = ''; ccqLerArquivos(fs); } });
 (function(){
+  var st = document.createElement('style'); st.textContent = '.ccq-tabela{overflow-x:auto;margin:6px 0}.ccq-t{border-collapse:collapse;width:100%;font-size:var(--t2)}.ccq-t th{font-size:var(--t1);text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);text-align:left;padding:4px 8px}.ccq-t td{padding:6px 8px;border-top:1px solid var(--line);white-space:nowrap;vertical-align:top}.ccq-t input[type=month]{width:140px}'; document.head.appendChild(st);
   if (typeof renderColunaFinanceiro === 'function'){
     var oCol = renderColunaFinanceiro;
     renderColunaFinanceiro = function(coluna){
@@ -25883,7 +26122,7 @@ document.addEventListener('change', function(ev){ var t = ev.target; if (t && t.
       return r;
     };
   }
-  window.__horusTeste = Object.assign(window.__horusTeste || {}, { ccqDoc: ccqDoc, ccqConsignados: ccqConsignados });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { ccqDoc: ccqDoc, ccqConsignados: ccqConsignados, ccqHistorico: ccqHistorico });
 })();
 
 /* ============================================================
@@ -26108,6 +26347,107 @@ function fatOrigemSegHtml(){
 })();
 
 /* ============================================================
+   SUB-ABA "DESPESAS" (prefixo dsp) — Finanças › Despesas (depois da PF; no familiar, depois de "Salário e fixos")
+   - o LANÇAMENTO de despesas (lista do mês, "Nova despesa", pagar/editar/pausar/excluir, parceladas) mudou das abas PF/PJ e de "Salário e fixos" para cá:
+     o bloco já pronto de cada coluna é MOVIDO para esta aba (os botões continuam ligados) e, no lugar dele, fica uma linha-resumo com "Ver em Despesas";
+   - junto das cadastradas, a aba lista o gasto da conta corrente (dia a dia dos extratos) e do cartão (compras das faturas), com selo de origem e edição de nome/categoria;
+   - total do gasto do mês = cadastradas (sem a despesa "Fatura <banco>") + conta + cartão (pela data da compra); as faturas a pagar aparecem à parte (caixa).
+   ============================================================ */
+var dspS = { origem: 'tudo', conta: 'tudo', busca: '' };
+function dspCols(){ return ppFamiliar() ? ['pf'] : (dspS.conta === 'pf' ? ['pf'] : (dspS.conta === 'pj' ? ['pj'] : ['pf', 'pj'])); }
+function dspNomeCol(c){ return c === 'pj' ? ppNomePj() : (ppFamiliar() ? 'Despesas cadastradas' : 'Pessoa física'); }
+function dspTotais(){
+  var cad = 0, fat = 0, conta = 0, cartao = 0, cols = dspCols();
+  cols.forEach(function(c){
+    getDespesasParaMes(c).forEach(function(it){
+      if (it.despesa.transferenciaId) return; var v = valorDespesaItem(it); if (!(v > 0.004)) return;
+      if (it.despesa.faturaId) fat += v; else cad += v;
+    });
+  });
+  extratos.forEach(function(d){
+    if (d.tipo !== 'diaadia' || d.mes !== mesSelecionado || cols.indexOf(d.coluna || 'pf') < 0) return;
+    var t = 0; Object.keys(d.cats || {}).forEach(function(k){ t += Number(d.cats[k].v) || 0; });
+    if (d.origem === 'cartao') cartao += t; else conta += t;
+  });
+  return { cad: r2(cad), fat: r2(fat), conta: r2(conta), cartao: r2(cartao) };
+}
+function dspLinhas(){
+  var q = (typeof ctNorm === 'function') ? ctNorm(dspS.busca) : String(dspS.busca || '').toLowerCase(), out = [], cols = dspCols();
+  extratos.forEach(function(d){
+    if (d.tipo !== 'diaadia' || d.mes !== mesSelecionado || !Array.isArray(d.linhas) || cols.indexOf(d.coluna || 'pf') < 0) return;
+    var cartao = d.origem === 'cartao';
+    if (dspS.origem === 'conta' && cartao) return; if (dspS.origem === 'cartao' && !cartao) return; if (dspS.origem === 'cad') return;
+    d.linhas.forEach(function(l){
+      var rot = (typeof catNomeNovo === 'function') ? catNomeNovo(l.c) : l.c;
+      if (q && ((typeof ctNorm === 'function' ? ctNorm(l.t + ' ' + rot) : String(l.t + ' ' + rot).toLowerCase()).indexOf(q) < 0)) return;
+      out.push({ id: l.id, doc: d.id, t: l.t, d: l.d, v: l.v, rot: rot, cartao: cartao });
+    });
+  });
+  return out.sort(function(a, b){ return String(b.d || '').localeCompare(String(a.d || '')); });
+}
+function dspTopoHtml(){
+  var t = dspTotais(), gasto = r2(t.cad + t.conta + t.cartao), fam = ppFamiliar();
+  var chip = function(g, k, rot, atual){ return '<button type="button" class="seg-btn' + (atual === k ? ' active' : '') + '" data-dsp-f="' + g + '" data-v="' + k + '">' + rot + '</button>'; };
+  return '<div class="financeiro-bloco"><div class="financeiro-secao-head"><h4>Despesas · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn btn-primary" data-dsp="nova">+ Nova despesa</button></div>' +
+    '<div class="dsp-kv"><div><b>' + fmtMoeda(gasto) + '</b><span>gasto no mês (por data da compra)</span></div><div><b>' + fmtMoeda(t.cad) + '</b><span>cadastradas</span></div><div><b>' + fmtMoeda(t.conta) + '</b><span>conta (extrato)</span></div><div><b>' + fmtMoeda(t.cartao) + '</b><span>cartão</span></div>' + (t.fat > 0.004 ? '<div><b>' + fmtMoeda(t.fat) + '</b><span>faturas a pagar no mês</span></div>' : '') + '</div>' +
+    '<div class="dsp-chips"><span class="saldo-data">Origem</span><div class="segmented">' + chip('origem', 'tudo', 'Tudo', dspS.origem) + chip('origem', 'cad', 'Cadastradas', dspS.origem) + chip('origem', 'conta', 'Conta (extrato)', dspS.origem) + chip('origem', 'cartao', 'Cartão', dspS.origem) + '</div>' +
+    (fam ? '' : '<span class="saldo-data" style="margin-left:8px">Conta</span><div class="segmented">' + chip('conta', 'tudo', 'PF e PJ', dspS.conta) + chip('conta', 'pf', 'PF', dspS.conta) + chip('conta', 'pj', 'PJ', dspS.conta) + '</div>') + '</div>' +
+    '<input type="search" id="dspBusca" class="ct-busca" placeholder="Buscar por nome ou categoria (conta e cartão)" value="' + escapeHtml(dspS.busca) + '">' +
+    (t.fat > 0.004 ? '<div class="saldo-data">A despesa “Fatura …” (R$ ' + fmtMoeda(t.fat).replace('R$ ', '') + ') <b>não entra no gasto do mês</b>: no lugar dela entram as compras do cartão, pela data da compra. Ela aparece nas cadastradas, pendente até ser paga.</div>' : '') + '</div>';
+}
+function dspLinhasHtml(){
+  if (dspS.origem === 'cad') return '';
+  var l = dspLinhas(); if (!l.length) return (dspS.origem === 'conta' || dspS.origem === 'cartao') ? '<div class="financeiro-vazio">Nenhum lançamento neste filtro.</div>' : '';
+  return '<div class="financeiro-bloco"><div class="financeiro-secao-head"><h4>Conta e cartão · ' + l.length + ' lançamentos</h4></div>' + l.slice(0, 200).map(function(i){
+    return '<div class="ct-ja">' + ctIcone(i.rot) + '<div class="ct-ja-t"><b>' + escapeHtml(i.t || 'Sem nome') + '</b><span class="saldo-data">' + (i.d ? fmtData(i.d) + ' · ' : '') + escapeHtml(i.rot) + ' · <span class="dsp-tag ' + (i.cartao ? 'ct' : 'cc') + '">' + (i.cartao ? 'Cartão' : 'Conta') + '</span></span></div><div class="ct-ja-v">' + fmtMoeda(i.v) + '</div>' +
+      '<button type="button" class="ct-ed" data-ct-edit="dd|' + escapeHtml(i.id) + '|' + escapeHtml(i.doc) + '" aria-label="Editar nome e categoria">' + (typeof CT_LAPIS !== 'undefined' ? CT_LAPIS : '✎') + '</button></div>';
+  }).join('') + (l.length > 200 ? '<div class="saldo-data">Mostrando 200 de ' + l.length + '. Use a busca.</div>' : '') + '</div>';
+}
+function dspResumoHtml(col){
+  var pago = 0, pend = 0;
+  getDespesasParaMes(col).forEach(function(it){ if (it.despesa.transferenciaId) return; var v = valorDespesaItem(it) || 0; if (it.pago) pago += v; else pend += v; });
+  return '<div class="financeiro-bloco dsp-resumo"><div class="financeiro-secao-head"><h4>Despesas do mês</h4><button type="button" class="btn-text" data-dsp="ir">Ver em Despesas ›</button></div><div class="financeiro-totais">Pago: <span class="v">' + fmtMoeda(r2(pago)) + '</span> · Pendente: <span class="v">' + fmtMoeda(r2(pend)) + '</span></div><div class="saldo-data">O lançamento e o pagamento das despesas ficam na aba Despesas.</div></div>';
+}
+function dspAplicar(){
+  var corpo = qs('bodyFinanceiro'); if (!corpo) return;
+  var sec = document.getElementById('finDespesas');
+  if (!sec){
+    sec = document.createElement('div'); sec.id = 'finDespesas'; sec.className = 'md-painel'; sec.setAttribute('data-mf', 'dsp');
+    sec.innerHTML = '<div id="dspTopo"></div><div id="dspCad_pf"></div><div id="dspCad_pj"></div><div id="dspLin"></div>';
+    corpo.insertBefore(sec, qs('finGeral'));
+  }
+  /* move o bloco de despesas de cada coluna para cá (os botões continuam ligados) e deixa a linha-resumo no lugar */
+  ['pf', 'pj'].forEach(function(col){
+    var cont = qs(col === 'pf' ? 'colunaFinanceiroPf' : 'colunaFinanceiroPj'), host = document.getElementById('dspCad_' + col); if (!cont || !host) return;
+    var bloco = Array.prototype.filter.call(cont.querySelectorAll('.financeiro-bloco'), function(b){ return !!b.querySelector('[data-nova-despesa]'); })[0];
+    if (!bloco) return;
+    var r = document.createElement('div'); r.innerHTML = dspResumoHtml(col); bloco.parentNode.insertBefore(r.firstChild, bloco);
+    host.innerHTML = ''; var tit = document.createElement('div'); tit.className = 'dsp-tit'; tit.textContent = ppFamiliar() ? 'Despesas cadastradas' : (col === 'pj' ? ppNomePj() + ' · despesas cadastradas' : 'Pessoa física · despesas cadastradas'); host.appendChild(tit); host.appendChild(bloco);
+  });
+  var vis = finTab === 'despesas' && activeTab === 'financeiro'; sec.style.display = vis ? '' : 'none';
+  if (!vis) return;
+  qs('dspTopo').innerHTML = dspTopoHtml(); qs('dspLin').innerHTML = dspLinhasHtml();
+  ['pf', 'pj'].forEach(function(col){ var h = document.getElementById('dspCad_' + col); if (h) h.style.display = (dspS.origem === 'conta' || dspS.origem === 'cartao' || dspCols().indexOf(col) < 0) ? 'none' : ''; });
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.dsp-kv{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0 10px}.dsp-kv b{display:block;font-size:var(--t5)}.dsp-kv span{font-size:var(--t1);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}' +
+    '.dsp-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 8px}.dsp-tit{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 4px 6px}' +
+    '.dsp-tag{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}.dsp-tag.ct{background:#EDE7FB;color:#5b3bb0}.dsp-tag.cc{background:#FBEFD2;color:#8A5A0B}.ct-ja-v{font-weight:700;font-variant-numeric:tabular-nums}';
+  document.head.appendChild(st);
+  if (typeof mfAplicar === 'function'){ var oAp = mfAplicar; mfAplicar = function(){ oAp.apply(this, arguments); try{ dspAplicar(); }catch(e){ console.error('despesas', e); } }; }
+  document.addEventListener('click', function(ev){
+    var f = ev.target.closest ? ev.target.closest('[data-dsp-f]') : null;
+    if (f){ dspS[f.getAttribute('data-dsp-f')] = f.getAttribute('data-v'); try{ dspAplicar(); }catch(e){} return; }
+    var b = ev.target.closest ? ev.target.closest('[data-dsp]') : null; if (!b) return;
+    var a = b.getAttribute('data-dsp');
+    if (a === 'ir'){ mfIr('despesas'); return; }
+    if (a === 'nova'){ var col = (!ppFamiliar() && dspS.conta === 'pj') ? 'pj' : 'pf', alvo = document.querySelector('#dspCad_' + col + ' [data-nova-despesa]') || document.querySelector('#finDespesas [data-nova-despesa]'); if (alvo) alvo.click(); return; }
+  });
+  document.addEventListener('input', function(ev){ if (ev.target && ev.target.id === 'dspBusca'){ dspS.busca = ev.target.value; var l = qs('dspLin'); if (l) l.innerHTML = dspLinhasHtml(); } });
+})();
+
+/* ============================================================
    INÍCIO DO FAMILIAR (prefixo fmi) — tela enxuta: saudação + Central de atenção com os próximos vencimentos (esboço aprovado em 24/11).
    Entram só os módulos que o proprietário liberou:
      - Finanças: despesas pessoais a vencer (fixas e únicas em aberto, também as atrasadas) e o salário previsto ("a receber");
@@ -26204,7 +26544,7 @@ document.addEventListener('click', function(ev){
   else if (a === 'janela'){ fmiS.janela = Number(b.getAttribute('data-v')); fmiGuardar(); fmiRender(); }
   else if (a === 'financas'){ setActiveTab('financeiro'); }
   else if (a === 'item'){
-    setActiveTab('financeiro'); irParaFinTab('pf');   /* despesa e salário abrem "Salário e fixos", onde ele paga ou marca com confirmação (nada é pago só por tocar aqui) */
+    setActiveTab('financeiro'); irParaFinTab(b.getAttribute('data-fmi-tipo') === 'despesa' ? 'despesas' : 'pf');   /* despesa abre "Despesas" e salário abre "Salário e fixos", onde ele paga ou marca com confirmação (nada é pago só por tocar aqui) */
   }
 });
 (function(){
@@ -29976,11 +30316,11 @@ document.addEventListener('click', function(ev){
      anPatrimonioEm, anProjecao, ctColetar e obraResumo. Projeção aparece tracejada e nunca é somada ao dinheiro disponível.
    ============================================================ */
 var mfS = { sel: {}, obra: null };
-var MF_ABAS = [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['patrimonio', 'Patrimônio'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
+var MF_ABAS = [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['despesas', 'Despesas'], ['patrimonio', 'Patrimônio'], ['orcamento', 'Orçamento'], ['analises', 'Análises']];
 /* chamada no começo de setActiveTab: na primeira vez decide em que sub-aba o Financeiro abre (lê o armazenamento direto, porque roda antes do resto carregar) */
 function mfInit(){
   if (mfInit.ok) return; mfInit.ok = 1;
-  try{ var o = JSON.parse(localStorage.getItem('horus.subaba.v1') || '{}'), s0 = o && o.sub && o.sub.financeiro; finTab = ['geral', 'pj', 'pf', 'patrimonio', 'orcamento'].indexOf(s0) >= 0 ? s0 : 'resumo'; }catch(e){ finTab = 'resumo'; }
+  try{ var o = JSON.parse(localStorage.getItem('horus.subaba.v1') || '{}'), s0 = o && o.sub && o.sub.financeiro; finTab = ['geral', 'pj', 'pf', 'despesas', 'patrimonio', 'orcamento'].indexOf(s0) >= 0 ? s0 : 'resumo'; }catch(e){ finTab = 'resumo'; }
 }
 function mfLembrar(){ try{ mdLembrar('financeiro', finTab); }catch(e){} }
 function mfIr(v){

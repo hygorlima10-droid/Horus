@@ -48,7 +48,7 @@ const rod = await p.evaluate(() => document.querySelector('#fmiCentral .fmi-rod'
 check(/Atrasado: R\$ 412,87/.test(rod) && /Ver tudo em Finanças/.test(rod), 'rodapé com o total atrasado e o atalho para Finanças: ' + rod);
 check(await p.evaluate(() => /^[1-9]/.test(document.getElementById('btBadgeInicio').textContent)), 'o atalho do Início mostra quantos já venceram ou vencem hoje');
 await p.click('[data-fmi="item"][data-fmi-tipo="despesa"]'); await p.waitForTimeout(900);
-check((await p.locator('#tituloTela').innerText()) === 'Salário e fixos', 'tocar numa despesa abre "Salário e fixos" (não paga sozinho)');
+check((await p.locator('#tituloTela').innerText()) === 'Despesas', 'tocar numa despesa abre "Despesas" (não paga sozinho)');
 check(await p.evaluate(async () => !(await (await fetch('/api/db/despesas')).json()).docs.some((d) => d.data.pago === true)), 'nada foi marcado como pago só por tocar');
 check(p.erros.length === 0 && p.recusados.length === 0, 'sem erros de script nem pedidos recusados' + (p.erros.length ? ': ' + p.erros.join(' | ') : '') + (p.recusados.length ? ': ' + [...new Set(p.recusados)].join(' | ') : ''));
 

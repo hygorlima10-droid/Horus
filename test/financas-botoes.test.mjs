@@ -33,12 +33,12 @@ for (const [larg, nome] of [[390, 'celular'], [1280, 'computador']]) {
   const p = await ctx.newPage(); p.erros = []; p.on('pageerror', (e) => p.erros.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/fonts\.|Failed to load resource/.test(m.text())) p.erros.push('console: ' + m.text()); });
   await p.route(/fonts\./, (x) => x.abort()); await p.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { } });
   await p.goto(B + '/'); await p.waitForFunction(() => window.__horusEu && window.__horusEu.pronto, null, { timeout: 60000 }); await p.waitForTimeout(2500);
-  for (const [fin, rot] of [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento']]) {
+  for (const [fin, rot] of [['resumo', 'Visão geral'], ['geral', 'Divisão do mês'], ['pj', 'PJ'], ['pf', 'PF'], ['despesas', 'Despesas'], ['patrimonio', 'Patrimônio e metas'], ['orcamento', 'Orçamento']]) {
     await p.evaluate((f) => { const b = document.querySelector('#drawer [data-fin="' + f + '"]') || document.querySelector('[data-fin="' + f + '"]'); if (b) b.click(); }, fin); await p.waitForTimeout(1300);
     if (process.env.FOTOS && (fin === 'resumo' || fin === 'geral')) await p.screenshot({ path: process.env.FOTOS + '/fin-botoes-' + nome + '-' + fin + '.png' });
     const ruins = await varrer(p);
     check(ruins.length === 0, rot + ': nenhum botão só de texto' + (ruins.length ? ' — ' + ruins.join(' | ') : ''));
-    if (fin === 'pj') {
+    if (fin === 'despesas') {
       const info = await p.evaluate(() => {
         const q = (s) => document.querySelector('#bodyFinanceiro ' + s), cor = (e) => e ? getComputedStyle(e).backgroundColor : '';
         const vis = (e) => e && e.getBoundingClientRect().width > 2, rec = q('[data-nova-receita]'), desp = q('[data-nova-despesa]'), pagar = q('[data-despesa-pagar]'), mais = [...document.querySelectorAll('#bodyFinanceiro .btn-mais')].find(vis), hist = [...document.querySelectorAll('#bodyFinanceiro button')].find((b) => /Hist[óo]rico/.test(b.innerText));

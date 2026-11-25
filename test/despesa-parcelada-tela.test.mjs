@@ -1,0 +1,51 @@
+// Despesa parcelada (todos os usuários; familiar só PF): parcela fixa (o app calcula) e parcelas diferentes; some depois da última; antecipar e quitar.
+// Servidor do grupo 'familiar':  node test/rodar.mjs despesa-parcelada-tela
+import { createRequire } from 'node:module';
+const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
+const B = process.env.BASE || 'http://127.0.0.1:8820', TOK = 'tok-fam-fin-0000000000000000000000000007';
+let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
+const br = await chromium.launch(); const ctx = await br.newContext({ viewport: { width: 1280, height: 1000 } }); await ctx.addCookies([{ name: 'sessao', value: TOK, url: B }]);
+const p = await ctx.newPage(); const erros = []; p.on('pageerror', (e) => erros.push(e.message)); await p.route(/fonts\./, (r) => r.abort());
+await p.goto(B + '/'); await p.waitForTimeout(2500);
+const aba = async (k) => { await p.evaluate((x) => document.querySelector('#drawer .dr-it[data-fin="' + x + '"]').click(), k); await p.waitForTimeout(900); };
+const corpo = () => p.evaluate(() => document.getElementById('bodyFinanceiro').innerText.replace(/\s+/g, ' '));
+const proximo = async () => { await p.evaluate(() => document.getElementById('mesProximo').click()); await p.waitForTimeout(700); };
+await aba('despesas');
+await p.click('[data-nova-despesa="pf"]'); await p.waitForSelector('#despesaNomeInput');
+check(await p.evaluate(() => [...document.querySelectorAll('#segDespesaTipo button')].map((b) => b.textContent.trim()).join('|') === 'Fixa (todo mês)|Única (só este mês)|Parcelada'), 'o formulário tem o tipo "Parcelada" ao lado de Fixa e Única');
+await p.fill('#despesaNomeInput', 'Geladeira'); await p.click('#segDespesaTipo [data-value="parcelada"]'); await p.waitForTimeout(300);
+check(await p.evaluate(() => document.getElementById('campoParcelas').offsetParent !== null), 'ao escolher Parcelada aparecem número de parcelas, parcela atual e mês');
+await p.fill('#despParcN', '10'); await p.fill('#despParcAtual', '4'); await p.fill('#despParcTotal', '3500'); await p.fill('#despesaDiaInput', '10'); await p.waitForTimeout(300);
+const prev = await p.evaluate(() => document.getElementById('despParcPrevia').innerText.replace(/\s+/g, ' '));
+check(/10 parcelas/.test(prev) && /total R\$ 3\.500,00/.test(prev) && /parcela de R\$ 350,00/.test(prev) && /deixa de ser contabilizada/.test(prev), 'prévia: 10 parcelas, total R$ 3.500,00, parcela de R$ 350,00 calculada pelo app (' + prev.slice(0, 110) + ')');
+await p.click('#saveBtnDespesa'); await p.waitForTimeout(1500);
+let t = await corpo();
+check(/Geladeira/.test(t) && /parcela 4\/10 · faltam 6 · R\$ 2\.100,00 restantes/.test(t), 'a despesa aparece como "parcela 4/10 · faltam 6 · R$ 2.100,00 restantes"');
+const despesas = () => p.evaluate(async () => (await (await fetch('/api/db/despesas')).json()).docs.map((d) => ({ id: d.id, ...d.data })));
+let ds = await despesas(); const g = ds.find((d) => d.nome === 'Geladeira');
+check(g && g.coluna === 'pf' && g.valorPadrao === 350 && g.parcelamento && g.parcelamento.n === 10 && g.parcelamento.valores === null, 'guardada como parcelada de valor fixo (350,00 × 10), só pessoa física');
+for (let i = 0; i < 6; i++) await proximo();
+t = await corpo(); check(/Geladeira/.test(t) && /última parcela 10\/10/.test(t), '6 meses depois: "última parcela 10/10"');
+await proximo(); t = await corpo(); check(!/Geladeira/.test(t), 'no mês seguinte à última parcela a despesa deixa de ser contabilizada (não aparece)');
+for (let i = 0; i < 7; i++) await p.evaluate(() => document.getElementById('mesAnterior').click()); await p.waitForTimeout(800);
+// valores diferentes
+await p.click('[data-nova-despesa="pf"]'); await p.waitForSelector('#despesaNomeInput');
+await p.fill('#despesaNomeInput', 'Reforma'); await p.click('#segDespesaTipo [data-value="parcelada"]'); await p.click('#segParcModo [data-value="dif"]'); await p.fill('#despParcN', '3'); await p.waitForTimeout(400);
+check(await p.evaluate(() => document.querySelectorAll('#despParcValores input').length) === 3, 'valores diferentes: o app pede o valor de cada uma das 3 parcelas');
+await p.evaluate(() => { [...document.querySelectorAll('#despParcValores input')].forEach((i, k) => { i.value = [100, 200, 300][k]; i.dispatchEvent(new Event('input', { bubbles: true })); }); });
+await p.click('#saveBtnDespesa'); await p.waitForTimeout(1500);
+t = await corpo(); check(/Reforma/.test(t) && /parcela 1\/3 · faltam 2 · R\$ 500,00 restantes/.test(t) && /R\$ 100,00/.test(t), 'parcelas diferentes: este mês R$ 100,00 (parcela 1/3), faltam R$ 500,00 (200 + 300)');
+await proximo(); t = await corpo(); check(/Reforma/.test(t) && /parcela 2\/3/.test(t) && /R\$ 200,00/.test(t), 'no mês seguinte: parcela 2/3 de R$ 200,00');
+await p.evaluate(() => document.getElementById('mesAnterior').click()); await p.waitForTimeout(700);
+// antecipar e quitar
+p.once('dialog', (d) => d.accept('1'));
+await p.evaluate(() => { const b = [...document.querySelectorAll('.financeiro-item')].find((x) => /Reforma/.test(x.innerText)).querySelector('[data-menu-toggle]'); b.click(); }); await p.waitForTimeout(500);
+check(await p.evaluate(() => !![...document.querySelectorAll('[data-despesa-antecipar]')].length) && await p.evaluate(() => /Quitar o restante/.test(document.body.innerText)), 'menu da parcelada: "Antecipar parcelas" e "Quitar o restante"');
+await p.evaluate(() => document.querySelector('[data-despesa-antecipar]').click()); await p.waitForTimeout(1200);
+ds = await despesas(); const rf = ds.find((d) => d.nome === 'Reforma'); const m1 = Object.keys(rf.pagamentos || {});
+check(m1.length === 1 && rf.pagamentos[m1[0]].pago === true && rf.pagamentos[m1[0]].valor === 200, 'antecipar 1 parcela: a parcela 2/3 (R$ 200,00) fica paga agora');
+await p.evaluate(() => { const b = [...document.querySelectorAll('.financeiro-item')].find((x) => /Reforma/.test(x.innerText)).querySelector('[data-menu-toggle]'); b.click(); }); await p.waitForTimeout(500);
+await p.evaluate(() => document.querySelector('[data-despesa-pausar]').click()); await p.waitForTimeout(1200);
+ds = await despesas(); check(!!ds.find((d) => d.nome === 'Reforma').pausadaAPartirDeMes, 'quitar o restante: a despesa para de contar a partir do mês seguinte');
+check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
+await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
