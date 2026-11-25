@@ -29,9 +29,11 @@ check(/Sem a transferência/.test(tx) && /Transf\. prevista da PJ/.test(tx) && /
 const bs = await page.evaluate(() => Array.from(document.querySelectorAll('#colunaFinanceiroPf .fp-eq b')).map(b => b.innerText));
 const v = bs.map(x => { const neg = /^[−-]/.test(x.trim()); const n = parseFloat(x.replace(/[^\d,]/g, '').replace(',', '.')); return neg ? -n : n; });
 check(bs.length === 5 && Math.abs(v[0] + v[1] - v[2]) < 0.01 && Math.abs(v[2] + v[3] - v[4]) < 0.01, 'PF: a conta fecha (saldo − pendentes = sem a transferência; + transferência = fechamento): ' + bs.join(' | '));
-check(/FIXAS/i.test(tx) && /VARIÁVEIS/i.test(tx) && /AVULSAS/i.test(tx), 'PF: despesas separadas em Fixas, Variáveis e Avulsas');
-check(await page.evaluate(() => !!document.querySelector('#colunaFinanceiroPf .fv-bar i')) && /Pago R\$/.test(tx), 'PF: barra de quanto das despesas já foi pago');
 check(/Nenhuma receita neste mês/.test(tx) && await page.evaluate(() => !!document.querySelector('#colunaFinanceiroPf .fp-vazia')), 'PF: sem receitas, só uma linha discreta');
-check(await page.evaluate(() => !!document.querySelector('#colunaFinanceiroPf [data-despesa-pagar]')), 'PF: "Marcar paga" visível');
+await page.evaluate(() => document.querySelector('[data-tab="financeiro"][data-fin="despesas"]').click()); await page.waitForTimeout(900);   // o lançamento de despesas mora na aba Despesas
+const td = await t('#finDespesas');
+check(/FIXAS/i.test(td) && /VARIÁVEIS/i.test(td) && /AVULSAS/i.test(td), 'Despesas: despesas separadas em Fixas, Variáveis e Avulsas');
+check(await page.evaluate(() => !!document.querySelector('#finDespesas .fv-bar i')) && /Pago R\$/.test(td), 'Despesas: barra de quanto das despesas já foi pago');
+check(await page.evaluate(() => !!document.querySelector('#finDespesas [data-despesa-pagar]')), 'Despesas: "Marcar paga" visível');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo'); process.exit(falhas ? 1 : 0);

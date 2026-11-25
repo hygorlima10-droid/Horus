@@ -25,7 +25,9 @@ check(await page.evaluate(() => !!document.querySelector('.fp-transf[data-transf
 check(/Movimentações do mês/i.test(tx) && /Recebido/.test(tx) && /Pago/.test(tx), 'bloco "Movimentações do mês" (o que já aconteceu)');
 check(await page.evaluate(() => !!document.querySelector('.fp-proj')) && /Projeção · ainda não é dinheiro na conta/i.test(tx) && /Vai sobrar ao final/.test(tx), 'projeção separada, em caixa tracejada');
 check(/Caixa de hoje/.test(tx) && /Despesas pendentes/.test(tx), 'a conta da projeção mostra caixa de hoje menos pendentes');
-check(await page.evaluate(() => document.querySelectorAll('#colunaFinanceiroPj .financeiro-item .ct-ic svg').length) >= 2, 'receitas e despesas têm ícone');
+check(await page.evaluate(() => document.querySelectorAll('#bodyFinanceiro .financeiro-item .ct-ic svg').length) >= 2, 'receitas e despesas têm ícone');
+await page.evaluate(() => document.querySelector('[data-tab="financeiro"][data-fin="despesas"]').click()); await page.waitForTimeout(900);   // o lançamento de despesas mora na aba Despesas
+tx = await t('#finDespesas');
 check(/Estrutura/.test(tx) && /Impostos/.test(tx) && /Pendente/.test(tx), 'despesa mostra categoria, vencimento e status');
 check(await page.evaluate(() => !!document.querySelector('[data-despesa-pagar]')) && await page.evaluate(() => !document.querySelector('[data-despesa-abater]')), '"Marcar paga" visível e "Abater" só no menu ···');
 await page.click('[data-menu-toggle="d1"]'); await page.waitForTimeout(400);
@@ -37,6 +39,7 @@ await page.click('[data-despesa-pagar="d2"]'); await page.waitForTimeout(800);
 await page.evaluate(() => { const b = document.querySelector('[data-confirmar-valor-despesa]'); if (b) b.click(); }); await page.waitForTimeout(1200);
 const d2 = await get('despesas', 'd2');
 check(!!d2 && (d2.pago === true || /pago/i.test(JSON.stringify(d2))), 'Marcar paga continua funcionando');
+await page.evaluate(() => document.querySelector('[data-tab="financeiro"][data-fin="pj"]').click()); await page.waitForTimeout(900);
 await page.click('.fp-transf'); await page.waitForTimeout(500);
 check(await page.evaluate(() => document.getElementById('overlayTransf').classList.contains('show')), 'o botão grande abre a transferência');
 check(erros.length === 0, 'sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
