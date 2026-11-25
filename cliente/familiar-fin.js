@@ -65,6 +65,7 @@ document.addEventListener('click', function(e){
 /* menu, títulos e sub-abas só PF */
 function ffnRotular(){
   if (!ffnAtivo()) return;
+  try{ EXT_ACT_ROTULO.dia = 'Gasto na conta (escolha a categoria)'; EXT_ACT_ROTULO.recNova = 'Receita de outra origem'; EXT_ACT_ROTULO.obraRetirada = 'Receita da construção (devolução da obra)'; }catch(e){}
   try{ FIN_NOMES.geral = FFN_ROT.geral; FIN_NOMES.pf = FFN_ROT.pf; FIN_NOMES.patrimonio = FFN_ROT.patrimonio; }catch(e){}
   Array.prototype.forEach.call(document.querySelectorAll('#drawer .dr-it[data-fin]'), function(b){
     var rot = FFN_ROT[b.getAttribute('data-fin')]; if (!rot) return;

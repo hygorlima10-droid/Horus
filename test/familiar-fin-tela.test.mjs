@@ -1,6 +1,6 @@
 // Finanças pessoais do familiar (só PF): menu, sub-abas sem PJ, salário recorrente, divisão do salário, categorias, parcela do consórcio no caixa.
 // Servidor com banco novo (grupo 'familiar'):  node test/rodar.mjs familiar-fin-tela
-import { createRequire } from 'node:module';
+import fs from 'node:fs'; import { createRequire } from 'node:module';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
 const B = process.env.BASE || 'http://127.0.0.1:8820', TOK = { fam2: 'tok-fam-fin-0000000000000000000000000007', dono: 'tok-dono-0000000000000000000000000001' };
 let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
@@ -74,6 +74,24 @@ check(!/\bPJ\b|PF \+ PJ|Alvo automático|despesas fixas \(/.test(pat), 'Patrimô
 for (const k of ['resumo', 'geral', 'pf', 'orcamento']) { const tx = await aba(p, k); check(!/\bPJ\b|PF \+ PJ|Hygor \(PJ\)/.test(tx), 'aba ' + k + ' do familiar: sem resquício de PJ' + (/\bPJ\b/.test(tx) ? ': ' + (tx.match(/.{30}\bPJ\b.{30}/) || [''])[0] : '')); }
 
 await aba(p, 'geral');
+// Extrato bancário do familiar: lê, categoriza gastos e entradas, e NÃO atualiza saldo
+const OFXF = `OFXHEADER:100\nDATA:OFXSGML\nVERSION:102\n\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKACCTFROM><BANKID>0001<BRANCHID>0123<ACCTID>45678-9<ACCTTYPE>CHECKING</BANKACCTFROM>\n<BANKTRANLIST><DTSTART>20261101<DTEND>20261120\n<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261105<TRNAMT>-45.90<FITID>F1<MEMO>FARMACIA SAUDE TOTAL</STMTTRN>\n<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261106<TRNAMT>-120.00<FITID>F2<MEMO>SUPERMERCADO CENTRAL</STMTTRN>\n<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261110<TRNAMT>350.00<FITID>F3<MEMO>PIX RECEBIDO JOAO TESTE</STMTTRN>\n</BANKTRANLIST><LEDGERBAL><BALAMT>1000.00<DTASOF>20261120</LEDGERBAL></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+fs.writeFileSync('/tmp/familiar-extrato.ofx', OFXF);
+await p.evaluate(() => document.querySelector('#drawer [data-tab="extratos"]').click()); await p.waitForTimeout(1000);
+await p.evaluate(() => { document.getElementById('impArq').style.display = 'block'; });
+await p.setInputFiles('#impArq', '/tmp/familiar-extrato.ofx'); await p.waitForTimeout(2500);
+await p.evaluate(() => { const b = document.getElementById('extConferir'); if (b) b.click(); }); await p.waitForTimeout(2500);
+const extT = await p.evaluate(() => (document.querySelector('.overlay.show') ? document.querySelector('.overlay.show').innerText : document.getElementById('bodyExtratos').innerText).replace(/\s+/g, ' '));
+if (process.env.DEBUG_FT) console.log('DEBUG-EXT', extT.slice(0, 1500));
+const optsDeb = await p.evaluate(() => [...document.querySelectorAll('select')].map((s) => [...s.options].map((o) => o.textContent.trim())).filter((l) => l.some((x) => /Gasto na conta/.test(x)))[0] || []);
+const optsCre = await p.evaluate(() => [...document.querySelectorAll('select')].map((s) => [...s.options].map((o) => o.textContent.trim())).filter((l) => l.some((x) => /Receita de outra origem/.test(x)))[0] || []);
+check(optsDeb.length > 0 && !optsDeb.some((x) => /Transferência da PJ|Aporte ou retorno da PF|Pagamento de despesa cadastrada|Nova despesa paga|cobrança/i.test(x)), 'extrato do familiar, gasto: escolhe a categoria ("Gasto na conta"), sem transferência PJ/PF, cobrança nem pagar despesa (' + optsDeb.join(' | ') + ')');
+check(optsCre.length > 0 && !optsCre.some((x) => /Transferência da PJ|Recebimento de cobrança|Aporte ou retorno/i.test(x)), 'extrato do familiar, entrada: "Receita de outra origem"' + (optsCre.some((x) => /construção/.test(x)) ? ' ou "Receita da construção"' : '') + ' (' + optsCre.join(' | ') + ')');
+check(!/Atualizar saldo|saldo (do extrato|novo)|Saldo atualizado/i.test(extT.replace(/Salário e fixos/g, '')), 'extrato do familiar: nenhuma proposta de atualizar saldo');
+await p.evaluate(() => { const b = document.getElementById('extGenCancelar'); if (b) b.click(); document.querySelectorAll('.overlay.show').forEach((e) => e.classList.remove('show')); }); await p.waitForTimeout(300);
+check(!/saldo informado no app/i.test(extT), 'extrato do familiar: sem o aviso sobre saldo informado');
+await aba(p, 'geral');
+
 // "Dinheiro da obra a receber" mora na Divisão do salário (não mais nas Análises) e funciona de lá
 const gtxt = () => p.evaluate(() => document.getElementById('finGeral').innerText.replace(/\s+/g, ' '));
 check(/Dinheiro da obra a receber/.test(await gtxt()) && await visivel(p, '#anObraPickerBtn'), 'Divisão do salário: tem o cartão "Dinheiro da obra a receber"');
