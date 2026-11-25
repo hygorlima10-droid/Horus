@@ -52,6 +52,12 @@ await p.evaluate(() => { const b = document.querySelector('#fatAbas [data-v="car
 check(/Lançar como despesa de/.test(await cartao()), 'fatura já lançada e sem despesa: aparece o botão "Lançar como despesa de <mês do fechamento>"');
 await p.click('#fatCartao [data-fat="despesa"]'); await p.waitForTimeout(1500);
 df = await despF(); check(df.length === 1 && df[0].mesReferencia === fechaEsp.slice(0, 7) && !/Lançar como despesa de/.test(await cartao()), 'o botão cria a despesa no mês do fechamento (e some)');
+// ONDE ver os lançamentos: "Já lançados" (aba Conta bancária) lista as compras do cartão junto com o dia a dia da conta
+await p.evaluate(() => { const b = document.querySelector('#fatAbas [data-v="conta"]'); if (b) b.click(); }); await p.waitForTimeout(600);
+const jaT = await p.evaluate(() => (document.getElementById('extJa') ? document.getElementById('extJa').textContent : '').replace(/\s+/g, ' '));
+if (process.env.DEBUG_FT) console.log('DEBUG-JA', jaT.slice(0, 700));
+check(/Supermercado Central/.test(jaT) && /Farmacia Saude Total/.test(jaT), 'Extratos › Conta bancária › "Já lançados": as compras do cartão aparecem (hoje misturadas com o dia a dia da conta, sem marca de origem)');
+await p.evaluate(() => { const b = document.querySelector('#fatAbas [data-v="cartao"]'); if (b) b.click(); }); await p.waitForTimeout(400);
 // Análises: o cartão soma com o dia a dia da conta; filtro de origem
 await p.evaluate(() => document.querySelector('#drawer [data-tab="analises"]').click()); await p.waitForTimeout(1500);
 await p.evaluate(() => { const b = document.querySelector('[data-an-periodo="hist"]'); if (b) b.click(); }); await p.waitForTimeout(1500);

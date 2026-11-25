@@ -6,7 +6,7 @@
    - a compra entra pela data da compra; parcela que não é a primeira cai no mês em que a fatura fecha; mostra o que falta das parcelas;
    - o vencimento vem do campo "Vencimento" do documento; se não houver, o app pergunta (nunca pelo nome do arquivo).
    ============================================================ */
-var fatS = { aba: 'conta', origem: 'tudo', sel: {}, lembrar: {}, troca: {}, rev: {}, info: '', erro: '' };
+var fatS = { aba: 'conta', origem: 'tudo', sel: {}, lembrar: {}, troca: {}, rev: {}, forcar: {}, info: '', erro: '' };
 function fatM(c){ return fmtMoeda(c / 100); }
 function fatOrigemOk(d){ var o = fatS.origem; if (o === 'tudo') return true; return o === 'cartao' ? d.origem === 'cartao' : d.origem !== 'cartao'; }
 function fatIc(label, t){ var v = (typeof catVisualDe === 'function') ? catVisualDe(label) : null; return '<span class="cat-ic" style="background:' + (v ? v.cor : '#8A93AD') + '">' + (typeof catSvg === 'function' ? catSvg(v ? v.lu : 'tag', t || 16) : '') + '</span>'; }
@@ -27,9 +27,26 @@ function fatCatAuto(it){
   if (!regra && fatSuspeita(c, it)) return null;
   return (c && c !== 'Outros') ? c : null;
 }
-function fatCats(d){
-  var x = d.dados, sel = fatS.sel[d.id] || {}, grupos = {}, pend = {}, cats = {};
+/* NÃO LANÇAR DUAS VEZES (como nos extratos): (1) a mesma compra já lançada por outra fatura/arquivo (fatura aberta exportada duas vezes, CSV e PDF da mesma fatura): mesmo dia, nome, valor e parcela; (2) lançamento manual de mesmo valor e data (±3 dias) já no app */
+function fatHash(it){ return EX.fnv([it.dc, EX.norm(it.t), it.v, it.parcela ? it.parcela.n + '/' + it.parcela.m : ''].join('|')); }
+function fatChaveFatura(x, venc){ return (venc || x.vencimento || '') + '|' + (x.total != null ? x.total : x.soma); }
+function fatDuplicados(d){
+  var x = d.dados, id = d.id, coluna = dcmColunaDe(d), ja = {}, hashes = [], ocorr = {}, dup = {};
+  extratos.forEach(function(e){ if (e.tipo === 'diaadia' && e.origem === 'cartao' && e.fatura !== id) (e.linhas || []).forEach(function(l){ if (l.h) ja[l.h] = 1; }); });
+  var movs = []; try{ movs = extMovsApp(coluna); }catch(e){}
   x.itens.forEach(function(it, i){
+    var h0 = fatHash(it); ocorr[h0] = (ocorr[h0] || 0) + 1; hashes[i] = h0 + '#' + ocorr[h0];
+    if (it.v <= 0) return;
+    if (ja[hashes[i]]) dup[i] = 'já lançado por outra fatura ou arquivo (mesmo dia, nome e valor)';
+    else if (extAcharMov(movs, it.v, 'saida', it.dc, { n: '', s: it.t }, null)) dup[i] = 'já existe um lançamento de mesmo valor e data no app (despesa paga ou aporte)';
+  });
+  var mesma = extratos.filter(function(e){ return e.tipo === 'documento' && e.kind === 'fatura' && e.status === 'concluido' && e.id !== id && e.dados && fatChaveFatura(e.dados) === fatChaveFatura(x); })[0] || null;
+  return { dup: dup, hashes: hashes, mesma: mesma };
+}
+function fatCats(d){
+  var x = d.dados, sel = fatS.sel[d.id] || {}, grupos = {}, pend = {}, cats = {}, dd = fatDuplicados(d).dup, fc = fatS.forcar[d.id] || {};
+  x.itens.forEach(function(it, i){
+    if (dd[i] && !fc[i]) return;   /* duplicado: fora das categorias, a menos que ele mande lançar mesmo assim */
     var k = fatChave(it.t), esc = sel[k], auto = esc || fatCatAuto(it);
     if (auto){ var c = cats[auto] = cats[auto] || { n: 0, v: 0 }; c.n++; c.v += it.v; }
     else { var p = pend[k] = pend[k] || { k: k, t: it.t, n: 0, v: 0, idx: [] }; p.n++; p.v += it.v; p.idx.push(i); }
@@ -43,13 +60,21 @@ function fatDespesasCartao(d){
   return out;
 }
 function fatCard(d){
-  var x = d.dados, id = d.id, g = fatCats(d), cats = Object.keys(g.cats).sort(function(a, b){ return g.cats[b].v - g.cats[a].v; }), pends = Object.keys(g.pend).map(function(k){ return g.pend[k]; }).sort(function(a, b){ return b.v - a.v; });
+  var x = d.dados, id = d.id, dupInfo = fatDuplicados(d), g = fatCats(d), cats = Object.keys(g.cats).sort(function(a, b){ return g.cats[b].v - g.cats[a].v; }), pends = Object.keys(g.pend).map(function(k){ return g.pend[k]; }).sort(function(a, b){ return b.v - a.v; });
   var nCompras = x.itens.filter(function(i){ return i.v > 0; }).length, venc = x.vencimento || '', soPend = pends.reduce(function(t, p){ return t + p.v; }, 0), nPend = pends.reduce(function(t, p){ return t + p.n; }, 0);
   var h = '<div class="ini-card ext-card" data-fat-card="' + escapeHtml(id) + '"><div class="ext-card-top"><b>Fatura' + (x.banco ? ' · ' + escapeHtml(x.banco) : '') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b><span class="ext-chip ' + (x.selo === 'verde' ? 'ok' : 'bad') + '">' + (x.selo === 'verde' ? 'soma confere' : 'confira') + '</span></div>' +
     '<div class="fat-kv"><div><b>' + fatM(x.soma) + '</b><span>total lido' + (x.total != null ? ' · fatura ' + fatM(x.total) : '') + '</span></div><div><b>' + nCompras + ' compras</b><span>' + (x.periodo && x.periodo.de ? fmtData(x.periodo.de) + ' a ' + fmtData(x.periodo.ate) : 'período não identificado') + '</span></div></div>' +
     ((x.provas || []).length ? '<div class="saldo-data">' + escapeHtml(x.provas.join('; ')) + '</div>' : '') +
     '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + dcmCampo(id, 'fecha', 'Fechamento (dia 26) — a despesa entra neste mês', 'date', (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechamento(venc)) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
     (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
+  var nd = Object.keys(dupInfo.dup).length;
+  if (dupInfo.mesma) h += '<div class="av">Esta fatura parece ser <b>a mesma já lançada</b> (vence ' + escapeHtml(fmtData(dupInfo.mesma.dados.vencimento)) + ', ' + fatM(dupInfo.mesma.dados.soma) + '). Os lançamentos repetidos não serão lançados de novo e a despesa da fatura não será duplicada.</div>';
+  if (nd){
+    var fcx = fatS.forcar[id] || {}, totDup = Object.keys(dupInfo.dup).reduce(function(t, i){ return t + x.itens[i].v; }, 0);
+    h += '<div class="fat-t fat-pt">Já lançados — não serão lançados de novo (' + nd + ' · ' + fatM(totDup) + ')</div>' + Object.keys(dupInfo.dup).map(function(i){
+      var it = x.itens[i]; return '<label class="fat-lembrar"><input type="checkbox" data-fat-forcar="' + escapeHtml(id) + '" data-i="' + i + '"' + (fcx[i] ? ' checked' : '') + '><span>' + escapeHtml(it.t) + ' · ' + escapeHtml(fmtData(it.dc)) + ' · <b>' + fatM(it.v) + '</b><br><small class="saldo-data">' + escapeHtml(dupInfo.dup[i]) + ' — marque para lançar mesmo assim</small></span></label>';
+    }).join('');
+  }
   h += '<div class="fat-t">Compras por categoria</div>' + cats.map(function(c){ return '<div class="fat-cat">' + fatIc(c) + '<span class="fat-cn">' + escapeHtml(c) + '<small>' + g.cats[c].n + (g.cats[c].n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(g.cats[c].v) + '</b></div>'; }).join('');
   if (pends.length){
     h += '<div class="fat-t fat-pt">Sem categoria — escolha (' + nPend + ' lançamentos · ' + fatM(soPend) + ')</div>' + pends.map(function(p){
@@ -57,7 +82,7 @@ function fatCard(d){
     }).join('') + '<label class="fat-lembrar"><input type="checkbox" data-fat-lembrar="' + escapeHtml(id) + '"' + (fatS.lembrar[id] === false ? '' : ' checked') + '> Lembrar essas escolhas para as próximas faturas</label>';
   }
   /* a pessoa pode trocar também a categoria sugerida (a palavra do estabelecimento às vezes engana) */
-  var gr = {}; x.itens.forEach(function(it){ var k = fatChave(it.t), c = (fatS.sel[id] || {})[k] || fatCatAuto(it); if (!c) return; var o = gr[k] = gr[k] || { k: k, t: it.t, n: 0, v: 0, c: c }; o.n++; o.v += it.v; });
+  var gr = {}; x.itens.forEach(function(it, ii){ if (dupInfo.dup[ii] && !(fatS.forcar[id] || {})[ii]) return; var k = fatChave(it.t), c = (fatS.sel[id] || {})[k] || fatCatAuto(it); if (!c) return; var o = gr[k] = gr[k] || { k: k, t: it.t, n: 0, v: 0, c: c }; o.n++; o.v += it.v; });
   var grl = Object.keys(gr).map(function(k){ return gr[k]; }).sort(function(a, b){ return b.v - a.v; });
   if (grl.length) h += '<div class="fat-t">Categorias sugeridas <button type="button" class="btn-text" data-fat="revisar" data-id="' + escapeHtml(id) + '">' + (fatS.rev[id] ? 'Fechar a revisão' : 'Revisar e trocar') + '</button></div>' + (fatS.rev[id] ? grl.map(function(o){ return '<div class="fat-cat"><span class="fat-cn">' + escapeHtml(o.t) + '<small>' + o.n + (o.n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(o.v) + '</b>' + catSelectHtml('data-fat-cat="' + escapeHtml(id) + '" data-fat-k="' + escapeHtml(o.k) + '"', o.c) + '</div>'; }).join('') : '');
   var parc = x.itens.filter(function(i){ return i.parcela && i.parcela.m > i.parcela.n; });
@@ -82,31 +107,35 @@ function fatFechamento(venc){
 /* a fatura como DESPESA no mês do FECHAMENTO (dia 26), pelo total da fatura; o detalhe por categoria vai pela data da compra e não conta de novo nas análises */
 function fatCriarDespesa(id, x, fecha, coluna){
   var venc = x.vencimento || '';
-  if (typeof despesaPorFatura === 'function' && despesaPorFatura(id)) return Promise.resolve();
+  var chave = fatChaveFatura(x, x.vencimento);
+  if (typeof despesaPorFatura === 'function' && despesaPorFatura(id, chave)) return Promise.resolve();
   var tot = x.total != null ? x.total : x.soma, nome = 'Fatura ' + (x.banco || 'cartão') + (x.cartao ? ' final ' + x.cartao : '');
-  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, observacoes: 'Fatura do cartão (fecha em ' + fmtData(fecha) + (venc ? ', vence em ' + fmtData(venc) : '') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
+  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, faturaChave: chave, observacoes: 'Fatura do cartão (fecha em ' + fmtData(fecha) + (venc ? ', vence em ' + fmtData(venc) : '') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
 }
 function fatConfirmar(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
   var x = d.dados, venc = dcmLer(id, 'venc') || x.vencimento || '';
   if (!venc){ toast('Informe o vencimento da fatura.'); return Promise.resolve(); }
   var coluna = dcmColunaDe(d), sel = fatS.sel[id] || {}, cfg = extCfg(), regras = Object.assign({}, cfg.regras || {}), mudouRegra = false, porMes = {};
+  var dupC = fatDuplicados(d), fcC = fatS.forcar[id] || {}, nLanc = 0;
   x.itens.forEach(function(it, i){
+    if (dupC.dup[i] && !fcC[i]) return;   /* já estava lançado: não lança de novo */
+    nLanc++;
     var k = fatChave(it.t), esc = sel[k], cat = esc || fatCatAuto(it) || 'Outros';
     if (esc && fatS.lembrar[id] !== false && k){ regras[k] = esc; mudouRegra = true; }
     var mes = it.d.slice(0, 7), doc = porMes[mes] = porMes[mes] || { id: 'dd_' + mes + '_cartao_' + id.replace(/^dcm_/, ''), mes: mes, cats: {}, linhas: [] };
     var v = r2(it.v / 100), c = doc.cats[cat] = doc.cats[cat] || { v: 0, n: 0 }; c.v = r2(c.v + v); c.n++;
-    doc.linhas.push({ id: uid(), d: it.d, t: String(it.t).slice(0, 80) + (it.parcela ? ' (' + it.parcela.n + '/' + it.parcela.m + ')' : ''), v: v, c: cat, h: '' });
+    doc.linhas.push({ id: uid(), d: it.d, t: String(it.t).slice(0, 80) + (it.parcela ? ' (' + it.parcela.n + '/' + it.parcela.m + ')' : ''), v: v, c: cat, h: dupC.hashes[i] || '' });
   });
   var meses = Object.keys(porMes), cadeia = Promise.resolve();
   meses.forEach(function(m){ var o = porMes[m]; cadeia = cadeia.then(function(){ return extGravar(o.id, { tipo: 'diaadia', mes: o.mes, conta: 'cartao:' + id, coluna: coluna, origem: 'cartao', fatura: id, cats: o.cats, linhas: o.linhas, atualizadoEm: new Date().toISOString() }); }); });
   cadeia = cadeia.then(function(){ return mudouRegra ? persistExtCfg({ regras: regras }) : null; });
   var fecha = dcmLer(id, 'fecha') || fatFechamento(venc);
-  cadeia = cadeia.then(function(){ return fatCriarDespesa(id, Object.assign({}, x, { vencimento: venc }), fecha, coluna); });
+  cadeia = cadeia.then(function(){ return fatCriarDespesa(id, Object.assign({}, x, { vencimento: venc }), fecha, coluna); });   /* não duplica a despesa se a mesma fatura (mesmo vencimento e total) já tem uma */
   var tr = fatS.troca[id] !== false ? fatDespesasCartao(d).filter(function(c){ return !c.d.faturaId; })[0] : null;
   if (tr && typeof persistPatchDespesa === 'function') cadeia = cadeia.then(function(){ return persistPatchDespesa(tr.d, { faturaMeses: (tr.d.faturaMeses || []).concat([tr.mes]) }); });
   return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc, fechamento: fecha }) })); })
-    .then(function(){ toast('Fatura lançada: ' + x.itens.length + ' lançamentos em ' + meses.length + (meses.length === 1 ? ' mês' : ' meses') + '.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} })
+    .then(function(){ toast('Fatura lançada: ' + nLanc + ' lançamentos' + (nLanc < x.itens.length ? ' (' + (x.itens.length - nLanc) + ' já estavam lançados e foram ignorados)' : '') + ' em ' + meses.length + (meses.length === 1 ? ' mês' : ' meses') + '.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} })
     .catch(function(e){ console.error('fatura', e); toast('Não consegui lançar a fatura. Tente de novo.'); });
 }
 function fatDesfazer(id){
@@ -182,6 +211,7 @@ function fatOrigemSegHtml(){
   document.addEventListener('change', function(ev){
     var t = ev.target; if (!t || !t.getAttribute) return;
     if (t.hasAttribute('data-fat-cat')){ var id = t.getAttribute('data-fat-cat'); (fatS.sel[id] = fatS.sel[id] || {})[t.getAttribute('data-fat-k')] = t.value; return renderExtratos(); }
+    if (t.hasAttribute('data-fat-forcar')){ var fi = t.getAttribute('data-fat-forcar'); (fatS.forcar[fi] = fatS.forcar[fi] || {})[t.getAttribute('data-i')] = t.checked; return renderExtratos(); }
     if (t.hasAttribute('data-fat-lembrar')) fatS.lembrar[t.getAttribute('data-fat-lembrar')] = t.checked;
     if (t.hasAttribute('data-fat-troca')) fatS.troca[t.getAttribute('data-fat-troca')] = t.checked;
     if (t.id && /^dcm_.+_venc$/.test(t.id)) renderExtratos();   /* mudou o vencimento: refaz a procura da despesa "Cartão" do mês */
