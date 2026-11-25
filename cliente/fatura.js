@@ -92,14 +92,20 @@ function extNormalizaCartao(lista){
   });
 }
 function fatCard(d){
-  var x = d.dados, id = d.id, dupInfo = fatDuplicados(d), g = fatCats(d), cats = Object.keys(g.cats).sort(function(a, b){ return g.cats[b].v - g.cats[a].v; }), pends = Object.keys(g.pend).map(function(k){ return g.pend[k]; }).sort(function(a, b){ return b.v - a.v; });
+  var fam = typeof ppFamiliar === 'function' && ppFamiliar();
+  var x = d.dados, vencUsado = (qs('dcm_' + d.id + '_venc') && qs('dcm_' + d.id + '_venc').value) || d.dados.vencimento || '', id = d.id, dupInfo = fatDuplicados(d), g = fatCats(d), cats = Object.keys(g.cats).sort(function(a, b){ return g.cats[b].v - g.cats[a].v; }), pends = Object.keys(g.pend).map(function(k){ return g.pend[k]; }).sort(function(a, b){ return b.v - a.v; });
   var nCompras = x.itens.filter(function(i){ return i.v > 0; }).length, venc = x.vencimento || '', soPend = pends.reduce(function(t, p){ return t + p.v; }, 0), nPend = pends.reduce(function(t, p){ return t + p.n; }, 0);
   var h = '<div class="ini-card ext-card" data-fat-card="' + escapeHtml(id) + '"><div class="ext-card-top"><b>Fatura' + (x.banco ? ' · ' + escapeHtml(x.banco) : '') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b><span class="ext-chip ' + (x.selo === 'verde' ? 'ok' : 'bad') + '">' + (x.selo === 'verde' ? 'soma confere' : 'confira') + '</span></div>' +
     '<div class="fat-kv"><div><b>' + fatM(x.soma) + '</b><span>total lido' + (x.total != null ? ' · fatura ' + fatM(x.total) : '') + '</span></div><div><b>' + nCompras + ' compras</b><span>' + (x.periodo && x.periodo.de ? fmtData(x.periodo.de) + ' a ' + fmtData(x.periodo.ate) : 'período não identificado') + '</span></div></div>' +
     ((x.provas || []).length ? '<div class="saldo-data">' + escapeHtml(x.provas.join('; ')) + '</div>' : '') +
     fatDifHtml(d) +
-    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + dcmCampo(id, 'fecha', 'Mês da fatura (a despesa e as compras entram neste mês)', 'date', (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechamento(venc)) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
+    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', vencUsado) + dcmCampo(id, 'fecha', fam ? 'Dia em que o cartão fechou — a fatura e as compras entram neste mês' : 'Mês da fatura (a despesa e as compras entram neste mês)', 'date', (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechaPadrao(x, vencUsado)) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
     (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
+  if (fam){   /* perfil familiar: a fatura entra no mês do fechamento; o dia varia (25 ou 26), então ou vem do PDF ou a pessoa informa */
+    var fechaV = (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechaPadrao(x, vencUsado);
+    h += x.fechamentoLido ? '<div class="saldo-data">Dia de fechamento lido no arquivo: <b>' + escapeHtml(fmtData(x.fechamentoLido)) + '</b>. A fatura e as compras entram em <b>' + escapeHtml(mesLabel(fechaV.slice(0, 7))) + '</b>.</div>'
+      : '<div class="av">Não achei o dia de fechamento no arquivo. <b>Informe o dia em que o cartão fechou</b> (muda de mês a mês: 25 ou 26). Sugeri o dia 26 anterior ao vencimento' + (fechaV ? ': a fatura e as compras entram em <b>' + escapeHtml(mesLabel(fechaV.slice(0, 7))) + '</b>' : '') + '.</div>';
+  }
   var nd = Object.keys(dupInfo.dup).length;
   if (dupInfo.mesma) h += '<div class="av">Esta fatura parece ser <b>a mesma já lançada</b> (vence ' + escapeHtml(fmtData(dupInfo.mesma.dados.vencimento)) + ', ' + fatM(dupInfo.mesma.dados.soma) + '). Os lançamentos repetidos não serão lançados de novo e a despesa da fatura não será duplicada.</div>';
   if (nd){
@@ -132,8 +138,18 @@ function fatCard(d){
   return h;
 }
 /* MÊS DA FATURA (25/11/2026): todo mundo paga na data de vencimento e quer ver as compras da fatura que pagou naquele mês. A despesa "Fatura …" e as compras entram no mês do VENCIMENTO
-   (a pessoa ainda pode mudar a data no campo da conferência). A regra antiga do fechamento no dia 26 vale só para o que já estava lançado: o mês fica guardado em `fechamento` */
-function fatFechamento(venc){ return venc || ''; }
+   (a pessoa ainda pode mudar a data no campo da conferência). EXCEÇÃO, só no PERFIL FAMILIAR: vale o dia do FECHAMENTO do cartão (25 ou 26, varia): lido no PDF ou perguntado na conferência. O mês fica guardado em `fechamento` */
+function fatFechamento(venc){
+  if (!venc) return '';
+  if (typeof ppFamiliar === 'function' && ppFamiliar()){   /* PERFIL FAMILIAR: a fatura entra no mês do FECHAMENTO. Sem a data lida no arquivo, sugere o dia 26 anterior ao vencimento (o cartão fecha dia 25 ou 26: a pessoa confirma) */
+    var a = +venc.slice(0, 4), m = +venc.slice(5, 7), d = +venc.slice(8, 10);
+    if (d <= 26){ m--; if (m < 1){ m = 12; a--; } }
+    return a + '-' + String(m).padStart(2, '0') + '-26';
+  }
+  return venc;
+}
+/* data sugerida para o mês da fatura: no familiar, a de fechamento lida no PDF (ou a regra do dia 26); nos outros perfis, o vencimento */
+function fatFechaPadrao(x, venc){ return (typeof ppFamiliar === 'function' && ppFamiliar() && x && x.fechamentoLido) ? x.fechamentoLido : fatFechamento(venc); }
 /* a fatura como DESPESA no mês da fatura (o do vencimento), pelo total; o detalhe por categoria entra no mesmo mês e não conta de novo nas análises */
 function fatCriarDespesa(id, x, fecha, coluna){
   var venc = x.vencimento || '';
@@ -147,7 +163,7 @@ function fatConfirmar(id){
   var x = d.dados, venc = dcmLer(id, 'venc') || x.vencimento || '';
   if (!venc){ toast('Informe o vencimento da fatura.'); return Promise.resolve(); }
   var coluna = dcmColunaDe(d), sel = fatS.sel[id] || {}, cfg = extCfg(), regras = Object.assign({}, cfg.regras || {}), mudouRegra = false, porMes = {};
-  var fecha = dcmLer(id, 'fecha') || fatFechamento(venc), mesF = fecha.slice(0, 7);
+  var fecha = dcmLer(id, 'fecha') || fatFechaPadrao(x, venc), mesF = fecha.slice(0, 7);
   var dupC = fatDuplicados(d), fcC = fatS.forcar[id] || {}, nLanc = 0;
   x.itens.forEach(function(it, i){
     if (dupC.dup[i] && !fcC[i]) return;   /* já estava lançado: não lança de novo */

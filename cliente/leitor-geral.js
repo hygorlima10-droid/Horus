@@ -662,6 +662,24 @@ var LeitorGeral = (function(){
     }
     return null;
   }
+  /* data em que ESTA fatura fechou (não a do próximo fechamento): "Fechamento da fatura 25/11/2026", "Fatura fechada em 26 NOV", "Período vigente: 27 OUT a 26 NOV".
+     Só vale se cair de 3 a 45 dias antes do vencimento; senão devolve null e o app pergunta */
+  function fvAcharFechamento(L, venc){
+    if (!venc) return null;
+    var MES3 = { JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6, JUL: 7, AGO: 8, SET: 9, OUT: 10, NOV: 11, DEZ: 12 }, va = +venc.slice(0, 4), vm = +venc.slice(5, 7);
+    var dias = function(iso){ return Math.round((Date.UTC(+venc.slice(0, 4), +venc.slice(5, 7) - 1, +venc.slice(8, 10)) - Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))) / 864e5); };
+    for (var i = 0; i < L.length; i++){
+      var n = norm(L[i]); if (!/FECHAMENTO|FECHA EM|FECHOU EM|FATURA FECHADA|PERIODO VIGENTE/.test(n) || /PROXIMO|PROX\.|PROX |PREVISAO|SEGUINTE|MELHOR DIA|VENCIMENTO/.test(n)) continue;
+      var prox = L[i + 1] || '', txt = (/\d{1,2}\/\d{1,2}|\d{1,2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)/.test(n) || /PROXIMO|PROX\.|PREVISAO|VENCIMENTO/.test(norm(prox))) ? n : n + ' ' + norm(prox), ach = [], m, re1 = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/g, re2 = /(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)[A-Z]*\.?(?:\s+(\d{4}))?/g;
+      while ((m = re1.exec(txt))) ach.push({ d: +m[1], m: +m[2], a: m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : null, i: m.index });
+      while ((m = re2.exec(txt))) ach.push({ d: +m[1], m: MES3[m[2]], a: m[3] ? +m[3] : null, i: m.index });
+      ach.sort(function(x, y){ return x.i - y.i; });
+      var u = ach[ach.length - 1]; if (!u || u.m < 1 || u.m > 12 || u.d < 1 || u.d > 31) continue;
+      var ano = u.a || (u.m > vm ? va - 1 : va), iso = ano + '-' + pad(u.m, 2) + '-' + pad(u.d, 2), dd = dias(iso);
+      if (dd >= 3 && dd <= 45) return iso;
+    }
+    return null;
+  }
   /* PDF de duas colunas (compras à esquerda, internacionais e totais à direita): as células da mesma altura viram duas linhas; esquerda primeiro, depois direita, página por página */
   function fvColunas(itens, pag, corteX){
     var monta = function(cells){ var s = '', ult = null; cells.forEach(function(c){ if (ult !== null){ var g = c.x - ult; s += g > 12 ? '   ' : (g > 1 ? ' ' : ''); } s += c.s; ult = c.x + (c.w || 0); }); return s.trim(); };
@@ -713,6 +731,7 @@ var LeitorGeral = (function(){
     if (itens.length < 3) return null;
     var meta = { vencimento: venc }, f = fvFechar(itens, meta);
     var totAtuais = fvValorRotulo(L, /TOTAL DOS LANCAMENTOS ATUAIS|TOTAL DE LANCAMENTOS ATUAIS|TOTAL DAS COMPRAS|TOTAL DE COMPRAS/), totFatura = fvValorRotulo(L, /TOTAL DESTA FATURA|TOTAL DA FATURA(?! ANTERIOR)|VALOR TOTAL DA FATURA|VALOR DA FATURA/), tcartao = fvValorRotulo(L, /^LANCAMENTOS NO CARTAO/);
+    var fechamentoLido = fvAcharFechamento(L, venc);
     var provas = [], selo = 'amarelo', fmt = function(c){ return (c / 100).toFixed(2).replace('.', ','); };
     var refs = [['Total dos lançamentos atuais', totAtuais], ['Total da fatura', totFatura], ['Lançamentos no cartão', tcartao]].filter(function(x){ return x[1] != null; }), bate = refs.filter(function(x){ return x[1] === f.soma; })[0];
     if (bate){ selo = 'verde'; provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') confere com "' + bate[0] + '"'); }
@@ -727,7 +746,7 @@ var LeitorGeral = (function(){
     }
     if (!venc) provas.push('não achei o campo "Vencimento" no documento: informe a data ao confirmar');
     var cart = /CARTAO\s+(\d{4})[.\s]*[X*]{4}[.\s]*[X*]{4}[.\s]*(\d{4})/.exec(N) || /FINAL\s+(\d{4})/.exec(N);
-    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, diferenca: diferenca, selo: selo, provas: provas };
+    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, diferenca: diferenca, fechamentoLido: fechamentoLido, selo: selo, provas: provas };
   }
   /* PDF que parece fatura de cartão: "fatura" + vencimento + várias linhas de compra (data, estabelecimento, valor) */
   function pareceFatura(linhas){
