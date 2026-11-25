@@ -13,7 +13,7 @@ async function varrer(ctx, nome, celular) {
   await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await page.click('button[type=submit]'); await page.waitForTimeout(3500);
   const barras = () => page.evaluate(() => [...document.querySelectorAll('.md-abas')].filter((e) => e.getClientRects().length).map((e) => { const cs = getComputedStyle(e), on = e.querySelector('button.on'), r = e.getBoundingClientRect(), o = on && on.getBoundingClientRect(); return { n: e.children.length, rola: e.scrollWidth > e.clientWidth + 1, vertical: cs.overflowY === 'auto' || cs.overflowY === 'scroll' || e.scrollHeight > e.clientHeight, linhas: new Set([...e.children].map((b) => Math.round(b.getBoundingClientRect().top))).size, ativaVisivel: !o || (o.left >= r.left - 1 && o.right <= r.right + 1) }; }));
   let vistas = 0, ruins = [];
-  const alvos = [['financeiro', 'resumo'], ['financeiro', 'geral'], ['financeiro', 'pj'], ['financeiro', 'pf'], ['financeiro', 'patrimonio'], ['financeiro', 'orcamento'], ['obra'], ['extratos'], ['analises'], ['inicio'], ['peticoes'], ['acordos'], ['alvaras'], ['agenda'], ['processos'], ['publicacoes'], ['clientes']];
+  const alvos = [['financeiro', 'resumo'], ['financeiro', 'geral'], ['financeiro', 'pj'], ['financeiro', 'pf'], ['financeiro', 'despesas'], ['financeiro', 'patrimonio'], ['financeiro', 'orcamento'], ['obra'], ['extratos'], ['analises'], ['inicio'], ['peticoes'], ['acordos'], ['alvaras'], ['agenda'], ['processos'], ['publicacoes'], ['clientes']];
   for (const [tab, fin] of alvos) {
     await page.evaluate(([tab, fin]) => { const b = document.querySelector('#drawer [data-tab="' + tab + '"]' + (fin ? '[data-fin="' + fin + '"]' : '')) || document.querySelector('#drawer [data-tab="' + tab + '"]'); if (b) b.click(); }, [tab, fin]);
     await page.waitForTimeout(600);
@@ -22,7 +22,7 @@ async function varrer(ctx, nome, celular) {
   check(vistas > 10 && ruins.length === 0, nome + ': ' + vistas + ' barras de sub-abas conferidas: nenhuma mexe na vertical, todas numa linha só, com a sub-aba ativa à vista' + (ruins.length ? ' → ' + ruins.join(' | ') : ''));
   if (celular) {
     await page.evaluate(() => document.querySelector('#drawer [data-tab="financeiro"][data-fin="resumo"]').click()); await page.waitForTimeout(600);
-    const b = (await barras())[0]; check(b.n === 7 && b.rola && b.linhas === 1, nome + ': as 7 sub-abas do Financeiro ficam numa linha só, com rolagem na horizontal');
+    const b = (await barras())[0]; check(b.n === 8 && b.rola && b.linhas === 1, nome + ': as 8 sub-abas do Financeiro ficam numa linha só, com rolagem na horizontal');
     /* a rolagem é só na horizontal: tentar mexer na vertical não move nada, e na horizontal a barra anda */
     const r = await page.evaluate(() => { const e = [...document.querySelectorAll('.md-abas')].find((x) => x.getClientRects().length); e.scrollTop = 25; e.scrollLeft = 120; return { st: e.scrollTop, sl: e.scrollLeft, sh: e.scrollHeight, ch: e.clientHeight }; });
     check(r.st === 0 && r.sl > 20, nome + ': a barra anda na horizontal (scrollLeft ' + Math.round(r.sl) + ') e não tem vertical (scrollTop ' + r.st + '; altura ' + r.sh + '/' + r.ch + ')');
