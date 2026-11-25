@@ -27,7 +27,9 @@ function ffnDados(){
   });
   var res = Math.max(0, aportadoReservaMes());
   var gasto = fixos + outros + parc + apo + res;
-  return { entrada: r2(ent), recebido: r2(rec), v: { fixos: r2(fixos), consorcio: r2(parc), aporte: r2(apo), outros: r2(outros), reserva: r2(res) }, livre: r2(ent - gasto) };
+  /* devolução de sobra da obra (Construção → ele): não é salário, fica fora da base e dos percentuais, mas soma no que sobra */
+  var dev = ppFamModulos().indexOf('obra') >= 0 && typeof obraRetiradasMes === 'function' ? r2(obraRetiradasMes(m, 'pf')) : 0;
+  return { entrada: r2(ent), recebido: r2(rec), v: { fixos: r2(fixos), consorcio: r2(parc), aporte: r2(apo), outros: r2(outros), reserva: r2(res) }, livre: r2(ent - gasto), devolvido: dev, livreTotal: r2(ent - gasto + dev) };
 }
 function ffnPct(v, base){ return base > 0.004 ? Math.round(v / base * 100) : 0; }
 function ffnDivisaoHtml(){
@@ -42,7 +44,12 @@ function ffnDivisaoHtml(){
     var v = d.v[p[0]], pct = ffnPct(v, base);
     return '<div class="fp-eq"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + p[2] + ';margin-right:7px"></i>' + escapeHtml(p[1]) + '</span><b>' + fmtMoeda(v) + ' · ' + pct + '%</b></div>';
   }).join('');
-  var sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
+  var sobra;
+  if (d.devolvido > 0.004){   /* devolução da obra no mês: linha separada, fora dos percentuais, soma no livre */
+    sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre do salário' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>' +
+      '<div class="fp-eq" id="ffnDevolvido"><span>+ Devolvido da obra no mês<br><small class="saldo-data">dinheiro dele que voltou da Construção; não é salário e fica fora dos percentuais</small></span><b>' + fmtMoeda(d.devolvido) + '</b></div>' +
+      '<div class="fp-eq tot"><span>' + (d.livreTotal >= -0.005 ? 'Livre para o mês' : 'Passou do que entrou') + '</span><b class="' + (d.livreTotal >= -0.005 ? 'ok' : 'neg') + '">' + (d.livreTotal < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livreTotal)) + '</b></div>';
+  } else sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
   return ccq + '<div class="financeiro-bloco">' + cab + '<div class="fv-k">Salário e entradas do mês</div><div class="fv-big">' + fmtMoeda(base) + '</div>' +
     '<div class="saldo-data">Já recebido ' + fmtMoeda(d.recebido) + (base - d.recebido > 0.004 ? ' · ainda a receber ' + fmtMoeda(base - d.recebido) : '') + '</div>' + barra + linhas + sobra +
     '<div class="saldo-data" style="margin-top:8px">“Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>' + obra;

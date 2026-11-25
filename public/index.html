@@ -2018,6 +2018,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -24639,7 +24640,9 @@ function ffnDados(){
   });
   var res = Math.max(0, aportadoReservaMes());
   var gasto = fixos + outros + parc + apo + res;
-  return { entrada: r2(ent), recebido: r2(rec), v: { fixos: r2(fixos), consorcio: r2(parc), aporte: r2(apo), outros: r2(outros), reserva: r2(res) }, livre: r2(ent - gasto) };
+  /* devolução de sobra da obra (Construção → ele): não é salário, fica fora da base e dos percentuais, mas soma no que sobra */
+  var dev = ppFamModulos().indexOf('obra') >= 0 && typeof obraRetiradasMes === 'function' ? r2(obraRetiradasMes(m, 'pf')) : 0;
+  return { entrada: r2(ent), recebido: r2(rec), v: { fixos: r2(fixos), consorcio: r2(parc), aporte: r2(apo), outros: r2(outros), reserva: r2(res) }, livre: r2(ent - gasto), devolvido: dev, livreTotal: r2(ent - gasto + dev) };
 }
 function ffnPct(v, base){ return base > 0.004 ? Math.round(v / base * 100) : 0; }
 function ffnDivisaoHtml(){
@@ -24654,7 +24657,12 @@ function ffnDivisaoHtml(){
     var v = d.v[p[0]], pct = ffnPct(v, base);
     return '<div class="fp-eq"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + p[2] + ';margin-right:7px"></i>' + escapeHtml(p[1]) + '</span><b>' + fmtMoeda(v) + ' · ' + pct + '%</b></div>';
   }).join('');
-  var sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
+  var sobra;
+  if (d.devolvido > 0.004){   /* devolução da obra no mês: linha separada, fora dos percentuais, soma no livre */
+    sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre do salário' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>' +
+      '<div class="fp-eq" id="ffnDevolvido"><span>+ Devolvido da obra no mês<br><small class="saldo-data">dinheiro dele que voltou da Construção; não é salário e fica fora dos percentuais</small></span><b>' + fmtMoeda(d.devolvido) + '</b></div>' +
+      '<div class="fp-eq tot"><span>' + (d.livreTotal >= -0.005 ? 'Livre para o mês' : 'Passou do que entrou') + '</span><b class="' + (d.livreTotal >= -0.005 ? 'ok' : 'neg') + '">' + (d.livreTotal < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livreTotal)) + '</b></div>';
+  } else sobra = '<div class="fp-eq tot"><span>' + (d.livre >= -0.005 ? 'Livre para o mês' : 'Passou do salário') + '</span><b class="' + (d.livre >= -0.005 ? 'ok' : 'neg') + '">' + (d.livre < -0.005 ? '− ' : '') + fmtMoeda(Math.abs(d.livre)) + ' · ' + ffnPct(Math.abs(d.livre), base) + '%</b></div>';
   return ccq + '<div class="financeiro-bloco">' + cab + '<div class="fv-k">Salário e entradas do mês</div><div class="fv-big">' + fmtMoeda(base) + '</div>' +
     '<div class="saldo-data">Já recebido ' + fmtMoeda(d.recebido) + (base - d.recebido > 0.004 ? ' · ainda a receber ' + fmtMoeda(base - d.recebido) : '') + '</div>' + barra + linhas + sobra +
     '<div class="saldo-data" style="margin-top:8px">“Reserva” soma o que foi guardado na meta de reserva; “Parcela do consórcio” e “Aporte na obra” vêm da aba Construção.</div></div>' + obra;
