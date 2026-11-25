@@ -689,7 +689,7 @@ var LeitorGeral = (function(){
   }
   function fvPdfNucleo(L, hoje){
     var N = norm(L.join('\n'));
-    var venc = fvAcharVencimento(L), ref = venc || hoje, secao = 'compras', itens = [], futuras = [], ultimaIntl = null;
+    var venc = fvAcharVencimento(L), ref = venc || hoje, secao = 'compras', itens = [], futuras = [], ultimaIntl = null, pagos = [];
     L.forEach(function(l, k){
       var n = norm(l);
       if (/^PAGAMENTOS EFETUADOS|^PAGAMENTOS E CREDITOS|^PAGAMENTOS$/.test(n)) { secao = 'pagamentos'; return; }
@@ -704,7 +704,8 @@ var LeitorGeral = (function(){
       if (pc && pc.n > 1 && !/^\d{2}\/\d{2}\/\d/.test(m[1])){ var lim = addDias(ref, -20), a0 = +ref.slice(0, 4), alvo = a0 + data.slice(4); while (alvo > lim) alvo = (+alvo.slice(0, 4) - 1) + alvo.slice(4); data = alvo; }   /* parcela que não é a primeira: a data impressa é a da compra original, meses antes */
       if (/^[a-zçãõáéíóúâêô]+\s{2}/i.test(prox) && !/^\d/.test(prox) && !/^(total|dolar|dólar)/i.test(prox)) cat = prox.split(/\s{2,}/)[0].trim().toLowerCase();
       if (secao === 'futuras'){ futuras.push({ t: t, n: pc ? pc.n : null, m: pc ? pc.m : null, v: v }); return; }
-      if (secao === 'pagamentos' || secao === 'fim') return;
+      if (secao === 'pagamentos'){ if (v < 0) pagos.push({ d: data, t: t, v: -v }); return; }   /* pagamentos da fatura anterior (só para conciliar o total) */
+      if (secao === 'fim') return;
       if (secao === 'inter') ultimaIntl = data;
       itens.push({ dc: data, d: data, t: t, v: v, parcela: pc ? { n: pc.n, m: pc.m } : null, catBanco: cat, tipo: 'compra' });
     });
@@ -717,9 +718,16 @@ var LeitorGeral = (function(){
     if (bate){ selo = 'verde'; provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') confere com "' + bate[0] + '"'); }
     else if (refs.length) provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') não bate com "' + refs[0][0] + '" (' + fmt(refs[0][1]) + '): confira linha a linha');
     else provas.push('não achei o total da fatura para conferir a soma (' + fmt(f.soma) + ')');
+    /* o total da fatura pode ser MAIOR que as compras: o banco soma o que sobrou da fatura anterior (pagamento menor), juros e encargos. Mostra de onde vem a diferença */
+    var anterior = fvValorRotulo(L, /^TOTAL DA FATURA ANTERIOR/), totPag = fvValorRotulo(L, /^TOTAL DOS PAGAMENTOS/), saldoFin = fvValorRotulo(L, /SALDO FINANCIADO/), pagList = pagos.reduce(function(t, p){ return t + p.v; }, 0), diferenca = null;
+    if (totFatura != null && totFatura !== f.soma){
+      diferenca = { v: totFatura - f.soma, anterior: anterior, pagos: pagList, pagosLinhas: pagos, totalPagamentos: totPag != null ? Math.abs(totPag) : null, saldoFinanciado: saldoFin, explica: '' };
+      if (anterior != null && pagList > 0 && anterior - pagList === diferenca.v) diferenca.explica = 'resto';
+      provas.push('o total da fatura (' + fmt(totFatura) + ') é ' + fmt(Math.abs(diferenca.v)) + (diferenca.v > 0 ? ' maior' : ' menor') + ' que as compras lidas (' + fmt(f.soma) + ')' + (diferenca.explica === 'resto' ? ': é o que sobrou da fatura anterior (' + fmt(anterior) + ' menos o pagamento listado de ' + fmt(pagList) + ')' : ': confira no aplicativo do banco o que compõe a diferença'));
+    }
     if (!venc) provas.push('não achei o campo "Vencimento" no documento: informe a data ao confirmar');
     var cart = /CARTAO\s+(\d{4})[.\s]*[X*]{4}[.\s]*[X*]{4}[.\s]*(\d{4})/.exec(N) || /FINAL\s+(\d{4})/.exec(N);
-    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, selo: selo, provas: provas };
+    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, diferenca: diferenca, selo: selo, provas: provas };
   }
   /* PDF que parece fatura de cartão: "fatura" + vencimento + várias linhas de compra (data, estabelecimento, valor) */
   function pareceFatura(linhas){
