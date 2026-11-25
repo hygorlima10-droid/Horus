@@ -9612,7 +9612,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     h += '<div class="financeiro-bloco"><div class="fv-head"><div><h4>Divisão de ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><span class="saldo-data">' + (d.folgaPJ >= 0 ? 'Folga da PJ: ' + fmtMoeda(d.folgaPJ) : 'A PJ não fecha: faltam ' + fmtMoeda(-d.folgaPJ)) + '</span></div><div class="fv-head-d">' + selo + '<button type="button" class="btn-text" data-plan-config="1">Ajustar</button></div></div>' +
       (tot > 0 ? '<div class="fv-stk">' + seg(d.metaPF, '#2A78D6') + seg(d.metaRes, 'var(--success)') + seg(d.metaPJ, '#B7791E') + '</div>' : '') +
       lin('arrows', '#2A78D6', d.dispensado ? 'Para a PF (cobrir despesas)' : 'Pró-labore para a PF', d.metaPF, d.faltaPF > 0.005 ? 'falta ' + fmtMoeda(d.faltaPF) : (d.metaPF > 0.005 ? 'feito' : '')) +
-      lin('shield', '#17895A', 'Aporte na reserva', d.metaRes, d.faltaRes > 0.005 ? 'falta ' + fmtMoeda(d.faltaRes) : (d.metaRes > 0.005 ? 'feito' : '')) +
+      lin('shield', '#17895A', 'Aporte na reserva', d.metaRes, d.faltaRes > 0.005 ? 'falta ' + fmtMoeda(d.faltaRes) : (d.metaRes > 0.005 ? 'feito' + (d.aportadoRes > d.metaRes + 0.005 ? ' + ' + fmtMoeda(r2(d.aportadoRes - d.metaRes)) + ' a mais' : '') : (d.aportadoRes > 0.005 ? fmtMoeda(d.aportadoRes) + ' aportados' : ''))) +
       lin('build', '#B7791E', 'Fica no caixa da PJ', d.metaPJ, '') + '</div>';
     var L = acoes.split('</button>').filter(function(x){ return x.trim(); }).map(function(x){ return x + '</button>'; });
     h += '<div class="financeiro-bloco fv-acao"><div class="fv-ac-top"><span class="fv-k">Próxima ação</span><span class="fv-chip ' + (L.length ? 'pend' : 'ok') + '">' + (L.length ? 'Pendente' : 'Em dia') + '</span></div>';
@@ -10053,7 +10053,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     }
     if (erro){ qs('formErrorMetaMov').textContent = erro; return; }
     qs('saveBtnMetaMov').disabled = true;
-    promessa.then(function(){ qs('saveBtnMetaMov').disabled = false; fecharModalMetaMov(); })
+    var textoOk = t === 'aporte' ? 'Aporte de ' + fmtMoeda(v) + ' registrado em “' + m.nome + '”.' : (t === 'retirada' ? 'Retirada de ' + fmtMoeda(v) + ' registrada em “' + m.nome + '”.' : 'Valor de “' + m.nome + '” atualizado para ' + fmtMoeda(v) + '.');
+    promessa.then(function(){ qs('saveBtnMetaMov').disabled = false; fecharModalMetaMov(); toast(textoOk); })
       .catch(function(err){ console.error('erro ao movimentar meta', err); qs('saveBtnMetaMov').disabled = false; qs('formErrorMetaMov').textContent = msgErroSalvar(err); });
   });
 
