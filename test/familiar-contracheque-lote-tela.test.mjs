@@ -39,11 +39,23 @@ let ds = await docs();
 check(ds.map((d) => d.id).sort().join(',') === 'cc_2024-01,cc_2024-02,cc_2024-03' && ds.every((d) => d.soHistorico === true), 'guardou os 3 no histórico (cc_2024-01..03, marcados "só histórico")');
 check(await rec() === 0, 'NÃO lançou salário recebido nem previsto (nenhuma receita criada)');
 await page.reload(); await page.waitForTimeout(2500); await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="pf"]').click()); await page.waitForTimeout(1200);
-let h = await page.evaluate(() => { const e = document.getElementById('ccqHist'); if (e) e.open = true; return e ? e.innerText.replace(/\s+/g, ' ') : ''; });
-check(/Histórico de contracheques/.test(h) && /3 meses/.test(h) && /1 ponto para conferir/.test(h), 'o histórico aparece com os 3 meses e 1 ponto para conferir');
-check(/parcela 26 em fevereiro de 2024 e parcela 28 em março de 2024 \(era para ser a 27\)/i.test(h), 'a conferência dos consignados acusa o pulo da parcela 26 para 28');
+check(await page.evaluate(() => !document.getElementById('ccqHist')), 'o histórico não fica mais em Salário e fixos');
+await page.evaluate(() => document.querySelector('#drawer .dr-it[data-tab="analises"]').click()); await page.waitForTimeout(1200);
+await page.evaluate(() => document.querySelector('[data-an-periodo="hist"]').click()); await page.waitForTimeout(1200);
+const an = () => page.evaluate(() => (document.getElementById('ccqAnalises') || { innerText: '' }).innerText.replace(/\s+/g, ' '));
+let h = await an();
+check(/Nenhum contracheque guardado neste período/.test(h) && /4 guardados|3 guardados/.test(h), 'Análises › Histórico (6 meses): avisa que os contracheques de 2024 estão fora do período e oferece "Tudo"');
+await page.click('[data-an-recorte="tudo"]'); await page.waitForTimeout(1200); h = await an();
+check(/Líquido médio/.test(h) && /Último líquido/.test(h) && /Variação do líquido/.test(h) && /Consignados no último/.test(h), 'recorte Tudo: mostra líquido médio, último líquido, variação e consignados');
+check(/Salário: bruto e líquido/.test(h) && /Descontos em folha/.test(h) && /Conferência dos consignados/.test(h), 'cartões: salário bruto x líquido, descontos em folha e conferência dos consignados');
+check(/parcela 26 em fevereiro de 2024 e parcela 28 em março de 2024 \(era para ser a 27\)/i.test(h), 'a conferência acusa o pulo da parcela 26 para 28');
+check(await page.evaluate(() => document.querySelectorAll('#ccqAnalises svg').length) >= 2, 'os gráficos (bruto x líquido e descontos) foram desenhados');
+await page.click('[data-an-recorte="12"]'); await page.waitForTimeout(800);
+check(/Nenhum contracheque guardado neste período/.test(await an()), 'recorte 12 meses também respeita o período');
+await page.click('[data-an-recorte="tudo"]'); await page.waitForTimeout(500);
 
 // vários arquivos: o mês já guardado vem desmarcado
+await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="pf"]').click()); await page.waitForTimeout(1200);
 await page.setInputFiles('#ccqArq', ['/tmp/lg-cc-lote-1a3.pdf', '/tmp/lg-cc-lote-abr.pdf']); t = await esperar();
 console.log('LOTE 2:', t.slice(0, 300));
 check(await page.evaluate(() => document.querySelectorAll('#ccqLote tr[data-ccq-lin]').length) === 4, 'dois arquivos (3 + 1 página) = 4 linhas');
