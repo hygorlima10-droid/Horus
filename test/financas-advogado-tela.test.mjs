@@ -33,8 +33,11 @@ console.log('\n— a advogada abre as Finanças dela');
   check(await p.locator('#bodyFinanceiro').isVisible(), 'a aba Finanças abre para ela');
   check((await p.locator('#tituloTela').innerText()) === 'Ana (PJ)', 'o título da tela é "Ana (PJ)": ' + await p.locator('#tituloTela').innerText());
   const tx = await p.locator('#colunaFinanceiroPj').innerText();
-  check(/Anuidade da OAB da Ana/.test(tx) && /4\.321,00/.test(tx), 'a PJ dela mostra a despesa e o saldo dela: ' + tx.replace(/\n/g, ' | ').slice(0, 140));
-  check(!/Aluguel/.test(tx), 'a PJ dela não mostra o "Aluguel" do proprietário');
+  await p.evaluate(() => document.querySelector('#drawer [data-tab="financeiro"][data-fin="despesas"]').click()); await p.waitForTimeout(900);   // as despesas ficam na aba Despesas
+  const txd = await p.locator('#finDespesas').innerText();
+  await p.evaluate(() => document.querySelector('#drawer [data-tab="financeiro"][data-fin="pj"]').click()); await p.waitForTimeout(700);
+  check(/Anuidade da OAB da Ana/.test(txd) && /4\.321,00/.test(tx), 'a PJ dela mostra a despesa (na aba Despesas) e o saldo dela: ' + tx.replace(/\n/g, ' | ').slice(0, 140));
+  check(!/Aluguel/.test(tx + txd), 'a PJ dela não mostra o "Aluguel" do proprietário');
   for (const t of ['analises', 'extratos']) {
     await p.evaluate((t) => document.querySelector('#drawer [data-tab="' + t + '"]').click(), t); await p.waitForTimeout(600);
     check((await p.locator('#tituloTela').innerText()) !== 'Início', 'a tela "' + t + '" abre para ela');
