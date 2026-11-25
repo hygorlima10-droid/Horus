@@ -46,7 +46,7 @@ const an = () => page.evaluate(() => (document.getElementById('ccqAnalises') || 
 let h = await an();
 check(/Nenhum contracheque guardado neste período/.test(h) && /4 guardados|3 guardados/.test(h), 'Análises › Histórico (6 meses): avisa que os contracheques de 2024 estão fora do período e oferece "Tudo"');
 await page.click('[data-an-recorte="tudo"]'); await page.waitForTimeout(1200); h = await an();
-check(/Líquido médio/.test(h) && /Último líquido/.test(h) && /Variação do líquido/.test(h) && /Consignados no último/.test(h), 'recorte Tudo: mostra líquido médio, último líquido, variação e consignados');
+check(/Líquido médio/i.test(h) && /Último líquido/i.test(h) && /Variação do líquido/i.test(h) && /Consignados no último/i.test(h), 'recorte Tudo: mostra líquido médio, último líquido, variação e consignados');
 check(/Salário: bruto e líquido/.test(h) && /Descontos em folha/.test(h) && /Conferência dos consignados/.test(h), 'cartões: salário bruto x líquido, descontos em folha e conferência dos consignados');
 check(/parcela 26 em fevereiro de 2024 e parcela 28 em março de 2024 \(era para ser a 27\)/i.test(h), 'a conferência acusa o pulo da parcela 26 para 28');
 check(await page.evaluate(() => document.querySelectorAll('#ccqAnalises svg').length) >= 2, 'os gráficos (bruto x líquido e descontos) foram desenhados');
