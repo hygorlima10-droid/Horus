@@ -48,13 +48,30 @@ function dspTopoHtml(){
     '<input type="search" id="dspBusca" class="ct-busca" placeholder="Buscar por nome ou categoria" value="' + escapeHtml(dspS.busca) + '">' +
     (t.fat > 0.004 ? '<div class="saldo-data">A despesa “Fatura …” (' + fmtMoeda(t.fat) + ') <b>não entra no gasto do mês</b>: no lugar dela entram as compras do cartão, pela data da compra. Ela aparece nas cadastradas, pendente até ser paga.</div>' : '') + '</div>';
 }
+/* faturas de cartão cuja despesa cai neste mês mas cujas compras têm data de OUTRO mês (o gasto conta pela data da compra): avisa e leva até lá */
+function dspCartaoOutroMes(){
+  var cols = dspCols(), out = [];
+  extratos.forEach(function(d){
+    if (d.tipo !== 'diaadia' || d.origem !== 'cartao' || d.mes === mesSelecionado || cols.indexOf(d.coluna || 'pf') < 0) return;
+    var fid = String(d.conta || '').replace(/^cartao:/, '');
+    var desp = despesas.filter(function(x){ return x.faturaId === fid && x.mesReferencia === mesSelecionado; })[0]; if (!desp) return;
+    var tot = 0; Object.keys(d.cats || {}).forEach(function(k){ tot += Number(d.cats[k].v) || 0; });
+    out.push({ mes: d.mes, nome: desp.nome, n: (d.linhas || []).length, tot: r2(tot) });
+  });
+  return out;
+}
+function dspAvisoCartaoHtml(){
+  var a = dspCartaoOutroMes(); if (!a.length || dspS.origem === 'cad' || dspS.origem === 'conta') return '';
+  return '<div class="financeiro-bloco dsp-aviso"><div class="financeiro-secao-head"><h4>Compras do cartão em outro mês</h4></div>' + a.map(function(x){
+    return '<div class="dsp-av-l">A fatura “' + escapeHtml(x.nome) + '” entra como despesa neste mês, mas as <b>' + x.n + (x.n === 1 ? ' compra' : ' compras') + ' (' + fmtMoeda(x.tot) + ')</b> têm data de <b>' + escapeHtml(mesCurto(x.mes)) + '</b>: o gasto conta pela data da compra.<div><button type="button" class="btn btn-ghost" data-dsp-mes="' + escapeHtml(x.mes) + '">Ver as compras de ' + escapeHtml(mesCurto(x.mes)) + '</button></div></div>'; }).join('') + '</div>';
+}
 function dspLinhasHtml(){
   if (dspS.origem === 'cad') return '';
-  var l = dspLinhas(); if (!l.length) return (dspS.origem === 'conta' || dspS.origem === 'cartao') ? '<div class="financeiro-vazio">Nenhum lançamento neste filtro.</div>' : '';
-  return '<div class="financeiro-bloco"><div class="financeiro-secao-head"><h4>Conta e cartão · ' + l.length + ' lançamentos</h4></div>' + l.slice(0, 200).map(function(i){
+  var l = dspLinhas(); if (!l.length) return dspAvisoCartaoHtml() + ((dspS.origem === 'conta' || dspS.origem === 'cartao') ? '<div class="financeiro-vazio">Nenhum lançamento neste filtro.</div>' : '');
+  return '<div class="financeiro-bloco"><div class="financeiro-secao-head"><h4>Conta e cartão · ' + l.length + (l.length === 1 ? ' lançamento' : ' lançamentos') + '</h4></div>' + l.slice(0, 200).map(function(i){
     return '<div class="ct-ja">' + ctIcone(i.rot) + '<div class="ct-ja-t"><b>' + escapeHtml(i.t || 'Sem nome') + '</b><span class="saldo-data">' + (i.d ? fmtData(i.d) + ' · ' : '') + escapeHtml(i.rot) + ' · <span class="dsp-tag ' + (i.cartao ? 'ct' : 'cc') + '">' + (i.cartao ? 'Cartão' : 'Conta') + '</span></span></div><div class="ct-ja-v">' + fmtMoeda(i.v) + '</div>' +
       '<button type="button" class="ct-ed" data-ct-edit="dd|' + escapeHtml(i.id) + '|' + escapeHtml(i.doc) + '" aria-label="Editar nome e categoria">' + (typeof CT_LAPIS !== 'undefined' ? CT_LAPIS : '✎') + '</button></div>';
-  }).join('') + (l.length > 200 ? '<div class="saldo-data">Mostrando 200 de ' + l.length + '. Use a busca.</div>' : '') + '</div>';
+  }).join('') + (l.length > 200 ? '<div class="saldo-data">Mostrando 200 de ' + l.length + '. Use a busca.</div>' : '') + '</div>' + dspAvisoCartaoHtml();
 }
 function dspResumoHtml(col){
   var pago = 0, pend = 0;
@@ -87,6 +104,9 @@ function dspAplicar(){
   st.textContent = '.dsp-head{flex-wrap:wrap}.dsp-head h4{white-space:normal!important;flex:1 1 140px;min-width:0}.dsp-head .btn{flex:0 0 auto;white-space:nowrap}' +
     '.dsp-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:12px 12px;margin:8px 0 14px}.dsp-kv>div{min-width:0}.dsp-kv b{display:block;font-size:var(--t4);font-variant-numeric:tabular-nums}.dsp-kv-total{grid-column:1/-1}.dsp-kv-total b{font-size:var(--t5)}' +
     '.dsp-rot{display:block;font-size:var(--t1);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}.dsp-grupo{margin:0 0 10px}.dsp-grupo .dsp-rot{margin-bottom:4px}.dsp-grupo .segmented{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}.dsp-grupo .seg-btn{flex:0 0 auto;padding:8px 11px;font-size:var(--t2)}' +
+    '#finDespesas .financeiro-bloco{margin-bottom:14px}.dsp-av-l{font-size:var(--t2);margin:6px 0}.dsp-av-l div{margin-top:8px}' +
+    '.abat-lin{white-space:normal;flex-wrap:wrap;gap:6px 10px}#bodyFinanceiro .abat-lin button{height:32px;min-height:32px}' +
+    '@media(max-width:560px){#bodyFinanceiro .financeiro-item:has(.abat-lista){flex-wrap:wrap}#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-right{flex:1 1 100%;width:100%}#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-actions{justify-content:flex-end}}' +
     '.dsp-tit{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 4px 6px}' +
     '.dsp-tag{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}.dsp-tag.ct{background:#EDE7FB;color:#5b3bb0}.dsp-tag.cc{background:#FBEFD2;color:#8A5A0B}.ct-ja-v{font-weight:700;font-variant-numeric:tabular-nums}#finDespesas .ct-busca{width:100%;box-sizing:border-box}';
   document.head.appendChild(st);
@@ -94,6 +114,8 @@ function dspAplicar(){
   document.addEventListener('click', function(ev){
     var f = ev.target.closest ? ev.target.closest('[data-dsp-f]') : null;
     if (f){ dspS[f.getAttribute('data-dsp-f')] = f.getAttribute('data-v'); try{ dspAplicar(); }catch(e){} return; }
+    var mm = ev.target.closest ? ev.target.closest('[data-dsp-mes]') : null;
+    if (mm){ mesSelecionado = mm.getAttribute('data-dsp-mes'); try{ render(); renderAcordos(); renderAlvaras(); renderFinanceiro(); }catch(e){ console.error(e); } return; }
     var b = ev.target.closest ? ev.target.closest('[data-dsp]') : null; if (!b) return;
     var a = b.getAttribute('data-dsp');
     if (a === 'ir'){ mfIr('despesas'); return; }
