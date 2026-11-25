@@ -29,7 +29,7 @@ const clicaKpi = async re => { await page.evaluate(re => Array.from(document.que
 await entrar();
 // ---- Financeiro
 await page.evaluate(() => document.querySelector('#btbar [data-tab="financeiro"]').click()); await page.waitForTimeout(1200);
-check(await on('#headFinanceiro') === 'Visão geral' && /Visão geral\s*Divisão do mês\s*PJ\s*PF\s*Patrimônio\s*Orçamento\s*Análises/.test((await t('#headFinanceiro')).replace(/\n/g, ' ')), 'Financeiro: sub-abas Visão geral, Divisão do mês, PJ, PF, Patrimônio, Orçamento e Análises; abre na Visão geral');
+check(await on('#headFinanceiro') === 'Visão geral' && /Visão geral\s*Divisão do mês\s*PJ\s*PF\s*Despesas\s*Patrimônio\s*Orçamento\s*Análises/.test((await t('#headFinanceiro')).replace(/\n/g, ' ')), 'Financeiro: sub-abas Visão geral, Divisão do mês, PJ, PF, Despesas, Patrimônio, Orçamento e Análises; abre na Visão geral');
 let tx = await t('#finResumo');
 check(/PATRIMÔNIO LÍQUIDO/i.test(tx) && /R\$\s*15\.700,00/.test(tx), 'patrimônio líquido = PJ 9.000 + PF 200 + reserva 1.000 + conta da obra 5.500 = R$ 15.700 (o mesmo da aba Patrimônio)');
 check(/R\$\s*9\.000,00/.test(await kpi('Saldo da PJ')) && /R\$\s*200,00/.test(await kpi('Saldo da PF')) && /R\$\s*4\.000,00/.test(await kpi('Recebido em')), 'indicadores: saldo da PJ 9.000, saldo da PF 200, recebido no mês 4.000');
@@ -43,7 +43,9 @@ check(/recebido/.test(await page.evaluate(() => (document.querySelector('#finRes
 await clicaKpi('Folga projetada da PJ');
 check(await on('#headFinanceiro') === 'Divisão do mês' && await visivel('#finGeral') && /Divisão de/.test(await t('#finGeral')), 'tocar na folga abre a Divisão do mês');
 await page.click('#headFinanceiro [data-mf-aba="pj"]'); await page.waitForTimeout(600);
-check(await visivel('#colunaFinanceiroPj') && /Aluguel/.test(await t('#colunaFinanceiroPj')), 'sub-aba PJ mostra a tela da PJ de sempre');
+check(await visivel('#colunaFinanceiroPj') && /Despesas do mês/.test(await t('#colunaFinanceiroPj')), 'sub-aba PJ mostra a tela da PJ (com a linha-resumo das despesas)');
+await page.click('#headFinanceiro [data-mf-aba="despesas"]'); await page.waitForTimeout(700);
+check(await visivel('#finDespesas') && /Aluguel/.test(await t('#finDespesas')), 'sub-aba Despesas mostra as despesas lançadas (Aluguel)');
 await page.click('#headFinanceiro [data-mf-aba="analises"]'); await page.waitForTimeout(900);
 check(await visivel('#anWrap') && await on('#mfAbasAn') === 'Análises', 'sub-aba Análises abre a tela de Análises, com a mesma barra');
 await page.click('#mfAbasAn [data-mf-aba="resumo"]'); await page.waitForTimeout(900);
