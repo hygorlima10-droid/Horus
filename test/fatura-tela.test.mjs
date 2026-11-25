@@ -40,8 +40,8 @@ check(docs.every((d) => d.coluna === 'pf' || d.coluna === 'pj') && docs.some((d)
 t = await cartao();
 check(/Faturas lançadas \(1\)/.test(t) && /Compras por categoria/.test(t) && /Total do cartão no mês R\$ 357,00/.test(t), 'a aba mostra "Faturas lançadas (1)" e o total do cartão no mês, por categoria');
 check(await p.evaluate(() => document.querySelectorAll('#fatCartao .ini-card:not(.fat-ja) .fat-cat .cat-ic svg').length >= 4), 'as compras lançadas por categoria também têm ícone');
-// a fatura também vira DESPESA no mês do FECHAMENTO (dia 26), pelo total, pendente
-const fechaEsp = (() => { let a = +mes.slice(0, 4), m = +mes.slice(5, 7); if (20 <= 26) { m--; if (m < 1) { m = 12; a--; } } return a + '-' + String(m).padStart(2, '0') + '-26'; })();   // o vencimento do teste é o dia 20: o cartão fechou no dia 26 do mês anterior
+// a fatura também vira DESPESA no mês da fatura (o do vencimento), pelo total, pendente
+const fechaEsp = dia(20);   // o mês da fatura é o do VENCIMENTO (o do teste é daqui a 20 dias)
 const despF = async () => p.evaluate(async () => (await (await fetch('/api/db/despesas')).json()).docs.map((d) => ({ id: d.id, ...d.data })).filter((d) => d.faturaId));
 let df = await despF();
 check(df.length === 1 && df[0].mesReferencia === fechaEsp.slice(0, 7) && df[0].data === fechaEsp && Math.abs(df[0].valor - 357) < 0.005 && df[0].pago === false && df[0].categoria === 'cartao' && /^Fatura /.test(df[0].nome), 'a fatura virou despesa pendente no mês do FECHAMENTO (dia 26: ' + fechaEsp + '), R$ 357,00, e não no do vencimento: ' + JSON.stringify(df.map((d) => [d.nome, d.data, d.valor, d.pago])));

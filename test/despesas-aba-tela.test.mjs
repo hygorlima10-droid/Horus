@@ -44,5 +44,13 @@ await p.click('[data-dsp-f="origem"][data-v="tudo"]'); await p.fill('#dspBusca',
 check(/Supermercado Teste/.test(tt) && !/Loja do Cartao/.test(tt), 'a busca filtra conta e cartão por nome');
 await aba('pf');
 check(/Despesas do mês/.test(await p.evaluate(() => document.getElementById('colunaFinanceiroPf').innerText)) && /Pago/.test(await p.evaluate(() => document.getElementById('colunaFinanceiroPf').innerText)), 'a linha-resumo em Salário e fixos mostra pago e pendente');
+// editar uma despesa de fatura de cartão pelo formulário NÃO pode soltar o vínculo com a fatura (senão ela voltaria a contar como gasto)
+await p.evaluate(async (mm) => { await fetch('/api/db/despesas/dcfx', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nome: 'Fatura Editavel final 1234', coluna: 'pf', tipo: 'unica', categoria: 'cartao', valor: 321, data: mm + '-20', mesReferencia: mm, pago: false, faturaId: 'dcm_vinculo', faturaChave: 'k', origemDocumento: true, criadoEm: '2026-01-01T00:00:00.000Z' }) }); }, mm);
+await p.reload(); await p.waitForTimeout(2500); await aba('despesas');
+await p.evaluate(() => document.querySelector('[data-menu-toggle="dcfx"]').click()); await p.waitForTimeout(400);
+await p.evaluate(() => document.querySelector('[data-despesa-editar="dcfx"]').click()); await p.waitForSelector('#despesaNomeInput');
+await p.fill('#despesaNomeInput', 'Fatura Editavel final 1234 (ajustada)'); await p.click('#saveBtnDespesa'); await p.waitForTimeout(1500);
+const dd = await p.evaluate(async () => (await (await fetch('/api/db/despesas')).json()).docs.find((d) => d.id === 'dcfx')?.data || {});
+check(/ajustada/.test(dd.nome) && dd.faturaId === 'dcm_vinculo' && dd.faturaChave === 'k' && dd.origemDocumento === true, 'editar a despesa da fatura pelo formulário mantém o vínculo com a fatura (faturaId)');
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
