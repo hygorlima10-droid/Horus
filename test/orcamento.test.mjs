@@ -22,7 +22,7 @@ await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await pag
 const txt = () => page.evaluate(() => document.getElementById('finOrcamento').innerText);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="financeiro"][data-fin="resumo"]').click()); await page.waitForTimeout(800);
 // 1) a sub-aba existe, antes de Análises
-check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#headFinanceiro button')).map(b => b.innerText.replace(/\s+/g, ' ').trim()); return l.join('|'); }) === 'Visão geral|Divisão do mês|PJ|PF|Patrimônio|Orçamento|Análises', 'sub-abas de Finanças: ... Patrimônio | Orçamento | Análises');
+check(await page.evaluate(() => { const l = Array.from(document.querySelectorAll('#headFinanceiro button')).map(b => b.innerText.replace(/\s+/g, ' ').trim()); return l.join('|'); }) === 'Visão geral|Divisão do mês|PJ|PF|Despesas|Patrimônio|Orçamento|Análises', 'sub-abas de Finanças: ... Patrimônio | Orçamento | Análises');
 // 2) alerta na Visão geral
 let vg = await page.evaluate(() => document.getElementById('finResumo').innerText);
 check(/Orçamento: Sistemas e software jurídico estourou/.test(vg) && /Orçamento: Impostos e taxas \(DAS, ISS\) chegou no limite/.test(vg) && /Passaram de 80% do limite: Estrutura do escritório/.test(vg), '"Precisa de atenção" na Visão geral avisa: Sistemas estourou, Impostos no limite, Estrutura passou de 80%');
