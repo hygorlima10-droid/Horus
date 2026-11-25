@@ -40,12 +40,13 @@ function dspLinhas(){
 function dspTopoHtml(){
   var t = dspTotais(), gasto = r2(t.cad + t.conta + t.cartao), fam = ppFamiliar();
   var chip = function(g, k, rot, atual){ return '<button type="button" class="seg-btn' + (atual === k ? ' active' : '') + '" data-dsp-f="' + g + '" data-v="' + k + '">' + rot + '</button>'; };
-  return '<div class="financeiro-bloco"><div class="financeiro-secao-head"><h4>Despesas · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4><button type="button" class="btn btn-primary" data-dsp="nova">+ Nova despesa</button></div>' +
-    '<div class="dsp-kv"><div><b>' + fmtMoeda(gasto) + '</b><span>gasto no mês (por data da compra)</span></div><div><b>' + fmtMoeda(t.cad) + '</b><span>cadastradas</span></div><div><b>' + fmtMoeda(t.conta) + '</b><span>conta (extrato)</span></div><div><b>' + fmtMoeda(t.cartao) + '</b><span>cartão</span></div>' + (t.fat > 0.004 ? '<div><b>' + fmtMoeda(t.fat) + '</b><span>faturas a pagar no mês</span></div>' : '') + '</div>' +
-    '<div class="dsp-chips"><span class="saldo-data">Origem</span><div class="segmented">' + chip('origem', 'tudo', 'Tudo', dspS.origem) + chip('origem', 'cad', 'Cadastradas', dspS.origem) + chip('origem', 'conta', 'Conta (extrato)', dspS.origem) + chip('origem', 'cartao', 'Cartão', dspS.origem) + '</div>' +
-    (fam ? '' : '<span class="saldo-data" style="margin-left:8px">Conta</span><div class="segmented">' + chip('conta', 'tudo', 'PF e PJ', dspS.conta) + chip('conta', 'pf', 'PF', dspS.conta) + chip('conta', 'pj', 'PJ', dspS.conta) + '</div>') + '</div>' +
-    '<input type="search" id="dspBusca" class="ct-busca" placeholder="Buscar por nome ou categoria (conta e cartão)" value="' + escapeHtml(dspS.busca) + '">' +
-    (t.fat > 0.004 ? '<div class="saldo-data">A despesa “Fatura …” (R$ ' + fmtMoeda(t.fat).replace('R$ ', '') + ') <b>não entra no gasto do mês</b>: no lugar dela entram as compras do cartão, pela data da compra. Ela aparece nas cadastradas, pendente até ser paga.</div>' : '') + '</div>';
+  var kv = function(v, rot, cls){ return '<div' + (cls ? ' class="' + cls + '"' : '') + '><b>' + fmtMoeda(v) + '</b><span class="dsp-rot">' + rot + '</span></div>'; };
+  return '<div class="financeiro-bloco"><div class="financeiro-secao-head dsp-head"><h4>Despesas · ' + escapeHtml(mesCurto(mesSelecionado)) + '</h4><button type="button" class="btn btn-primary" data-dsp="nova">+ Nova despesa</button></div>' +
+    '<div class="dsp-kv">' + kv(gasto, 'gasto no mês (pela data da compra)', 'dsp-kv-total') + kv(t.cad, 'cadastradas') + kv(t.conta, 'conta') + kv(t.cartao, 'cartão') + (t.fat > 0.004 ? kv(t.fat, 'faturas a pagar no mês') : '') + '</div>' +
+    '<div class="dsp-grupo"><span class="dsp-rot">Origem</span><div class="segmented">' + chip('origem', 'tudo', 'Tudo', dspS.origem) + chip('origem', 'cad', 'Cadastradas', dspS.origem) + chip('origem', 'conta', 'Conta', dspS.origem) + chip('origem', 'cartao', 'Cartão', dspS.origem) + '</div></div>' +
+    (fam ? '' : '<div class="dsp-grupo"><span class="dsp-rot">Conta</span><div class="segmented">' + chip('conta', 'tudo', 'PF e PJ', dspS.conta) + chip('conta', 'pf', 'PF', dspS.conta) + chip('conta', 'pj', 'PJ', dspS.conta) + '</div></div>') +
+    '<input type="search" id="dspBusca" class="ct-busca" placeholder="Buscar por nome ou categoria" value="' + escapeHtml(dspS.busca) + '">' +
+    (t.fat > 0.004 ? '<div class="saldo-data">A despesa “Fatura …” (' + fmtMoeda(t.fat) + ') <b>não entra no gasto do mês</b>: no lugar dela entram as compras do cartão, pela data da compra. Ela aparece nas cadastradas, pendente até ser paga.</div>' : '') + '</div>';
 }
 function dspLinhasHtml(){
   if (dspS.origem === 'cad') return '';
@@ -83,9 +84,11 @@ function dspAplicar(){
 }
 (function(){
   var st = document.createElement('style');
-  st.textContent = '.dsp-kv{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0 10px}.dsp-kv b{display:block;font-size:var(--t5)}.dsp-kv span{font-size:var(--t1);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}' +
-    '.dsp-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 8px}.dsp-tit{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 4px 6px}' +
-    '.dsp-tag{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}.dsp-tag.ct{background:#EDE7FB;color:#5b3bb0}.dsp-tag.cc{background:#FBEFD2;color:#8A5A0B}.ct-ja-v{font-weight:700;font-variant-numeric:tabular-nums}';
+  st.textContent = '.dsp-head{flex-wrap:wrap}.dsp-head h4{white-space:normal!important;flex:1 1 140px;min-width:0}.dsp-head .btn{flex:0 0 auto;white-space:nowrap}' +
+    '.dsp-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:12px 12px;margin:8px 0 14px}.dsp-kv>div{min-width:0}.dsp-kv b{display:block;font-size:var(--t4);font-variant-numeric:tabular-nums}.dsp-kv-total{grid-column:1/-1}.dsp-kv-total b{font-size:var(--t5)}' +
+    '.dsp-rot{display:block;font-size:var(--t1);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}.dsp-grupo{margin:0 0 10px}.dsp-grupo .dsp-rot{margin-bottom:4px}.dsp-grupo .segmented{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}.dsp-grupo .seg-btn{flex:0 0 auto;padding:8px 11px;font-size:var(--t2)}' +
+    '.dsp-tit{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 4px 6px}' +
+    '.dsp-tag{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}.dsp-tag.ct{background:#EDE7FB;color:#5b3bb0}.dsp-tag.cc{background:#FBEFD2;color:#8A5A0B}.ct-ja-v{font-weight:700;font-variant-numeric:tabular-nums}#finDespesas .ct-busca{width:100%;box-sizing:border-box}';
   document.head.appendChild(st);
   if (typeof mfAplicar === 'function'){ var oAp = mfAplicar; mfAplicar = function(){ oAp.apply(this, arguments); try{ dspAplicar(); }catch(e){ console.error('despesas', e); } }; }
   document.addEventListener('click', function(ev){
