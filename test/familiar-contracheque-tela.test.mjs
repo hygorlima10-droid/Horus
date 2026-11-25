@@ -29,23 +29,22 @@ let t = await card();
 check(/Contracheque lido · abril de 2024/i.test(t) && /Bruto R\$ 11\.769,35/.test(t) && /Descontos em folha R\$ 8\.922,32/.test(t) && /Líquido R\$ 2\.847,03/.test(t), 'o PDF foi lido: abril/2024, bruto R$ 11.769,35, descontos R$ 8.922,32 e líquido R$ 2.847,03 (' + t.slice(0, 140) + ')');
 check(/19 linhas · 9 consignados/.test(t) && /lido sem modelo · confere/.test(t), '19 linhas, 9 consignados e selo VERDE (fecha com os totais)');
 check(!/000\.000\.000|SERVIDOR DE EXEMPLO/.test(t), 'o cartão não mostra CPF nem nome do servidor');
-// REGRA: o contracheque é de um mês (referência) e cai no MÊS SEGUINTE. Confirmo com a referência do mês passado: o salário cai no mês atual.
-const prev = (() => { const d = new Date(Date.UTC(+hoje.slice(0, 4), +hoje.slice(5, 7) - 2, 1)); return d.toISOString().slice(0, 7); })();
-await page.fill('[id^="ccq_"][id$="_ref"]', prev); await page.click('[data-ccq="confirmar"]'); await page.waitForTimeout(2200);
+// REGRA: o contracheque de um mês cai no ÚLTIMO DIA desse mesmo mês (o de novembro entra em novembro)
+await page.fill('[id^="ccq_"][id$="_ref"]', hoje); await page.click('[data-ccq="confirmar"]'); await page.waitForTimeout(2200);
 t = await card();
 check(/Contracheque · /.test(t) && /Proventos · bruto R\$ 11\.769,35/i.test(t) && /SUBSIDIO EFETIVO/.test(t) && /Descontos em folha · R\$ 8\.922,32 \(inclui R\$ 3\.908,50 de consignados\)/i.test(t), 'confirmado: proventos, descontos em folha e a soma dos consignados (R$ 3.908,50)');
 if (process.env.DEBUG_CQ) console.log('DEBUG2', t.slice(900, 1900));
-check(/Líquido \(cai na conta\) R\$ 2\.847,03/.test(t) && /Salário de [a-zç]+ de \d{4} \(contracheque de [a-zç]+ de \d{4}\): previsto/.test(t) && /Recebido em /.test(t), 'líquido R$ 2.847,03 e o salário do mês SEGUINTE à referência como PREVISTO');
-check(/Consignados · 9 contratos · R\$ 3\.908,50\/mês/i.test(t) && t.includes('BANCO INTERMEDIUM - EMPRESTIMO 01 parcela 25 de 96 · restam 71, termina em ' + fimDe(prev, 71)) && /Falta pagar no total/.test(t) && /margem consignável: R\$ 3\.908,56/.test(t), 'consignados: 9 contratos, parcela 25 de 96 (restam 71), total que falta e margem consignável');
+check(/Líquido \(cai na conta\) R\$ 2\.847,03/.test(t) && /Salário de [a-zç]+ de \d{4}: previsto/.test(t) && /Cai no último dia do mês/.test(t), 'líquido R$ 2.847,03 e o salário do MESMO mês da referência como PREVISTO, caindo no último dia do mês');
+check(/Consignados · 9 contratos · R\$ 3\.908,50\/mês/i.test(t) && t.includes('BANCO INTERMEDIUM - EMPRESTIMO 01 parcela 25 de 96 · restam 71, termina em ' + fimDe(hoje, 71)) && /Falta pagar no total/.test(t) && /margem consignável: R\$ 3\.908,56/.test(t), 'consignados: 9 contratos, parcela 25 de 96 (restam 71), total que falta e margem consignável');
 check(t.indexOf('BANCO SAFRA - EMPRESTIMO 01') < t.indexOf('BANCO SANTANDER BRASIL - EMPRESTIMO 03') && /BANCO SANTANDER BRASIL - EMPRESTIMO 03 parcela 6 de 96/.test(t), 'os consignados vêm na ordem do término: o que termina primeiro (Safra 01, parcela 31 de 96) em cima');
 const receitas = () => page.evaluate(async () => (await (await fetch('/api/db/receitasManuais')).json()).docs.map((d) => d.data));
 let rs = await receitas(); const sal = rs.find((r) => r.ccqSalario);
-check(sal && sal.recorrente === true && sal.coluna === 'pf' && sal.recebimentos[hoje].valor === 2847.03 && sal.recebimentos[hoje].recebido === false && !sal.recebimentos[prev], 'o líquido virou a receita recorrente "Salário (contracheque)" no mês SEGUINTE à referência (' + hoje + '), não no mês do contracheque (' + prev + ')');
+check(sal && sal.recorrente === true && sal.coluna === 'pf' && sal.recebimentos[hoje].valor === 2847.03 && sal.recebimentos[hoje].recebido === false , 'o líquido virou a receita recorrente "Salário (contracheque)" no mesmo mês da referência (' + hoje + ')');
 const docs = await page.evaluate(async () => (await (await fetch('/api/db/extratos')).json()).docs.map((d) => ({ id: d.id, tipo: d.data.tipo, d: d.data })));
-const cc = docs.find((d) => d.id === 'cc_' + prev); check(cc && cc.tipo === 'contracheque' && !JSON.stringify(cc.d).match(/000\.000|EXEMPLO DA SILVA|00000/), 'o contracheque ficou guardado pela referência (id cc_' + prev + ') sem CPF, PIS, identidade nem nome do servidor');
+const cc = docs.find((d) => d.id === 'cc_' + hoje); check(cc && cc.tipo === 'contracheque' && !JSON.stringify(cc.d).match(/000\.000|EXEMPLO DA SILVA|00000/), 'o contracheque ficou guardado pela referência (id cc_' + hoje + ') sem CPF, PIS, identidade nem nome do servidor');
 // marcar como recebido
 await page.click('[data-ccq="recebido"]'); await page.waitForTimeout(1500);
-rs = await receitas(); check(rs.find((r) => r.ccqSalario).recebimentos[hoje].recebido === true && /\): recebido/.test(await card()), 'um toque marcou o salário como recebido');
+rs = await receitas(); check(rs.find((r) => r.ccqSalario).recebimentos[hoje].recebido === true && /Salário de [a-zç]+ de \d{4}: recebido/.test(await card()), 'um toque marcou o salário como recebido');
 // divisão do salário usa o líquido
 await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="geral"]').click()); await page.waitForTimeout(1200);
 const dv = await page.evaluate(() => document.getElementById('bodyFinanceiro').innerText.replace(/\s+/g, ' '));
@@ -53,7 +52,7 @@ check(/Contracheque de/i.test(dv) && /Líquido \(base da divisão\) R\$ 2\.847,0
 // mês seguinte: estimativa copiada
 await page.evaluate(() => document.getElementById('mesProximo').click()); await page.waitForTimeout(600);
 await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="pf"]').click()); await page.waitForTimeout(1200);
-t = await card(); check(/Ainda não há contracheque/.test(t) && /Copiar de/.test(t), 'no mês seguinte (o contracheque de ' + hoje + ' cai nele): oferece "Copiar do mês passado (estimativa)"');
+t = await card(); check(/Ainda não há contracheque/.test(t) && /Copiar de/.test(t), 'no mês seguinte: oferece "Copiar do mês passado (estimativa)"');
 await page.click('[data-ccq="copiar"]'); await page.waitForTimeout(2000); t = await card();
 if (process.env.DEBUG_CQ) console.log('DEBUG', t.slice(0, 900));
 check(/estimativa do mês passado/.test(t) && /Líquido \(cai na conta\) R\$ 2\.847,03/.test(t) && /Consignados · 9 contratos/i.test(t), 'estimativa criada com o mesmo líquido (sem extras no exemplo) e os consignados, marcada como "estimativa do mês passado"');

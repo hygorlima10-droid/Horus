@@ -48,7 +48,7 @@ function fatCard(d){
   var h = '<div class="ini-card ext-card" data-fat-card="' + escapeHtml(id) + '"><div class="ext-card-top"><b>Fatura' + (x.banco ? ' · ' + escapeHtml(x.banco) : '') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b><span class="ext-chip ' + (x.selo === 'verde' ? 'ok' : 'bad') + '">' + (x.selo === 'verde' ? 'soma confere' : 'confira') + '</span></div>' +
     '<div class="fat-kv"><div><b>' + fatM(x.soma) + '</b><span>total lido' + (x.total != null ? ' · fatura ' + fatM(x.total) : '') + '</span></div><div><b>' + nCompras + ' compras</b><span>' + (x.periodo && x.periodo.de ? fmtData(x.periodo.de) + ' a ' + fmtData(x.periodo.ate) : 'período não identificado') + '</span></div></div>' +
     ((x.provas || []).length ? '<div class="saldo-data">' + escapeHtml(x.provas.join('; ')) + '</div>' : '') +
-    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
+    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + dcmCampo(id, 'fecha', 'Fechamento (dia 26) — a despesa entra neste mês', 'date', (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechamento(venc)) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
     (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
   h += '<div class="fat-t">Compras por categoria</div>' + cats.map(function(c){ return '<div class="fat-cat">' + fatIc(c) + '<span class="fat-cn">' + escapeHtml(c) + '<small>' + g.cats[c].n + (g.cats[c].n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(g.cats[c].v) + '</b></div>'; }).join('');
   if (pends.length){
@@ -72,6 +72,20 @@ function fatCard(d){
   h += '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-fat="confirmar" data-id="' + escapeHtml(id) + '">Confirmar a fatura</button><button type="button" class="btn-text" data-fat="ignorar" data-id="' + escapeHtml(id) + '">Ignorar</button></div></div>';
   return h;
 }
+/* o cartão fecha SEMPRE no dia 26: o fechamento é o último dia 26 antes do vencimento (vence 02/12 → fechou 26/11) */
+function fatFechamento(venc){
+  if (!venc) return '';
+  var a = +venc.slice(0, 4), m = +venc.slice(5, 7), d = +venc.slice(8, 10);
+  if (d <= 26){ m--; if (m < 1){ m = 12; a--; } }
+  return a + '-' + String(m).padStart(2, '0') + '-26';
+}
+/* a fatura como DESPESA no mês do FECHAMENTO (dia 26), pelo total da fatura; o detalhe por categoria vai pela data da compra e não conta de novo nas análises */
+function fatCriarDespesa(id, x, fecha, coluna){
+  var venc = x.vencimento || '';
+  if (typeof despesaPorFatura === 'function' && despesaPorFatura(id)) return Promise.resolve();
+  var tot = x.total != null ? x.total : x.soma, nome = 'Fatura ' + (x.banco || 'cartão') + (x.cartao ? ' final ' + x.cartao : '');
+  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, observacoes: 'Fatura do cartão (fecha em ' + fmtData(fecha) + (venc ? ', vence em ' + fmtData(venc) : '') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
+}
 function fatConfirmar(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
   var x = d.dados, venc = dcmLer(id, 'venc') || x.vencimento || '';
@@ -87,9 +101,11 @@ function fatConfirmar(id){
   var meses = Object.keys(porMes), cadeia = Promise.resolve();
   meses.forEach(function(m){ var o = porMes[m]; cadeia = cadeia.then(function(){ return extGravar(o.id, { tipo: 'diaadia', mes: o.mes, conta: 'cartao:' + id, coluna: coluna, origem: 'cartao', fatura: id, cats: o.cats, linhas: o.linhas, atualizadoEm: new Date().toISOString() }); }); });
   cadeia = cadeia.then(function(){ return mudouRegra ? persistExtCfg({ regras: regras }) : null; });
-  var tr = fatS.troca[id] !== false ? fatDespesasCartao(d)[0] : null;
+  var fecha = dcmLer(id, 'fecha') || fatFechamento(venc);
+  cadeia = cadeia.then(function(){ return fatCriarDespesa(id, Object.assign({}, x, { vencimento: venc }), fecha, coluna); });
+  var tr = fatS.troca[id] !== false ? fatDespesasCartao(d).filter(function(c){ return !c.d.faturaId; })[0] : null;
   if (tr && typeof persistPatchDespesa === 'function') cadeia = cadeia.then(function(){ return persistPatchDespesa(tr.d, { faturaMeses: (tr.d.faturaMeses || []).concat([tr.mes]) }); });
-  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc }) })); })
+  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc, fechamento: fecha }) })); })
     .then(function(){ toast('Fatura lançada: ' + x.itens.length + ' lançamentos em ' + meses.length + (meses.length === 1 ? ' mês' : ' meses') + '.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} })
     .catch(function(e){ console.error('fatura', e); toast('Não consegui lançar a fatura. Tente de novo.'); });
 }
@@ -97,6 +113,8 @@ function fatDesfazer(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
   var ids = d.docsDD || [], cadeia = Promise.resolve();
   ids.forEach(function(i){ cadeia = cadeia.then(function(){ return extApagar(i); }); });
+  var dp = (typeof despesaPorFatura === 'function') ? despesaPorFatura(id) : null;
+  if (dp && typeof persistExcluiDespesaSimples === 'function') cadeia = cadeia.then(function(){ return persistExcluiDespesaSimples(dp.id); });
   return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'pendente', concluidoEm: null, docsDD: [] })); }).then(function(){ toast('Fatura desfeita: voltou para conferir.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} });
 }
 /* aba "Cartão de crédito" */
@@ -109,7 +127,7 @@ function fatAbaHtml(){
   extratos.forEach(function(d){ if (d.tipo !== 'diaadia' || d.origem !== 'cartao' || d.mes !== mesSelecionado) return; Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0, c = d.cats[k0]; por[k] = por[k] || { v: 0, n: 0 }; por[k].v = r2(por[k].v + (Number(c.v) || 0)); por[k].n += c.n || 0; tot += Number(c.v) || 0; n += c.n || 0; }); });
   var ks = Object.keys(por).sort(function(a, b){ return por[b].v - por[a].v; });
   h += '<div class="financeiro-secao-head"><h4>Compras por categoria · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4></div>' + (ks.length ? '<div class="ini-card">' + ks.map(function(k){ return '<div class="fat-cat">' + fatIc(k) + '<span class="fat-cn">' + escapeHtml(k) + '<small>' + por[k].n + ' lançamentos</small></span><b>' + fmtMoeda(por[k].v) + '</b></div>'; }).join('') + '<div class="fat-lin"><span><b>Total do cartão no mês</b></span><b>' + fmtMoeda(r2(tot)) + '</b></div></div>' : '<div class="financeiro-vazio">Nenhuma compra de cartão lançada neste mês.</div>');
-  h += '<div class="financeiro-secao-head"><h4>Faturas lançadas' + (ja.length ? ' (' + ja.length + ')' : '') + '</h4></div>' + (ja.length ? ja.map(function(d){ var x = d.dados; return '<div class="ini-card fat-ja"><div class="fat-lin"><span><b>' + escapeHtml(x.banco || 'Cartão') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b> <small>vence ' + escapeHtml(fmtData(x.vencimento)) + ' · ' + x.itens.length + ' lançamentos</small></span><b>' + fatM(x.soma) + '</b></div><button type="button" class="btn-text" data-fat="desfazer" data-id="' + escapeHtml(d.id) + '">Desfazer</button></div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma fatura lançada ainda.</div>');
+  h += '<div class="financeiro-secao-head"><h4>Faturas lançadas' + (ja.length ? ' (' + ja.length + ')' : '') + '</h4></div>' + (ja.length ? ja.map(function(d){ var x = d.dados; return '<div class="ini-card fat-ja"><div class="fat-lin"><span><b>' + escapeHtml(x.banco || 'Cartão') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b> <small>vence ' + escapeHtml(fmtData(x.vencimento)) + ' · ' + x.itens.length + ' lançamentos</small></span><b>' + fatM(x.soma) + '</b></div><button type="button" class="btn-text" data-fat="desfazer" data-id="' + escapeHtml(d.id) + '">Desfazer</button>' + ((x.vencimento && typeof despesaPorFatura === 'function' && !despesaPorFatura(d.id)) ? ' <button type="button" class="btn btn-ghost" data-fat="despesa" data-id="' + escapeHtml(d.id) + '">Lançar como despesa de ' + escapeHtml(mesLabel((x.fechamento || fatFechamento(x.vencimento)).slice(0, 7))) + '</button>' : '') + '</div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma fatura lançada ainda.</div>');
   return h;
 }
 function fatAbasHtml(){
@@ -159,6 +177,7 @@ function fatOrigemSegHtml(){
     if (a === 'confirmar') return fatConfirmar(id);
     if (a === 'ignorar'){ var d = extDocPorId(id); if (d) return extGravar(d.id, Object.assign({}, d, { status: 'ignorado' })).then(function(){ renderExtratos(); }); }
     if (a === 'desfazer') return fatDesfazer(id);
+    if (a === 'despesa'){ var dd = extDocPorId(id); if (dd && dd.dados && dd.dados.vencimento){ var fc = dd.dados.fechamento || fatFechamento(dd.dados.vencimento); return fatCriarDespesa(id, dd.dados, fc, dd.coluna || dcmColunaDe(dd)).then(function(){ toast('Fatura lançada como despesa de ' + mesLabel(fc.slice(0, 7)) + ' (fecha em ' + fmtData(fc) + ').'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} }); } }
   });
   document.addEventListener('change', function(ev){
     var t = ev.target; if (!t || !t.getAttribute) return;

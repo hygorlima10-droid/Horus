@@ -2015,6 +2015,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -4575,6 +4578,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     return persistAtualizaDespesa(despesa.id, novo);
   }
   window.persistPatchDespesa = persistPatchDespesa;
+  window.persistExcluiDespesaSimples = persistExcluiDespesaSimples;
+  window.despesaPorFatura = function(fid){ return despesas.filter(function(d){ return d.faturaId === fid; })[0] || null; };
 
   /* transferência PJ/PF = uma receita + uma despesa ligadas por transferenciaId: gravadas juntas, tudo ou nada (queda de conexão no meio não deixa só uma) */
   function persistNovaTransferencia(receita, despesa){
@@ -8469,7 +8474,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var porCategoria = {};
     Object.keys(CATEGORIA_LABEL).forEach(function(cat){ porCategoria[cat] = 0; });
     getDespesasParaMes(coluna).forEach(function(it){
-      if (it.despesa.transferenciaId) return;   /* transferência entre PF e PJ não é gasto */
+      if (it.despesa.transferenciaId || it.despesa.faturaId) return;   /* transferência entre PF e PJ não é gasto; a fatura do cartão já vem detalhada por categoria */
       var cat = catIdValida(it.despesa.categoria);
       porCategoria[cat] = (porCategoria[cat]||0) + valorDespesaItem(it);
     });
@@ -14937,7 +14942,7 @@ function anDespesasMes(m){
     var porCat = {}, porNome = {}, total = 0, itens = [];
     ['pj', 'pf'].forEach(function(col){
       getDespesasParaMes(col).forEach(function(it){
-        if (it.despesa.transferenciaId) return;
+        if (it.despesa.transferenciaId || it.despesa.faturaId) return;   /* a fatura do cartão entra pelo detalhe (dia a dia do cartão), não de novo como despesa */
         var v = valorDespesaItem(it);
         if (!(v > 0.004)) return;
         var c = catIdValida(it.despesa.categoria), nome = String(it.despesa.nome || 'Sem nome').trim();
@@ -25746,9 +25751,10 @@ document.addEventListener('change', function(ev){ var t = ev.target; if (t && t.
    - "Copiar do mês passado" faz uma estimativa (sem os extras) enquanto o contracheque novo não sai.
    Guardado na coleção `extratos` (cofre dele): id cc_AAAA-MM, só o que foi lido (nunca CPF, PIS nem identidade).
    ============================================================ */
-/* REGRA: o contracheque é de um mês (referência), mas o salário cai no MÊS SEGUINTE: o de novembro é recebido em dezembro */
-function ccqPagoEm(ref){ return deslocarMes(ref, 1); }
-function ccqRefDe(mesRecebimento){ return deslocarMes(mesRecebimento, -1); }
+/* REGRA: o contracheque de um mês (referência) é recebido NO ÚLTIMO DIA desse mesmo mês: o de novembro cai em 30/11 (correção do proprietário em 25/11; a regra do mês seguinte foi desfeita) */
+function ccqPagoEm(ref){ return ref; }
+function ccqRefDe(mesRecebimento){ return mesRecebimento; }
+function ccqUltimoDia(ref){ var a = +ref.slice(0, 4), m = +ref.slice(5, 7); return ref + '-' + String(new Date(a, m, 0).getDate()).padStart(2, '0'); }
 function ccqAtivo(){ return typeof ffnAtivo === 'function' && ffnAtivo(); }
 function ccqDoc(mes){ var d = extDocPorId('cc_' + mes); return d && d.tipo === 'contracheque' ? d : null; }
 function ccqPendentes(){ return dcmPendentes().filter(function(d){ return d.kind === 'contracheque'; }); }
@@ -25773,7 +25779,7 @@ function ccqConfirmar(d){
   if (!/^\d{4}-\d{2}$/.test(ref)){ toast('Informe o mês de referência do contracheque.'); return Promise.resolve(); }
   var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '', origem: d.id };
   return extGravar('cc_' + ref, doc).then(function(){ return ccqReceita(ref, x.totais.liquido); }).then(function(){ return dcmConcluir(d); })
-    .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (o contracheque é recebido no mês seguinte).'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
+    .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (cai no último dia do mês, ' + fmtData(ccqUltimoDia(ref)) + ').'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
 }
 /* estimativa a partir do mês passado: sem os serviços extras (que variam) */
 function ccqCopiar(){
@@ -25785,7 +25791,7 @@ function ccqCopiar(){
 }
 /* o líquido apareceu como crédito no extrato? */
 function ccqConfere(doc){
-  var liq = doc.totais.liquido, ini = ccqPagoEm(doc.ref) + '-01', fim = deslocarMes(doc.ref, 2) + '-05', ach = null;   /* cai no mês seguinte à referência */
+  var liq = doc.totais.liquido, ini = ccqPagoEm(doc.ref) + '-01', fim = deslocarMes(doc.ref, 1) + '-05', ach = null;   /* cai no último dia do mês da referência (aceita até o começo do seguinte) */
   extratos.forEach(function(e){ if (e.tipo === 'arquivo') (e.lanc || []).forEach(function(l){ if (!ach && Math.abs(l.v - liq) <= 1 && l.d >= ini && l.d <= fim) ach = { data: l.d, titulo: e.titulo || '' }; }); });
   return ach;
 }
@@ -25797,12 +25803,12 @@ function ccqCardDoc(doc){
   var extras = ccqSoma(doc.itens, function(x){ return x.cat === 'extra'; }), especiais = doc.itens.filter(function(x){ return x.cat === 'decimo' || x.cat === 'ferias' || x.cat === 'abono'; });
   var r = receitasManuais.filter(function(x){ return x.ccqSalario; })[0], reg = r && r.recebimentos ? r.recebimentos[ccqPagoEm(doc.ref)] : null, recebido = !!(reg && reg.recebido);
   var conf = !doc.copiado ? ccqConfere(doc) : null, totCons = cons.reduce(function(t, c){ return t + c.valor; }, 0), faltaTot = cons.reduce(function(t, c){ return t + c.falta; }, 0);
-  var h = '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(doc.ref)) + '</h4><button type="button" class="btn-text" data-ccq="ler">Ler outro</button></div><div class="saldo-data">Recebido em ' + escapeHtml(mesLabel(ccqPagoEm(doc.ref))) + ' (o contracheque de um mês cai no mês seguinte).</div>' +
+  var h = '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(doc.ref)) + '</h4><button type="button" class="btn-text" data-ccq="ler">Ler outro</button></div><div class="saldo-data">Cai no último dia do mês (' + escapeHtml(fmtData(ccqUltimoDia(doc.ref))) + ').</div>' +
     '<div class="ext-chips"><span class="ext-chip ' + (doc.selo === 'verde' ? 'ok' : 'bad') + '" title="' + escapeHtml((doc.provas || []).join('; ')) + '">' + (doc.copiado ? 'estimativa do mês passado' : (doc.selo === 'verde' ? 'lido · fecha com os totais' : 'lido · confira')) + '</span>' + (conf ? '<span class="ext-chip ok" title="' + escapeHtml(conf.titulo) + '">confere com o extrato (' + escapeHtml(fmtData(conf.data)) + ')</span>' : '') + '</div>' +
     '<div class="fv-k" style="margin-top:8px">Proventos · bruto ' + dcmDinheiro(T.rendimentos) + '</div>' + prov.map(ccqLinha).join('') +
     '<div class="fv-k" style="margin-top:8px">Descontos em folha · ' + dcmDinheiro(T.descontos) + (cons.length ? ' (inclui ' + dcmDinheiro(totCons) + ' de consignados)' : '') + '</div>' + desc.map(ccqLinha).join('') +
     '<div class="fp-eq tot" style="margin-top:8px"><span>Líquido (cai na conta)</span><b class="ok">' + dcmDinheiro(T.liquido) + '</b></div>' +
-    '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(ccqPagoEm(doc.ref))) + ' (contracheque de ' + escapeHtml(mesLabel(doc.ref)) + '): <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>' +
+    '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(doc.ref)) + ': <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>' +
     (extras > 0 ? '<div class="note" style="margin-top:8px"><b>Serviços extras neste contracheque:</b> ' + dcmDinheiro(extras) + ' (bruto). Já estão dentro do líquido acima.</div>' : '') +
     (especiais.length ? '<div class="saldo-data" style="margin-top:6px">Também no contracheque: ' + especiais.map(function(x){ return escapeHtml(x.desc) + ' ' + dcmDinheiro(x.valor); }).join(' · ') + '</div>' : '');
   if (cons.length) h += '<div class="fv-k" style="margin-top:10px">Consignados · ' + cons.length + ' contratos · ' + dcmDinheiro(totCons) + '/mês' + (T.liquido > 0 ? ' (' + Math.round(totCons / (T.rendimentos || 1) * 100) + '% do bruto)' : '') + '</div>' +
@@ -25815,7 +25821,7 @@ function ccqCardPendente(d){
   return '<div class="ini-card ext-card" data-ccq-card="' + escapeHtml(d.id) + '"><div class="ext-card-top"><b>Contracheque lido' + (x.ref ? ' · ' + escapeHtml(mesLabel(x.ref)) : '') + '</b><span class="saldo-data">' + escapeHtml(x.cargo || '') + '</span></div>' +
     '<div class="plan-linha"><span>Bruto</span><strong>' + dcmDinheiro(T.rendimentos) + '</strong></div><div class="plan-linha"><span>Descontos em folha</span><strong>' + dcmDinheiro(T.descontos) + '</strong></div><div class="plan-linha"><span>Líquido</span><strong>' + dcmDinheiro(T.liquido) + '</strong></div>' +
     '<div class="saldo-data">' + x.itens.length + ' linhas' + (cons ? ' · ' + cons + ' consignados' : '') + (extras ? ' · serviços extras ' + dcmDinheiro(extras) : '') + '</div>' +
-    '<div class="field" style="margin:6px 0"><label class="field-label">Mês de referência (o salário cai no mês seguinte)</label><input type="month" id="ccq_' + escapeHtml(d.id) + '_ref" value="' + escapeHtml(x.ref || '') + '"></div>' + dcmSeloChip(d) +
+    '<div class="field" style="margin:6px 0"><label class="field-label">Mês de referência (o salário cai no último dia desse mês)</label><input type="month" id="ccq_' + escapeHtml(d.id) + '_ref" value="' + escapeHtml(x.ref || '') + '"></div>' + dcmSeloChip(d) +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="confirmar" data-id="' + escapeHtml(d.id) + '">Confirmar contracheque</button><button type="button" class="btn-text" data-ccq="ignorar" data-id="' + escapeHtml(d.id) + '">Ignorar</button></div></div>';
 }
 /* cartão em "Salário e fixos" (só o familiar com Finanças) */
@@ -25824,7 +25830,7 @@ function ccqHtml(){
   var h = '<div class="financeiro-bloco" id="ccqCard">' + '<input type="file" id="ccqArq" accept=".pdf,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/plain" style="display:none">';
   h += pend.map(ccqCardPendente).join('');
   if (doc) h += ccqCardDoc(doc);
-  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + ' (o salário de ' + escapeHtml(mesLabel(mesSelecionado)) + ' cai neste mês, pelo contracheque do mês anterior). Envie o PDF ou a foto: o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
+  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + '. Envie o PDF ou a foto: o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="ler">Ler contracheque (PDF ou foto)</button>' + (ant ? '<button type="button" class="btn btn-ghost" data-ccq="copiar">Copiar de ' + escapeHtml(mesLabel(deslocarMes(refMes, -1))) + ' (estimativa)</button>' : '') + '</div>';
   else h += '<div class="ext-acoes"><button type="button" class="btn btn-ghost" data-ccq="ler">Ler outro contracheque</button></div>';
   return h + '</div>';
@@ -25921,7 +25927,7 @@ function fatCard(d){
   var h = '<div class="ini-card ext-card" data-fat-card="' + escapeHtml(id) + '"><div class="ext-card-top"><b>Fatura' + (x.banco ? ' · ' + escapeHtml(x.banco) : '') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b><span class="ext-chip ' + (x.selo === 'verde' ? 'ok' : 'bad') + '">' + (x.selo === 'verde' ? 'soma confere' : 'confira') + '</span></div>' +
     '<div class="fat-kv"><div><b>' + fatM(x.soma) + '</b><span>total lido' + (x.total != null ? ' · fatura ' + fatM(x.total) : '') + '</span></div><div><b>' + nCompras + ' compras</b><span>' + (x.periodo && x.periodo.de ? fmtData(x.periodo.de) + ' a ' + fmtData(x.periodo.ate) : 'período não identificado') + '</span></div></div>' +
     ((x.provas || []).length ? '<div class="saldo-data">' + escapeHtml(x.provas.join('; ')) + '</div>' : '') +
-    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
+    '<div class="fat-lin2">' + dcmCampo(id, 'venc', 'Vencimento' + (venc ? '' : ' — informe (não achei no documento)'), 'date', venc) + dcmCampo(id, 'fecha', 'Fechamento (dia 26) — a despesa entra neste mês', 'date', (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechamento(venc)) + (dcmColunaHtml(d) ? dcmColunaHtml(d) : '') + '</div>' +
     (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
   h += '<div class="fat-t">Compras por categoria</div>' + cats.map(function(c){ return '<div class="fat-cat">' + fatIc(c) + '<span class="fat-cn">' + escapeHtml(c) + '<small>' + g.cats[c].n + (g.cats[c].n === 1 ? ' lançamento' : ' lançamentos') + '</small></span><b>' + fatM(g.cats[c].v) + '</b></div>'; }).join('');
   if (pends.length){
@@ -25945,6 +25951,20 @@ function fatCard(d){
   h += '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-fat="confirmar" data-id="' + escapeHtml(id) + '">Confirmar a fatura</button><button type="button" class="btn-text" data-fat="ignorar" data-id="' + escapeHtml(id) + '">Ignorar</button></div></div>';
   return h;
 }
+/* o cartão fecha SEMPRE no dia 26: o fechamento é o último dia 26 antes do vencimento (vence 02/12 → fechou 26/11) */
+function fatFechamento(venc){
+  if (!venc) return '';
+  var a = +venc.slice(0, 4), m = +venc.slice(5, 7), d = +venc.slice(8, 10);
+  if (d <= 26){ m--; if (m < 1){ m = 12; a--; } }
+  return a + '-' + String(m).padStart(2, '0') + '-26';
+}
+/* a fatura como DESPESA no mês do FECHAMENTO (dia 26), pelo total da fatura; o detalhe por categoria vai pela data da compra e não conta de novo nas análises */
+function fatCriarDespesa(id, x, fecha, coluna){
+  var venc = x.vencimento || '';
+  if (typeof despesaPorFatura === 'function' && despesaPorFatura(id)) return Promise.resolve();
+  var tot = x.total != null ? x.total : x.soma, nome = 'Fatura ' + (x.banco || 'cartão') + (x.cartao ? ' final ' + x.cartao : '');
+  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, observacoes: 'Fatura do cartão (fecha em ' + fmtData(fecha) + (venc ? ', vence em ' + fmtData(venc) : '') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
+}
 function fatConfirmar(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
   var x = d.dados, venc = dcmLer(id, 'venc') || x.vencimento || '';
@@ -25960,9 +25980,11 @@ function fatConfirmar(id){
   var meses = Object.keys(porMes), cadeia = Promise.resolve();
   meses.forEach(function(m){ var o = porMes[m]; cadeia = cadeia.then(function(){ return extGravar(o.id, { tipo: 'diaadia', mes: o.mes, conta: 'cartao:' + id, coluna: coluna, origem: 'cartao', fatura: id, cats: o.cats, linhas: o.linhas, atualizadoEm: new Date().toISOString() }); }); });
   cadeia = cadeia.then(function(){ return mudouRegra ? persistExtCfg({ regras: regras }) : null; });
-  var tr = fatS.troca[id] !== false ? fatDespesasCartao(d)[0] : null;
+  var fecha = dcmLer(id, 'fecha') || fatFechamento(venc);
+  cadeia = cadeia.then(function(){ return fatCriarDespesa(id, Object.assign({}, x, { vencimento: venc }), fecha, coluna); });
+  var tr = fatS.troca[id] !== false ? fatDespesasCartao(d).filter(function(c){ return !c.d.faturaId; })[0] : null;
   if (tr && typeof persistPatchDespesa === 'function') cadeia = cadeia.then(function(){ return persistPatchDespesa(tr.d, { faturaMeses: (tr.d.faturaMeses || []).concat([tr.mes]) }); });
-  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc }) })); })
+  return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'concluido', concluidoEm: new Date().toISOString(), coluna: coluna, docsDD: meses.map(function(m){ return porMes[m].id; }), dados: Object.assign({}, x, { vencimento: venc, fechamento: fecha }) })); })
     .then(function(){ toast('Fatura lançada: ' + x.itens.length + ' lançamentos em ' + meses.length + (meses.length === 1 ? ' mês' : ' meses') + '.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} })
     .catch(function(e){ console.error('fatura', e); toast('Não consegui lançar a fatura. Tente de novo.'); });
 }
@@ -25970,6 +25992,8 @@ function fatDesfazer(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
   var ids = d.docsDD || [], cadeia = Promise.resolve();
   ids.forEach(function(i){ cadeia = cadeia.then(function(){ return extApagar(i); }); });
+  var dp = (typeof despesaPorFatura === 'function') ? despesaPorFatura(id) : null;
+  if (dp && typeof persistExcluiDespesaSimples === 'function') cadeia = cadeia.then(function(){ return persistExcluiDespesaSimples(dp.id); });
   return cadeia.then(function(){ return extGravar(d.id, Object.assign({}, d, { status: 'pendente', concluidoEm: null, docsDD: [] })); }).then(function(){ toast('Fatura desfeita: voltou para conferir.'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} });
 }
 /* aba "Cartão de crédito" */
@@ -25982,7 +26006,7 @@ function fatAbaHtml(){
   extratos.forEach(function(d){ if (d.tipo !== 'diaadia' || d.origem !== 'cartao' || d.mes !== mesSelecionado) return; Object.keys(d.cats || {}).forEach(function(k0){ var k = (typeof catNomeNovo === 'function') ? catNomeNovo(k0) : k0, c = d.cats[k0]; por[k] = por[k] || { v: 0, n: 0 }; por[k].v = r2(por[k].v + (Number(c.v) || 0)); por[k].n += c.n || 0; tot += Number(c.v) || 0; n += c.n || 0; }); });
   var ks = Object.keys(por).sort(function(a, b){ return por[b].v - por[a].v; });
   h += '<div class="financeiro-secao-head"><h4>Compras por categoria · ' + escapeHtml(mesLabel(mesSelecionado)) + '</h4></div>' + (ks.length ? '<div class="ini-card">' + ks.map(function(k){ return '<div class="fat-cat">' + fatIc(k) + '<span class="fat-cn">' + escapeHtml(k) + '<small>' + por[k].n + ' lançamentos</small></span><b>' + fmtMoeda(por[k].v) + '</b></div>'; }).join('') + '<div class="fat-lin"><span><b>Total do cartão no mês</b></span><b>' + fmtMoeda(r2(tot)) + '</b></div></div>' : '<div class="financeiro-vazio">Nenhuma compra de cartão lançada neste mês.</div>');
-  h += '<div class="financeiro-secao-head"><h4>Faturas lançadas' + (ja.length ? ' (' + ja.length + ')' : '') + '</h4></div>' + (ja.length ? ja.map(function(d){ var x = d.dados; return '<div class="ini-card fat-ja"><div class="fat-lin"><span><b>' + escapeHtml(x.banco || 'Cartão') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b> <small>vence ' + escapeHtml(fmtData(x.vencimento)) + ' · ' + x.itens.length + ' lançamentos</small></span><b>' + fatM(x.soma) + '</b></div><button type="button" class="btn-text" data-fat="desfazer" data-id="' + escapeHtml(d.id) + '">Desfazer</button></div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma fatura lançada ainda.</div>');
+  h += '<div class="financeiro-secao-head"><h4>Faturas lançadas' + (ja.length ? ' (' + ja.length + ')' : '') + '</h4></div>' + (ja.length ? ja.map(function(d){ var x = d.dados; return '<div class="ini-card fat-ja"><div class="fat-lin"><span><b>' + escapeHtml(x.banco || 'Cartão') + (x.cartao ? ' · final ' + escapeHtml(x.cartao) : '') + '</b> <small>vence ' + escapeHtml(fmtData(x.vencimento)) + ' · ' + x.itens.length + ' lançamentos</small></span><b>' + fatM(x.soma) + '</b></div><button type="button" class="btn-text" data-fat="desfazer" data-id="' + escapeHtml(d.id) + '">Desfazer</button>' + ((x.vencimento && typeof despesaPorFatura === 'function' && !despesaPorFatura(d.id)) ? ' <button type="button" class="btn btn-ghost" data-fat="despesa" data-id="' + escapeHtml(d.id) + '">Lançar como despesa de ' + escapeHtml(mesLabel((x.fechamento || fatFechamento(x.vencimento)).slice(0, 7))) + '</button>' : '') + '</div>'; }).join('') : '<div class="financeiro-vazio">Nenhuma fatura lançada ainda.</div>');
   return h;
 }
 function fatAbasHtml(){
@@ -26032,6 +26056,7 @@ function fatOrigemSegHtml(){
     if (a === 'confirmar') return fatConfirmar(id);
     if (a === 'ignorar'){ var d = extDocPorId(id); if (d) return extGravar(d.id, Object.assign({}, d, { status: 'ignorado' })).then(function(){ renderExtratos(); }); }
     if (a === 'desfazer') return fatDesfazer(id);
+    if (a === 'despesa'){ var dd = extDocPorId(id); if (dd && dd.dados && dd.dados.vencimento){ var fc = dd.dados.fechamento || fatFechamento(dd.dados.vencimento); return fatCriarDespesa(id, dd.dados, fc, dd.coluna || dcmColunaDe(dd)).then(function(){ toast('Fatura lançada como despesa de ' + mesLabel(fc.slice(0, 7)) + ' (fecha em ' + fmtData(fc) + ').'); renderExtratos(); try{ renderFinanceiro(); }catch(e){} }); } }
   });
   document.addEventListener('change', function(ev){
     var t = ev.target; if (!t || !t.getAttribute) return;
@@ -26078,7 +26103,7 @@ function fmiItens(){
         });
         getReceitasManuaisParaMes('pf').forEach(function(it){
           if (it.recebido) return; var r = it.receita, val = Number(it.valor) || 0; if (!(val > 0)) return;
-          var dia = r.ccqSalario ? Math.min(30, fmiUltimoDia(m)) : Math.min(fmiUltimoDia(m), Number(String(r.data || '').slice(8, 10)) || 5), d = m + '-' + String(dia).padStart(2, '0');
+          var dia = r.ccqSalario ? fmiUltimoDia(m) : Math.min(fmiUltimoDia(m), Number(String(r.data || '').slice(8, 10)) || 5), d = m + '-' + String(dia).padStart(2, '0');
           if (d > lim || d < somarDias(hoje, -10)) return;
           out.push({ d: d, titulo: r.descricao || 'Receita', tag: 'A receber', tipo: 'receita', id: r.id, valor: val, entra: true });
         });

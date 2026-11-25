@@ -33,7 +33,7 @@ function fmiItens(){
         });
         getReceitasManuaisParaMes('pf').forEach(function(it){
           if (it.recebido) return; var r = it.receita, val = Number(it.valor) || 0; if (!(val > 0)) return;
-          var dia = r.ccqSalario ? Math.min(30, fmiUltimoDia(m)) : Math.min(fmiUltimoDia(m), Number(String(r.data || '').slice(8, 10)) || 5), d = m + '-' + String(dia).padStart(2, '0');
+          var dia = r.ccqSalario ? fmiUltimoDia(m) : Math.min(fmiUltimoDia(m), Number(String(r.data || '').slice(8, 10)) || 5), d = m + '-' + String(dia).padStart(2, '0');
           if (d > lim || d < somarDias(hoje, -10)) return;
           out.push({ d: d, titulo: r.descricao || 'Receita', tag: 'A receber', tipo: 'receita', id: r.id, valor: val, entra: true });
         });

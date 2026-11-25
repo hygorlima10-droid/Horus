@@ -8,9 +8,10 @@
    - "Copiar do mês passado" faz uma estimativa (sem os extras) enquanto o contracheque novo não sai.
    Guardado na coleção `extratos` (cofre dele): id cc_AAAA-MM, só o que foi lido (nunca CPF, PIS nem identidade).
    ============================================================ */
-/* REGRA: o contracheque é de um mês (referência), mas o salário cai no MÊS SEGUINTE: o de novembro é recebido em dezembro */
-function ccqPagoEm(ref){ return deslocarMes(ref, 1); }
-function ccqRefDe(mesRecebimento){ return deslocarMes(mesRecebimento, -1); }
+/* REGRA: o contracheque de um mês (referência) é recebido NO ÚLTIMO DIA desse mesmo mês: o de novembro cai em 30/11 (correção do proprietário em 25/11; a regra do mês seguinte foi desfeita) */
+function ccqPagoEm(ref){ return ref; }
+function ccqRefDe(mesRecebimento){ return mesRecebimento; }
+function ccqUltimoDia(ref){ var a = +ref.slice(0, 4), m = +ref.slice(5, 7); return ref + '-' + String(new Date(a, m, 0).getDate()).padStart(2, '0'); }
 function ccqAtivo(){ return typeof ffnAtivo === 'function' && ffnAtivo(); }
 function ccqDoc(mes){ var d = extDocPorId('cc_' + mes); return d && d.tipo === 'contracheque' ? d : null; }
 function ccqPendentes(){ return dcmPendentes().filter(function(d){ return d.kind === 'contracheque'; }); }
@@ -35,7 +36,7 @@ function ccqConfirmar(d){
   if (!/^\d{4}-\d{2}$/.test(ref)){ toast('Informe o mês de referência do contracheque.'); return Promise.resolve(); }
   var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '', origem: d.id };
   return extGravar('cc_' + ref, doc).then(function(){ return ccqReceita(ref, x.totais.liquido); }).then(function(){ return dcmConcluir(d); })
-    .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (o contracheque é recebido no mês seguinte).'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
+    .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (cai no último dia do mês, ' + fmtData(ccqUltimoDia(ref)) + ').'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
 }
 /* estimativa a partir do mês passado: sem os serviços extras (que variam) */
 function ccqCopiar(){
@@ -47,7 +48,7 @@ function ccqCopiar(){
 }
 /* o líquido apareceu como crédito no extrato? */
 function ccqConfere(doc){
-  var liq = doc.totais.liquido, ini = ccqPagoEm(doc.ref) + '-01', fim = deslocarMes(doc.ref, 2) + '-05', ach = null;   /* cai no mês seguinte à referência */
+  var liq = doc.totais.liquido, ini = ccqPagoEm(doc.ref) + '-01', fim = deslocarMes(doc.ref, 1) + '-05', ach = null;   /* cai no último dia do mês da referência (aceita até o começo do seguinte) */
   extratos.forEach(function(e){ if (e.tipo === 'arquivo') (e.lanc || []).forEach(function(l){ if (!ach && Math.abs(l.v - liq) <= 1 && l.d >= ini && l.d <= fim) ach = { data: l.d, titulo: e.titulo || '' }; }); });
   return ach;
 }
@@ -59,12 +60,12 @@ function ccqCardDoc(doc){
   var extras = ccqSoma(doc.itens, function(x){ return x.cat === 'extra'; }), especiais = doc.itens.filter(function(x){ return x.cat === 'decimo' || x.cat === 'ferias' || x.cat === 'abono'; });
   var r = receitasManuais.filter(function(x){ return x.ccqSalario; })[0], reg = r && r.recebimentos ? r.recebimentos[ccqPagoEm(doc.ref)] : null, recebido = !!(reg && reg.recebido);
   var conf = !doc.copiado ? ccqConfere(doc) : null, totCons = cons.reduce(function(t, c){ return t + c.valor; }, 0), faltaTot = cons.reduce(function(t, c){ return t + c.falta; }, 0);
-  var h = '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(doc.ref)) + '</h4><button type="button" class="btn-text" data-ccq="ler">Ler outro</button></div><div class="saldo-data">Recebido em ' + escapeHtml(mesLabel(ccqPagoEm(doc.ref))) + ' (o contracheque de um mês cai no mês seguinte).</div>' +
+  var h = '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(doc.ref)) + '</h4><button type="button" class="btn-text" data-ccq="ler">Ler outro</button></div><div class="saldo-data">Cai no último dia do mês (' + escapeHtml(fmtData(ccqUltimoDia(doc.ref))) + ').</div>' +
     '<div class="ext-chips"><span class="ext-chip ' + (doc.selo === 'verde' ? 'ok' : 'bad') + '" title="' + escapeHtml((doc.provas || []).join('; ')) + '">' + (doc.copiado ? 'estimativa do mês passado' : (doc.selo === 'verde' ? 'lido · fecha com os totais' : 'lido · confira')) + '</span>' + (conf ? '<span class="ext-chip ok" title="' + escapeHtml(conf.titulo) + '">confere com o extrato (' + escapeHtml(fmtData(conf.data)) + ')</span>' : '') + '</div>' +
     '<div class="fv-k" style="margin-top:8px">Proventos · bruto ' + dcmDinheiro(T.rendimentos) + '</div>' + prov.map(ccqLinha).join('') +
     '<div class="fv-k" style="margin-top:8px">Descontos em folha · ' + dcmDinheiro(T.descontos) + (cons.length ? ' (inclui ' + dcmDinheiro(totCons) + ' de consignados)' : '') + '</div>' + desc.map(ccqLinha).join('') +
     '<div class="fp-eq tot" style="margin-top:8px"><span>Líquido (cai na conta)</span><b class="ok">' + dcmDinheiro(T.liquido) + '</b></div>' +
-    '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(ccqPagoEm(doc.ref))) + ' (contracheque de ' + escapeHtml(mesLabel(doc.ref)) + '): <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>' +
+    '<div class="saldo-data">Salário de ' + escapeHtml(mesLabel(doc.ref)) + ': <b>' + (recebido ? 'recebido' : 'previsto') + '</b> ' + (r && !recebido ? '<button type="button" class="btn-text" data-ccq="recebido">Marcar como recebido</button>' : '') + '</div>' +
     (extras > 0 ? '<div class="note" style="margin-top:8px"><b>Serviços extras neste contracheque:</b> ' + dcmDinheiro(extras) + ' (bruto). Já estão dentro do líquido acima.</div>' : '') +
     (especiais.length ? '<div class="saldo-data" style="margin-top:6px">Também no contracheque: ' + especiais.map(function(x){ return escapeHtml(x.desc) + ' ' + dcmDinheiro(x.valor); }).join(' · ') + '</div>' : '');
   if (cons.length) h += '<div class="fv-k" style="margin-top:10px">Consignados · ' + cons.length + ' contratos · ' + dcmDinheiro(totCons) + '/mês' + (T.liquido > 0 ? ' (' + Math.round(totCons / (T.rendimentos || 1) * 100) + '% do bruto)' : '') + '</div>' +
@@ -77,7 +78,7 @@ function ccqCardPendente(d){
   return '<div class="ini-card ext-card" data-ccq-card="' + escapeHtml(d.id) + '"><div class="ext-card-top"><b>Contracheque lido' + (x.ref ? ' · ' + escapeHtml(mesLabel(x.ref)) : '') + '</b><span class="saldo-data">' + escapeHtml(x.cargo || '') + '</span></div>' +
     '<div class="plan-linha"><span>Bruto</span><strong>' + dcmDinheiro(T.rendimentos) + '</strong></div><div class="plan-linha"><span>Descontos em folha</span><strong>' + dcmDinheiro(T.descontos) + '</strong></div><div class="plan-linha"><span>Líquido</span><strong>' + dcmDinheiro(T.liquido) + '</strong></div>' +
     '<div class="saldo-data">' + x.itens.length + ' linhas' + (cons ? ' · ' + cons + ' consignados' : '') + (extras ? ' · serviços extras ' + dcmDinheiro(extras) : '') + '</div>' +
-    '<div class="field" style="margin:6px 0"><label class="field-label">Mês de referência (o salário cai no mês seguinte)</label><input type="month" id="ccq_' + escapeHtml(d.id) + '_ref" value="' + escapeHtml(x.ref || '') + '"></div>' + dcmSeloChip(d) +
+    '<div class="field" style="margin:6px 0"><label class="field-label">Mês de referência (o salário cai no último dia desse mês)</label><input type="month" id="ccq_' + escapeHtml(d.id) + '_ref" value="' + escapeHtml(x.ref || '') + '"></div>' + dcmSeloChip(d) +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="confirmar" data-id="' + escapeHtml(d.id) + '">Confirmar contracheque</button><button type="button" class="btn-text" data-ccq="ignorar" data-id="' + escapeHtml(d.id) + '">Ignorar</button></div></div>';
 }
 /* cartão em "Salário e fixos" (só o familiar com Finanças) */
@@ -86,7 +87,7 @@ function ccqHtml(){
   var h = '<div class="financeiro-bloco" id="ccqCard">' + '<input type="file" id="ccqArq" accept=".pdf,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/plain" style="display:none">';
   h += pend.map(ccqCardPendente).join('');
   if (doc) h += ccqCardDoc(doc);
-  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + ' (o salário de ' + escapeHtml(mesLabel(mesSelecionado)) + ' cai neste mês, pelo contracheque do mês anterior). Envie o PDF ou a foto: o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
+  else if (!pend.length) h += '<div class="financeiro-secao-head"><h4>Contracheque · ' + escapeHtml(mesLabel(refMes)) + '</h4></div><div class="financeiro-vazio">Ainda não há contracheque de ' + escapeHtml(mesLabel(refMes)) + '. Envie o PDF ou a foto: o app separa proventos, descontos, serviços extras e consignados e confere pelos totais.</div>' +
     '<div class="ext-acoes"><button type="button" class="btn btn-primary" data-ccq="ler">Ler contracheque (PDF ou foto)</button>' + (ant ? '<button type="button" class="btn btn-ghost" data-ccq="copiar">Copiar de ' + escapeHtml(mesLabel(deslocarMes(refMes, -1))) + ' (estimativa)</button>' : '') + '</div>';
   else h += '<div class="ext-acoes"><button type="button" class="btn btn-ghost" data-ccq="ler">Ler outro contracheque</button></div>';
   return h + '</div>';

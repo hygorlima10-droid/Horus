@@ -40,6 +40,18 @@ check(docs.every((d) => d.coluna === 'pf' || d.coluna === 'pj') && docs.some((d)
 t = await cartao();
 check(/Faturas lançadas \(1\)/.test(t) && /Compras por categoria/.test(t) && /Total do cartão no mês R\$ 357,00/.test(t), 'a aba mostra "Faturas lançadas (1)" e o total do cartão no mês, por categoria');
 check(await p.evaluate(() => document.querySelectorAll('#fatCartao .ini-card:not(.fat-ja) .fat-cat .cat-ic svg').length >= 4), 'as compras lançadas por categoria também têm ícone');
+// a fatura também vira DESPESA no mês do FECHAMENTO (dia 26), pelo total, pendente
+const fechaEsp = (() => { let a = +mes.slice(0, 4), m = +mes.slice(5, 7); if (20 <= 26) { m--; if (m < 1) { m = 12; a--; } } return a + '-' + String(m).padStart(2, '0') + '-26'; })();   // o vencimento do teste é o dia 20: o cartão fechou no dia 26 do mês anterior
+const despF = async () => p.evaluate(async () => (await (await fetch('/api/db/despesas')).json()).docs.map((d) => ({ id: d.id, ...d.data })).filter((d) => d.faturaId));
+let df = await despF();
+check(df.length === 1 && df[0].mesReferencia === fechaEsp.slice(0, 7) && df[0].data === fechaEsp && Math.abs(df[0].valor - 357) < 0.005 && df[0].pago === false && df[0].categoria === 'cartao' && /^Fatura /.test(df[0].nome), 'a fatura virou despesa pendente no mês do FECHAMENTO (dia 26: ' + fechaEsp + '), R$ 357,00, e não no do vencimento: ' + JSON.stringify(df.map((d) => [d.nome, d.data, d.valor, d.pago])));
+// lançada antes desta regra (sem despesa): botão "Lançar como despesa de <mês do vencimento>"
+await p.evaluate(async (id) => { await fetch('/api/db/despesas/' + id, { method: 'DELETE' }); }, df[0].id); await p.reload(); await p.waitForTimeout(2500);
+await p.evaluate(() => document.querySelector('#drawer [data-tab="extratos"]').click()); await p.waitForTimeout(800);
+await p.evaluate(() => { const b = document.querySelector('#fatAbas [data-v="cartao"]'); if (b) b.click(); }); await p.waitForTimeout(500);
+check(/Lançar como despesa de/.test(await cartao()), 'fatura já lançada e sem despesa: aparece o botão "Lançar como despesa de <mês do fechamento>"');
+await p.click('#fatCartao [data-fat="despesa"]'); await p.waitForTimeout(1500);
+df = await despF(); check(df.length === 1 && df[0].mesReferencia === fechaEsp.slice(0, 7) && !/Lançar como despesa de/.test(await cartao()), 'o botão cria a despesa no mês do fechamento (e some)');
 // Análises: o cartão soma com o dia a dia da conta; filtro de origem
 await p.evaluate(() => document.querySelector('#drawer [data-tab="analises"]').click()); await p.waitForTimeout(1500);
 await p.evaluate(() => { const b = document.querySelector('[data-an-periodo="hist"]'); if (b) b.click(); }); await p.waitForTimeout(1500);
@@ -57,5 +69,6 @@ await p.evaluate(() => { const b = document.querySelector('#fatAbas [data-v="car
 await p.click('#fatCartao [data-fat="desfazer"]'); await p.waitForTimeout(1500);
 const depois = await p.evaluate(async () => (await (await fetch('/api/db/extratos')).json()).docs.map((d) => d.data).filter((d) => d.tipo === 'diaadia' && d.origem === 'cartao').length);
 check(depois === 0 && /Faturas para conferir \(1\)/.test(await cartao()), 'Desfazer: o dia a dia do cartão sai e a fatura volta para conferir');
+check((await despF()).length === 0, 'Desfazer também apaga a despesa da fatura');
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
