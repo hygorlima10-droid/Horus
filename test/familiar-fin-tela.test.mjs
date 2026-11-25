@@ -41,9 +41,25 @@ await p.evaluate(() => { document.getElementById('saveBtnDespesa').click(); }); 
 const dv = await aba(p, 'geral');
 check(/Salário e entradas do mês R\$ 9\.800,00/i.test(dv) && /Gastos fixos/.test(dv) && /Livre para o mês/.test(dv), 'a divisão do salário mostra o salário, os gastos fixos e o que sobra: ' + dv.slice(0, 260));
 if (FOTO) await p.screenshot({ path: FOTO + '/fin-divisao.png' });
-await p.click('[data-ffn="plano"]'); await p.waitForSelector('#of_ffn_fixos'); await p.fill('#of_ffn_fixos', '20'); await p.click('#obraFormSalvar'); await p.waitForTimeout(1200);
-check(/plano 20%/.test(await p.evaluate(() => document.getElementById('bodyFinanceiro').innerText)), 'o plano em % é guardado e aparece ao lado');
+check(!(await p.evaluate(() => document.querySelector('[data-ffn="plano"]'))) && !/Ajustar plano|plano \d+%/.test(await p.evaluate(() => document.getElementById('bodyFinanceiro').innerText)), 'a Divisão do salário não tem plano em % nem botão "Ajustar plano" (a reserva e as metas têm o alvo no próprio cadastro)');
 
+
+// Patrimônio e metas: reserva com valor-alvo fixo digitado por ele; nada de PJ, "PF + PJ" nem "Alvo automático"
+await aba(p, 'patrimonio');
+await p.evaluate(() => { const b = [...document.querySelectorAll('#bodyFinanceiro button, #bodyFinanceiro .btn')].find((x) => /nova meta|criar meta|adicionar meta/i.test(x.textContent)); if (b) b.click(); }); await p.waitForTimeout(700);
+check(await visivel(p, '#metaNomeInput'), 'o botão de nova meta abre o formulário de meta');
+await p.fill('#metaNomeInput', 'Reserva de emergência'); await p.click('#segMetaTipo [data-value="reserva"]'); await p.waitForTimeout(300);
+const fm = await p.evaluate(() => document.getElementById('overlayMeta').innerText.replace(/\s+/g, ' '));
+check(await visivel(p, '#metaAlvoInput') && /Valor-alvo da reserva/.test(fm) && !/PJ|PF \+ PJ|CDB próprio|automático/i.test(fm), 'meta de reserva do familiar: campo "Valor-alvo da reserva" e nenhum resquício de PJ/PF ou alvo automático (' + fm.slice(0, 200) + ')');
+await p.click('#saveBtnMeta'); await p.waitForTimeout(500);
+check(/Informe o valor-alvo da reserva/.test(await p.evaluate(() => document.getElementById('formErrorMeta').textContent)), 'reserva sem valor-alvo: pede o valor');
+await p.fill('#metaAlvoInput', '12000'); await p.fill('#metaInicialInput', '5000'); await p.click('#saveBtnMeta'); await p.waitForTimeout(1500);
+const pat = await p.evaluate(() => document.getElementById('bodyFinanceiro').innerText.replace(/\s+/g, ' '));
+check(/Reserva de emergência/.test(pat) && /41,7% do alvo de R\$ 12\.000,00/.test(pat) && /faltam R\$ 7\.000,00/.test(pat), 'a reserva mostra o alvo fixo dele: 41,7% de R$ 12.000,00, faltam R$ 7.000,00');
+check(!/\bPJ\b|PF \+ PJ|Alvo automático|despesas fixas \(/.test(pat), 'Patrimônio e metas do familiar: sem PJ nem "PF + PJ" nem "Alvo automático"');
+for (const k of ['resumo', 'geral', 'pf', 'orcamento']) { const tx = await aba(p, k); check(!/\bPJ\b|PF \+ PJ|Hygor \(PJ\)/.test(tx), 'aba ' + k + ' do familiar: sem resquício de PJ' + (/\bPJ\b/.test(tx) ? ': ' + (tx.match(/.{30}\bPJ\b.{30}/) || [''])[0] : '')); }
+
+await aba(p, 'geral');
 // "Dinheiro da obra a receber" mora na Divisão do salário (não mais nas Análises) e funciona de lá
 const gtxt = () => p.evaluate(() => document.getElementById('finGeral').innerText.replace(/\s+/g, ' '));
 check(/Dinheiro da obra a receber/.test(await gtxt()) && await visivel(p, '#anObraPickerBtn'), 'Divisão do salário: tem o cartão "Dinheiro da obra a receber"');
@@ -51,7 +67,7 @@ await p.click('#anObraPickerBtn'); await p.waitForTimeout(600);
 check(/Escolha a entrada que é para a obra/.test(await gtxt()), 'o botão "Marcar uma entrada como dinheiro da obra" abre a lista, dentro da Divisão do salário');
 await p.click('#anObraPickerBtn'); await p.waitForTimeout(400);
 await p.setViewportSize({ width: 390, height: 800 }); await p.waitForTimeout(500);
-check(await p.evaluate(() => { const b = document.querySelector('[data-ffn="plano"]').getBoundingClientRect(); return b.left >= 0 && b.right <= window.innerWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth + 1; }), 'no celular o botão "Ajustar plano" cabe na tela (não sai para fora)');
+check(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no celular a Divisão do salário cabe na tela (nada sai para fora)');
 await p.setViewportSize({ width: 1280, height: 900 }); await p.waitForTimeout(300);
 
 // visão geral e patrimônio com o salário
