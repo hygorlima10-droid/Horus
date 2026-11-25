@@ -2011,6 +2011,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -6306,6 +6307,11 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   function computeCaixaHoje(coluna){
     var sd = saldos[coluna];
     var hoje = todayISO();
+    if (ppFamiliar() && coluna === 'pf'){   /* familiar: não existe saldo informado; o saldo é a sobra acumulada = tudo o que recebeu − tudo o que pagou e guardou (despesas, consórcio, obra, metas, reserva) */
+      var enF = 0, saF = 0;
+      listarMovimentosColuna('pf').forEach(function(m){ if (m.data > hoje) return; if (m.tipo === 'entrada') enF += m.valor; else saF += m.valor; });
+      return { informado: true, anterior: 0, desde: null, entradas: enF, saidas: saF, caixa: enF - saF, derivado: true };
+    }
     var informado = !!(sd && sd.atualizadoEm);
     var anterior = informado ? (Number(sd.saldoAtual) || 0) : 0;
     var desde = informado ? dataLocalDeIso(sd.atualizadoEm) : (hoje.slice(0, 7) + '-00');
@@ -6330,6 +6336,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
              sobrouAgora: receita - desp.pago, vaiSobrarFinal: receita - (desp.pago + desp.pendente) };
   }
   function legendaResultado(r){
+    if (ppFamiliar() && r.modo === 'caixa') return 'Saldo = a sobra dos meses anteriores + o salário e as entradas já recebidos − o que já foi pago ou guardado (despesas, consórcio, obra, metas e reserva).';
     if (r.modo === 'caixa'){
       if (r.informado) return 'Caixa de hoje = saldo de ' + fmtData(r.desde) + ' (' + fmtMoeda(r.saldoAtual) + ') + lançamentos feitos depois dessa data.';
       return 'Sem saldo informado: considera só os lançamentos do mês. Informe o saldo para o resultado ficar correto.';
@@ -6833,6 +6840,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
   /* ---------- Finanças · PJ (novo desenho): saldo, o que já aconteceu, projeção, receitas e despesas ---------- */
   function fpHero(coluna, saldo, cx){
+    if (ppFamiliar()) return '<div class="financeiro-bloco fp-hero"><span class="fv-k">Saldo atual</span><div class="fv-big">' + fmtMoeda(cx) + '</div>' +
+      '<div class="saldo-data">Calculado sozinho: sobra dos meses anteriores + salário recebido − o que já pagou e guardou. Marque o salário como recebido para ele entrar no saldo.</div>' +
+      '<div class="fp-acts"><button type="button" class="btn-text" data-ver-lanc="' + coluna + '">Lançamentos</button></div></div>';
     return '<div class="financeiro-bloco fp-hero"><span class="fv-k">Saldo atual informado</span><div class="fv-big">' + fmtMoeda(saldo.saldoAtual) + '</div>' +
       (saldo.atualizadoEm && Math.abs(cx - (Number(saldo.saldoAtual) || 0)) > 0.004 ? '<div class="saldo-data">Caixa de hoje, com os lançamentos feitos depois: <strong>' + fmtMoeda(cx) + '</strong></div>' : '') +
       '<div class="saldo-data">' + (saldo.atualizadoEm ? 'Atualizado em ' + fmtData(saldo.atualizadoEm.slice(0, 10)) : 'Ainda não informado') + '</div>' +
@@ -9726,7 +9736,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     pat.metas.forEach(function(x){ if (x.meta.tipo === 'reserva'){ reservaV += x.valor; reservaAlvo += metaAlvo(x.meta) || 0; } else outrasV += x.valor; });
     var contas = r2(pat.saldoPj + pat.saldoPf - pat.repasseAPagar), temObra = obraCfg().criada;
     var itens = [
-      { k: 'wallet', cor: '#B7791E', nome: 'Nas contas (livre)', sub: (ppFamiliar() ? 'Saldo informado da conta' : 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf)) + (pat.repasseAPagar > 0.004 ? ' · repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : ''), v: contas },
+      { k: 'wallet', cor: '#B7791E', nome: 'Nas contas (livre)', sub: (ppFamiliar() ? 'Saldo calculado: sobra + salário recebido − o que já pagou e guardou' : 'PJ ' + fmtMoeda(pat.saldoPj) + ' · PF ' + fmtMoeda(pat.saldoPf)) + (pat.repasseAPagar > 0.004 ? ' · repasses a pagar −' + fmtMoeda(pat.repasseAPagar) : ''), v: contas },
       { k: 'shield', cor: '#2A78D6', nome: 'Reserva de emergência', sub: reservaAlvo > 0 ? fmtPerc(Math.min(100, reservaV / reservaAlvo * 100)) + ' da meta' : 'em metas, separado do mês', v: reservaV },
       { k: 'plane', cor: '#8B5CF6', nome: 'Outras metas', sub: 'fora do planejamento do mês', v: outrasV }
     ];
@@ -10135,7 +10145,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
     var nomeCol = lancColuna === 'pj' ? 'PJ' : 'PF';
     qs('modalLancTitle').textContent = 'Lançamentos \u2014 ' + nomeCol;
     qs('lancResumo').innerHTML = 'Tudo o que entrou ou saiu da conta ' + nomeCol + '. Apagar aqui desfaz o lançamento e o saldo calculado se ajusta sozinho. ' +
-      'Saldo atual informado: <strong>' + fmtMoeda(getSaldo(lancColuna).saldoAtual) + '</strong>' + (getSaldo(lancColuna).atualizadoEm ? ' (' + fmtData(dataLocalDeIso(getSaldo(lancColuna).atualizadoEm)) + ')' : '') + '.';
+      (ppFamiliar() ? 'Saldo atual (calculado): <strong>' + fmtMoeda(computeCaixaHoje(lancColuna).caixa) + '</strong>.' : 'Saldo atual informado: <strong>' + fmtMoeda(getSaldo(lancColuna).saldoAtual) + '</strong>' + (getSaldo(lancColuna).atualizadoEm ? ' (' + fmtData(dataLocalDeIso(getSaldo(lancColuna).atualizadoEm)) + ')' : '') + '.');
     qs('lancTogglePeriodo').textContent = lancTodos ? 'Mostrando todos os meses \u00b7 ver só ' + mesLabel(mesSelecionado) : 'Mostrando ' + mesLabel(mesSelecionado) + ' \u00b7 ver todos os meses';
     var lista = listarLancamentos(lancColuna).filter(function(o){ return lancTodos || o.data.slice(0, 7) === mesSelecionado; });
     if (!lista.length){ el.innerHTML = '<div class="financeiro-vazio">Nenhum lançamento neste período.</div>'; return; }
@@ -14925,6 +14935,7 @@ function anDespesasMes(m){
 }
 /* dinheiro nas contas no fim do dia: o último saldo informado até lá + os lançamentos feitos depois dele */
 function anSaldoEm(coluna, fimISO){
+  if (ppFamiliar()){ if (coluna !== 'pf') return null; var sF = 0; listarMovimentosColuna('pf').forEach(function(mv){ if (mv.data <= fimISO) sF += mv.tipo === 'entrada' ? mv.valor : -mv.valor; }); return r2(sF); }   /* familiar: saldo = sobra acumulada, sem saldo informado */
   var h = (getSaldo(coluna).historico || []).filter(function(x){ return x && x.data && dataLocalDeIso(x.data) <= fimISO; })
     .sort(function(a, b){ return String(a.data).localeCompare(String(b.data)); });
   if (!h.length) return null;
@@ -27796,6 +27807,7 @@ function ppPor(n){
     '.papel-familiar.fam-obra #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-obra #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-f{display:flex!important}' +
     '.papel-familiar #bodyInicio>*:not(#iniSauda):not(#fmiCentral){display:none!important}' +
     '.bt-fam{display:none}' +
+    '.papel-familiar [data-atualizar-saldo],.papel-familiar [data-ver-historico-saldo]{display:none!important}' +
     '.papel-familiar #btbar .bt-fam-i,.papel-familiar #btbar .bt-fam-f{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);

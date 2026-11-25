@@ -64,7 +64,7 @@ check(p.erros.length === 0, 'sem erros de script' + (p.erros.length ? ': ' + p.e
 // celular
 const cel = await abrir('fam', 390);
 check(await cel.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'no celular a tela cabe na largura');
-const barra = await cel.evaluate(() => [...document.querySelectorAll('#btbar .bt-it')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim()));
+const barra = await cel.evaluate(() => [...document.querySelectorAll('#btbar .bt-it')].filter((e) => e.offsetParent !== null).map((e) => e.textContent.trim().replace(/\d+$/, '')));   // o Início pode ter um número (itens na central de atenção)
 check(barra.join('|') === 'Início|Construção|Mais', 'barra de baixo do celular: Início, Construção e Mais (' + barra.join('|') + ')');
 if (process.env.FOTO) await cel.screenshot({ path: process.env.FOTO + '/familiar-celular.png' });
 check(cel.erros.length === 0 && cel.recusados.length === 0, 'celular: sem erros nem pedidos recusados');

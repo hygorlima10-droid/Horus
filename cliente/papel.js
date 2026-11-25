@@ -103,6 +103,7 @@ function ppPor(n){
     '.papel-familiar.fam-obra #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-fin #drawer .dr-it[data-tab="inicio"],.papel-familiar.fam-obra #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-i,.papel-familiar.fam-fin #btbar .bt-fam-f{display:flex!important}' +
     '.papel-familiar #bodyInicio>*:not(#iniSauda):not(#fmiCentral){display:none!important}' +
     '.bt-fam{display:none}' +
+    '.papel-familiar [data-atualizar-saldo],.papel-familiar [data-ver-historico-saldo]{display:none!important}' +
     '.papel-familiar #btbar .bt-fam-i,.papel-familiar #btbar .bt-fam-f{display:none}' +
     '.so-central .ini-grid{row-gap:0}.so-central .ini-grid>*{margin-bottom:12px}.so-central #inicioAcoes{display:none!important}.bt-so{display:none!important}.papel-estagiario .bt-so{display:flex!important}';
   document.head.appendChild(st);

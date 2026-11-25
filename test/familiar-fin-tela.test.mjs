@@ -37,6 +37,20 @@ await p.evaluate(() => { const b = [...document.querySelectorAll('#catPick butto
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 await p.evaluate(() => { document.getElementById('saveBtnDespesa').click(); }); await p.waitForTimeout(1200);
 
+// SALDO calculado (sem "saldo informado"): sobra + salário recebido − o que pagou e guardou
+await aba(p, 'pf');
+const heroT = () => p.evaluate(() => document.querySelector('.fp-hero').innerText.replace(/\s+/g, ' '));
+let ht = await heroT();
+check(/Saldo atual/i.test(ht) && !/informado/i.test(ht) && /R\$ 0,00/.test(ht) && !(await visivel(p, '[data-atualizar-saldo]')) && !(await visivel(p, '[data-ver-historico-saldo]')), 'Salário e fixos: "Saldo atual" calculado (R$ 0,00 antes de o salário cair), sem "Atualizar saldo" nem "Histórico" (' + ht.slice(0, 120) + ')');
+if (process.env.DEBUG_FT) console.log('DEBUG-SALDO', JSON.stringify(await p.evaluate(() => ({ btn: document.querySelectorAll('[data-receita-receber]').length, at: [...document.querySelectorAll('[data-atualizar-saldo]')].map((e) => e.offsetParent !== null), hv: [...document.querySelectorAll('[data-ver-historico-saldo]')].map((e) => e.offsetParent !== null), cls: document.documentElement.className }))));
+await p.evaluate(() => { const b = document.querySelector('[data-receita-receber]'); if (b) b.click(); }); await p.waitForTimeout(700);
+await p.evaluate(() => { const b = document.querySelector('[data-confirmar-valor-receita]'); if (b) b.click(); }); await p.waitForTimeout(1500);
+ht = await heroT();
+if (process.env.DEBUG_FT) console.log('DEBUG-REC', JSON.stringify(await p.evaluate(async () => (await (await fetch('/api/db/receitasManuais')).json()).docs.map((d) => d.data.recebimentos))), ht.slice(0, 80), await p.evaluate(() => document.getElementById('toast') ? document.getElementById('toast').innerText : ''));
+check(/R\$ 9\.800,00/.test(ht), 'ao marcar o salário como recebido, o saldo passa a ser R$ 9.800,00 (' + ht.slice(0, 100) + ')');
+const rowsT = await p.evaluate(() => document.getElementById('bodyFinanceiro').innerText.replace(/\s+/g, ' '));
+check(/Como o mês fecha Saldo atual R\$ 9\.800,00 .*Despesas pendentes/.test(rowsT) && !/Sem saldo informado|Informe o saldo/.test(rowsT), '"Como o mês fecha" parte do saldo calculado e não pede para informar saldo');
+
 // divisão do salário
 const dv = await aba(p, 'geral');
 check(/Salário e entradas do mês R\$ 9\.800,00/i.test(dv) && /Gastos fixos/.test(dv) && /Livre para o mês/.test(dv), 'a divisão do salário mostra o salário, os gastos fixos e o que sobra: ' + dv.slice(0, 260));
