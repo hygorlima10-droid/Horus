@@ -81,6 +81,14 @@ function fatCatLinhas(id, x, c, o){
 }
 /* o gasto do cartão conta no mês da FATURA (o mesmo mês da despesa "Fatura …", o do fechamento): quem paga a fatura quer ver as compras que entraram nela.
    Vale também para o que já estava lançado: o mês vem do fechamento guardado na fatura confirmada; a data de cada compra continua a verdadeira */
+/* a despesa da fatura guarda o VENCIMENTO como data (é ele que a Central de atenção usa para avisar e prever o pagamento); o mês onde ela aparece vem de `mesReferencia` (fechamento).
+   As que foram lançadas com a data do fechamento passam a mostrar o vencimento da fatura confirmada (só na leitura) */
+function fatNormalizaDespesas(){
+  try{
+    var fat = {}; extratos.forEach(function(x){ if (x.tipo === 'documento' && x.kind === 'fatura' && x.status === 'concluido' && x.dados) fat[x.id] = x.dados; });
+    despesas.forEach(function(d){ var f = d.faturaId && fat[d.faturaId]; if (f && f.vencimento && f.fechamento && d.data === f.fechamento && d.data !== f.vencimento) d.data = f.vencimento; });
+  }catch(e){}
+}
 function extNormalizaCartao(lista){
   var fat = {};
   lista.forEach(function(x){ if (x.tipo === 'documento' && x.kind === 'fatura' && x.status === 'concluido' && x.dados) fat[x.id] = x.dados; });
@@ -103,7 +111,7 @@ function fatCard(d){
     (!venc && x.dicaVencimento ? '<div class="saldo-data">O nome do arquivo tem a data ' + escapeHtml(fmtData(x.dicaVencimento)) + ': confira no aplicativo do banco se é o vencimento antes de usar.</div>' : '');
   if (fam){   /* perfil familiar: a fatura entra no mês do fechamento; o dia varia (25 ou 26), então ou vem do PDF ou a pessoa informa */
     var fechaV = (qs('dcm_' + id + '_fecha') && qs('dcm_' + id + '_fecha').value) || fatFechaPadrao(x, vencUsado);
-    h += x.fechamentoLido ? '<div class="saldo-data">Dia de fechamento lido no arquivo: <b>' + escapeHtml(fmtData(x.fechamentoLido)) + '</b>. A fatura e as compras entram em <b>' + escapeHtml(mesLabel(fechaV.slice(0, 7))) + '</b>.</div>'
+    h += x.fechamentoLido ? '<div class="saldo-data">Dia de fechamento lido no arquivo: <b>' + escapeHtml(fmtData(x.fechamentoLido)) + '</b>. A fatura e as compras entram em <b>' + escapeHtml(mesLabel(fechaV.slice(0, 7))) + '</b>. O vencimento (acima) não muda isso: serve para a Central de atenção avisar e prever o pagamento.</div>'
       : '<div class="av">Não achei o dia de fechamento no arquivo. <b>Informe o dia em que o cartão fechou</b> (muda de mês a mês: 25 ou 26). Sugeri o dia 26 anterior ao vencimento' + (fechaV ? ': a fatura e as compras entram em <b>' + escapeHtml(mesLabel(fechaV.slice(0, 7))) + '</b>' : '') + '.</div>';
   }
   var nd = Object.keys(dupInfo.dup).length;
@@ -156,7 +164,7 @@ function fatCriarDespesa(id, x, fecha, coluna){
   var chave = fatChaveFatura(x, x.vencimento);
   if (typeof despesaPorFatura === 'function' && despesaPorFatura(id, chave)) return Promise.resolve();
   var tot = x.totalDespesa != null ? x.totalDespesa : (x.total != null ? x.total : x.soma), nome = 'Fatura ' + (x.banco || 'cartão') + (x.cartao ? ' final ' + x.cartao : '');
-  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, faturaChave: chave, observacoes: 'Fatura do cartão (' + (fecha && venc && fecha !== venc ? 'fecha em ' + fmtData(fecha) + ', ' : '') + (venc ? 'vence em ' + fmtData(venc) : 'sem vencimento') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
+  return Promise.resolve(persistNovaDespesa({ nome: nome, coluna: coluna, tipo: 'unica', categoria: 'cartao', valor: r2(tot / 100), data: venc || fecha, mesReferencia: fecha.slice(0, 7), pago: false, dataPagamento: null, pagoEm: null, parciais: [], valorPadrao: null, diaVencimento: null, ativa: true, pausadaAPartirDeMes: null, pagamentos: {}, faturaId: id, faturaChave: chave, observacoes: 'Fatura do cartão (' + (fecha && venc && fecha !== venc ? 'fecha em ' + fmtData(fecha) + ', ' : '') + (venc ? 'vence em ' + fmtData(venc) : 'sem vencimento') + '). Compras por categoria em Extratos › Cartão de crédito', origemDocumento: true }));
 }
 function fatConfirmar(id){
   var d = extDocPorId(id); if (!d) return Promise.resolve();
@@ -266,5 +274,5 @@ function fatOrigemSegHtml(){
     if (t.hasAttribute('data-fat-dif')) fatS.difInclui[t.getAttribute('data-fat-dif')] = t.checked;
     if (t.id && /^dcm_.+_venc$/.test(t.id)) renderExtratos();   /* mudou o vencimento: refaz a procura da despesa "Cartão" do mês */
   });
-  window.__horusTeste = Object.assign(window.__horusTeste || {}, { fatFaturas: fatFaturas, fatS: fatS });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { fatFaturas: fatFaturas, fatS: fatS, despesaVenc: function(id){ var d = despesas.filter(function(x){ return x.id === id; })[0]; return d ? d.data : null; } });
 })();

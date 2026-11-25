@@ -660,6 +660,13 @@ var LeitorGeral = (function(){
       var m = /(\d{2}\/\d{2}\/\d{4})/.exec(L[i]) || (/^\s*(\d{2}\/\d{2}\/\d{4})\s*$/.exec(L[i + 1] || ''));
       if (m) return fvData(m[1]);
     }
+    /* data por extenso: "Data de vencimento: 02 DEZ 2026", "vence em 2 de dezembro de 2026" */
+    var M3 = { JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6, JUL: 7, AGO: 8, SET: 9, OUT: 10, NOV: 11, DEZ: 12 };
+    for (var j = 0; j < L.length; j++){
+      var nj = norm(L[j]); if (!/VENCIMENTO|VENCE EM/.test(nj) || /FECHAMENTO|PROXIM|APOS O VENCIMENTO|ATE O VENCIMENTO|PAGUE|MULTA|JUROS/.test(nj)) continue;
+      var t = nj + ' ' + norm(L[j + 1] || ''), mm = /(\d{1,2})\s+(?:DE\s+)?(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)[A-Z]*\.?\s+(?:DE\s+)?(\d{4})/.exec(t);
+      if (mm) return mm[3] + '-' + pad(M3[mm[2]], 2) + '-' + pad(+mm[1], 2);
+    }
     return null;
   }
   /* data em que ESTA fatura fechou (não a do próximo fechamento): "Fechamento da fatura 25/11/2026", "Fatura fechada em 26 NOV", "Período vigente: 27 OUT a 26 NOV".

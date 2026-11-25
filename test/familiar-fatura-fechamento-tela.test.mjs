@@ -29,7 +29,7 @@ check(await page.evaluate(() => document.querySelectorAll('#fatCartao input[type
 check(/Dia em que o cartão fechou/.test(t), 'no familiar o campo se chama "Dia em que o cartão fechou"');
 await page.click('#fatCartao [data-fat="confirmar"]'); await page.waitForTimeout(2500);
 let D = await dados();
-check(D.desp.length === 1 && D.desp[0].mesReferencia === '2026-11' && D.desp[0].data === '2026-11-25', 'a despesa da fatura entra no mês do fechamento (novembro, dia 25), embora o vencimento seja em dezembro');
+check(D.desp.length === 1 && D.desp[0].mesReferencia === '2026-11' && D.desp[0].data === '2026-12-02', 'a despesa da fatura entra no mês do fechamento (novembro) e guarda o VENCIMENTO (02/12) como data, para a Central de atenção');
 check(D.dd.length === 1 && D.dd[0].mes === '2026-11' && D.dd[0].linhas.length === 3 && D.dd[0].linhas.some((l) => l.d === '2026-10-18'), 'as compras ficam no mês do fechamento (inclusive a de 18/10), cada uma com a data verdadeira');
 // (B) CSV: não traz o fechamento, o app pergunta
 await page.evaluate(async () => { const e = (await (await fetch('/api/db/extratos')).json()).docs; for (const d of e.filter((x) => x.data.tipo === 'diaadia' || (x.data.tipo === 'documento' && x.data.kind === 'fatura'))) await fetch('/api/db/extratos/' + d.id, { method: 'DELETE' }); const s = (await (await fetch('/api/db/despesas')).json()).docs; for (const d of s.filter((x) => x.data.faturaId)) await fetch('/api/db/despesas/' + d.id, { method: 'DELETE' }); });
@@ -43,7 +43,7 @@ check(await page.evaluate(() => document.querySelectorAll('#fatCartao input[type
 await page.fill('#fatCartao input[type=date] >> nth=1', '2026-11-25'); await page.dispatchEvent('#fatCartao input[type=date] >> nth=1', 'change'); await page.waitForTimeout(400);
 await page.click('#fatCartao [data-fat="confirmar"]'); await page.waitForTimeout(2500); D = await dados();
 if (process.env.DEBUG_FT) console.log('DEBUG-D', JSON.stringify({ d: D.desp.map((x) => [x.mesReferencia, x.data, x.valor]), dd: D.dd.map((x) => [x.id, x.mes]) }));
-check(D.desp.length === 1 && D.desp[0].mesReferencia === '2026-11' && D.desp[0].data === '2026-11-25' && D.dd.every((d) => d.mes === '2026-11'), 'a pessoa informou 25/11: despesa e compras ficam em novembro');
+check(D.desp.length === 1 && D.desp[0].mesReferencia === '2026-11' && D.desp[0].data === '2026-12-02' && D.dd.every((d) => d.mes === '2026-11'), 'a pessoa informou o fechamento 25/11 e o vencimento 02/12: despesa e compras em novembro, vencimento guardado');
 // (C) lançamentos de cartão que JÁ existiam: seguem a regra do fechamento sozinhos (sem reenviar nada)
 const mes0 = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 7), ant = (() => { const d = new Date(Date.now() - 3 * 3600e3); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - 1); return d.toISOString().slice(0, 7); })();
 await page.evaluate(async ({ mes0, ant }) => {
@@ -52,10 +52,13 @@ await page.evaluate(async ({ mes0, ant }) => {
   await put('dd_' + ant + '_cartao_antiga', { tipo: 'diaadia', mes: ant, conta: 'cartao:dcm_antiga', coluna: 'pf', origem: 'cartao', fatura: 'dcm_antiga', cats: { Outros: { v: 80, n: 1 } }, linhas: [{ id: 'ant1', d: ant + '-28', t: 'COMPRA ANTIGA DO MES ANTERIOR', v: 80, c: 'Outros', h: 'ant1' }], atualizadoEm: Date.now() });
   await put('dd_' + mes0 + '_cartao_antiga', { tipo: 'diaadia', mes: mes0, conta: 'cartao:dcm_antiga', coluna: 'pf', origem: 'cartao', fatura: 'dcm_antiga', cats: { Outros: { v: 120, n: 1 } }, linhas: [{ id: 'ant2', d: mes0 + '-10', t: 'COMPRA ANTIGA DO MES', v: 120, c: 'Outros', h: 'ant2' }], atualizadoEm: Date.now() });
 }, { mes0, ant });
+await page.evaluate(async ({ mes0 }) => { await fetch('/api/db/despesas/dcmantiga', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nome: 'Fatura Antiga final 0001', coluna: 'pf', tipo: 'unica', categoria: 'cartao', valor: 200, data: mes0 + '-25', mesReferencia: mes0, pago: false, faturaId: 'dcm_antiga', faturaChave: 'a', origemDocumento: true, criadoEm: '2026-01-01T00:00:00.000Z' }) }); }, { mes0 });
 await page.reload(); await page.waitForTimeout(2500);
 await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="despesas"]').click()); await page.waitForTimeout(1000);
 await page.evaluate(() => document.querySelector('[data-dsp-f="origem"][data-v="cartao"]').click()); await page.waitForTimeout(500);
 const dl = await page.evaluate(() => (document.getElementById('dspLin') || { innerText: '' }).innerText.replace(/\s+/g, ' '));
+const venc = await page.evaluate(() => window.__horusTeste && window.__horusTeste.despesaVenc ? window.__horusTeste.despesaVenc('dcmantiga') : null);
+check(venc === mes0 + '-28', 'a despesa da fatura já lançada com a data do fechamento passa a mostrar o vencimento (dia 28)');
 check(/COMPRA ANTIGA DO MES ANTERIOR/i.test(dl) && /COMPRA ANTIGA DO MES/i.test(dl), 'faturas já lançadas: as compras (inclusive as do mês anterior) aparecem no mês do fechamento, sem reenviar a fatura');
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);

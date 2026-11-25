@@ -212,5 +212,13 @@ console.log('\n— Fatura do cartão (CSV e PDF)');
   const lp = h.itens.find((i) => /LOJA DA CASA/.test(i.t));
   check(lp.dc === '2026-01-20' && lp.parcela.n === 10 && lp.d === h.periodo.ate, 'parcela que não é a primeira: data da compra original guardada e competência no mês em que a fatura fecha');
   check(LeitorGeral.lerFaturaPdf(pdf.filter((x) => !/Vencimento:/.test(x)), '2026-11-24').vencimento === null, 'sem o campo Vencimento: devolve null (o app pergunta)');
+  // vencimento por extenso e dia do fechamento (perfil familiar): lidos do PDF; "próximo fechamento" nunca vale
+  const base = ['Compras e saques', '03/11 SUPERMERCADO TESTE 120,00', '05/11 FARMACIA TESTE 80,00', '10/11 LOJA 40,00', 'Total dos lançamentos atuais 240,00'];
+  const ex = LeitorGeral.lerFaturaPdf(['Fatura do cartão', 'Data de vencimento: 02 DEZ 2026', 'Fatura fechada em 26 NOV', 'Previsão próx. Fechamento: 26/12/2026', ...base], '2026-11-24');
+  check(ex && ex.vencimento === '2026-12-02' && ex.fechamentoLido === '2026-11-26', 'vencimento por extenso ("02 DEZ 2026") e "Fatura fechada em 26 NOV" são lidos; o próximo fechamento é ignorado');
+  const pv = LeitorGeral.lerFaturaPdf(['Fatura do cartão', 'Vencimento: 02/12/2026', 'Período vigente: 27 OUT a 25 NOV', ...base], '2026-11-24');
+  check(pv && pv.fechamentoLido === '2026-11-25', '"Período vigente: 27 OUT a 25 NOV": o fechamento é o fim do período (25/11)');
+  const so = LeitorGeral.lerFaturaPdf(['Fatura do cartão', 'Vencimento: 02/12/2026', 'Previsão próx. Fechamento: 26/12/2026', ...base], '2026-11-24');
+  check(so && so.fechamentoLido === null, 'só com o "próximo fechamento": não inventa o fechamento (o app pergunta)');
 }
 console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
