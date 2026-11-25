@@ -33,7 +33,7 @@ function ccqReceita(ref, liquidoCent){
 function ccqConfirmar(d){
   var x = d.dados, refEl = qs('ccq_' + d.id + '_ref'), ref = (refEl && refEl.value) || x.ref || '';
   if (!/^\d{4}-\d{2}$/.test(ref)){ toast('Informe o mês de referência do contracheque.'); return Promise.resolve(); }
-  var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '' };
+  var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '', origem: d.id };
   return extGravar('cc_' + ref, doc).then(function(){ return ccqReceita(ref, x.totais.liquido); }).then(function(){ return dcmConcluir(d); })
     .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (o contracheque é recebido no mês seguinte).'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
 }
@@ -115,7 +115,7 @@ document.addEventListener('click', function(ev){
   if (a === 'ler'){ var i = qs('ccqArq'); if (i) i.click(); return; }
   if (a === 'copiar') return ccqCopiar();
   if (a === 'recebido'){ var doc = ccqDoc(ccqRefDe(mesSelecionado)), r = receitasManuais.filter(function(x){ return x.ccqSalario; })[0]; if (doc && r) marcarReceitaRecebida(r.id, r2(doc.totais.liquido / 100)); return; }
-  if (a === 'apagar'){ if (!confirm('Apagar este contracheque? O salário previsto do mês volta ao valor padrão.')) return; return extApagar(id).then(function(){ try{ renderFinanceiro(); }catch(e){} }); }
+  if (a === 'apagar'){ if (!confirm('Apagar este contracheque? O salário previsto do mês volta ao valor padrão.')) return; var ccd = extDocPorId(id); return extApagar(id).then(function(){ return ccd && ccd.origem && extDocPorId(ccd.origem) ? extApagar(ccd.origem) : null; }).then(function(){ try{ renderFinanceiro(); }catch(e){} }); }   /* apaga também o registro da leitura: o mesmo arquivo pode ser lido de novo */
   var d = extDocPorId(id); if (!d) return;
   if (a === 'confirmar') return ccqConfirmar(d);
   if (a === 'ignorar') return dcmConcluir(d, { status: 'ignorado' }).then(function(){ try{ renderFinanceiro(); }catch(e){} });

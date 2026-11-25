@@ -2010,6 +2010,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -25445,8 +25446,10 @@ function dcmDeTexto(txt, nome){
   return null;
 }
 function dcmRegistrar(nome, d, sig){
-  var id = 'dcm_' + sig;
-  if (extDocPorId(id)) return Promise.resolve({ jaLido: true, nome: nome });
+  var id = 'dcm_' + sig, ex = extDocPorId(id);
+  /* contracheque confirmado ou ignorado cujo registro foi apagado depois: o mesmo arquivo pode ser lido de novo */
+  var refazer = !!ex && ex.kind === 'contracheque' && ex.status !== 'pendente' && !extratos.some(function(e){ return e.tipo === 'contracheque' && e.fonte && e.fonte === ex.titulo; });
+  if (ex && !refazer) return Promise.resolve({ jaLido: true, nome: nome });
   return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ if (d.kind === 'fatura' && typeof fatS !== 'undefined') fatS.aba = 'cartao'; return { ok: true, nome: nome, linhas: 1, documento: true }; });
 }
 function dcmColar(texto){
@@ -25738,7 +25741,7 @@ function ccqReceita(ref, liquidoCent){
 function ccqConfirmar(d){
   var x = d.dados, refEl = qs('ccq_' + d.id + '_ref'), ref = (refEl && refEl.value) || x.ref || '';
   if (!/^\d{4}-\d{2}$/.test(ref)){ toast('Informe o mês de referência do contracheque.'); return Promise.resolve(); }
-  var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '' };
+  var doc = { tipo: 'contracheque', ref: ref, itens: x.itens, totais: x.totais, margem: x.margem, cargo: x.cargo || '', orgao: x.orgao || '', selo: x.selo, provas: x.provas || [], lidoEm: new Date().toISOString(), fonte: d.titulo || '', origem: d.id };
   return extGravar('cc_' + ref, doc).then(function(){ return ccqReceita(ref, x.totais.liquido); }).then(function(){ return dcmConcluir(d); })
     .then(function(){ toast('Contracheque de ' + mesLabel(ref) + ' guardado. O líquido de ' + dcmDinheiro(x.totais.liquido) + ' entrou como salário previsto de ' + mesLabel(ccqPagoEm(ref)) + ' (o contracheque é recebido no mês seguinte).'); if (ccqPagoEm(ref) !== mesSelecionado) toast('Para ver, escolha ' + mesLabel(ccqPagoEm(ref)) + ' no topo.'); try{ renderFinanceiro(); }catch(e){} });
 }
@@ -25820,7 +25823,7 @@ document.addEventListener('click', function(ev){
   if (a === 'ler'){ var i = qs('ccqArq'); if (i) i.click(); return; }
   if (a === 'copiar') return ccqCopiar();
   if (a === 'recebido'){ var doc = ccqDoc(ccqRefDe(mesSelecionado)), r = receitasManuais.filter(function(x){ return x.ccqSalario; })[0]; if (doc && r) marcarReceitaRecebida(r.id, r2(doc.totais.liquido / 100)); return; }
-  if (a === 'apagar'){ if (!confirm('Apagar este contracheque? O salário previsto do mês volta ao valor padrão.')) return; return extApagar(id).then(function(){ try{ renderFinanceiro(); }catch(e){} }); }
+  if (a === 'apagar'){ if (!confirm('Apagar este contracheque? O salário previsto do mês volta ao valor padrão.')) return; var ccd = extDocPorId(id); return extApagar(id).then(function(){ return ccd && ccd.origem && extDocPorId(ccd.origem) ? extApagar(ccd.origem) : null; }).then(function(){ try{ renderFinanceiro(); }catch(e){} }); }   /* apaga também o registro da leitura: o mesmo arquivo pode ser lido de novo */
   var d = extDocPorId(id); if (!d) return;
   if (a === 'confirmar') return ccqConfirmar(d);
   if (a === 'ignorar') return dcmConcluir(d, { status: 'ignorado' }).then(function(){ try{ renderFinanceiro(); }catch(e){} });

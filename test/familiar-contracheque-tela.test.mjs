@@ -57,6 +57,14 @@ t = await card(); check(/Ainda não há contracheque/.test(t) && /Copiar de/.tes
 await page.click('[data-ccq="copiar"]'); await page.waitForTimeout(2000); t = await card();
 if (process.env.DEBUG_CQ) console.log('DEBUG', t.slice(0, 900));
 check(/estimativa do mês passado/.test(t) && /Líquido \(cai na conta\) R\$ 2\.847,03/.test(t) && /Consignados · 9 contratos/i.test(t), 'estimativa criada com o mesmo líquido (sem extras no exemplo) e os consignados, marcada como "estimativa do mês passado"');
+// apagar o contracheque e ler o MESMO arquivo de novo (antes dizia "já tinha sido lido")
+await page.evaluate(() => document.getElementById('mesAnterior').click()); await page.waitForTimeout(500);
+await page.evaluate(() => document.querySelector('#drawer .dr-it[data-fin="pf"]').click()); await page.waitForTimeout(1000);
+t = await card();
+page.once('dialog', (d) => d.accept());
+if (/Apagar este contracheque/.test(t)) { await page.click('[data-ccq="apagar"]'); await page.waitForTimeout(1500); }
+await page.setInputFiles('#ccqArq', '/tmp/lg-contracheque.pdf'); await page.waitForTimeout(4500);
+t = await card(); check(/Contracheque lido · abril de 2024/i.test(t) && /Confirmar contracheque/.test(t), 'depois de apagar o contracheque, o MESMO arquivo é lido de novo (não diz mais "já tinha sido lido")');
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
 check(recusados.length === 0, 'nenhum pedido recusado' + (recusados.length ? ': ' + [...new Set(recusados)].join(' | ') : ''));
 await br.close();

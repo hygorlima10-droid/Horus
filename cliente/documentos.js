@@ -38,8 +38,10 @@ function dcmDeTexto(txt, nome){
   return null;
 }
 function dcmRegistrar(nome, d, sig){
-  var id = 'dcm_' + sig;
-  if (extDocPorId(id)) return Promise.resolve({ jaLido: true, nome: nome });
+  var id = 'dcm_' + sig, ex = extDocPorId(id);
+  /* contracheque confirmado ou ignorado cujo registro foi apagado depois: o mesmo arquivo pode ser lido de novo */
+  var refazer = !!ex && ex.kind === 'contracheque' && ex.status !== 'pendente' && !extratos.some(function(e){ return e.tipo === 'contracheque' && e.fonte && e.fonte === ex.titulo; });
+  if (ex && !refazer) return Promise.resolve({ jaLido: true, nome: nome });
   return extGravar(id, { tipo: 'documento', kind: d.kind, status: 'pendente', titulo: nome, lidoEm: new Date().toISOString(), dados: d.dados }).then(function(){ if (d.kind === 'fatura' && typeof fatS !== 'undefined') fatS.aba = 'cartao'; return { ok: true, nome: nome, linhas: 1, documento: true }; });
 }
 function dcmColar(texto){
