@@ -15556,8 +15556,7 @@ function anFechRefazer(m){
 }
 function anMesesRecorte(){
   var m0 = todayISO().slice(0, 7), pri = anPrimeiroMes(), l;
-  if (anRecorte === 'ano'){ l = []; for (var i = 1; i <= parseInt(m0.slice(5), 10); i++) l.push(m0.slice(0, 4) + '-' + String(i).padStart(2, '0')); }
-  else if (anRecorte === 'tudo'){ l = []; for (var m = pri; m <= m0; m = deslocarMes(m, 1)) l.push(m); }
+  if (anRecorte === 'tudo'){ l = []; for (var m = pri; m <= m0; m = deslocarMes(m, 1)) l.push(m); }
   else l = anMesesAte(anRecorte);
   l = l.filter(function(m){ return m >= pri; });
   return l.length ? l : [m0];
@@ -15787,7 +15786,7 @@ function renderAnalises(){
   anFechAuto();
   h += '<div class="an-topo"><div class="segmented" id="anPeriodoSeg" role="group" aria-label="Período">' +
     anSegBotoes() + '</div>' +
-    '<div class="segmented an-seg2" id="anRecorteSeg" role="group" aria-label="Recorte do histórico">' + [[6, '6 meses'], [12, '12 meses'], ['ano', 'Ano'], ['tudo', 'Tudo']].map(function(o){ return '<button type="button" data-an-recorte="' + o[0] + '" class="seg-btn' + (anRecorte === o[0] ? ' active' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="segmented an-seg2" id="anRecorteSeg" role="group" aria-label="Recorte do histórico">' + [[6, '6 meses'], [12, '12 meses'], ['tudo', 'Tudo']].map(function(o){ return '<button type="button" data-an-recorte="' + o[0] + '" class="seg-btn' + (anRecorte === o[0] ? ' active' : '') + '">' + o[1] + '</button>'; }).join('') + '</div>' +
     '<div class="saldo-data">' + escapeHtml(mesCurto(meses[0])) + ' a ' + escapeHtml(mesCurto(meses[meses.length - 1])) + ' · o mês atual aparece mais claro porque ainda está em andamento</div></div>' + anAvisoFechamento();
 
   h += '<div class="md-kpis an-kpis4">' +
@@ -15903,7 +15902,7 @@ function anMostrarTip(ev, alvo){
     var ir = ev.target.closest ? ev.target.closest('[data-an-ir]') : null;
     if (ir){ var alvoIr = qs(ir.getAttribute('data-an-ir')); if (alvoIr && alvoIr.scrollIntoView) alvoIr.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     var rc = ev.target.closest ? ev.target.closest('[data-an-recorte]') : null;
-    if (rc){ var rv = rc.getAttribute('data-an-recorte'); anRecorte = (rv === 'ano' || rv === 'tudo') ? rv : parseInt(rv, 10); renderAnalises(); return; }
+    if (rc){ var rv = rc.getAttribute('data-an-recorte'); anRecorte = rv === 'tudo' ? rv : parseInt(rv, 10); renderAnalises(); return; }
     var rf = ev.target.closest ? ev.target.closest('[data-an-refazer]') : null;
     if (rf){ anFechRefazer(rf.getAttribute('data-an-refazer')); return; }
     if (ev.target.closest && ev.target.closest('[data-an-exportar]')){ anFechExportar(); return; }

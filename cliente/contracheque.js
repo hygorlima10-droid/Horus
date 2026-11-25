@@ -226,7 +226,6 @@ function ccqHistorico(){
 function ccqMesesRecorte(docs){
   var m0 = todayISO().slice(0, 7), r = (typeof anRecorte !== 'undefined') ? anRecorte : 12, l = [], m;
   if (r === 'tudo'){ if (!docs.length) return [m0]; var a = docs[0].ref, b = docs[docs.length - 1].ref > m0 ? docs[docs.length - 1].ref : m0; for (m = a; m <= b; m = deslocarMes(m, 1)) l.push(m); return l; }
-  if (r === 'ano'){ for (var i = 1; i <= parseInt(m0.slice(5), 10); i++) l.push(m0.slice(0, 4) + '-' + String(i).padStart(2, '0')); return l; }
   var n = +r || 12; for (var k = n - 1; k >= 0; k--) l.push(deslocarMes(m0, -k)); return l;
 }
 function ccqResumoMes(d){

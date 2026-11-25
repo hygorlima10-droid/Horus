@@ -32,11 +32,9 @@ check(!!meses[mes(-5)] && meses[mes(-5)].retro === true, 'os meses antigos entra
 await abrirHist();
 let t = await txt();
 check(new RegExp('foi fechado sozinho em').test(t) && /primeira vez que você abre no dia 1º/.test(t), 'o Histórico explica o fechamento automático e diz quando o último mês foi fechado');
-check(await page.evaluate(() => Array.from(document.querySelectorAll('#anRecorteSeg button')).map(b => b.textContent).join('|')) === '6 meses|12 meses|Ano|Tudo', 'recortes: 6 meses | 12 meses | Ano | Tudo');
+check(await page.evaluate(() => Array.from(document.querySelectorAll('#anRecorteSeg button')).map(b => b.textContent).join('|')) === '6 meses|12 meses|Tudo', 'recortes: 6 meses | 12 meses | Tudo (sem o Ano, que repetia o de 12 meses)');
 check(await linhas() === 5, 'recorte de 6 meses (inclui o mês atual): 5 meses fechados na tabela (' + await linhas() + ')');
 await page.click('[data-an-recorte="12"]'); await page.waitForTimeout(500); check(await linhas() === 11, '12 meses: 11 meses fechados');
-const doAno = []; for (let n = -1; n >= -13; n--) if (mes(n).slice(0, 4) === mes(0).slice(0, 4)) doAno.push(n);
-await page.click('[data-an-recorte="ano"]'); await page.waitForTimeout(500); check(await linhas() === doAno.length, 'Ano: só os meses fechados deste ano (' + doAno.length + ')');
 await page.click('[data-an-recorte="tudo"]'); await page.waitForTimeout(500); check(await linhas() === 13, 'Tudo: os 13 meses');
 await page.click('[data-an-recorte="6"]'); await page.waitForTimeout(500);
 t = await txt();
