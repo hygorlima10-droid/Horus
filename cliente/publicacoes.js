@@ -553,6 +553,10 @@ function pbRespPadrao(p){ var sg = agChavesProcesso(p.numero || p.processo), me 
 function pbGravarPrazo(p, o){
   var mult = o.dobro ? 2 : 1, r = pbCalcular(p.data, o.dias * mult, o.tipo, o.regime), venc = o.manual || r.venc, v = pbVinculo(p.processo), trab = '', psel = pbPecaSel(p), pcz = pbPecasDe(p);
   var auto = agAntesUteis(venc, 2); if (auto >= todayISO() && auto < venc) trab = auto;
+  if (o.trabalhar){   /* o dia que a pessoa escolheu para trabalhar na peça vale no lugar do automático */
+    if (o.trabalhar > venc) return Promise.reject(new Error('o dia de trabalhar (' + fmtData(o.trabalhar) + ') não pode passar do prazo fatal (' + fmtData(venc) + ')'));
+    trab = o.trabalhar < venc ? o.trabalhar : '';
+  }
   var lidaAntes = pbLidaG(p), ids = pbMembros(p).map(function(x){ return x.id; });
   return agCriar({ tipo: 'prazo', titulo: o.desc, processo: p.numero || p.processo, cliente: pbNomeParte(p, v), data: venc, hora: '', trabalhar: trab, situacao: 'afazer', concluido: false, avisos: [5, 2, 1, 0], resp: o.resp, pubId: p.id, calculo: o.manual ? undefined : r.op, dias: o.dias * mult, diasBase: o.dias, dobro: mult > 1 ? o.dobro : '', contagem: o.tipo, disp: p.data, inicio: r.ini, manual: !!o.manual, tribunal: p.tribunal || '',
     peca: psel ? psel.peca : '', pecaId: psel ? psel.rid : '', pecaBase: psel ? psel.base : '', pecaOrigem: psel && psel.peca === o.desc ? (psel.rid === 'catalogo' ? 'escolhida' : 'sugerida') : (psel ? 'ajustada' : 'manual'), natureza: pcz ? pcz.natureza : '', criadoEm: new Date().toISOString() }).then(function(doc){
@@ -775,7 +779,7 @@ function pbDesenharDetalhe(){
   { var au0 = pbAudDe(p); h += '<div class="pb-sec"><div class="pb-sec-t">Agenda e tarefas</div><div class="saldo-data">Cadastre a partir desta publicação, mesmo que o app não tenha reconhecido nada no texto. Audiência e tarefa vão para a Agenda; a tarefa delegada vai para a aba Delegadas.</div><div class="pb-acts">' + (au0 ? '' : '<button type="button" class="btn btn-ghost pb-b" data-pbd="aud-livre">Criar audiência</button>') + '<button type="button" class="btn btn-ghost pb-b" data-pbd="tarefa">Criar tarefa</button><button type="button" class="btn btn-ghost pb-b" data-pbd="delegada">Criar tarefa delegada</button></div>' + (function(){ var dl = pbDelegadasDe(p); return dl.length ? '<div class="pb-tags" style="margin-top:8px">' + dl.map(function(t){ return pbdgEtiqueta(t, 'data-pbd'); }).join('') + '</div>' : ''; })() + '</div>'; }
   h += '<div class="pb-sec pb-ia" id="pbPrazoBox">';
   if (pz){
-    h += '<div class="pb-sec-t">Prazo confirmado</div><div class="pb-prazo-ok"><b>' + escapeHtml(fmtData(pz.data)) + '</b> <span>(' + escapeHtml(pbDiaSem(pz.data)) + ')</span><div class="saldo-data">' + escapeHtml(pz.descricao || '') + (pz.concluido ? ' · cumprido' : '') + '</div></div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" id="pbVerPrazo">Abrir prazo</button></div>';
+    h += '<div class="pb-sec-t">Prazo confirmado</div><div class="pb-prazo-ok"><b>' + escapeHtml(fmtData(pz.data)) + '</b> <span>(' + escapeHtml(pbDiaSem(pz.data)) + ')</span><div class="saldo-data">' + escapeHtml(pz.descricao || '') + (pz.concluido ? ' · cumprido' : '') + '</div>' + (pz.trabalhar && pz.trabalhar < pz.data ? '<div class="saldo-data">Trabalhar na peça até <b>' + escapeHtml(fmtData(pz.trabalhar)) + '</b></div>' : '') + '</div><div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" id="pbVerPrazo">Abrir prazo</button></div>';
   } else {
     if (pc) h += pbPecaHtml(p, pc);
     var tipoPad = pbRegimeSug(p) === 'cpp' ? 'corridos' : (usaPc ? pcSel.contagem : ((sug && sug.tipo === 'corridos') ? 'corridos' : 'uteis'));
@@ -785,6 +789,7 @@ function pbDesenharDetalhe(){
       '<div class="pb-dois"><div class="field"><label class="field-label" for="pbf_dias">Dias</label><input type="number" id="pbf_dias" min="1" max="365" inputmode="numeric" value="' + (usaPc ? pcSel.dias : (sug ? sug.dias : 15)) + '"></div><div class="field"><label class="field-label" for="pbf_tipo">Contagem</label><select id="pbf_tipo" class="filter-select"><option value="uteis"' + (tipoPad === 'uteis' ? ' selected' : '') + '>dias úteis</option><option value="corridos"' + (tipoPad === 'corridos' ? ' selected' : '') + '>dias corridos</option></select></div></div>' +
       ((pc && pc.instancia === 'juizado') ? '' : '<div class="field"><label class="field-label" for="pbf_dobro">Prazo em dobro?</label><select id="pbf_dobro" class="filter-select" style="width:100%"><option value="">Não</option><option value="fazenda"' + (((typeof stp.dobro === 'string') ? stp.dobro : (pc ? pc.dobro : '')) === 'fazenda' ? ' selected' : '') + '>Sim: Fazenda Pública, Ministério Público ou Defensoria (CPC 180, 183 e 186)</option><option value="litis"' + (stp.dobro === 'litis' ? ' selected' : '') + '>Sim: litisconsortes com advogados de escritórios diferentes (CPC 229; não vale em processo eletrônico, §2º)</option></select></div>') +
       '<div class="pb-calc" id="pbCalc"></div><button type="button" class="btn-text" data-pbd="manual">Corrigir a data manualmente</button><div class="field" id="pbManualBox" style="display:none;"><label class="field-label" for="pbf_manual">Data do vencimento (substitui o cálculo)</label><input type="date" id="pbf_manual"></div>' +
+      '<div class="field" id="pbTrabBox"><label class="field-label" for="pbf_trab">Dia para trabalhar na peça (opcional)</label><input type="date" id="pbf_trab"><div class="saldo-data" id="pbTrabInfo">Em branco, o app marca 2 dias úteis antes do prazo fatal.</div></div>' +
       '<div class="field" id="esResp_agendapub"></div>' +
       '<div class="pb-aviso">O app só sugere. Confira a contagem (data da publicação, feriados, suspensões e o tipo de prazo) antes de confirmar. Nada entra na Central de atenção sem o seu OK.</div><div class="form-error" id="pbErro"></div>' +
       '<div class="pb-acts"><button type="button" class="btn pb-b pb-verde" data-pbd="confirmar">Confirmar prazo</button>' + (!p.semPrazo ? '<button type="button" class="btn btn-ghost pb-b" data-pbd="naoe">Não é prazo</button>' : '') + '</div>';
@@ -799,12 +804,13 @@ function pbDesenharDetalhe(){
   c.innerHTML = h;
   try{ if (qs('esResp_agendapub')){ if (esS.respPubId !== p.id){ var sg = agChavesProcesso(p.numero || p.processo), me = esMinhasChaves(); esRespIniciarAg('agendapub', sg.length ? sg : (me.length ? [me[0]] : []), sg.length ? 'proc' : 'eu'); esS.respPubId = p.id; } else esRespDesenhar('agendapub'); } }catch(e){ console.error('responsáveis do prazo', e); }
   var vp = qs('pbVerPrazo'); if (vp) vp.addEventListener('click', function(){ qs('overlayPb').classList.remove('show'); agAbrir('a:' + pz.id); });
-  if (!pz) pbAtualizarCalculo();
+  if (!pz){ pbAtualizarCalculo(); try{ if (typeof adAbrirData === 'function') adAbrirData(qs('pbf_trab')); }catch(e){} }
 }
 function pbMult(){ var d = qs('pbf_dobro'); return d && d.value ? 2 : 1; }
 function pbAtualizarCalculo(){
   var p = pbPub(pbDetId), el = qs('pbCalc'); if (!p || !el) return;
   var dias = parseInt(qs('pbf_dias').value, 10), tipo = qs('pbf_tipo').value;
+  try{ var ti = qs('pbTrabInfo'), tb = qs('pbf_trab'); if (ti && tb && dias > 0){ var rr = pbCalcular(p.data, dias * pbMult(), tipo, pbRegimeDaConta(p, tipo)), vv = (qs('pbf_manual') && qs('pbf_manual').value) || rr.venc, au = agAntesUteis(vv, 2); tb.max = vv; ti.textContent = (au >= todayISO() && au < vv) ? 'Em branco, o app marca ' + fmtData(au) + ' (2 dias úteis antes do prazo fatal, ' + fmtData(vv) + ').' : 'Em branco, não há dia separado para trabalhar: vale o prazo fatal (' + fmtData(vv) + ').'; } }catch(e){}
   if (!dias || dias < 1){ el.innerHTML = '<span class="saldo-data">Informe os dias.</span>'; return; }
   var mult = pbMult(), r = pbCalcular(p.data, dias * mult, tipo, pbRegimeDaConta(p, tipo)), fora = p.tribunal && p.tribunal !== 'TJGO';
   el.innerHTML = (mult > 1 ? '<div class="pb-lin"><span>Prazo em dobro</span><b>' + dias + ' × 2 = ' + dias * 2 + ' dias</b></div>' : '') + '<div class="pb-lin"><span>Disponibilizada</span><b>' + fmtData(p.data) + '</b></div><div class="pb-lin"><span>Considerada publicada</span><b>' + fmtData(r.pub) + '</b></div><div class="pb-lin"><span>Começa a contar</span><b>' + fmtData(r.ini) + '</b></div><div class="pb-lin pb-venc"><span>Vence em</span><b>' + fmtData(r.venc) + ' <small>(' + pbDiaSem(r.venc) + ')</small></b></div>' +
@@ -817,7 +823,7 @@ function pbSalvarPrazo(){
   if (!dias || dias < 1){ err.textContent = 'Informe os dias do prazo.'; return; }
   if (!desc){ err.textContent = 'Escreva uma descrição.'; return; }
   var dEl = qs('pbf_dobro');
-  pbGravarPrazo(p, { desc: desc, dias: dias, tipo: tipo, dobro: dEl ? dEl.value : '', regime: pbRegimeDaConta(p, tipo), manual: manual, resp: esRespChaves('agendapub') }).then(function(res){
+  pbGravarPrazo(p, { desc: desc, dias: dias, tipo: tipo, dobro: dEl ? dEl.value : '', regime: pbRegimeDaConta(p, tipo), manual: manual, trabalhar: (qs('pbf_trab') && qs('pbf_trab').value) || '', resp: esRespChaves('agendapub') }).then(function(res){
     qs('overlayPb').classList.remove('show'); toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); }); pbAvancar(p.id);
   }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
 }
