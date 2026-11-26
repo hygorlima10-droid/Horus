@@ -44,8 +44,11 @@ check(c.length === 1 && c[0].acx[0] && /Entrar na sala/.test(c[0].acx[0]) && c[0
 // linha fina no dia fatal (vista Mês)
 await page.evaluate(() => document.querySelector('[data-ag="vista"][data-v="mes"]').click()); await page.waitForTimeout(500);
 await page.evaluate((d) => { const b = document.querySelector('[data-ag="dia"][data-v="' + d + '"]'); if (b) b.click(); else { for (let k = 0; k < 3 && !document.querySelector('[data-ag="dia"][data-v="' + d + '"]'); k++) document.querySelector('[data-ag="nav"][data-v="1"]').click(); const b2 = document.querySelector('[data-ag="dia"][data-v="' + d + '"]'); if (b2) b2.click(); } }, dia(20)); await page.waitForTimeout(600);
+const pil = await page.evaluate(() => Array.from(document.querySelectorAll('#agCorpo .ag-fpill')).map(e => e.innerText.replace(/\s+/g, ' ')));
+check(pil.length === 1 && /1 prazo vence neste dia/.test(pil[0]) && await page.evaluate(() => document.querySelectorAll('#agCorpo .ag-fina').length === 0 && !!document.querySelector('#agCorpo .ag-fpill svg')), 'no dia fatal (longe) há UMA pílula no cabeçalho do dia ("' + pil[0] + '"), com o ícone de bandeira, e a lista começa recolhida');
+await page.evaluate(() => document.querySelector('#agCorpo .ag-fpill').click()); await page.waitForTimeout(400);
 const fina = await page.evaluate(() => Array.from(document.querySelectorAll('#agCorpo .ag-fina')).map(e => e.innerText.replace(/\s+/g, ' ')));
-check(fina.length === 1 && /Manifestação sobre os documentos/.test(fina[0]) && /trabalhar até/i.test(fina[0]), 'no dia fatal há só uma linha fina de lembrete: ' + JSON.stringify(fina));
+check(fina.length === 1 && /Manifestação sobre os documentos/.test(fina[0]) && /trabalhar até/i.test(fina[0]), 'tocar na pílula abre a lista do dia, com uma linha por prazo: ' + JSON.stringify(fina));
 check(await page.evaluate(() => !Array.from(document.querySelectorAll('#agCorpo .agc')).some(e => /Manifestação sobre os documentos/.test(e.innerText))), 'e o cartão completo não se repete no dia fatal');
 // Adiar o trabalho (não mexe no prazo fatal)
 await page.evaluate(() => document.querySelector('[data-ag="vista"][data-v="lista"]').click()); await page.waitForTimeout(600);
@@ -76,5 +79,12 @@ check(await page.evaluate(() => { const o = document.getElementById('overlayAgZa
 await page.evaluate(() => document.querySelectorAll('.overlay.show').forEach(o => o.classList.remove('show')));
 await page.evaluate(() => Array.from(document.querySelectorAll('#agCorpo .agc')).find(e => /Recurso sem dia de trabalho/.test(e.innerText)).querySelector('.agc-t').click()); await page.waitForTimeout(500);
 check(await page.evaluate(() => !!document.querySelector('.overlay.show') && /Recurso sem dia de trabalho/.test(document.querySelector('.overlay.show').innerText)), 'tocar no cartão continua abrindo a ficha do prazo');
+// vence amanhã: a lista do dia abre sozinha, em vermelho; vence hoje também; pílula para vários prazos
+await novo({ tipo: 'prazo', titulo: 'Contestação urgente', cliente: 'Cliente Urgente', data: dia(1), trabalhar: hoje });
+await novo({ tipo: 'prazo', titulo: 'Réplica urgente', cliente: 'Cliente Urgente 2', data: dia(1), trabalhar: hoje });
+await page.reload(); await page.waitForTimeout(3000); await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').click()); await page.waitForTimeout(1200);
+check(await page.evaluate(() => { const p = document.querySelector('#agCorpo .ag-fpill.urg'); return !!p && /2 prazos vencem amanhã/.test(p.innerText.replace(/\s+/g, ' ')) && document.querySelectorAll('#agCorpo .ag-fatbox.urg .ag-fina').length === 2; }), 'o que vence amanhã: pílula vermelha "2 prazos vencem amanhã" e a lista já vem aberta');
+await page.evaluate(() => document.querySelector('#agCorpo .ag-fpill.urg').click()); await page.waitForTimeout(300);
+check(await page.evaluate(() => document.querySelectorAll('#agCorpo .ag-fatbox.urg').length === 0), 'tocar na pílula aberta recolhe a lista');
 check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros[0] : ''));
 await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTUDO CERTO'); process.exit(falhas ? 1 : 0);

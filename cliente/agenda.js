@@ -5,7 +5,7 @@
    - cartão "Prazos processuais" no Início e avisos no celular (5, 2 e 1 dia antes e no dia, configurável por item)
    ============================================================ */
 var agDocs = [], agOk = false, agEditKey = null, agEditTipo = 'prazo';
-var agS = { vista: 'semana', quadro: 'urgencia', filtro: 'tudo', ref: '', mes: '', sel: '', feitos: false, escopo: 'minha' };
+var agS = { vista: 'semana', quadro: 'urgencia', filtro: 'tudo', ref: '', mes: '', sel: '', feitos: false, escopo: 'minha', fatAb: {} };
 try{ if (localStorage.getItem('horus.agendaEscopo') === 'escritorio') agS.escopo = 'escritorio'; }catch(e){}
 var AG_PADRAO = [5, 2, 1, 0];
 var AG_TIPOS = { prazo: 'Prazo', audiencia: 'Audiência', tarefa: 'Tarefa' };
@@ -227,6 +227,7 @@ function agMontarTela(){
     else if (a === 'flt') agdFiltrosAbrir();
     else if (a === 'menu'){ agS.menu = !agS.menu; agRender(); }
     else if (a === 'det') agdAbrir(k);
+    else if (a === 'fatais'){ var iso = b.getAttribute('data-v'); agS.fatAb[iso] = !agFatAberto(iso); agRender(); }
     else if (a === 'copiar') agdCopiarNumero(b.getAttribute('data-n'));
     else if (a === 'nav'){ var n = Number(v); if (agS.vista === 'mes'){ var d = new Date(agS.mes + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); agS.mes = d.toISOString().slice(0, 7); agS.sel = agS.mes + '-01'; } else { agS.ref = pbSoma(agS.ref, 7 * n); } agRender(); }
     else if (a === 'hoje'){ agS.ref = agHoje(); agS.mes = agHoje().slice(0, 7); agS.sel = agHoje(); agRender(); }
@@ -314,16 +315,23 @@ function agPontos(l){
   var s = {}; l.forEach(function(i){ if (i.concluido) return; s[i.tipo === 'audiencia' ? 'au' : (i.tipo === 'tarefa' ? 'pe' : 'pr')] = 1; });
   return ['pr', 'au', 'pe'].filter(function(k){ return s[k]; }).map(function(k){ return '<s class="ag-p ' + k + '"></s>'; }).join('');
 }
-/* dia fatal dos prazos que têm dia de trabalhar antes: só uma linha fina de lembrete (o cartão está no dia de trabalhar) */
+/* dia fatal dos prazos que têm dia de trabalhar antes (o cartão está no dia de trabalhar): no cabeçalho do dia fica UMA pílula "N prazos vencem neste dia";
+   toque para abrir a lista daquele dia. Hoje e amanhã abrem sozinhos, em vermelho (é quando importa). */
 function agFatais(l){ var m = {}, hoje = agHoje(); l.forEach(function(i){ if (agTemTrab(i) && i.data >= hoje) (m[i.data] = m[i.data] || []).push(i); }); return m; }
+function agFatAberto(iso){ var o = agS.fatAb[iso]; return o === undefined ? agDias(iso) <= 1 : !!o; }
+function agFatUrg(iso){ return agDias(iso) <= 1; }
 function agLinhaFatal(i){
-  var d = agDias(i.data), q = d === 0 ? 'Vence hoje' : (d === 1 ? 'Vence amanhã' : 'Prazo fatal');
-  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
+  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + escapeHtml(i.titulo) + '</b>' + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
 }
-function agCabDia(iso){
+function agFatPilula(iso, n){
+  var q = agDias(iso) === 0 ? ' hoje' : (agDias(iso) === 1 ? ' amanhã' : ' neste dia'), ab = agFatAberto(iso);
+  return '<button type="button" class="ag-fpill' + (agFatUrg(iso) ? ' urg' : '') + '" data-ag="fatais" data-v="' + iso + '" aria-expanded="' + (ab ? 'true' : 'false') + '">' + ico('flag', 14) + n + (n === 1 ? ' prazo vence' : ' prazos vencem') + q + '<span class="ag-fp-s">' + (ab ? '▴' : '▾') + '</span></button>';
+}
+function agFatLista(iso, fl){ return fl.length && agFatAberto(iso) ? '<div class="ag-fatbox' + (agFatUrg(iso) ? ' urg' : '') + '">' + fl.map(agLinhaFatal).join('') + '</div>' : ''; }
+function agCabDia(iso, nFat){
   var f = agNomeFeriado(iso), rec = !f && pbRecesso(iso) && pbDow(iso) !== 0 && pbDow(iso) !== 6;
   var nome = PB_DIAS[pbDow(iso)]; nome = nome.charAt(0).toUpperCase() + nome.slice(1).split('-')[0];
-  return '<div class="ag-dia' + (iso === agHoje() ? ' hoje' : '') + '" id="agd-' + iso + '">' + nome + ' · ' + fmtData(iso).slice(0, 5) + (iso === agHoje() ? ' · hoje' : '') + (f ? ' · ' + escapeHtml(f) + ' (sem expediente)' : '') + (rec ? ' · recesso: prazos suspensos' : '') + '</div>';
+  return '<div class="ag-dia' + (iso === agHoje() ? ' hoje' : '') + (nFat ? ' tem-fat' : '') + '" id="agd-' + iso + '"><span>' + nome + ' · ' + fmtData(iso).slice(0, 5) + (iso === agHoje() ? ' · hoje' : '') + (f ? ' · ' + escapeHtml(f) + ' (sem expediente)' : '') + (rec ? ' · recesso: prazos suspensos' : '') + '</span>' + (nFat ? agFatPilula(iso, nFat) : '') + '</div>';
 }
 function agVistaSemana(todos){
   var ini = agIniSemana(agS.ref), dias = [], i;
@@ -341,7 +349,7 @@ function agVistaSemana(todos){
   dias.forEach(function(d){
     var l = (por[d] || []).filter(function(x){ return !(agDataAgir(x) < hoje && !x.concluido); }), fl = fat[d] || [];
     if (!l.length && !fl.length && !agNomeFeriado(d)) return;
-    vazio = false; h += agCabDia(d) + agConflitoHtml(l) + l.map(agCartao).join('') + fl.map(agLinhaFatal).join('');
+    vazio = false; h += agCabDia(d, fl.length) + agFatLista(d, fl) + agConflitoHtml(l) + l.map(agCartao).join('');
   });
   if (vazio) h += '<div class="financeiro-vazio">Nada na agenda nesta semana.</div>';
   return h;
@@ -359,7 +367,7 @@ function agVistaMes(todos){
   }
   c += '</div><div class="ag-leg"><span><s class="ag-p pr"></s>prazo</span><span><s class="ag-p pe"></s>tarefa</span><span><s class="ag-p au"></s>audiência</span><span><s class="ag-p fe"></s>feriado (TJGO)</span></div>';
   var l = por[agS.sel] || [], fl = fat[agS.sel] || [];
-  c += agCabDia(agS.sel) + agConflitoHtml(l) + (l.length || fl.length ? l.map(agCartao).join('') + fl.map(agLinhaFatal).join('') : '<div class="financeiro-vazio">Nada neste dia.</div>');
+  c += agCabDia(agS.sel, fl.length) + agFatLista(agS.sel, fl) + agConflitoHtml(l) + (l.length || fl.length ? l.map(agCartao).join('') : '<div class="financeiro-vazio">Nada neste dia.</div>');
   return c;
 }
 function agVistaLista(todos){
@@ -945,7 +953,7 @@ function agRevClique(a){
     '.acx{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.acx button,.acx a{display:inline-flex;align-items:center;gap:5px;font-family:inherit;border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:8px 14px;min-height:36px;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none}.acx .pri{background:var(--ink);color:var(--bg);border-color:transparent}' +
     '.ini-acoes.ag-acoes.md-um{flex-wrap:wrap;justify-content:flex-start}' +
     '@media(min-width:1000px){.ini-acoes.ag-acoes.md-um{max-width:none;flex-wrap:nowrap}}' +   /* no computador os botões ficam na mesma linha (o limite de 520 px da barra de ações do Início quebrava a 3ª linha) */
-    '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}' +
+    '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}.ag-dia.tem-fat{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;text-transform:uppercase}.ag-fpill{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:3px 11px;font:800 12px system-ui,sans-serif;background:#E8EBF5;color:#4A5372;cursor:pointer;text-transform:none;letter-spacing:0}.ag-fpill.urg{background:#FDE3E3;color:#B42323}.ag-fp-s{font-size:10px;margin-left:2px}.ag-fatbox{border:1px solid rgba(100,110,140,.25);border-radius:10px;padding:2px 8px;margin:5px 0;background:rgba(100,110,140,.05)}.ag-fatbox.urg{border-color:rgba(217,59,59,.3);background:rgba(217,59,59,.05)}.ag-fatbox .ag-fina{background:transparent;margin:3px 0}' +
     '.agc.pronta{--ag-c:var(--success)}.acx .vd{background:var(--success);color:#fff;border-color:transparent}.agd2>div.ok{border-left-color:var(--success);background:rgba(23,137,90,.09)}.agd2 .ok em{color:var(--success)}' +
     '.agm-h{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}.agm-h b{font-size:var(--t5,18px)}.agm-h small{font-size:var(--t2);color:var(--ink-soft)}.agm-res{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.agm-res span{border-radius:99px;padding:4px 10px;font-size:var(--t1);font-weight:800;background:var(--surface-2,#eceae4);color:var(--ink)}.agm-res .r{background:rgba(217,59,59,.12);color:var(--urgente)}.agm-res .a{background:rgba(42,120,214,.13);color:var(--info)}.agm-res .g{background:rgba(201,133,0,.16);color:#8a5a00}.agm-res .v{background:rgba(23,137,90,.14);color:var(--success)}' +
     '.agm-prog{height:8px;border-radius:99px;background:var(--surface-2,#eceae4);overflow:hidden;margin:2px 0 4px}.agm-prog i{display:block;height:100%;background:var(--success);border-radius:99px}.agm-sec{font-size:var(--t1);font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin:14px 2px 5px;display:flex;justify-content:space-between;color:var(--ink-soft)}.agm-sec.r{color:var(--urgente)}.agm-sec.a{color:var(--info)}.agm-sec.g{color:#8a5a00}.agm-sec.v{color:var(--success)}.agm-sec small{font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink-soft)}' +
