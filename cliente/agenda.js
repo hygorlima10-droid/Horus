@@ -761,10 +761,10 @@ function agProcSugestoes(txt){
   var l = mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(r){ return !prArquivado(r) && ((dig.length >= 3 && r.num.indexOf(dig) >= 0) || (q.length >= 3 && normNome(prTitulo(r)).indexOf(q) >= 0)); }).slice(0, 5);
   el.innerHTML = l.length ? '<div class="es-lista" style="margin-top:4px">' + l.map(function(r){ return '<button type="button" class="es-lk" style="display:block;text-align:left;padding:5px 2px" data-age="sug" data-v="' + escapeHtml(r.numero) + '">' + escapeHtml(prTitulo(r)) + ' <span class="saldo-data">' + escapeHtml(r.numero) + '</span></button>'; }).join('') + '</div>' : '';
 }
+/* ao CADASTRAR: o mesmo processo com tarefa de nome parecido ou para a mesma data (ver cliente/duplicidade.js); ao EDITAR, só o "igual" (como antes) */
 function agDuplicado(doc, i){
-  var proc = prNum(doc.processo); if (!proc) return null; var tn = normNome(doc.titulo);
-  return agItens().filter(function(x){ return x.key !== (i && i.key) && !x.cancelado && x.tipo === doc.tipo && x.data === doc.data && x.processo && prNum(x.processo) === proc; })
-    .filter(function(x){ var t = normNome(x.titulo); return !tn || !t || t === tn || t.indexOf(tn) >= 0 || tn.indexOf(t) >= 0; })[0] || null;
+  var l = dupAchar({ tipo: doc.tipo, titulo: doc.titulo, data: doc.data, processo: doc.processo, ignorarKey: i && i.key }, agItens(), { estrito: !!i });
+  return l.length ? l : null;
 }
 /* avisos (sem bloquear): audiência e prazo do mesmo processo no mesmo dia; audiências próximas de uma pessoa responsável */
 function agDicasConflito(){
@@ -821,7 +821,10 @@ function agSalvarEd(){
   if (!agEdDup){
     var dup = agDuplicado(doc, i);
     if (dup){
-      qs('age_dup').innerHTML = '<div class="pb-aviso" style="margin:8px 0;border:1px solid rgba(201,133,0,.4)"><b>Já existe ' + (doc.tipo === 'audiencia' ? 'uma audiência igual' : (doc.tipo === 'prazo' ? 'um prazo igual' : 'uma tarefa igual')) + ' neste processo</b><div class="saldo-data" style="margin:3px 0 6px">“' + escapeHtml(dup.titulo) + '” · ' + escapeHtml(fmtData(dup.data)) + (dup.hora ? ' às ' + escapeHtml(dup.hora) : '') + '</div><button type="button" class="es-lk" data-age="dup-abrir" data-k="' + escapeHtml(dup.key) + '">Abrir o existente</button> · <button type="button" class="es-lk" style="color:var(--ink-soft)" data-age="dup-salvar">Salvar mesmo assim</button></div>';
+      var igual = dup[0].motivo === 'igual';
+      qs('age_dup').innerHTML = '<div class="pb-aviso" style="margin:8px 0;border:1px solid rgba(201,133,0,.4)"><b>Já existe ' + (igual ? (doc.tipo === 'audiencia' ? 'uma audiência igual' : (doc.tipo === 'prazo' ? 'um prazo igual' : 'uma tarefa igual')) : (doc.tipo === 'audiencia' ? 'uma audiência parecida' : (doc.tipo === 'prazo' ? 'um prazo parecido' : 'uma tarefa parecida'))) + ' neste processo</b>' +
+        dup.map(function(r){ var x = r.item; return '<div class="saldo-data" style="margin:3px 0 6px">“' + escapeHtml(x.titulo) + '” · ' + escapeHtml(fmtData(x.data)) + (x.hora ? ' às ' + escapeHtml(x.hora) : '') + (x.concluido ? ' · já concluída' : '') + ' — ' + escapeHtml(dupMotivoTxt(r.motivo)) + ' <button type="button" class="es-lk" data-age="dup-abrir" data-k="' + escapeHtml(x.key) + '">Abrir</button></div>'; }).join('') +
+        '<button type="button" class="es-lk" style="color:var(--ink-soft)" data-age="dup-salvar">Salvar mesmo assim</button></div>';
       err.textContent = ''; return;
     }
   }

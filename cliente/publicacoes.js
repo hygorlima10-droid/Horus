@@ -552,6 +552,10 @@ function pbRespPadrao(p){ var sg = agChavesProcesso(p.numero || p.processo), me 
 /* grava o prazo na Agenda; a folha curta e o formulário completo usam este mesmo caminho */
 function pbGravarPrazo(p, o){
   var mult = o.dobro ? 2 : 1, r = pbCalcular(p.data, o.dias * mult, o.tipo, o.regime), venc = o.manual || r.venc, v = pbVinculo(p.processo), trab = '', psel = pbPecaSel(p), pcz = pbPecasDe(p);
+  if (!o.confirmouDup && typeof dupAchar === 'function'){   /* já existe prazo ou tarefa parecido neste processo? pede confirmação antes de criar */
+    var dupL = dupAchar({ tipo: 'prazo', titulo: o.desc, data: venc, processo: p.numero || p.processo }, agItens(), {});
+    if (dupL.length) return dupPerguntar(dupL, { tipo: 'prazo', titulo: o.desc, data: venc }).then(function(ok){ if (!ok){ var ec = new Error('Cadastro cancelado.'); ec.cancelado = true; throw ec; } return pbGravarPrazo(p, Object.assign({}, o, { confirmouDup: true })); });
+  }
   var auto = agAntesUteis(venc, 2); if (auto >= todayISO() && auto < venc) trab = auto;
   if (o.trabalhar){   /* o dia que a pessoa escolheu para trabalhar na peça vale no lugar do automático */
     if (o.trabalhar > venc) return Promise.reject(new Error('o dia de trabalhar (' + fmtData(o.trabalhar) + ') não pode passar do prazo fatal (' + fmtData(venc) + ')'));
@@ -631,7 +635,7 @@ function pbRapConfirmar(b){
     qs('overlayPbRap').classList.remove('show');
     toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); });
     pbAvancar(p.id);
-  }).catch(function(e){ b.disabled = false; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
+  }).catch(function(e){ b.disabled = false; if (e && e.cancelado) return; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
 }
 /* copiar o número do processo (padrão CNJ) para colar no sistema do tribunal */
 function pbNumCopia(p){ var n = p.numero || p.processo || '', a = null; try{ a = cnjAnalisar(n); }catch(e){} return a && a.completo ? a.formatado : n; }
@@ -825,7 +829,7 @@ function pbSalvarPrazo(){
   var dEl = qs('pbf_dobro');
   pbGravarPrazo(p, { desc: desc, dias: dias, tipo: tipo, dobro: dEl ? dEl.value : '', regime: pbRegimeDaConta(p, tipo), manual: manual, trabalhar: (qs('pbf_trab') && qs('pbf_trab').value) || '', resp: esRespChaves('agendapub') }).then(function(res){
     qs('overlayPb').classList.remove('show'); toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); }); pbAvancar(p.id);
-  }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  }).catch(function(e){ if (e && e.cancelado) return; err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 
 /* ---------- OABs monitoradas ---------- */

@@ -138,6 +138,12 @@ function dgSalvarNovo(){
   var d = Object.assign({}, n, { titulo: String(n.titulo).trim(), criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() });
   if (!d.resp) d.resp = dgMe();
   if (d.fixa){ d.status = 'afazer'; d.fatal = ''; d.trabalhar = ''; d.fixaDesde = agHoje(); d.feitas = {}; } else { delete d.fixa; delete d.repete; delete d.dow; delete d.dia; }
+  /* já existe tarefa delegada parecida neste processo? (mesmo nome ou mesma data) */
+  var dupL = (typeof dupAchar === 'function' && !d.fixa && d.processo) ? dupAchar({ tipo: 'tarefa', titulo: d.titulo, data: d.fatal || d.trabalhar || '', processo: d.processo }, dgS.docs.filter(function(x){ return x.tipo !== 'fixa' && !x.fixa; }).map(function(x){ return { key: 'dg:' + x.id, tipo: 'tarefa', titulo: x.titulo, data: x.fatal || x.trabalhar || '', processo: x.processo, concluido: x.status === 'protocolada' || x.status === 'feito' || !!x.concluida }; }), {}) : [];
+  if (dupL.length) return dupPerguntar(dupL, { tipo: 'tarefa', titulo: d.titulo, data: d.fatal || d.trabalhar || '' }).then(function(ok){ return ok ? dgGravarNovoDe(d) : null; });
+  return dgGravarNovoDe(d);
+}
+function dgGravarNovoDe(d){
   return dgGravar(d).then(function(){
     dgS.docs.push(d); dgS.novo = dgNovoVazio(); var tl = qs('dg_n_titulo'); if (tl) tl.value = ''; dgRender();
     toast('Tarefa lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.'); var t2 = qs('dg_n_titulo'); if (t2) t2.focus();

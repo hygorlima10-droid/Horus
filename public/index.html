@@ -2040,6 +2040,10 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -18961,6 +18965,10 @@ function pbRespPadrao(p){ var sg = agChavesProcesso(p.numero || p.processo), me 
 /* grava o prazo na Agenda; a folha curta e o formulário completo usam este mesmo caminho */
 function pbGravarPrazo(p, o){
   var mult = o.dobro ? 2 : 1, r = pbCalcular(p.data, o.dias * mult, o.tipo, o.regime), venc = o.manual || r.venc, v = pbVinculo(p.processo), trab = '', psel = pbPecaSel(p), pcz = pbPecasDe(p);
+  if (!o.confirmouDup && typeof dupAchar === 'function'){   /* já existe prazo ou tarefa parecido neste processo? pede confirmação antes de criar */
+    var dupL = dupAchar({ tipo: 'prazo', titulo: o.desc, data: venc, processo: p.numero || p.processo }, agItens(), {});
+    if (dupL.length) return dupPerguntar(dupL, { tipo: 'prazo', titulo: o.desc, data: venc }).then(function(ok){ if (!ok){ var ec = new Error('Cadastro cancelado.'); ec.cancelado = true; throw ec; } return pbGravarPrazo(p, Object.assign({}, o, { confirmouDup: true })); });
+  }
   var auto = agAntesUteis(venc, 2); if (auto >= todayISO() && auto < venc) trab = auto;
   if (o.trabalhar){   /* o dia que a pessoa escolheu para trabalhar na peça vale no lugar do automático */
     if (o.trabalhar > venc) return Promise.reject(new Error('o dia de trabalhar (' + fmtData(o.trabalhar) + ') não pode passar do prazo fatal (' + fmtData(venc) + ')'));
@@ -19040,7 +19048,7 @@ function pbRapConfirmar(b){
     qs('overlayPbRap').classList.remove('show');
     toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); });
     pbAvancar(p.id);
-  }).catch(function(e){ b.disabled = false; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
+  }).catch(function(e){ b.disabled = false; if (e && e.cancelado) return; var er = qs('pbrErro'); if (er) er.textContent = 'Não consegui salvar: ' + e.message; });
 }
 /* copiar o número do processo (padrão CNJ) para colar no sistema do tribunal */
 function pbNumCopia(p){ var n = p.numero || p.processo || '', a = null; try{ a = cnjAnalisar(n); }catch(e){} return a && a.completo ? a.formatado : n; }
@@ -19234,7 +19242,7 @@ function pbSalvarPrazo(){
   var dEl = qs('pbf_dobro');
   pbGravarPrazo(p, { desc: desc, dias: dias, tipo: tipo, dobro: dEl ? dEl.value : '', regime: pbRegimeDaConta(p, tipo), manual: manual, trabalhar: (qs('pbf_trab') && qs('pbf_trab').value) || '', resp: esRespChaves('agendapub') }).then(function(res){
     qs('overlayPb').classList.remove('show'); toast('Prazo confirmado para ' + fmtData(res.venc) + '. Está na Agenda.', 'Desfazer', function(){ pbDesfazerPrazo(res); }); pbAvancar(p.id);
-  }).catch(function(e){ err.textContent = 'Não consegui salvar: ' + e.message; });
+  }).catch(function(e){ if (e && e.cancelado) return; err.textContent = 'Não consegui salvar: ' + e.message; });
 }
 
 /* ---------- OABs monitoradas ---------- */
@@ -20106,10 +20114,10 @@ function agProcSugestoes(txt){
   var l = mp.ordem.map(function(n){ return mp.m[n]; }).filter(function(r){ return !prArquivado(r) && ((dig.length >= 3 && r.num.indexOf(dig) >= 0) || (q.length >= 3 && normNome(prTitulo(r)).indexOf(q) >= 0)); }).slice(0, 5);
   el.innerHTML = l.length ? '<div class="es-lista" style="margin-top:4px">' + l.map(function(r){ return '<button type="button" class="es-lk" style="display:block;text-align:left;padding:5px 2px" data-age="sug" data-v="' + escapeHtml(r.numero) + '">' + escapeHtml(prTitulo(r)) + ' <span class="saldo-data">' + escapeHtml(r.numero) + '</span></button>'; }).join('') + '</div>' : '';
 }
+/* ao CADASTRAR: o mesmo processo com tarefa de nome parecido ou para a mesma data (ver cliente/duplicidade.js); ao EDITAR, só o "igual" (como antes) */
 function agDuplicado(doc, i){
-  var proc = prNum(doc.processo); if (!proc) return null; var tn = normNome(doc.titulo);
-  return agItens().filter(function(x){ return x.key !== (i && i.key) && !x.cancelado && x.tipo === doc.tipo && x.data === doc.data && x.processo && prNum(x.processo) === proc; })
-    .filter(function(x){ var t = normNome(x.titulo); return !tn || !t || t === tn || t.indexOf(tn) >= 0 || tn.indexOf(t) >= 0; })[0] || null;
+  var l = dupAchar({ tipo: doc.tipo, titulo: doc.titulo, data: doc.data, processo: doc.processo, ignorarKey: i && i.key }, agItens(), { estrito: !!i });
+  return l.length ? l : null;
 }
 /* avisos (sem bloquear): audiência e prazo do mesmo processo no mesmo dia; audiências próximas de uma pessoa responsável */
 function agDicasConflito(){
@@ -20166,7 +20174,10 @@ function agSalvarEd(){
   if (!agEdDup){
     var dup = agDuplicado(doc, i);
     if (dup){
-      qs('age_dup').innerHTML = '<div class="pb-aviso" style="margin:8px 0;border:1px solid rgba(201,133,0,.4)"><b>Já existe ' + (doc.tipo === 'audiencia' ? 'uma audiência igual' : (doc.tipo === 'prazo' ? 'um prazo igual' : 'uma tarefa igual')) + ' neste processo</b><div class="saldo-data" style="margin:3px 0 6px">“' + escapeHtml(dup.titulo) + '” · ' + escapeHtml(fmtData(dup.data)) + (dup.hora ? ' às ' + escapeHtml(dup.hora) : '') + '</div><button type="button" class="es-lk" data-age="dup-abrir" data-k="' + escapeHtml(dup.key) + '">Abrir o existente</button> · <button type="button" class="es-lk" style="color:var(--ink-soft)" data-age="dup-salvar">Salvar mesmo assim</button></div>';
+      var igual = dup[0].motivo === 'igual';
+      qs('age_dup').innerHTML = '<div class="pb-aviso" style="margin:8px 0;border:1px solid rgba(201,133,0,.4)"><b>Já existe ' + (igual ? (doc.tipo === 'audiencia' ? 'uma audiência igual' : (doc.tipo === 'prazo' ? 'um prazo igual' : 'uma tarefa igual')) : (doc.tipo === 'audiencia' ? 'uma audiência parecida' : (doc.tipo === 'prazo' ? 'um prazo parecido' : 'uma tarefa parecida'))) + ' neste processo</b>' +
+        dup.map(function(r){ var x = r.item; return '<div class="saldo-data" style="margin:3px 0 6px">“' + escapeHtml(x.titulo) + '” · ' + escapeHtml(fmtData(x.data)) + (x.hora ? ' às ' + escapeHtml(x.hora) : '') + (x.concluido ? ' · já concluída' : '') + ' — ' + escapeHtml(dupMotivoTxt(r.motivo)) + ' <button type="button" class="es-lk" data-age="dup-abrir" data-k="' + escapeHtml(x.key) + '">Abrir</button></div>'; }).join('') +
+        '<button type="button" class="es-lk" style="color:var(--ink-soft)" data-age="dup-salvar">Salvar mesmo assim</button></div>';
       err.textContent = ''; return;
     }
   }
@@ -20773,7 +20784,10 @@ function prSincProvidencia(o){
     delete nd.id;
     return pbApi('/api/db/agenda/' + encodeURIComponent(ant.id), 'PUT', nd).then(function(){ Object.assign(ant, nd); agDepois(); return ant.id; });
   }
-  return agCriar({ tipo: 'tarefa', titulo: o.prox, processo: o.numero, cliente: o.cliente, data: o.data, hora: '', trabalhar: '', situacao: 'afazer', concluido: false, avisos: AG_PADRAO.slice(), provProc: true, pubId: '', criadoEm: new Date().toISOString() }).then(function(d){ return d.id; });
+  var criar = function(){ return agCriar({ tipo: 'tarefa', titulo: o.prox, processo: o.numero, cliente: o.cliente, data: o.data, hora: '', trabalhar: '', situacao: 'afazer', concluido: false, avisos: AG_PADRAO.slice(), provProc: true, pubId: '', criadoEm: new Date().toISOString() }).then(function(d){ return d.id; }); };
+  var dupL = (typeof dupAchar === 'function') ? dupAchar({ tipo: 'tarefa', titulo: o.prox, data: o.data, processo: o.numero }, agItens(), {}) : [];   /* já existe tarefa parecida neste processo? */
+  if (dupL.length) return dupPerguntar(dupL, { tipo: 'tarefa', titulo: o.prox, data: o.data }).then(function(ok){ if (ok) return criar(); toast('A tarefa da próxima providência não foi criada: já existe uma parecida na Agenda.'); return ''; });
+  return criar();
 }
 
 /* ---------- linha do tempo do processo: publicações, prazos, audiências, honorários e marcos ---------- */
@@ -23561,6 +23575,89 @@ function plAvisoSemNome(chaves){
 })();
 
 /* ============================================================
+   TAREFA OU PRAZO JÁ EXISTENTE (prefixo dup) — antes de cadastrar, o app olha o MESMO PROCESSO e avisa se já há algo parecido:
+   - mesmo nome e mesma data ("igual"); nome parecido e mesma data; nome parecido em OUTRA data (se a tarefa ainda está em aberto); mesma data e mesmo tipo com outro nome;
+   - mostra o que já existe (com "Abrir") e pede confirmação: "Não cadastrar" ou "Cadastrar mesmo assim";
+   - vale na Agenda (nova tarefa, prazo e audiência), no prazo criado a partir da publicação (confirmação completa e em um passo), na "próxima providência" do processo e nas tarefas delegadas;
+   - editar uma tarefa existente só compara "igual" (mesmo tipo, dia e nome), como antes.
+   ============================================================ */
+var DUP_VAZIAS = { de: 1, da: 1, do: 1, das: 1, dos: 1, para: 1, por: 1, com: 1, em: 1, no: 1, na: 1, nos: 1, nas: 1, ao: 1, aos: 1, uma: 1, que: 1, sobre: 1,
+  /* verbos que quase toda tarefa tem: não provam que são a mesma */ preparar: 1, juntar: 1, cumprir: 1, elaborar: 1, protocolar: 1, apresentar: 1, providenciar: 1, fazer: 1, verificar: 1, conferir: 1, analisar: 1, revisar: 1 };
+var dupPend = null;
+function dupNorm(s){ return (typeof normNome === 'function') ? normNome(s) : String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+function dupToks(t){
+  var seen = {}, out = [];
+  dupNorm(t).split(' ').forEach(function(w){ if (w.length < 3 || DUP_VAZIAS[w]) return; w = w.replace(/s$/, ''); if (!seen[w]){ seen[w] = 1; out.push(w); } });
+  return out;
+}
+/* 'igual' (mesmo nome) | 'contem' (um nome está dentro do outro) | 'parecido' | '' — sem acento, maiúscula, plural nem palavras de ligação */
+function dupTitSim(a, b){
+  var na = dupNorm(a), nb = dupNorm(b);
+  if (!na || !nb) return 'igual';   /* sem nome de um dos lados: o que vale é o resto */
+  if (na === nb) return 'igual';
+  if (Math.min(na.length, nb.length) >= 6 && (na.indexOf(nb) >= 0 || nb.indexOf(na) >= 0)) return 'contem';
+  var A = dupToks(na), B = dupToks(nb); if (!A.length || !B.length) return '';
+  var sh = 0; A.forEach(function(w){ if (B.indexOf(w) >= 0) sh++; });
+  var menor = Math.min(A.length, B.length), maior = Math.max(A.length, B.length);
+  if (sh >= 2 && sh / menor >= .5) return 'parecido';
+  if (menor === 1 && sh === 1 && maior <= 2) return 'parecido';
+  return '';
+}
+/* o = { tipo, titulo, data, processo, ignorarKey? }; itens = [{ key, tipo, titulo, data, hora, processo, concluido, cancelado }]; opt.estrito: só "igual" (edição) */
+function dupAchar(o, itens, opt){
+  var proc = (typeof prNum === 'function') ? prNum(o.processo) : String(o.processo || '').replace(/\D/g, ''); if (!proc) return [];
+  var out = [], estrito = !!(opt && opt.estrito);
+  (itens || []).forEach(function(x){
+    if (!x || x.cancelado || (o.ignorarKey && x.key === o.ignorarKey) || !x.processo) return;
+    var px = (typeof prNum === 'function') ? prNum(x.processo) : String(x.processo).replace(/\D/g, ''); if (px !== proc) return;
+    var mesmaData = !!o.data && x.data === o.data, sim0 = dupTitSim(o.titulo, x.titulo), sim = sim0 === 'contem' ? 'parecido' : sim0, aberto = !x.concluido, motivo = '', peso = 9;
+    if (mesmaData && (sim === 'igual' || (estrito && sim0 === 'contem'))){ motivo = 'igual'; peso = 0; }
+    else if (!estrito && mesmaData && sim === 'parecido'){ motivo = 'parecido-data'; peso = 1; }
+    else if (!estrito && sim && aberto){ motivo = 'nome'; peso = 2; }
+    else if (!estrito && mesmaData && aberto && x.tipo === o.tipo){ motivo = 'data'; peso = 3; }
+    if (estrito && motivo === 'igual' && x.tipo !== o.tipo) motivo = '';
+    if (motivo) out.push({ item: x, motivo: motivo, peso: peso });
+  });
+  out.sort(function(a, b){ return a.peso - b.peso || String(a.item.data).localeCompare(String(b.item.data)); });
+  return out.slice(0, 4);
+}
+function dupMotivoTxt(m){ return m === 'igual' ? 'igual: mesmo nome e mesma data' : (m === 'parecido-data' ? 'nome parecido e mesma data' : (m === 'nome' ? 'nome parecido, em outra data' : 'mesma data, com outro nome')); }
+function dupTipoTxt(t){ return t === 'audiencia' ? 'Audiência' : (t === 'prazo' ? 'Prazo' : 'Tarefa'); }
+function dupLinhaHtml(r, comAbrir){
+  var x = r.item;
+  return '<div class="dup-lin"><div><b>' + dupTipoTxt(x.tipo) + '</b> “' + escapeHtml(x.titulo || 'Sem título') + '” · ' + escapeHtml(fmtData(x.data)) + (x.hora ? ' às ' + escapeHtml(x.hora) : '') + (x.concluido ? ' · <em>já concluída</em>' : '') + '<div class="saldo-data">' + dupMotivoTxt(r.motivo) + '</div></div>' +
+    (comAbrir && x.key ? '<button type="button" class="dup-ab" data-dup="abrir" data-k="' + escapeHtml(x.key) + '">Abrir</button>' : '') + '</div>';
+}
+/* janela de confirmação: devolve uma promessa (true = cadastrar mesmo assim) */
+function dupPerguntar(lista, o){
+  if (dupPend){ try{ dupPend(false); }catch(e){} dupPend = null; }
+  return new Promise(function(res){
+    var ov = sgMontar('overlayDup', 'Já existe algo parecido'); document.body.appendChild(ov);
+    var feito = false, fim = function(v){ if (feito) return; feito = true; dupPend = null; ov.classList.remove('show'); try{ obs.disconnect(); }catch(e){} res(v); };
+    dupPend = fim;
+    qs('overlayDupC').innerHTML = '<p class="dup-t">Você está cadastrando ' + (o.tipo === 'audiencia' ? 'uma <b>audiência</b>' : (o.tipo === 'prazo' ? 'um <b>prazo</b>' : 'uma <b>tarefa</b>')) + ' <b>“' + escapeHtml(o.titulo || '') + '”</b>' + (o.data ? ' para <b>' + escapeHtml(fmtData(o.data)) + '</b>' : '') + ' neste processo. Já existe' + (lista.length > 1 ? 'm' : '') + ':</p>' +
+      lista.map(function(r){ return dupLinhaHtml(r, true); }).join('') +
+      '<div class="dup-bts"><button type="button" class="btn btn-ghost" data-dup="nao">Não cadastrar</button><button type="button" class="btn btn-primary" data-dup="sim">Cadastrar mesmo assim</button></div>';
+    ov.onclick = function(e){
+      var b = e.target.closest ? e.target.closest('[data-dup]') : null; if (!b) return;
+      var a = b.getAttribute('data-dup');
+      if (a === 'sim') fim(true); else if (a === 'nao') fim(false);
+      else if (a === 'abrir'){ var k = b.getAttribute('data-k'); fim(false); try{ if (typeof agdAbrir === 'function') agdAbrir(k); else if (typeof agAbrir === 'function') agAbrir(k); }catch(x){} }
+    };
+    var obs = new MutationObserver(function(){ if (!ov.classList.contains('show')) fim(false); });   /* fechou pelo X ou fora da janela: é "não cadastrar" */
+    obs.observe(ov, { attributes: true, attributeFilter: ['class'] });
+    ov.classList.add('show');
+  });
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.dup-t{margin:0 0 10px;font-size:var(--t3);line-height:1.4}.dup-lin{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-left:4px solid #D9A400;border-radius:10px;padding:8px 10px;margin:0 0 8px;background:var(--surface);font-size:var(--t2)}.dup-ab{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:6px 12px;font:700 12px system-ui,sans-serif;cursor:pointer;white-space:nowrap;color:var(--ink)}.dup-bts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:12px}';
+  document.head.appendChild(st);
+})();
+
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { dupAchar: dupAchar, dupTitSim: dupTitSim, dupPerguntar: dupPerguntar, agCriar: function(d){ return agCriar(d); } }); })();
+
+/* ============================================================
    DELEGADAS (prefixo dg) — a "planilha" de tarefas delegadas da equipe, dentro do app (substitui a do Google Sheets).
    - Coleção `delegadas` (um documento por tarefa), COMPARTILHADA: toda a equipe vê, lança, edita, conclui e exclui (a Lixeira guarda 30 dias).
    - Computador: tabela com a primeira linha em branco para lançar (setinhas com busca para cliente, processo, responsável, delegado por, prioridade e status);
@@ -23700,6 +23797,12 @@ function dgSalvarNovo(){
   var d = Object.assign({}, n, { titulo: String(n.titulo).trim(), criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() });
   if (!d.resp) d.resp = dgMe();
   if (d.fixa){ d.status = 'afazer'; d.fatal = ''; d.trabalhar = ''; d.fixaDesde = agHoje(); d.feitas = {}; } else { delete d.fixa; delete d.repete; delete d.dow; delete d.dia; }
+  /* já existe tarefa delegada parecida neste processo? (mesmo nome ou mesma data) */
+  var dupL = (typeof dupAchar === 'function' && !d.fixa && d.processo) ? dupAchar({ tipo: 'tarefa', titulo: d.titulo, data: d.fatal || d.trabalhar || '', processo: d.processo }, dgS.docs.filter(function(x){ return x.tipo !== 'fixa' && !x.fixa; }).map(function(x){ return { key: 'dg:' + x.id, tipo: 'tarefa', titulo: x.titulo, data: x.fatal || x.trabalhar || '', processo: x.processo, concluido: x.status === 'protocolada' || x.status === 'feito' || !!x.concluida }; }), {}) : [];
+  if (dupL.length) return dupPerguntar(dupL, { tipo: 'tarefa', titulo: d.titulo, data: d.fatal || d.trabalhar || '' }).then(function(ok){ return ok ? dgGravarNovoDe(d) : null; });
+  return dgGravarNovoDe(d);
+}
+function dgGravarNovoDe(d){
   return dgGravar(d).then(function(){
     dgS.docs.push(d); dgS.novo = dgNovoVazio(); var tl = qs('dg_n_titulo'); if (tl) tl.value = ''; dgRender();
     toast('Tarefa lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.'); var t2 = qs('dg_n_titulo'); if (t2) t2.focus();

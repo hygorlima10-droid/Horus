@@ -71,6 +71,17 @@ await page.click('[data-age="dup-salvar"]'); await page.waitForTimeout(1200);
 const docs = (await api('GET', '/api/db/agenda')).j.docs, novo = docs.filter((d) => d.data.titulo === 'Contestação' && d.id !== 'm8');
 check(novo.length === 1 && novo[0].data.resp.join() === '11111/GO' && novo[0].data.criadoPor === 'u1', '"Salvar mesmo assim" grava, com os responsáveis (Ana) e o autor (proprietário) ' + JSON.stringify(novo.map((d) => ({ resp: d.data.resp, por: d.data.criadoPor }))) + ' erro: ' + (await page.locator('#age_erro').innerText()));
 
+console.log('\n— aviso de tarefa ou prazo parecido no mesmo processo (nome parecido ou mesma data)');
+const abrirProc = async (tipo, tit, data) => { await page.click('[data-ag="novo"]'); await page.waitForSelector('#overlayAg.show #age_proc'); await page.click('[data-age="tipo"][data-v="' + tipo + '"]'); await page.fill('#age_tit', tit); await page.fill('#age_proc', '0000001-11'); await page.waitForTimeout(300); await page.click('#age_sug [data-age="sug"]'); await page.waitForTimeout(300); await page.fill('#age_data', data); await page.dispatchEvent('#age_data', 'input'); await page.waitForTimeout(200); await page.click('[data-age="salvar"]'); await page.waitForTimeout(600); };
+await abrirProc('tarefa', 'Preparar contestação', em(20));
+let dtx = await page.locator('#age_dup').innerText();
+check(/Já existe uma tarefa parecida neste processo/.test(dtx) && /nome parecido, em outra data/.test(dtx) && /Contestação/.test(dtx), 'nome parecido em OUTRA data: avisa que já existe tarefa parecida e mostra qual (' + dtx.replace(/\n/g, ' ').slice(0, 110) + ')');
+await page.fill('#age_tit', 'Juntar procuração atualizada'); await page.waitForTimeout(300); await page.click('[data-age="salvar"]'); await page.waitForTimeout(1200);
+check(!!(await api('GET', '/api/db/agenda')).j.docs.find((d) => d.data.titulo === 'Juntar procuração atualizada'), 'nome diferente e data diferente: salva direto, sem aviso');
+await abrirProc('prazo', 'Juntar documentos novos', em(6));
+dtx = await page.locator('#age_dup').innerText();
+check(/Já existe um prazo parecido neste processo/.test(dtx) && /mesma data, com outro nome/.test(dtx), 'mesma data e mesmo tipo, nome diferente: avisa (' + dtx.replace(/\n/g, ' ').slice(0, 100) + ')');
+await page.click('[data-age="cancelar"]'); await page.waitForTimeout(400);
 console.log('\n— tarefa: quem vê');
 await page.click('[data-ag="novo"]'); await page.waitForSelector('#overlayAg.show #age_proc'); await page.click('[data-age="tipo"][data-v="tarefa"]'); await page.waitForTimeout(200);
 check(await page.locator('#age_vis_box').isVisible() && await page.locator('#age_vis').inputValue() === 'so_eu' && !(await page.locator('#esResp_agenda').isVisible()), 'tarefa sem processo começa em "Só eu" e esconde os responsáveis');

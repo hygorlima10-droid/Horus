@@ -111,6 +111,7 @@ es = open(R + 'cliente/responsaveis.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/pendencias.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/fichas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/planilha.js', encoding='utf-8').read()
+es = es + '\n' + open(R + 'cliente/duplicidade.js', encoding='utf-8').read()   # aviso de tarefa/prazo parecido já existente
 es = es + '\n' + open(R + 'cliente/delegadas.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/quadros.js', encoding='utf-8').read()
 es = es + '\n' + open(R + 'cliente/peticoes.js', encoding='utf-8').read()

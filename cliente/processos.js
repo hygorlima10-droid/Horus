@@ -464,7 +464,10 @@ function prSincProvidencia(o){
     delete nd.id;
     return pbApi('/api/db/agenda/' + encodeURIComponent(ant.id), 'PUT', nd).then(function(){ Object.assign(ant, nd); agDepois(); return ant.id; });
   }
-  return agCriar({ tipo: 'tarefa', titulo: o.prox, processo: o.numero, cliente: o.cliente, data: o.data, hora: '', trabalhar: '', situacao: 'afazer', concluido: false, avisos: AG_PADRAO.slice(), provProc: true, pubId: '', criadoEm: new Date().toISOString() }).then(function(d){ return d.id; });
+  var criar = function(){ return agCriar({ tipo: 'tarefa', titulo: o.prox, processo: o.numero, cliente: o.cliente, data: o.data, hora: '', trabalhar: '', situacao: 'afazer', concluido: false, avisos: AG_PADRAO.slice(), provProc: true, pubId: '', criadoEm: new Date().toISOString() }).then(function(d){ return d.id; }); };
+  var dupL = (typeof dupAchar === 'function') ? dupAchar({ tipo: 'tarefa', titulo: o.prox, data: o.data, processo: o.numero }, agItens(), {}) : [];   /* já existe tarefa parecida neste processo? */
+  if (dupL.length) return dupPerguntar(dupL, { tipo: 'tarefa', titulo: o.prox, data: o.data }).then(function(ok){ if (ok) return criar(); toast('A tarefa da próxima providência não foi criada: já existe uma parecida na Agenda.'); return ''; });
+  return criar();
 }
 
 /* ---------- linha do tempo do processo: publicações, prazos, audiências, honorários e marcos ---------- */

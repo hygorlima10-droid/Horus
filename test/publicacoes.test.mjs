@@ -211,6 +211,18 @@ await page.click('[data-pbr="ok"]'); await page.waitForTimeout(1500);
 await page.click('#toast button'); await page.waitForTimeout(1500);
 check(!(await f('GET', '/api/db/agenda')).j.docs.some(d => d.data.pubId === '900005') && (await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').lida === false, '"Desfazer" apaga o prazo e devolve a publicação a não lida');
 await f('POST', '/api/djen/marcar', { ids: ['900005'], lida: false });
+// já existe tarefa parecida no mesmo processo: o app pergunta antes de criar o prazo (nome parecido em outra data)
+await page.evaluate(() => window.__horusTeste.agCriar({ tipo: 'tarefa', titulo: 'Prazo de 5 dias — Despacho (conferir)', processo: '5706736-75.2025.8.09.0107', cliente: 'Sergio Penido', data: new Date(Date.now() + 40 * 864e5).toISOString().slice(0, 10), hora: '', trabalhar: '', situacao: 'afazer', concluido: false, avisos: [1, 0], pubId: '', criadoEm: new Date().toISOString() }));
+await page.click('[data-pb="rapido"][data-id="900005"]'); await page.waitForTimeout(500);
+await page.click('[data-pbr="ok"]'); await page.waitForTimeout(1000);
+check(await page.evaluate(() => document.getElementById('overlayDup').classList.contains('show')) && /Já existe/.test(await page.evaluate(() => document.getElementById('overlayDupC').innerText)) && /Conferir|conferir/.test(await page.evaluate(() => document.getElementById('overlayDupC').innerText)), 'prazo criado a partir da publicação: já existe tarefa parecida no processo, o app mostra e pede confirmação');
+await page.click('[data-dup="nao"]'); await page.waitForTimeout(800);
+check(!(await f('GET', '/api/db/agenda')).j.docs.some(d => d.data.pubId === '900005'), '"Não cadastrar": o prazo não é criado');
+await page.click('[data-pbr="ok"]'); await page.waitForTimeout(800); await page.click('[data-dup="sim"]'); await page.waitForTimeout(1500);
+check((await f('GET', '/api/db/agenda')).j.docs.some(d => d.data.pubId === '900005'), '"Cadastrar mesmo assim": o prazo é criado');
+await page.click('#toast button'); await page.waitForTimeout(1200);
+await page.evaluate(async () => { const j = await (await fetch('/api/db/agenda')).json(); for (const d of j.docs.filter((x) => /Despacho \(conferir\)/.test(x.data.titulo || ''))) await fetch('/api/db/agenda/' + d.id, { method: 'DELETE' }); });
+await f('POST', '/api/djen/marcar', { ids: ['900005'], lida: false });
 // "Não é prazo" pelo ⋯ também tem Desfazer
 await page.click('[data-pb="cm"][data-id="900005"]'); await page.click('.pb-cmi[data-pb="naoe"][data-id="900005"]'); await page.waitForTimeout(900);
 check((await f('GET', '/api/djen/lista')).j.pubs.find(p => p.id === '900005').semPrazo === true, '"Não é prazo" no ⋯ marca a publicação como sem prazo');
