@@ -2048,6 +2048,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -24056,9 +24059,9 @@ function dgRender(){
   var t = qs('dg_n_titulo'), tinha = t && document.activeElement === t, pos = tinha ? t.selectionStart : 0; if (t && dgS.novo) dgS.novo.titulo = t.value;
   var tq = qs('dg_q'), tinhaQ = tq && document.activeElement === tq, posQ = tinhaQ ? tq.selectionStart : 0; dgAtualizarSelo();
   dgLerNovoFixa();
-  var abas = [['abertas', 'Abertas'], ['painel', 'Painel da equipe'], ['fixas', 'Fixas (contas)'], ['concluidas', 'Concluídas']];
+  var abas = [['abertas', 'Abertas'], ['painel', 'Painel da equipe'], ['fixas', 'Fixas (contas)'], ['historico', 'Histórico de contas'], ['concluidas', 'Concluídas']];
   el.innerHTML = '<div class="dg-abas">' + abas.map(function(a){ return '<button type="button" class="dg-aba' + (dgS.aba === a[0] ? ' on' : '') + '" data-dg="aba" data-v="' + a[0] + '">' + a[1] + '</button>'; }).join('') + '</div>' +
-    (dgS.aba === 'painel' ? dgPainelHtml() : (dgS.aba === 'concluidas' ? dgConcluidasHtml() : (dgS.aba === 'fixas' ? dgFixasHtml() : dgAbertasHtml())));
+    (dgS.aba === 'painel' ? dgPainelHtml() : (dgS.aba === 'concluidas' ? dgConcluidasHtml() : (dgS.aba === 'fixas' ? dgFixasHtml() : (dgS.aba === 'historico' ? dgHistoricoHtml() : dgAbertasHtml()))));
   if (tinha){ var t2 = qs('dg_n_titulo'); if (t2){ t2.focus(); try{ t2.setSelectionRange(pos, pos); }catch(e){} } }
   if (tinhaQ){ var tq2 = qs('dg_q'); if (tq2){ tq2.focus(); try{ tq2.setSelectionRange(posQ, posQ); }catch(e){} } }
   dgAutoAltura();
@@ -24083,7 +24086,7 @@ function dgTFixaEstado(f){
   var r = dgTFixaEstado0(f, hoje); if (chave) dgCacheEst[chave] = r; return r;
 }
 function dgTFixaEstado0(f, hoje){
-  var feitas = f.feitas || {}, occ = dgOcorrencias(f, dgFixaDe(f), pbSoma(hoje, f.repete === 'diaria' ? 45 : (f.repete === 'mensal' ? 35 : 8))), prox = null, cur = null, i;
+  var feitas = f.feitas || {}, occ = dgOcorrencias(f, dgTarefaFixaDe(f), pbSoma(hoje, f.repete === 'diaria' ? 45 : (f.repete === 'mensal' ? 35 : 8))), prox = null, cur = null, i;
   for (i = 0; i < occ.length; i++){ if (!prox && !feitas[occ[i].c]) prox = occ[i]; if (!cur && dgMesmoCiclo(f, occ[i].data, hoje)) cur = occ[i]; }
   var ks = Object.keys(feitas).sort(), lf = ks.length ? Object.assign({ c: ks[ks.length - 1] }, feitas[ks[ks.length - 1]]) : null, est;
   if (prox && prox.data < hoje) est = 'atrasada';
@@ -24180,18 +24183,41 @@ function dgOcorrencias(f, de, ate){
   }
   return out;
 }
-function dgPagaEm(f, c){ return (f.pagas || []).indexOf(c) >= 0; }
-/* a partir de quando olhar: no máximo o ciclo anterior ainda em atraso (semana: 6 dias; mês: 20; dia útil: só hoje; conta anual: 31) e nunca antes de a conta/fixa existir (só a "uma vez" vale desde sempre) */
+/* pagamentos da conta: cada ciclo pago é guardado na própria chave "pg_<ciclo>" ({ data, valor, venc, por, em }), assim duas pessoas marcando ciclos diferentes ao mesmo tempo
+   não se sobrescrevem (o servidor junta por chave). "pagas" (lista de ciclos) é o formato antigo: continua valendo, só sem data nem valor. */
+function dgPagamentos(f){
+  var m = {}; (f.pagas || []).forEach(function(c){ m[c] = { c: c, legado: true, data: '', valor: null, venc: '', por: '', em: '' }; });
+  Object.keys(f || {}).forEach(function(k){ var o = f[k]; if (k.indexOf('pg_') === 0 && o && typeof o === 'object'){ var c = k.slice(3); m[c] = { c: c, legado: false, data: o.data || '', valor: o.valor === '' || o.valor == null ? null : Number(o.valor), venc: o.venc || '', por: o.por || '', em: o.em || '' }; } });
+  return m;
+}
+function dgPagaEm(f, c){ return !!dgPagamentos(f)[c]; }
+/* a data de vencimento de um ciclo ("2026-11" → dia da conta naquele mês; semana e "uma vez": o próprio dia; ano: dia/mês da conta) */
+function dgCicloData(f, c){
+  c = String(c || '');
+  if (/^\d{4}-\d{2}-\d{2}$/.test(c)) return c;
+  if (/^\d{4}-\d{2}$/.test(c)) return c + '-' + dgNum2(Math.min(Number(f.dia) || 1, dgUltimoDia(Number(c.slice(0, 4)), Number(c.slice(5, 7)))));
+  if (/^\d{4}$/.test(c)){ var md = String(f.data || '').slice(5); return /^\d{2}-\d{2}$/.test(md) ? c + '-' + md : ''; }
+  return '';
+}
+/* TAREFA fixa (não é conta): olha no máximo o ciclo anterior ainda em atraso (semana: 6 dias; mês: 20; dia útil: só hoje) e nunca antes de a tarefa existir */
+function dgTarefaFixaDe(f){
+  var base = pbSoma(agHoje(), f.repete === 'semanal' ? -6 : (f.repete === 'diaria' ? 0 : -20)), cri = String(f.fixaDesde || f.criadoEm || '').slice(0, 10);
+  return cri && cri > base ? cri : base;
+}
+/* a partir de quando olhar: desde que a conta existe (ou desde que foi reativada), SEM limite: conta vencida e não paga continua atrasada até alguém registrar o pagamento.
+   Só a "uma vez" vale desde sempre; registro antigo sem data de criação olha os últimos 60 dias. */
 function dgFixaDe(f){
   if (f.repete === 'unica') return '0000-01-01';
-  var base = pbSoma(agHoje(), f.repete === 'semanal' ? -6 : (f.repete === 'diaria' ? 0 : (f.repete === 'mensal' ? -20 : -31))), cri = String(f.fixaDesde || f.criadoEm || '').slice(0, 10);
-  return cri && cri > base ? cri : base;
+  var cri = String(f.fixaDesde || f.criadoEm || '').slice(0, 10);
+  return cri || pbSoma(agHoje(), -60);
 }
 /* a próxima conta ainda não paga (pode estar atrasada) */
 function dgFixaProxima(f){
   var hoje = agHoje(), occ = dgOcorrencias(f, dgFixaDe(f), pbSoma(hoje, 400)).filter(function(o){ return !dgPagaEm(f, o.c); });
   return occ.length ? { c: occ[0].c, data: occ[0].data, atrasada: occ[0].data < hoje } : null;
 }
+/* quantos ciclos já venceram e seguem sem pagamento */
+function dgFixaAtrasadas(f){ return dgOcorrencias(f, dgFixaDe(f), pbSoma(agHoje(), -1)).filter(function(o){ return !dgPagaEm(f, o.c); }).length; }
 function dgFixaVence(f){
   if (f.repete === 'semanal') return DG_DOW[Number(f.dow)] || '—';
   if (f.repete === 'mensal') return 'dia ' + (f.dia || '?');
@@ -24210,15 +24236,42 @@ function dgFixasAtencao(){
 }
 function dgFixaChip(it, atrasado){
   var dd = Math.round((Date.parse(it.data + 'T12:00:00Z') - Date.parse(agHoje() + 'T12:00:00Z')) / 86400000);
-  var estado = atrasado ? '<span class="est est-atraso">Atrasada</span>' : (dd === 0 ? '<span class="up-tag-hoje">HOJE</span>' : '<span class="est ' + (dd <= 3 ? 'est-breve' : 'est-ok') + '">' + (dd === 1 ? 'Amanhã' : 'Em ' + dd + ' dias') + '</span>');
-  return '<div class="stall-chip' + (atrasado ? '' : ' tipo-murilo') + '" data-fixa-pagar="' + escapeHtml(it.id + '|' + it.c) + '" title="Toque para marcar como paga">' + upData(it.data, atrasado ? 'up-d-atraso' : (dd === 0 ? 'up-d-hoje' : '')) +
+  var estado = atrasado ? '<span class="est est-atraso">Atrasada' + (dd < 0 ? ' há ' + (-dd) + (dd === -1 ? ' dia' : ' dias') : '') + '</span>' : (dd === 0 ? '<span class="up-tag-hoje">HOJE</span>' : '<span class="est ' + (dd <= 3 ? 'est-breve' : 'est-ok') + '">' + (dd === 1 ? 'Amanhã' : 'Em ' + dd + ' dias') + '</span>');
+  return '<div class="stall-chip' + (atrasado ? '' : ' tipo-murilo') + '" data-fixa-pagar="' + escapeHtml(it.id + '|' + it.c) + '" title="Toque para registrar o pagamento">' + upData(it.data, atrasado ? 'up-d-atraso' : (dd === 0 ? 'up-d-hoje' : '')) +
     '<div class="up-top"><span>' + escapeHtml(it.titulo || 'Conta') + ' ' + estado + '</span>' + (it.valor ? '<span>' + fmtMoeda(it.valor) + '</span>' : '') + '</div>' +
-    '<div class="up-when">Conta do escritório · ' + (atrasado ? 'venceu em ' : 'vence em ') + fmtData(it.data) + (it.resp ? ' · ' + escapeHtml(dgCurto(it.resp)) : '') + ' · toque para marcar como paga</div></div>';
+    '<div class="up-when">Conta do escritório · ' + (atrasado ? 'venceu em ' : 'vence em ') + fmtData(it.data) + (it.resp ? ' · ' + escapeHtml(dgCurto(it.resp)) : '') + ' · toque para registrar o pagamento</div></div>';
 }
+/* ---- registrar o pagamento de um ciclo (data e valor pagos): abre a janelinha; também corrige um pagamento já registrado ---- */
 function dgFixaPagar(id, c){
-  var f = dgDoc(id); if (!f || dgPagaEm(f, c)) return;
-  dgSalvarCampos(id, { pagas: (f.pagas || []).concat([c]).slice(-36) }, true).then(function(){ try{ renderPainelAtencao(); }catch(e){} });
+  var f = dgDoc(id); if (!f) return; dgCss();
+  var ov = sgMontar('overlayDgPg', 'Registrar pagamento'), pg = dgPagamentos(f)[c], venc = (pg && pg.venc) || dgCicloData(f, c), dd = venc ? Math.round((Date.parse(venc + 'T12:00:00Z') - Date.parse(agHoje() + 'T12:00:00Z')) / 86400000) : 0;
+  dgS.pg = { id: id, c: c, edita: !!pg };
+  ov.querySelector('h2').textContent = pg ? 'Pagamento registrado' : 'Registrar pagamento';
+  var valor = pg && pg.valor != null ? pg.valor : f.valor, fld = function(rot, html, i){ return '<div class="field"><label class="field-label" for="dgpg_' + i + '">' + rot + '</label>' + html + '</div>'; };
+  qs('overlayDgPgC').innerHTML = '<div class="saldo-data" style="margin:0 0 8px"><b>' + escapeHtml(f.titulo || 'Conta') + '</b> · vencimento ' + (venc ? escapeHtml(fmtData(venc)) : '—') + (!pg && dd < 0 ? ' · <b style="color:var(--urgente)">atrasada há ' + (-dd) + (dd === -1 ? ' dia' : ' dias') + '</b>' : '') + (pg && pg.por ? ' · registrado por ' + escapeHtml(dgCurto(pg.por) || '—') : '') + '</div>' +
+    fld('Data do pagamento', '<input type="date" id="dgpg_data" value="' + escapeHtml(pg && pg.data ? pg.data : agHoje()) + '">', 'data') +
+    fld('Valor pago (R$)', '<input type="text" id="dgpg_valor" inputmode="decimal" autocomplete="off" placeholder="ex.: 189,90" value="' + escapeHtml(valor === '' || valor == null ? '' : String(valor).replace('.', ',')) + '">', 'valor') +
+    '<div class="form-error" id="dgpg_erro"></div><div class="f-rod-in">' + (pg ? '<button type="button" class="btn btn-ghost dg-perigo" data-dgpg="desfazer">Desfazer o pagamento</button>' : '') + '<button type="button" class="btn btn-ghost" data-dgpg="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-dgpg="salvar" id="dgpg_ok">' + (pg ? 'Salvar' : 'Marcar como paga') + '</button></div>';
+  ov.classList.add('show'); var v = qs('dgpg_valor'); if (v && !v.value) v.focus();
 }
+function dgFixaSalvarPag(){
+  var S = dgS.pg, f = S && dgDoc(S.id), err = qs('dgpg_erro'); if (!f) return;
+  var data = qs('dgpg_data').value, raw = qs('dgpg_valor').value.trim(), valor = dgValorNum(raw);
+  if (!data){ if (err) err.textContent = 'Escolha a data do pagamento.'; return; }
+  if (raw && valor === ''){ if (err) err.textContent = 'Valor inválido. Use números, por exemplo 189,90.'; return; }
+  var antes = dgPagamentos(f)[S.c], patch = {}; patch['pg_' + S.c] = { data: data, valor: valor === '' ? '' : valor, venc: (antes && antes.venc) || dgCicloData(f, S.c), por: antes && antes.por ? antes.por : dgMe(), em: antes && antes.em ? antes.em : new Date().toISOString() };
+  if ((f.pagas || []).indexOf(S.c) >= 0) patch.pagas = (f.pagas || []).filter(function(x){ return x !== S.c; });   /* o ciclo do formato antigo passa para o novo, com data e valor */
+  qs('overlayDgPg').classList.remove('show');
+  dgSalvarCampos(S.id, patch, false).then(function(){ toast(S.edita ? 'Pagamento atualizado.' : 'Conta marcada como paga.', S.edita ? '' : 'Desfazer', S.edita ? null : function(){ dgFixaDesfazerPag(S.id, S.c, true); }); try{ renderPainelAtencao(); }catch(e){} });
+}
+function dgFixaDesfazerPag(id, c, quieto){
+  var f = dgDoc(id); if (!f) return Promise.resolve(); var patch = {}; patch['pg_' + c] = null;
+  if ((f.pagas || []).indexOf(c) >= 0) patch.pagas = (f.pagas || []).filter(function(x){ return x !== c; });
+  return dgSalvarCampos(id, patch, false).then(function(){ if (!quieto) toast('Pagamento desfeito: a conta voltou a ficar em aberto.'); try{ renderPainelAtencao(); }catch(e){} });
+}
+/* ---- pausar: a conta deixa de avisar mas guarda o histórico (excluir apaga tudo) ---- */
+function dgFixaPausar(id){ return dgSalvarCampos(id, { ativa: false, pausadaEm: agHoje() }, false).then(function(){ qs('overlayDg') && qs('overlayDg').classList.remove('show'); toast('Conta pausada: não avisa mais e o histórico fica guardado.', 'Desfazer', function(){ dgFixaReativar(id, true); }); try{ renderPainelAtencao(); }catch(e){} }); }
+function dgFixaReativar(id, quieto){ return dgSalvarCampos(id, { ativa: true, pausadaEm: '', fixaDesde: agHoje() }, false).then(function(){ qs('overlayDg') && qs('overlayDg').classList.remove('show'); if (!quieto) toast('Conta reativada. Os meses em que ficou pausada não contam como atrasados.'); try{ renderPainelAtencao(); }catch(e){} }); }
 function dgLerNovoFixa(){ var t = qs('dg_f_titulo'), v = qs('dg_f_valor'); if (dgS.novoFixa){ if (t) dgS.novoFixa.titulo = t.value; if (v) dgS.novoFixa.valor = v.value; } }
 function dgValorNum(v){ var x = String(v == null ? '' : v).trim(); if (!x) return ''; if (x.indexOf(',') >= 0) x = x.replace(/\./g, '').replace(',', '.'); var n = Number(x); return isFinite(n) && n >= 0 ? n : ''; }
 function dgSalvarNovaFixa(){
@@ -24235,25 +24288,62 @@ function dgCelVence(f, id){
 function dgFixaLinha(f, novo){
   var id = novo ? 'novofixa' : escapeHtml(f.id), rep = DG_REPETE.filter(function(r){ return r[0] === f.repete; })[0] || DG_REPETE[0], av = DG_AVISAR.filter(function(a){ return a[0] === Number(f.avisarDias); })[0] || DG_AVISAR[3];
   var prox = novo ? null : dgFixaProxima(f), estado = '';
-  if (!novo) estado = prox ? '<span class="dg-dias ' + (prox.atrasada ? 'atr' : (Math.round((Date.parse(prox.data + 'T12:00:00Z') - Date.parse(agHoje() + 'T12:00:00Z')) / 86400000) <= 3 ? 'brv' : 'ok')) + '">' + (prox.atrasada ? 'venceu ' : 'próxima ') + escapeHtml(fmtData(prox.data).slice(0, 5)) + '</span>' : '<span class="dg-dias ok">quitada</span>';
+  if (!novo) estado = prox ? '<span class="dg-dias ' + (prox.atrasada ? 'atr' : (Math.round((Date.parse(prox.data + 'T12:00:00Z') - Date.parse(agHoje() + 'T12:00:00Z')) / 86400000) <= 3 ? 'brv' : 'ok')) + '">' + (prox.atrasada ? 'venceu ' : 'próxima ') + escapeHtml(fmtData(prox.data).slice(0, 5)) + (prox.atrasada && dgFixaAtrasadas(f) > 1 ? ' (+' + (dgFixaAtrasadas(f) - 1) + ')' : '') + '</span>' : '<span class="dg-dias ok">quitada</span>';
   return '<tr class="' + (novo ? 'dg-novo' : '') + '"' + (novo ? '' : ' data-dgl="' + id + '"') + '><td>' + (novo ? '<input type="text" id="dg_f_titulo" class="dg-in" placeholder="Ex.: Aluguel" value="' + escapeHtml(f.titulo) + '" maxlength="120" autocomplete="off">' : '<input type="text" class="dg-in dg-t" data-dgt="' + id + '" value="' + escapeHtml(f.titulo || '') + '" maxlength="120">') + '</td>' +
     '<td>' + (novo ? '<input type="text" id="dg_f_valor" class="dg-in" inputmode="decimal" placeholder="R$ (opcional)" value="' + escapeHtml(f.valor) + '" autocomplete="off" style="min-width:120px">' : '<input type="text" class="dg-in dg-t" inputmode="decimal" data-dgv="' + id + '" value="' + escapeHtml(f.valor === '' || f.valor == null ? '' : String(f.valor).replace('.', ',')) + '" placeholder="—" style="min-width:110px">') + '</td>' +
     '<td>' + dgCelSel('repete', id, escapeHtml(rep[1]), false) + '</td><td>' + dgCelVence(f, id) + '</td><td>' + dgCelSel('resp', id, dgRotResp(f.resp), !f.resp) + '</td><td>' + dgCelSel('avisarDias', id, escapeHtml(av[1]), false) + '</td>' +
-    '<td class="dg-acao">' + (novo ? '<button type="button" class="btn btn-primary dg-ok" data-dg="salvarfixa">Cadastrar</button>' : estado + ' ' + (prox ? '<button type="button" class="dg-mini ok" data-dg="fixapaga" data-id="' + id + '" data-c="' + escapeHtml(prox.c) + '" title="Marcar esta conta como paga">' + ico('check', 14) + '</button> ' : '') + '<button type="button" class="dg-mini" data-dg="fixaficha" data-id="' + id + '" title="Abrir">' + ico('maximize', 14) + '</button>') + '</td></tr>';
+    '<td class="dg-acao">' + (novo ? '<button type="button" class="btn btn-primary dg-ok" data-dg="salvarfixa">Cadastrar</button>' : estado + ' ' + (prox ? '<button type="button" class="dg-mini ok" data-dg="fixapaga" data-id="' + id + '" data-c="' + escapeHtml(prox.c) + '" title="Registrar o pagamento desta conta">' + ico('check', 14) + '</button> ' : '') + '<button type="button" class="dg-mini" data-dg="fixaficha" data-id="' + id + '" title="Abrir">' + ico('maximize', 14) + '</button>') + '</td></tr>';
 }
 function dgFixasHtml(){
   if (!dgS.novoFixa) dgS.novoFixa = dgFixaVazia();
   var toks = dgTokens(), todasF = dgFixas().filter(function(f){ return f.ativa !== false; });
   var l = todasF.filter(function(f){ return !toks.length || dgCasaTexto([f.titulo, f.obs, dgNome(f.resp), f.valor].join(' '), '', toks); }).sort(function(a, b){ var pa = dgFixaProxima(a), pb = dgFixaProxima(b); return (pa ? pa.data : '9999') < (pb ? pb.data : '9999') ? -1 : 1; });
-  var h = '<div class="dg-fil">' + dgBuscaHtml() + '</div>' + (dgS.q.trim() ? '<div class="dg-cont"><b>' + l.length + ' de ' + todasF.length + '</b> ' + (l.length === 1 ? 'conta' : 'contas') + ' com “' + escapeHtml(dgS.q.trim()) + '”</div>' : '') + '<div class="saldo-data" style="margin:2px 4px 8px">Contas do escritório que se repetem (aluguel, internet, anuidades…). <b>Só lembrete</b>: não mexe em Finanças. Elas aparecem na <b>Central de atenção</b> dos estagiários quando faltam os dias escolhidos em “Avisar”, até alguém marcar como paga.</div>';
+  var h = '<div class="dg-fil">' + dgBuscaHtml() + '</div>' + (dgS.q.trim() ? '<div class="dg-cont"><b>' + l.length + ' de ' + todasF.length + '</b> ' + (l.length === 1 ? 'conta' : 'contas') + ' com “' + escapeHtml(dgS.q.trim()) + '”</div>' : '') + '<div class="saldo-data" style="margin:2px 4px 8px">Contas do escritório que se repetem (aluguel, internet, anuidades…). São contas da estrutura do escritório, pagas pelo Murilo: <b>não entram em Finanças</b>. Aparecem na <b>Central de atenção</b> dos estagiários quando faltam os dias escolhidos em “Avisar” e <b>continuam como atrasadas até alguém registrar o pagamento</b> (data e valor). O que foi pago fica no <b>Histórico</b>.</div>';
   h += '<div class="dg-desk"><div class="dg-tw"><table class="dg-t"><thead><tr><th>Conta</th><th>Valor</th><th>Repete</th><th>Vence</th><th>Quem lembra</th><th>Avisar</th><th></th></tr></thead><tbody>' + dgFixaLinha(dgS.novoFixa, true) + l.map(function(f){ return dgFixaLinha(f, false); }).join('') + '</tbody></table></div>' +
     (l.length ? '' : (dgS.q.trim() ? dgVazioBusca('conta') : '<div class="saldo-data" style="margin:10px 4px">Nenhuma conta cadastrada. Use a linha em destaque.</div>')) + '</div>';
   h += '<div class="dg-mob"><button type="button" class="btn btn-primary" style="width:100%;margin:0 0 10px" data-dg="fixaficha" data-id="novo">' + ico('plus', 16) + ' Nova conta</button>' + l.map(function(f){
     var pr = dgFixaProxima(f);
     return '<div class="dg-card ' + (pr && pr.atrasada ? 'atr' : '') + '"><div class="dg-card-t" data-dg="fixaficha" data-id="' + escapeHtml(f.id) + '"><b>' + escapeHtml(f.titulo || '') + '</b><small>' + escapeHtml(dgFixaVence(f) + ' · ' + (DG_REPETE.filter(function(r){ return r[0] === f.repete; })[0] || DG_REPETE[0])[1] + (f.valor ? ' · ' + fmtMoeda(Number(f.valor)) : '')) + '</small></div>' +
-      '<div class="dg-card-l">' + (pr ? '<span class="dg-dias ' + (pr.atrasada ? 'atr' : 'ok') + '">' + (pr.atrasada ? 'venceu ' : 'próxima ') + escapeHtml(fmtData(pr.data).slice(0, 5)) + '</span>' : '<span class="dg-dias ok">quitada</span>') + (f.resp ? '<span class="mut">· ' + escapeHtml(dgCurto(f.resp)) + '</span>' : '') + '</div>' +
-      '<div class="dg-card-l">' + (pr ? '<button type="button" class="dg-bt ok" data-dg="fixapaga" data-id="' + escapeHtml(f.id) + '" data-c="' + escapeHtml(pr.c) + '">' + ico('check', 14) + ' Paga</button>' : '') + '<button type="button" class="dg-bt" data-dg="fixaficha" data-id="' + escapeHtml(f.id) + '">Editar</button></div></div>';
+      '<div class="dg-card-l">' + (pr ? '<span class="dg-dias ' + (pr.atrasada ? 'atr' : 'ok') + '">' + (pr.atrasada ? 'venceu ' : 'próxima ') + escapeHtml(fmtData(pr.data).slice(0, 5)) + (pr.atrasada && dgFixaAtrasadas(f) > 1 ? ' (+' + (dgFixaAtrasadas(f) - 1) + ')' : '') + '</span>' : '<span class="dg-dias ok">quitada</span>') + (f.resp ? '<span class="mut">· ' + escapeHtml(dgCurto(f.resp)) + '</span>' : '') + '</div>' +
+      '<div class="dg-card-l">' + (pr ? '<button type="button" class="dg-bt ok" data-dg="fixapaga" data-id="' + escapeHtml(f.id) + '" data-c="' + escapeHtml(pr.c) + '">' + ico('check', 14) + ' Pagar</button>' : '') + '<button type="button" class="dg-bt" data-dg="fixaficha" data-id="' + escapeHtml(f.id) + '">Editar</button></div></div>';
   }).join('') + '</div>';
+  h += dgPausadasHtml();
+  return h;
+}
+function dgPausadasHtml(){
+  var l = dgFixas().filter(function(f){ return f.ativa === false; }); if (!l.length) return '';
+  return '<div class="dg-sec">Contas pausadas (' + l.length + ')</div><div class="dg-paus">' + l.map(function(f){
+    var n = Object.keys(dgPagamentos(f)).length;
+    return '<div class="dg-card"><div class="dg-card-t" data-dg="fixaficha" data-id="' + escapeHtml(f.id) + '"><b>' + escapeHtml(f.titulo || '') + '</b><small>' + escapeHtml('pausada' + (f.pausadaEm ? ' em ' + fmtData(f.pausadaEm) : '') + ' · ' + n + (n === 1 ? ' pagamento no histórico' : ' pagamentos no histórico')) + '</small></div><div class="dg-card-l"><button type="button" class="dg-bt ok" data-dg="fixareativar" data-id="' + escapeHtml(f.id) + '">Reativar</button><button type="button" class="dg-bt" data-dg="fixaficha" data-id="' + escapeHtml(f.id) + '">Abrir</button></div></div>';
+  }).join('') + '</div>';
+}
+/* ---------- HISTÓRICO DE CONTAS PAGAS: tudo o que foi registrado como pago, por conta e por mês (as pausadas também) ---------- */
+function dgHistLinhas(){
+  var hoje = agHoje(), per = dgS.hPer || '12', corte = per === 'tudo' ? '' : pbSoma(hoje, per === '6' ? -183 : -365), out = [];
+  dgFixas().forEach(function(f){
+    if (dgS.hConta && dgS.hConta !== f.id) return;
+    var pm = dgPagamentos(f);
+    Object.keys(pm).forEach(function(c){
+      var p = pm[c], venc = p.venc || dgCicloData(f, c), ref = p.data || venc || '';
+      if (corte && ref && ref < corte) return;
+      out.push({ f: f, c: c, venc: venc, data: p.data, valor: p.valor, por: p.por, legado: p.legado, ref: ref });
+    });
+  });
+  out.sort(function(a, b){ return a.ref < b.ref ? 1 : (a.ref > b.ref ? -1 : 0); });
+  return out;
+}
+function dgHistoricoHtml(){
+  var l = dgHistLinhas(), per = dgS.hPer || '12', todas = dgFixas(), tot = 0, semValor = 0, porConta = {};
+  l.forEach(function(r){ if (r.valor == null) semValor++; else { tot += r.valor; porConta[r.f.id] = (porConta[r.f.id] || 0) + r.valor; } });
+  var h = '<div class="dg-fil"><select class="dg-fs" data-dgf="hconta" aria-label="Conta">' + '<option value="">Todas as contas</option>' + todas.map(function(f){ return dgOpt((f.titulo || 'Conta') + (f.ativa === false ? ' (pausada)' : ''), f.id, dgS.hConta === f.id); }).join('') + '</select>' +
+    [['6', '6 meses'], ['12', '12 meses'], ['tudo', 'Tudo']].map(function(o){ return '<button type="button" class="dg-chip' + (per === o[0] ? ' on' : '') + '" data-dg="hper" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div>';
+  h += '<div class="dg-hres"><div><small>Pago no período</small><b>' + fmtMoeda(tot) + '</b></div><div><small>Pagamentos</small><b>' + l.length + '</b></div>' + (semValor ? '<div><small>Sem valor registrado</small><b>' + semValor + '</b></div>' : '') + '</div>';
+  var ids = Object.keys(porConta);
+  if (ids.length > 1 || (ids.length === 1 && !dgS.hConta)) h += '<div class="saldo-data dg-hpor">' + ids.map(function(id){ var f = dgDoc(id); return '<span>' + escapeHtml(f ? f.titulo : 'Conta') + ' <b>' + fmtMoeda(porConta[id]) + '</b></span>'; }).join(' · ') + '</div>';
+  if (!l.length) return h + '<div class="dg-vazio">Nenhum pagamento registrado neste período. Quando uma conta for marcada como paga, ela aparece aqui com a data e o valor.</div>';
+  var linha = function(r){ return { conta: escapeHtml(r.f.titulo || 'Conta') + (r.f.ativa === false ? ' <small class="saldo-data">(pausada)</small>' : ''), venc: r.venc ? escapeHtml(fmtData(r.venc)) : '—', pago: r.data ? escapeHtml(fmtData(r.data)) : '<span class="mut">sem data</span>', valor: r.valor == null ? '<span class="mut">—</span>' : fmtMoeda(r.valor), por: r.por ? escapeHtml(dgCurto(r.por) || '—') : '<span class="mut">—</span>', btn: '<button type="button" class="dg-mini" data-dg="pgeditar" data-id="' + escapeHtml(r.f.id) + '" data-c="' + escapeHtml(r.c) + '" title="Corrigir ou desfazer este pagamento" aria-label="Corrigir pagamento">' + ico('maximize', 14) + '</button>' }; };
+  h += '<div class="dg-desk"><div class="dg-tw"><table class="dg-t dg-hist" style="min-width:0"><thead><tr><th>Conta</th><th>Vencimento</th><th>Pago em</th><th>Valor</th><th>Registrado por</th><th></th></tr></thead><tbody>' + l.map(function(r){ var x = linha(r); return '<tr data-hc="' + escapeHtml(r.f.id + '|' + r.c) + '"><td>' + x.conta + '</td><td>' + x.venc + '</td><td>' + x.pago + '</td><td class="dg-hv">' + x.valor + '</td><td>' + x.por + '</td><td class="dg-acao">' + x.btn + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  h += '<div class="dg-mob">' + l.map(function(r){ var x = linha(r); return '<div class="dg-card" data-hc="' + escapeHtml(r.f.id + '|' + r.c) + '"><div class="dg-card-t" data-dg="pgeditar" data-id="' + escapeHtml(r.f.id) + '" data-c="' + escapeHtml(r.c) + '"><b>' + x.conta + ' · ' + x.valor + '</b><small>vencia ' + x.venc + ' · pago em ' + x.pago + (r.por ? ' · ' + x.por : '') + '</small></div></div>'; }).join('') + '</div>';
   return h;
 }
 function dgAbrirFichaFixa(id){
@@ -24267,7 +24357,9 @@ function dgAbrirFichaFixa(id){
       '<div id="dgf_w_data">' + fld('Data', '<input type="date" id="dgf_data" value="' + escapeHtml(f.data || '') + '">', 'data') + '</div>' +
       fld('Quem lembra', '<select id="dgf_resp">' + dgOpt('—', '', !f.resp) + pess.map(function(p){ return dgOpt(p.nome, p.k, p.k === f.resp); }).join('') + '</select>', 'resp') +
       fld('Avisar com antecedência', '<select id="dgf_avisar">' + DG_AVISAR.map(function(a){ return dgOpt(a[1], String(a[0]), Number(f.avisarDias) === a[0]); }).join('') + '</select>', 'avisar') + fld('Observações', '<textarea id="dgf_obs" rows="2" maxlength="500">' + escapeHtml(f.obs || '') + '</textarea>', 'obs'));
-  h += '<div class="form-error" id="dgf_erro"></div><div class="f-rod-in">' + (novo ? '' : '<button type="button" class="btn btn-ghost" data-dgfa="excluir" id="dgf_exc">Excluir</button>') + '<button type="button" class="btn btn-ghost" data-dgfa="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-dgfa="salvarfixa">' + (novo ? 'Cadastrar' : 'Salvar') + '</button></div>';
+  var nPg = novo ? 0 : Object.keys(dgPagamentos(f)).length;
+  if (!novo) h += '<div class="saldo-data" style="margin:6px 0">' + (f.ativa === false ? 'Conta <b>pausada</b>: não avisa. ' : 'Para parar de avisar sem perder nada, use <b>Pausar</b>. ') + '<b>Excluir</b> apaga também o histórico' + (nPg ? ' (' + nPg + (nPg === 1 ? ' pagamento)' : ' pagamentos)') : '') + '.</div>';
+  h += '<div class="form-error" id="dgf_erro"></div><div class="f-rod-in">' + (novo ? '' : '<button type="button" class="btn btn-ghost" data-dgfa="excluir" id="dgf_exc">Excluir</button><button type="button" class="btn btn-ghost" data-dgfa="' + (f.ativa === false ? 'reativar' : 'pausar') + '" id="dgf_paus">' + (f.ativa === false ? 'Reativar' : 'Pausar') + '</button>') + '<button type="button" class="btn btn-ghost" data-dgfa="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-dgfa="salvarfixa">' + (novo ? 'Cadastrar' : 'Salvar') + '</button></div>';
   qs('overlayDgC').innerHTML = h; ov.classList.add('show');
   var ajusta = function(){ var r = qs('dgf_repete').value; qs('dgf_w_dia').style.display = r === 'mensal' ? '' : 'none'; qs('dgf_w_dow').style.display = r === 'semanal' ? '' : 'none'; qs('dgf_w_data').style.display = (r === 'anual' || r === 'unica') ? '' : 'none'; };
   qs('dgf_repete').addEventListener('change', ajusta); ajusta();
@@ -24356,6 +24448,9 @@ function dgIniciar(){
     else if (a === 'salvarfixa') dgSalvarNovaFixa();
     else if (a === 'fixaficha') dgAbrirFichaFixa(id);
     else if (a === 'fixapaga') dgFixaPagar(id, b.getAttribute('data-c'));
+    else if (a === 'fixareativar') dgFixaReativar(id);
+    else if (a === 'pgeditar') dgFixaPagar(id, b.getAttribute('data-c'));
+    else if (a === 'hper'){ dgS.hPer = v; dgRender(); }
     else if (a === 'ficha') dgAbrirFicha(id);
     else if (a === 'fichanova') dgAbrirFicha('novo');
     else if (a === 'concluir') dgSalvarCampos(id, { status: 'concluida' }, true);
@@ -24370,6 +24465,7 @@ function dgIniciar(){
     else if (t.getAttribute('data-dgdt')) dgAplicar(t.getAttribute('data-id'), (function(o){ o[t.getAttribute('data-dgdt')] = t.value; return o; })({}), false);
     else if (t.getAttribute('data-dgf') === 'status'){ dgS.fStatus = t.value; dgRender(); }
     else if (t.getAttribute('data-dgf') === 'prio'){ dgS.fPrio = t.value; dgRender(); }
+    else if (t.getAttribute('data-dgf') === 'hconta'){ dgS.hConta = t.value; dgRender(); }
   });
   w.addEventListener('input', function(e){ var t = e.target; if (t && t.id === 'dg_q'){ dgS.q = t.value; dgRender(); } });
   w.addEventListener('keydown', function(e){
@@ -24410,6 +24506,8 @@ function dgIniciar(){
     if (a === 'cancelar') qs('overlayDg').classList.remove('show');
     else if (a === 'salvar') dgSalvarFicha();
     else if (a === 'salvarfixa') dgSalvarFichaFixa();
+    else if (a === 'pausar') dgFixaPausar(dgS.ficha);
+    else if (a === 'reativar') dgFixaReativar(dgS.ficha);
     else if (a === 'excluir'){
       if (b.getAttribute('data-sure') !== '1'){ b.setAttribute('data-sure', '1'); b.textContent = 'Confirmar exclusão'; return; }
       var id = dgS.ficha; qs('overlayDg').classList.remove('show'); dgExcluir(id);
@@ -24443,7 +24541,7 @@ function dgCss(){
     '.dg-mob{display:none}.dg-sec{font-size:var(--t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:12px 4px 6px}.dg-sec.atr{color:var(--urgente)}.dg-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid #C98500;border-radius:14px;padding:10px 12px;margin-bottom:8px}.dg-card.atr{border-left-color:var(--urgente)}' +
     '.dg-card-t{cursor:pointer}.dg-card-t b{display:block;font-size:var(--t3,15px)}.dg-card-t small{color:var(--ink-soft);font-size:var(--t1)}.dg-card-l{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:var(--t2)}.dg-bt{border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:6px 12px;min-height:36px;font:inherit;font-size:var(--t2);font-weight:600;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:4px}.dg-bt.ok{background:#17895A;border-color:#17895A;color:#fff}' +
     '.dg-fx td{background:rgba(201,133,0,.07)}.dg-pin{color:#C98500;display:inline-flex;vertical-align:middle;flex:none}.dg-pinbtn{border:1.5px solid var(--border);background:var(--surface);color:var(--ink-soft);border-radius:9px;min-width:38px;min-height:36px;cursor:pointer;display:inline-grid;place-items:center;flex:none}.dg-pinbtn.on{border-color:var(--accent);background:rgba(201,133,0,.14);color:var(--accent)}.dg-rep{font-size:var(--t2);color:var(--ink-soft);white-space:nowrap}.dg-stbtn{border:0;cursor:pointer;font:inherit;font-size:var(--t1);font-weight:700;min-height:30px}.dg-st.atr{background:rgba(217,59,59,.14);color:var(--urgente)}.dg-cfx{background:rgba(201,133,0,.06)}.dg-conv{border-top:1px solid var(--border);padding:8px 0}.dg-conv-l{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}.dg-conv-l select{min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);padding:4px 8px;font:inherit}.dg-conv-av{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}' +
-    '.dg-fatal{display:flex;gap:6px;align-items:center}.dg-fatal .dg-dt{flex:1}.dg-mobnovo{display:none}@media(max-width:820px){.dg-desk{display:none}.dg-mob{display:block}.dg-mobnovo{display:inline-flex}.dg-fil .dg-fs{flex:1}}' +
+    '.dg-hres{display:flex;gap:10px;flex-wrap:wrap;margin:0 4px 8px}.dg-hres>div{background:var(--surface);border-radius:12px;padding:8px 14px;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.06)}.dg-hres small{display:block;color:var(--ink-soft);font-size:var(--t1);text-transform:uppercase;letter-spacing:.04em}.dg-hres b{font-size:18px;font-variant-numeric:tabular-nums}.dg-hpor{margin:0 4px 10px;display:flex;gap:4px;flex-wrap:wrap}.dg-hist .dg-hv{font-variant-numeric:tabular-nums;font-weight:700}.dg-paus{margin-bottom:12px}.dg-fatal{display:flex;gap:6px;align-items:center}.dg-fatal .dg-dt{flex:1}.dg-mobnovo{display:none}@media(max-width:820px){.dg-desk{display:none}.dg-mob{display:block}.dg-mobnovo{display:inline-flex}.dg-fil .dg-fs{flex:1}}' +
     /* tabela das Abertas compacta (7 colunas, ~1.080 px): a coluna Tarefa estica e fica fixa à esquerda quando ainda sobra rolagem */
     '.dg-ta{table-layout:fixed;width:100%;min-width:1090px}.dg-ta th:nth-child(2){width:220px}.dg-ta th:nth-child(3){width:124px}.dg-ta th:nth-child(4){width:70px}.dg-ta th:nth-child(5){width:112px}.dg-ta th:nth-child(6){width:204px}.dg-ta th:nth-child(7){width:122px}' +
     '.dg-ta td{padding:4px 6px;overflow:hidden}.dg-ta .dg-in{min-width:0}.dg-ta th:first-child,.dg-ta td:first-child{position:sticky;left:0;z-index:2;background-color:var(--surface)}.dg-ta th:first-child{background-color:var(--surface-2)}.dg-ta td:first-child{box-shadow:6px 0 8px -7px rgba(0,0,0,.28)}' +
@@ -24464,11 +24562,19 @@ function dgCss(){
 }
 /* a tarefa fixa pendente na Central de atenção: tocar marca como feita (sem abrir a aba Delegadas) */
 document.addEventListener('click', function(e){ var c = e.target.closest ? e.target.closest('[data-tfixa-feita]') : null; if (c) dgTFixaFeita(c.getAttribute('data-tfixa-feita')); });
+/* a janela de pagamento também abre pela Central de atenção, sem a aba Delegadas ter sido aberta: os cliques ficam fora de dgIniciar */
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('[data-dgpg]') : null; if (!b) return; var a = b.getAttribute('data-dgpg');
+  if (a === 'cancelar') qs('overlayDgPg').classList.remove('show');
+  else if (a === 'salvar') dgFixaSalvarPag();
+  else if (a === 'desfazer'){ var S = dgS.pg; qs('overlayDgPg').classList.remove('show'); if (S) dgFixaDesfazerPag(S.id, S.c); }
+});
+document.addEventListener('keydown', function(e){ if (e.key === 'Enter' && e.target && (e.target.id === 'dgpg_valor' || e.target.id === 'dgpg_data')){ e.preventDefault(); dgFixaSalvarPag(); } });
 /* a conta na Central de atenção funciona sem abrir a aba Delegadas */
 document.addEventListener('click', function(e){ var c = e.target.closest ? e.target.closest('[data-fixa-pagar]') : null; if (!c) return; var pr = c.getAttribute('data-fixa-pagar').split('|'); dgFixaPagar(pr[0], pr.slice(1).join('|')); });
 /* o número do menu continua certo com a aba fechada: relê as tarefas de tempos em tempos (só com a página visível) */
 setInterval(function(){ if (document.visibilityState !== 'hidden' && dgS.ok && activeTab !== 'delegadas') dgCarregar(true); }, 120000);
-(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { dgS: dgS, dgAbrir: dgAbrir, dgDias: dgDias, dgOcorrencias: dgOcorrencias, dgFixaProxima: dgFixaProxima, ppItemAtencaoOk: ppItemAtencaoOk, dgTFixaEstado: dgTFixaEstado, dgTFixasAtencao: dgTFixasAtencao, dgTFixaFeita: dgTFixaFeita, dgCandidatasFixa: dgCandidatasFixa }); })();
+(function(){ window.__horusTeste = Object.assign(window.__horusTeste || {}, { dgS: dgS, dgAbrir: dgAbrir, dgDias: dgDias, dgOcorrencias: dgOcorrencias, dgFixaProxima: dgFixaProxima, ppItemAtencaoOk: ppItemAtencaoOk, dgTFixaEstado: dgTFixaEstado, dgTFixasAtencao: dgTFixasAtencao, dgTFixaFeita: dgTFixaFeita, dgCandidatasFixa: dgCandidatasFixa, dgFixaAtencao: dgFixasAtencao, dgFixaProxima: dgFixaProxima, dgPagamentos: dgPagamentos, dgCicloData: dgCicloData }); })();
 
 /* ============================================================
    QUADROS E BOAS-VINDAS (prefixo qd)

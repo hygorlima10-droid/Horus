@@ -172,7 +172,7 @@ check(cen.a.includes('Fixa que vence hoje') && !cen.b.includes('Fixa que vence h
 await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);   // a página foi recarregada
 // ---- Fixas (contas do escritório): linha em branco, vencimentos e Central de atenção
 await page.click('.dg-aba >> text=Fixas'); await page.waitForTimeout(500);
-check(await page.locator('#dg_f_titulo').isVisible() && /só lembrete/i.test(await t(page, '#dgWrap')), 'a aba Fixas tem a linha em branco e explica que é só lembrete');
+check(await page.locator('#dg_f_titulo').isVisible() && /não entram em Finanças/i.test(await t(page, '#dgWrap')), 'a aba Fixas tem a linha em branco e explica que não entra em Finanças');
 await page.fill('#dg_f_titulo', 'Internet do escritório'); await page.fill('#dg_f_valor', '189,90');
 await page.click('tr.dg-novo [data-c="dia"]'); await page.click('#dgDD .dg-dd-i >> text=dia 15'); await page.waitForTimeout(300);
 await page.focus('#dg_f_titulo'); await page.keyboard.press('Enter'); await page.waitForTimeout(1200);
@@ -191,10 +191,10 @@ await page.reload(); await page.waitForTimeout(3800);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="inicio"]').click()); await page.waitForTimeout(1200);
 const cent = await t(page, '#atencaoLista');
 check(/Anuidade que vence amanhã/.test(cent) && /Amanhã/.test(cent) && !/Conta longe demais/.test(cent), 'a conta que vence amanhã aparece na Central de atenção (e a que está longe, não): ' + cent.slice(0, 120));
-await page.click('[data-fixa-pagar^="' + (await lista()).find(d => d.titulo === 'Anuidade que vence amanhã').id + '"]'); await page.waitForTimeout(1200);
+await page.click('[data-fixa-pagar^="' + (await lista()).find(d => d.titulo === 'Anuidade que vence amanhã').id + '"]'); await page.waitForTimeout(1200); await page.waitForTimeout(400); await page.click('#dgpg_ok'); await page.waitForTimeout(1200);
 const pg = (await lista()).find(d => d.titulo === 'Anuidade que vence amanhã');
 const sumiu = !(await page.locator('#atencaoSection').isVisible()) || !/Anuidade que vence amanhã/.test(await t(page, '#atencaoLista'));   // sem nada pendente a Central inteira se esconde
-check(pg.pagas.length === 1 && sumiu, 'tocar na conta marca como paga neste ciclo e ela sai da Central');
+check(Object.keys(pg).filter(k => k.startsWith('pg_')).length === 1 && sumiu, 'tocar na conta abre o registro do pagamento; ao confirmar, marca como paga neste ciclo e ela sai da Central');
 // quem vê a conta na Central: estagiário e proprietário, não o advogado
 const vis = await page.evaluate(() => { const T = window.__horusTeste, x = { origem: 'fixa' }, p0 = window.__papel, r = {}; for (const p of ['proprietario', 'estagiario', 'advogado']) { window.__papel = p; r[p] = !!T.ppItemAtencaoOk(x); } window.__papel = p0; return r; });
 check(vis.proprietario && vis.estagiario && !vis.advogado, 'a conta fixa aparece na Central do proprietário e do estagiário, não na do advogado: ' + JSON.stringify(vis));
