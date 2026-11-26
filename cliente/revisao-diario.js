@@ -4,6 +4,24 @@
    (ou usa o que já existe) e vincula os processos. Só iniciais (segredo de justiça) ficam numa seção própria, com campo de nome. Nada é cadastrado sem confirmar. */
 var rvS = { marca: {}, nome: {}, tambem: {}, sig: {}, ocupado: false };
 
+/* número do processo na lista: toque no número abre o cadastro do processo; o botão ao lado copia (o mesmo botão de copiar das publicações) */
+function rvNumHtml(num){
+  var f = (typeof pbNumCopia === 'function') ? pbNumCopia({ numero: num }) : String(num || '');
+  return '<button type="button" class="rv-num" data-rv="abrir" data-n="' + escapeHtml(prNum(num)) + '" title="Abrir o cadastro do processo">' + escapeHtml(f) + '</button>' + ((typeof pbBtnCopiar === 'function') ? pbBtnCopiar({ numero: num }) : '');
+}
+/* DISPENSAR: o nome sugerido não é cliente nosso (ex.: o banco é a parte contrária). O processo sai da revisão sem vincular ninguém, e dá para desfazer */
+function rvDispensar(docs){
+  if (!docs.length || rvS.ocupado) return;
+  var agora = new Date().toISOString(), antes = docs.map(function(d){ return { d: d, prev: { revisar: d.revisar || '', sugestaoClienteId: d.sugestaoClienteId || '', revisadoEm: d.revisadoEm || '', revisaoDispensada: d.revisaoDispensada || false } }; });
+  rvS.ocupado = true; rvBotao();
+  return Promise.all(docs.map(function(d){ return impSalvarDoc(d, { revisar: '', sugestaoClienteId: '', revisadoEm: agora, revisaoDispensada: true }); })).then(function(){
+    rvS.ocupado = false;
+    toast('Sugestão dispensada · ' + docs.length + (docs.length === 1 ? ' processo' : ' processos') + ' sem cliente vinculado.', 'Desfazer', function(){
+      Promise.all(antes.map(function(x){ return impSalvarDoc(x.d, x.prev); })).then(function(){ toast('Desfeito: voltou para a revisão.'); try{ prDepois(); }catch(e){} }).catch(function(e){ toast('Não consegui desfazer: ' + e.message); });
+    });
+    try{ prDepois(); }catch(e){}
+  }).catch(function(e){ rvS.ocupado = false; rvBotao(); toast('Não consegui dispensar: ' + e.message); });
+}
 function rvIniciais(n){ var t = String(n || '').replace(/[.\s]/g, ''); return t.length <= 2 && t.length > 0; }
 /* partes intimadas do processo: as do Diário nas publicações dele; sem elas, a parte que o app guardou na importação */
 function rvPartesDe(d){
@@ -56,7 +74,8 @@ function rvHtml(){
       h += '<div class="rv-row"><input type="checkbox" class="rv-ck" data-rv="marca" data-k="' + escapeHtml(g.k) + '"' + (rvS.marca[g.k] ? ' checked' : '') + ' aria-label="Incluir ' + escapeHtml(nome) + '"><div class="rv-c">' +
         '<input type="text" class="rv-in" data-rv="nome" data-k="' + escapeHtml(g.k) + '" value="' + escapeHtml(nome) + '" maxlength="120" aria-label="Nome do cliente">' +
         '<div class="rv-chs">' + (g.existe ? '<span class="pb-tg pz">já existe: ' + escapeHtml(g.existe.nome) + '</span><span class="pb-tg">vincular ao existente</span>' : '<span class="pb-tg ok">cliente novo</span>') +
-        '<span class="pb-tg nv">' + (papel ? papel + ' · ' : '') + 'parte intimada</span><span class="pb-tg">' + g.docs.length + (g.docs.length === 1 ? ' processo' : ' processos') + '</span></div>' +
+        '<span class="pb-tg nv">' + (papel ? papel + ' · ' : '') + 'parte intimada</span><span class="pb-tg">' + g.docs.length + (g.docs.length === 1 ? ' processo' : ' processos') + '</span><button type="button" class="btn btn-ghost pb-b rv-dis" data-rv="dispensar" data-k="' + escapeHtml(g.k) + '" title="Não é cliente nosso: tira da lista sem vincular">Dispensar</button></div>' +
+        g.docs.map(function(d){ return '<div class="rv-pl">' + rvNumHtml(d.numero) + (d.orgao ? '<span class="rv-mut"> · ' + escapeHtml(d.orgao) + '</span>' : '') + '</div>'; }).join('') +
         g.extras.map(function(n, i){ return '<label class="rv-tb"><input type="checkbox" data-rv="tambem" data-k="' + escapeHtml(g.k) + '" data-i="' + i + '"' + ((rvS.tambem[g.k] || {})[i] ? ' checked' : '') + '><span>também consta como parte intimada: <b>' + escapeHtml(cliTitulo(n)) + '</b> — cadastrar também</span></label>'; }).join('') +
         '</div></div>';
     });
@@ -65,9 +84,9 @@ function rvHtml(){
     h += '<div class="rv-sec">Só iniciais no Diário · ' + L.sig.length + (L.sig.length === 1 ? ' processo' : ' processos') + '</div><div class="rv-dica">Segredo de justiça: o Diário não informa o nome. Digite o nome do cliente (ou escolha um que já exista).</div>';
     L.sig.forEach(function(d){
       var id = d.id, nome = (rvS.sig[id] || '');
-      h += '<div class="rv-row"><input type="checkbox" class="rv-ck" data-rv="sigmarca" data-id="' + escapeHtml(id) + '"' + (nome.trim() ? ' checked' : '') + ' aria-label="Incluir"><div class="rv-c"><div><b>' + escapeHtml(d.parteNome || '—') + '</b> <span class="rv-mut">· ' + escapeHtml(d.orgao || '') + ' · ' + escapeHtml(d.numero) + '</span></div>' +
+      h += '<div class="rv-row"><input type="checkbox" class="rv-ck" data-rv="sigmarca" data-id="' + escapeHtml(id) + '"' + (nome.trim() ? ' checked' : '') + ' aria-label="Incluir"><div class="rv-c"><div><b>' + escapeHtml(d.parteNome || '—') + '</b> <span class="rv-mut">· ' + escapeHtml(d.orgao || '') + ' · </span>' + rvNumHtml(d.numero) + '</div>' +
         '<input type="text" class="rv-in" data-rv="signome" data-id="' + escapeHtml(id) + '" value="' + escapeHtml(nome) + '" placeholder="Digite o nome do cliente…" maxlength="120" aria-label="Nome do cliente">' +
-        '<div class="rv-chs"><span class="pb-tg" style="background:rgba(217,59,59,.12);color:var(--urgente)">segredo de justiça</span><button type="button" class="btn btn-ghost pb-b rv-esc" data-pr="rev-esc" data-n="' + escapeHtml(prNum(d.numero)) + '">escolher cliente existente</button></div></div></div>';
+        '<div class="rv-chs"><span class="pb-tg" style="background:rgba(217,59,59,.12);color:var(--urgente)">segredo de justiça</span><button type="button" class="btn btn-ghost pb-b rv-esc" data-pr="rev-esc" data-n="' + escapeHtml(prNum(d.numero)) + '">escolher cliente existente</button><button type="button" class="btn btn-ghost pb-b rv-dis" data-rv="sigdispensar" data-id="' + escapeHtml(id) + '" title="Tira da lista sem vincular">Dispensar</button></div></div></div>';
     });
   }
   h += '<div class="rv-rod"><button type="button" class="btn btn-primary" id="rvOk" data-pr="rv-ok" style="width:100%;justify-content:center"></button></div></div>';
@@ -150,6 +169,14 @@ function rvPerguntarAuto(env, desfazer){
     [['Sim, vincular automaticamente', 'btn-primary', function(){ marcar(true); toast('Pronto: os próximos processos desses clientes já vão direto.'); }], ['Não, sempre revisar', 'btn-ghost', function(){ marcar(false); }], ['Desfazer o cadastro', 'btn-ghost', desfazer]]);
 }
 
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-rv="dispensar"], [data-rv="sigdispensar"], [data-rv="abrir"]') : null; if (!b) return;
+  var a = b.getAttribute('data-rv');
+  if (a === 'abrir'){ ev.preventDefault(); ev.stopPropagation(); prAbrir(b.getAttribute('data-n')); return; }
+  ev.preventDefault(); ev.stopPropagation();
+  if (a === 'dispensar'){ var k = b.getAttribute('data-k'), g = rvLinhas().grupos.filter(function(x){ return x.k === k; })[0]; if (g) rvDispensar(g.docs); }
+  else { var d = prDocs.filter(function(x){ return x.id === b.getAttribute('data-id'); })[0]; if (d) rvDispensar([d]); }
+}, true);
 document.addEventListener('input', function(ev){
   var t = ev.target, a = t && t.getAttribute ? t.getAttribute('data-rv') : null; if (!a) return;
   if (a === 'nome'){ rvS.nome[t.getAttribute('data-k')] = t.value; }
@@ -181,7 +208,7 @@ document.addEventListener('change', function(ev){
     '.rv-in:focus{border-color:var(--ink);background:var(--surface)}.rv-in::placeholder{font-weight:400;color:var(--ink-soft)}' +
     '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4;cursor:pointer}' +
     '.rv-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:14px 0 2px}.rv-dica{font-size:var(--t2);color:var(--ink-soft);margin-bottom:2px}.rv-mut{color:var(--ink-soft)}' +
-    '.rv-rod{margin-top:12px}.rv-esc{min-height:36px}';
+    '.rv-rod{margin-top:12px}.rv-esc,.rv-dis{min-height:36px}.rv-pl{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:var(--t2)}.rv-num{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);text-decoration:underline;cursor:pointer}';
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { rvLinhas: function(){ var L = rvLinhas(); return { grupos: L.grupos.map(function(g){ return { k: g.k, nome: g.nome, n: g.docs.length, extras: g.extras, existe: g.existe ? g.existe.nome : '' }; }), sig: L.sig.map(function(d){ return d.numero; }) }; },
     pbInjetar: function(pubs){ pbS.pubs = (pbS.pubs || []).concat(pubs); },

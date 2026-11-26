@@ -469,3 +469,9 @@ Análise em `docs/INTEGRACAO-PLANILHA-ANALISE.md`; esboço em `docs/esboco-plani
 - Correção: **"Adiar" (e outras janelas) abria atrás da ficha do prazo** porque a ficha tem nível próprio (`z-index:160`). As janelas que abrem por cima dela (Adiar, protocolo, tarefa delegada, aviso de duplicidade) passaram para o nível 175.
 - Novo: botão **"Criar tarefa delegada"** na ficha da tarefa/prazo da Agenda (tarefa complementar, ex.: tirar as custas de um agravo). A delegada nasce na aba Delegadas ligada ao mesmo processo e cliente (`agendaKey`), com a observação "Complementar à tarefa …", e a ficha da Agenda lista as delegadas ligadas.
 - Obs.: o teste `delegadas` já falhava antes desta etapa (alinhamento do cartão e "tocar de novo desfaz"); não foi tratado aqui.
+
+## Revisão dos processos: dispensar a sugestão, abrir o cadastro e copiar o número (26/11/2026)
+- **Dispensar** (botão em cada linha da lista "clientes reconhecidos" e das de "só iniciais"): o nome sugerido não é cliente nosso (ex.: o banco é a **parte contrária** de um processo nosso, pego só das publicações). O processo sai da revisão **sem vincular nenhum cliente e sem cadastrar nada** (`revisar` vazio, `revisaoDispensada: true`); o aviso traz **Desfazer**.
+- Cada linha mostra agora os **processos da parte** (número + órgão): o **número é um botão que abre o cadastro** do processo e ao lado há o **botão de copiar** (o mesmo das publicações).
+- Na janela **"Sem advogado definido"**: o número também vira botão (abre o cadastro da inicial, do acordo, do alvará ou do processo, fechando a lista) e ganha o botão de copiar; tocar no número não marca o registro.
+- Não feito (pode vir depois): "nunca sugerir este nome" para todos os processos futuros (hoje, cada processo novo com o mesmo banco volta a ser sugerido uma vez).

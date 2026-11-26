@@ -168,7 +168,7 @@ function esRevDesenhar(){
   if (!itens.length) h += '<div class="saldo-data" style="padding:10px 4px">Nada pendente aqui.</div>';
   h += itens.map(function(i){
     var k = i.colecao + '|' + i.id, sug = i.sugestao && i.sugestao.length ? '<span class="pb-tg ok" style="margin-left:6px">sugestão: ' + escapeHtml(i.sugestao.map(function(a){ return a.nome.split(' ')[0]; }).join(', ')) + '</span>' : (i.semNumero ? '<span class="pb-tg nv" style="margin-left:6px">sem nº de processo</span>' : '');
-    return '<label class="ad-it es-it"><input type="checkbox" data-esv="item" data-k="' + escapeHtml(k) + '"' + (R.sel[k] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo || 'Sem nome') + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(i.rotulo) + (i.numero ? ' · ' + escapeHtml(i.numero) : '') + (i.motivo ? ' · ' + escapeHtml(i.motivo) : '') + '</span></span></label>';
+    return '<label class="ad-it es-it"><input type="checkbox" data-esv="item" data-k="' + escapeHtml(k) + '"' + (R.sel[k] ? ' checked' : '') + '><span class="ad-t"><b>' + escapeHtml(i.titulo || 'Sem nome') + '</b>' + sug + '<br><span class="saldo-data">' + escapeHtml(i.rotulo) + (i.numero ? ' · </span>' + esNumHtml(i) + '<span class="saldo-data">' : '') + (i.motivo ? ' · ' + escapeHtml(i.motivo) : '') + '</span></span></label>';
   }).join('');
   var n = Object.keys(R.sel).length;
   h += '<div class="es-aplicar"><div class="saldo-data" style="margin:0 0 6px"><b>' + n + (n === 1 ? ' selecionado' : ' selecionados') + '</b> · definir advogados:</div>' +
@@ -176,8 +176,25 @@ function esRevDesenhar(){
     '<div class="pb-acts"><button type="button" class="btn btn-ghost pb-b" data-esv="sugestoes">Marcar os que têm sugestão</button><button type="button" class="btn btn-primary pb-b" data-esv="aplicar"' + (R.ocupado ? ' disabled' : '') + '>Aplicar' + (n ? ' nos ' + n + ' selecionados' : '') + '</button></div></div>';
   el.innerHTML = h;
 }
+/* número do processo na lista: toque abre o cadastro (processo, inicial, acordo ou alvará); o botão ao lado copia */
+function esNumHtml(i){
+  var f = (typeof pbNumCopia === 'function') ? pbNumCopia({ numero: i.numero }) : String(i.numero || '');
+  return '<button type="button" class="es-num" data-esv="abrir" data-k="' + escapeHtml(i.colecao + '|' + i.id) + '" title="Abrir o cadastro">' + escapeHtml(f) + '</button>' + ((typeof pbBtnCopiar === 'function') ? pbBtnCopiar({ numero: i.numero }) : '');
+}
+function esRevAbrirCadastro(k){
+  var p = String(k).split('|'), col = p[0], id = p.slice(1).join('|'), it = (esS.sem ? esS.sem.itens : []).filter(function(x){ return x.colecao === col && String(x.id) === id; })[0], ov = qs('overlayEsRev');
+  var fechar = function(){ if (ov) ov.classList.remove('show'); };
+  try{
+    if (col === 'casos' && typeof abrirEdicao === 'function'){ fechar(); abrirEdicao(id); return; }
+    if (col === 'termosAcordo' && typeof abrirEdicaoAcordo === 'function'){ fechar(); abrirEdicaoAcordo(id); return; }
+    if (col === 'alvaras' && typeof abrirEdicaoAlvara === 'function'){ fechar(); abrirEdicaoAlvara(id); return; }
+    var num = it && it.numero ? prNum(it.numero) : ''; if (num && prMapa().m[num]){ fechar(); prAbrir(num); return; }
+  }catch(e){ console.error('abrir cadastro', e); }
+  toast('Não consegui abrir o cadastro.');
+}
 function esRevClique(a, k){
   var R = esS.rev; if (!R) return;
+  if (a === 'abrir') return esRevAbrirCadastro(k);
   if (a === 'filtro'){ R.filtro = k; esRevDesenhar(); }
   else if (a === 'sugestoes'){ esRevItens().forEach(function(i){ if (i.sugestao && i.sugestao.length){ R.sel[i.colecao + '|' + i.id] = 1; i.sugestao.forEach(function(s){ R.advs[s.oab] = 1; }); } }); esRevDesenhar(); }
   else if (a === 'aplicar'){
@@ -197,7 +214,7 @@ function esRevClique(a, k){
   var st = document.createElement('style');
   st.textContent = '#esBarra{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 16px 0;max-width:1180px;margin:0 auto}.es-seg{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:3px}' +
     '.es-b{border:0;background:none;padding:6px 14px;border-radius:9px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.es-b.on{background:#0e0e10;color:#fff}' +
-    '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
+    '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}/* o número do processo vira botão (abre o cadastro) */.es-num{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);text-decoration:underline;cursor:pointer}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
     '.es-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.es-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:99px;padding:4px 6px 4px 12px;font-size:var(--t2);font-weight:700}.es-vazio{padding:4px 12px;font-weight:600;color:var(--ink-soft)}' +
     '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-sec{font-size:var(--t1);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 2px}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
     '.es-abas{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.es-aba{border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 12px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);cursor:pointer}.es-aba.on{background:#0e0e10;color:#fff;border-color:#0e0e10}' +

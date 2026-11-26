@@ -68,6 +68,16 @@ await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.waitFor
 t = await page.locator('#overlayEsRevC').textContent();
 check(t.includes('Zeta Sem') && t.includes('Inicial') && /registros? esperando você/.test(t), 'a revisão lista os registros sem advogado');
 await page.click('[data-esv="filtro"][data-k="casos"]'); check(await page.locator('#overlayEsRevC .es-it').count() >= 1, 'filtra por tipo');
+{ const lin = await page.evaluate(() => [...document.querySelectorAll('#overlayEsRevC .es-it')].map((e) => ({ t: e.innerText.replace(/\s+/g, ' '), num: !!e.querySelector('.es-num'), cp: !!e.querySelector('.pb-cp') })));
+  const comNum = lin.filter((x) => /\d{7}-\d{2}/.test(x.t));
+  check(comNum.length >= 1 && comNum.every((x) => x.num && x.cp), 'na lista sem advogado, o número do processo vira botão (abre o cadastro) e ganha o botão de copiar');
+  const marcado = await page.evaluate(() => [...document.querySelectorAll('#overlayEsRevC input[data-esv="item"]:checked')].length);
+  await page.evaluate(() => { const b = document.querySelector('#overlayEsRevC .es-num'); if (b) b.click(); });
+  await page.waitForTimeout(700);
+  check(await page.evaluate(() => !document.getElementById('overlayEsRev').classList.contains('show') && [...document.querySelectorAll('.overlay.show')].length >= 1) && marcado === 0, 'tocar no número não marca o registro, fecha a lista e abre o cadastro');
+  await page.evaluate(() => document.querySelectorAll('.overlay.show').forEach((o) => o.classList.remove('show')));
+  await page.evaluate(() => window.__horusTeste.pdAtualizar()); await page.click('#pdSelo'); await page.waitForTimeout(300); await page.click('#overlayPendC [data-pdl="sem"]'); await page.waitForSelector('#overlayEsRev.show .es-it'); await page.waitForTimeout(400);
+  await page.click('[data-esv="filtro"][data-k="casos"]'); }
 await page.check('#overlayEsRevC input[data-esv="item"][data-k="casos|zz3"]'); await page.check('#overlayEsRevC input[data-esv="adv"][data-k="60456/GO"]');
 await page.click('[data-esv="aplicar"]'); await page.waitForTimeout(1500);
 const zz3 = (await api('GET', '/api/db/casos')).j.docs.find((d) => d.id === 'zz3').data;
