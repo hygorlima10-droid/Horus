@@ -52,6 +52,30 @@ check(await bruno.evaluate(() => document.querySelectorAll('.lei-m.lei-alt').len
 check(/54\.000,00/.test(await folhaTxt(bruno)), 'a v2 mostra o valor novo');
 await bruno.click('[data-lei="resolver"] >> nth=0'); await bruno.waitForTimeout(1800);
 check(await bruno.evaluate(() => document.querySelectorAll('.lei-m.lei-ok').length >= 1), 'o revisor confirmou: marca verde de resolvido');
+// novo comentário sobre um comentário que já existe (o trecho foi corrigido, mas ainda não está bom)
+await bruno.click('[data-lei="novo"] >> nth=0'); await bruno.waitForSelector('#leiTxt'); await bruno.fill('#leiTxt', 'Ainda não está bom: detalhar a prova do valor.'); await bruno.click('[data-lei="salvar"]'); await bruno.waitForTimeout(1800);
+{ const cm = (await api('bruno', 'GET', '/api/peticoes')).j.itens[0].comentarios;
+  check(cm.length === 3 && cm[2].ref === cm[0].id && cm[2].ancora && cm[2].ancora.quote.length > 0, 'o novo comentário fica ligado ao comentário anterior (ref) e guarda o trecho'); }
+check(/novo comentário sobre o nº \d/.test(await bruno.evaluate(() => document.getElementById('leiLado').innerText)), 'o cartão do novo comentário mostra "novo comentário sobre o nº …"');
+check(await bruno.evaluate(() => [...document.querySelectorAll('.lei-m[data-n]')].some((e) => /·/.test(e.getAttribute('data-n')))), 'dois comentários sobre o MESMO trecho: os dois números aparecem no texto (1 · 3), não só o primeiro');
+check(await bruno.evaluate(() => document.querySelectorAll('#leiLado .lei-card').length === 3), 'a lista tem os 3 comentários');
+// resolver um comentário não manda a lista de volta ao primeiro
+await bruno.evaluate(() => { const st = document.createElement('style'); st.textContent = '#leiLado{max-height:150px!important;overflow:auto!important}'; document.head.appendChild(st); });
+await bruno.evaluate(() => { document.getElementById('leiLado').scrollTop = 90; }); const rolA = await bruno.evaluate(() => document.getElementById('leiLado').scrollTop);
+await bruno.evaluate(() => { const b = [...document.querySelectorAll('#leiLado [data-lei="resolver"]')].pop(); if (b) b.click(); }); await bruno.waitForTimeout(1800);
+const rolD = await bruno.evaluate(() => document.getElementById('leiLado').scrollTop);
+check(rolA > 30 && rolD >= rolA - 10, 'depois de marcar um comentário como resolvido a lista continua onde estava (rolagem ' + rolA + ' → ' + rolD + ')');
+// parágrafo removido na v2: o comentário NÃO pode grudar em outro parágrafo
+{ const rz = await bruno.evaluate(() => {
+    const H = window.__horusTeste, par = (i, t) => ({ i, txt: t }), doc = { tipo: 'docx', pars: [par(0, 'Tais desembolsos não são apresentados como despesas ordinárias de manutenção do automóvel, mas como gastos suportados no contexto das providências adotadas para superar a situação documental e cadastral que perdurou após a aquisição.'), par(1, 'Dessa forma, encontra-se configurado o dever de reparação dos prejuízos patrimoniais que guardem nexo causal com a conduta dos Réus, devendo estes responder pelos gastos comprovadamente suportados pelo Autor em razão da prolongada e inadequada regularização do automóvel.')] };
+    const removido = 'Quanto ao lançamento no valor de R$ 950,00, relacionado pelo Autor ao transporte do veículo por guincho, embora integre a narrativa dos acontecimentos, o comprovante atualmente disponível não permite identificar de maneira suficientemente precisa a natureza do pagamento. Por cautela processual, o referido montante não integra, nesta oportunidade, a quantificação dos danos materiais.';
+    const a = { p: 1, ini: 0, fim: 40, quote: removido.slice(0, 40), antes: '', depois: '', paragrafo: removido };
+    const reescrito = { p: 0, ini: 66, fim: 108, quote: 'manutenção do automóvel, mas como gastos suportados', antes: 'de ', depois: '', paragrafo: doc.pars[0].txt };
+    const novo = doc.pars[0].txt.replace('manutenção do automóvel', 'conservação do automóvel').replace('providências adotadas', 'medidas adotadas');
+    return { removido: H.leiReancorar(a, doc), reescrito: H.leiReancorar(reescrito, { tipo: 'docx', pars: [doc.pars[1].txt, novo].map((t, k) => ({ i: k, txt: t })) }) };
+  });
+  check(rz.removido.como === 'perdido', 'parágrafo removido na v2: o comentário NÃO é colocado em outro parágrafo (resultado: ' + rz.removido.como + ')');
+  check(rz.reescrito.como === 'alterado' && rz.reescrito.p === 1, 'parágrafo só reescrito (poucas palavras trocadas) continua sendo reencontrado como "trecho mudou"'); }
 // botão único: "Marcar todos como resolvidos"
 check(await bruno.evaluate(() => !!document.querySelector('[data-lei="todos"][data-pta-todos="resolver_todos"]')), 'o revisor vê o botão "Marcar todos como resolvidos" quando ainda há comentário pendente');
 bruno.once('dialog', (d) => d.accept()); await bruno.click('[data-lei="todos"]'); await bruno.waitForTimeout(1800);
@@ -61,6 +85,9 @@ let msg = ''; bruno.on('dialog', (d) => { msg = d.message(); d.accept(); });
 await bruno.click('[data-lei="aprovar"]'); await bruno.waitForTimeout(2500);
 check(/ainda não resolvido/.test(msg), 'aprovar com comentário aberto só avisa: "' + msg.slice(0, 60) + '…"');
 check((await api('bruno', 'GET', '/api/peticoes')).j.itens[0].estado === 'aprovada', 'e deixa aprovar');
+// na folha de revisão, os comentários resolvidos ficam diferentes dos abertos (verde x ouro), com a etiqueta do estado
+await bruno.evaluate((i) => window.__horusTeste.ptAbrir(i), cid); await bruno.waitForTimeout(1500);
+check(await bruno.evaluate(() => document.querySelectorAll('.pt-com.pt-e-resolvido').length >= 1 && document.querySelectorAll('.pt-com.pt-e-aberto').length >= 1 && /resolvido/.test(document.querySelector('.pt-com.pt-e-resolvido').innerText) && /aberto/.test(document.querySelector('.pt-com.pt-e-aberto').innerText)), 'folha de revisão: comentário resolvido em verde e aberto em ouro, cada um com a etiqueta do estado');
 
 if (process.env.DEBUG_PL) console.log('DEBUG', JSON.stringify(await bruno.evaluate(() => { const r = document.querySelector('.lei-r'), p = r.parentElement; const cs = (e) => { const c = getComputedStyle(e); return { d: c.display, bt: c.borderTopWidth, w: c.whiteSpace, pos: c.position, fl: c.float, w2: c.width }; }; return { r: cs(r), p: cs(p), html: p.outerHTML.slice(0, 400), css: [...document.styleSheets].flatMap((ss) => { try { return [...ss.cssRules]; } catch (e) { return []; } }).filter((x) => x.selectorText && /(^|[ ,>])(span|p)(\b|$)/.test(x.selectorText) && !/[.#\[:]/.test(x.selectorText.split(',').pop().trim().split(' ').pop())).map((x) => x.cssText.slice(0, 120)).slice(0, 12) }; })));
 // celular

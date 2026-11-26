@@ -178,8 +178,13 @@ function leiDesenharPar(par, marcas, imagens, esc){
     for (var i = 0; i < pts.length - 1; i++){
       var a = pts[i], b = pts[i + 1]; if (a === b) continue;
       var sp = document.createElement('span'); sp.className = 'lei-r'; sp.style.cssText = leiEstiloRun(rn.r); sp.textContent = rn.t.slice(a, b);
-      var m = mp.filter(function(q){ return q.ini <= rn.ini + a && q.fim >= rn.ini + b; })[0];
-      if (m){ sp.className += ' lei-m ' + m.cls; sp.setAttribute('data-cid', m.cid); if (rn.ini + b === m.fim) sp.setAttribute('data-n', m.n); }
+      var cob = mp.filter(function(q){ return q.ini <= rn.ini + a && q.fim >= rn.ini + b; });
+      if (cob.length){
+        var m = cob.filter(function(q){ return q.cls !== 'lei-ok'; })[0] || cob[0];   /* cor do que está em aberto; o resolvido só pinta se for o único */
+        sp.className += ' lei-m ' + m.cls; sp.setAttribute('data-cid', m.cid);
+        var fins = cob.filter(function(q){ return rn.ini + b === q.fim; }).map(function(q){ return q.n; });
+        if (fins.length) sp.setAttribute('data-n', fins.join(' · '));
+      }
       el.appendChild(sp);
     }
   });
@@ -210,9 +215,12 @@ function leiDice(a, b){
   for (i = 0; i < b.length - 1; i++){ var h = b.slice(i, i + 2); if (m[h]){ m[h]--; k++; } }
   return 2 * k / (a.length + b.length - 2);
 }
+/* parecença por palavras (conjunto de palavras com 4+ letras) */
+function leiPal(a, b){ var sa = {}, sb = {}, na = 0, nb = 0, k = 0; a.split(' ').forEach(function(w){ if (w.length >= 4 && !sa[w]){ sa[w] = 1; na++; } }); b.split(' ').forEach(function(w){ if (w.length >= 4 && !sb[w]){ sb[w] = 1; nb++; } }); Object.keys(sa).forEach(function(w){ if (sb[w]) k++; }); return na + nb ? 2 * k / (na + nb) : 0; }
 function leiAncoraDe(doc, pi, ini, fim){
   var par = doc.pars[pi]; if (!par) return null;
-  return { p: pi, pag: doc.tipo === 'pdf' ? pi + 1 : undefined, ini: ini, fim: fim, quote: par.txt.slice(ini, fim), antes: par.txt.slice(Math.max(0, ini - 20), ini), depois: par.txt.slice(fim, fim + 20), paragrafo: par.txt.slice(0, 1500) };
+  var viz = function(passo){ for (var k = pi + passo; k >= 0 && k < doc.pars.length; k += passo){ var t = doc.pars[k].txt; if (t && t.trim().length > 20) return t.trim().slice(0, 300); } return ''; };
+  return { p: pi, pag: doc.tipo === 'pdf' ? pi + 1 : undefined, ini: ini, fim: fim, quote: par.txt.slice(ini, fim), antes: par.txt.slice(Math.max(0, ini - 20), ini), depois: par.txt.slice(fim, fim + 20), paragrafo: par.txt.slice(0, 1500), pAnt: doc.tipo === 'pdf' ? '' : viz(-1), pPos: doc.tipo === 'pdf' ? '' : viz(1) };
 }
 /* devolve { como: 'igual'|'mesmo'|'moveu'|'alterado'|'perdido', p, ini, fim } */
 function leiReancorar(a, doc){
@@ -223,9 +231,16 @@ function leiReancorar(a, doc){
   var melhor = null;
   doc.pars.forEach(function(q){ var k2 = q.txt.indexOf(a.quote); if (k2 < 0) return; var ok = a.quote.length > 25 || (a.antes === '' || q.txt.slice(Math.max(0, k2 - a.antes.length), k2) === a.antes); if (ok && !melhor) melhor = { como: 'moveu', p: q.i, ini: k2, fim: k2 + a.quote.length }; });
   if (melhor) return melhor;
+  /* o parágrafo foi reescrito? só vale se o parecido for MUITO parecido (letras e palavras) e do mesmo tamanho; senão o parágrafo foi retirado e o comentário NÃO pode grudar em outro */
   var bp = null, nota = 0, ref = leiNorm(a.paragrafo || a.quote);
-  doc.pars.forEach(function(q){ if (!q.txt.trim()) return; var s = Math.max(leiDice(leiNorm(q.txt), ref) * (q.i === a.p ? 1.05 : 1), leiDice(leiNorm(q.txt), leiNorm(a.quote)) * .8); if (s > nota){ nota = s; bp = q; } });
-  if (bp && nota >= .45) return { como: 'alterado', p: bp.i, ini: 0, fim: bp.txt.length };
+  doc.pars.forEach(function(q){
+    if (!q.txt.trim()) return; var qn = leiNorm(q.txt);
+    var tam = Math.min(qn.length, ref.length) / Math.max(qn.length, ref.length, 1), s = Math.min(leiDice(qn, ref), leiPal(qn, ref)) * (q.i === a.p ? 1.04 : 1);
+    if (tam < .45) s = 0;
+    var sq = a.quote && leiNorm(a.quote).length > 40 ? Math.min(leiDice(qn, leiNorm(a.quote)), leiPal(qn, leiNorm(a.quote))) * .85 : 0;
+    if (Math.max(s, sq) > nota){ nota = Math.max(s, sq); bp = q; }
+  });
+  if (bp && nota >= .62) return { como: 'alterado', p: bp.i, ini: 0, fim: bp.txt.length };
   return { como: 'perdido' };
 }
 /* seleção do navegador → { p, ini, fim } dentro de UM parágrafo */
@@ -326,7 +341,13 @@ function leiMarcarPdf(w){
     if (!o.pos || o.pos.pagina || o.pos.p !== n - 1) return;
     var primeiro = true, cls = 'lei-pm' + (o.estado === 'resolvido' ? ' lei-ok' : (o.como === 'alterado' ? ' lei-alt' : ''));
     divs.forEach(function(d, i){
-      var a = ini[i], b = a + strs[i].length; if (b <= o.pos.ini || a >= o.pos.fim || !strs[i] || d.getAttribute('data-sp')) return;
+      var a = ini[i], b = a + strs[i].length; if (b <= o.pos.ini || a >= o.pos.fim || !strs[i]) return;
+      var jaM = d.classList.contains('lei-pm') ? d : (d.getAttribute('data-sp') ? d.querySelector('mark.lei-pm') : null);
+      if (jaM){   /* a linha já tem outro comentário: soma o número dele no mesmo marcador (os dois aparecem) */
+        var nn = (jaM.getAttribute('data-n') || '').split(' · ').filter(Boolean); if (nn.indexOf(String(o.n)) < 0){ nn.push(String(o.n)); jaM.setAttribute('data-n', nn.join(' · ')); }
+        if (o.estado !== 'resolvido'){ jaM.classList.remove('lei-ok'); }
+        return;
+      }
       var x = Math.max(o.pos.ini - a, 0), y = Math.min(o.pos.fim - a, strs[i].length), alvo = d;
       if (x > 0 || y < strs[i].length){   /* marca só o pedaço do trecho (o texto da linha continua igual) */
         d.textContent = ''; d.setAttribute('data-sp', '1');
@@ -374,7 +395,7 @@ var LEI_CSS2 = '#overlayPetLeitor .modal{max-width:1260px;width:97vw;height:94vh
   '.lei-tag{display:inline-block;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800;margin-left:4px}.lei-g-ab{background:#FBEFD2;color:#8A5A0B}.lei-g-pr{background:#DCE6FF;color:#2F3E9E}.lei-g-ok{background:#DDF3E5;color:#16683A}.lei-g-alt{background:#FFE3C2;color:#9A4F00}.lei-g-pe{background:#FDE3E3;color:#B42323}' +
   '.lei-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.lei-bts button{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:9px;padding:5px 10px;font:700 12px system-ui,sans-serif;cursor:pointer}' +
   '.lei-compor{border:2px solid #4453D6;border-radius:12px;padding:10px;margin-bottom:10px;background:var(--surface)}.lei-compor textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:9px;padding:8px;font:inherit;font-size:var(--t3);margin:6px 0;background:var(--bg);color:var(--ink)}' +
-  '.lei-msg{padding:30px 12px;text-align:center;color:var(--ink-soft);font-size:var(--t3)}.lei-dica{color:var(--ink-soft);font-size:var(--t1);margin:0 0 8px}' +
+  '.lei-ref{font-size:var(--t1);color:#2F3E9E;font-weight:700;margin-bottom:3px}.lei-msg{padding:30px 12px;text-align:center;color:var(--ink-soft);font-size:var(--t3)}.lei-dica{color:var(--ink-soft);font-size:var(--t1);margin:0 0 8px}' +
   '@media(max-width:860px){.lei-grid{grid-template-columns:1fr;grid-template-rows:minmax(0,2fr) minmax(0,1fr)}.lei-leitura{padding:6px}#overlayPetLeitor .modal{width:100vw;height:96vh}}';
 function leiChave(){ return leiS.petId + ':' + leiS.ver; }
 function leiPet(){ return ptS.itens.filter(function(p){ return p.id === leiS.petId; })[0] || null; }
@@ -428,10 +449,11 @@ function leiDesenharTudo(msg){
   h += '<div class="lei-grid"><div class="lei-leitura" id="leiLeitura"></div><div class="lei-lado" id="leiLado"></div></div>';
   var abertos = p.comentarios.filter(function(x){ return (x.estado || 'aberto') !== 'resolvido'; }).length;
   if (p.souRevisor && p.estado === 'a_corrigir') h += '<div class="lei-rod"><button type="button" class="pt-bt pt-ouro" data-lei="devolver">Devolver para ajustes' + (p.comentarios.filter(function(x){ return x.papel === 'revisor' && x.v === p.versoes[p.versoes.length - 1].n; }).length ? '' : '') + '</button><button type="button" class="pt-bt" data-lei="aprovar">Aprovar' + (abertos ? ' (' + abertos + ' em aberto)' : '') + '</button></div>';
-  var rolagem = qs('leiLeitura') ? qs('leiLeitura').scrollTop : 0;
+  var rolagem = qs('leiLeitura') ? qs('leiLeitura').scrollTop : 0, rolLado = qs('leiLado') ? qs('leiLado').scrollTop : 0;
   c.innerHTML = h;
   leiDesenharLeitura(cs); leiDesenharLado(p, cs, podeC);
   if (rolagem && qs('leiLeitura')) qs('leiLeitura').scrollTop = rolagem;
+  if (rolLado && qs('leiLado')) qs('leiLado').scrollTop = rolLado;   /* resolver um comentário não manda a lista de volta ao primeiro */
 }
 function leiDesenharLeitura(cs){
   var el = qs('leiLeitura'); if (!el || !leiS.doc) return;
@@ -442,7 +464,7 @@ function leiDesenharLeitura(cs){
 function leiTagsCard(o){
   var t = o.estado === 'resolvido' ? '<span class="lei-tag lei-g-ok">resolvido</span>' : (o.estado === 'proposto' ? '<span class="lei-tag lei-g-pr">proposto como resolvido</span>' : '<span class="lei-tag lei-g-ab">aberto</span>');
   if (o.c.ancora && o.como === 'alterado') t += '<span class="lei-tag lei-g-alt">trecho mudou</span>';
-  if (o.c.ancora && o.como === 'perdido') t += '<span class="lei-tag lei-g-pe">trecho não encontrado</span>';
+  if (o.c.ancora && o.como === 'perdido') t += '<span class="lei-tag lei-g-pe">' + (o.c.v < leiS.ver ? 'trecho removido ou reescrito na v' + leiS.ver : 'trecho não encontrado') + '</span>';
   if (o.c.ancora && (o.como === 'igual' || o.como === 'mesmo' || o.como === 'moveu') && o.c.v < leiS.ver) t += '<span class="lei-tag lei-g-ok">no mesmo lugar</span>';
   return t;
 }
@@ -452,9 +474,12 @@ function leiCardHtml(p, o){
     if (p.souAutor && !p.souRevisor && o.estado === 'aberto') bts += '<button type="button" data-lei="propor" data-cid="' + c.id + '">Já corrigi</button>';
     if (p.souRevisor && o.estado !== 'resolvido') bts += '<button type="button" data-lei="resolver" data-cid="' + c.id + '">' + (o.estado === 'proposto' ? 'Confirmar resolvido' : 'Marcar resolvido') + '</button>';
     if (p.souRevisor && o.estado !== 'aberto') bts += '<button type="button" data-lei="reabrir" data-cid="' + c.id + '">Reabrir</button>';
+    if (leiPodeComentar(p) && c.ancora && o.pos && !o.pos.pagina) bts += '<button type="button" data-lei="novo" data-cid="' + c.id + '">Novo comentário neste trecho</button>';   /* o trecho foi corrigido mas ainda não está bom */
   }
   return '<div class="lei-card' + (o.estado === 'resolvido' ? ' lei-c-ok' : (o.como === 'alterado' ? ' lei-c-alt' : (o.como === 'perdido' ? ' lei-c-perd' : ''))) + '" data-cardid="' + c.id + '">' +
     (c.ancora ? '<span class="lei-q">' + (o.n ? '<span class="lei-nb">' + o.n + '</span>' : '') + '“' + escapeHtml(c.ancora.quote) + '”</span>' : '') +
+    (c.ref ? '<div class="lei-ref">↳ novo comentário sobre o ' + (leiS.numDe && leiS.numDe[c.ref] ? 'nº ' + leiS.numDe[c.ref] : 'comentário anterior') + '</div>' : '') +
+    (c.ancora && o.como === 'perdido' && c.v < leiS.ver ? '<div class="lei-dica" style="color:#B42323">Este trecho não aparece mais na v' + leiS.ver + ' (foi removido ou reescrito). Se o pedido era para tirar, já está atendido.</div>' : '') +
     '<div class="lei-t">' + escapeHtml(c.texto) + '</div><div class="lei-mt">' + escapeHtml(c.por.nome) + ' · ' + ptDataHora(c.em) + ' · v' + c.v + leiTagsCard(o) + '</div>' + (bts ? '<div class="lei-bts">' + bts + '</div>' : '') + '</div>';
 }
 /* botão único para resolver tudo: o revisor confirma todos; quem fez a Inicial diz que corrigiu todos os abertos */
@@ -474,6 +499,7 @@ function leiDesenharLado(p, cs, podeC){
   else if (p.estado === 'a_corrigir' && p.souRevisor) h += '<p class="lei-dica">Esta é uma versão anterior: só a versão mais recente recebe comentários novos.</p>';
   h += '<div class="pt-t" style="margin:6px 0">Comentários (' + cs.todos.length + ')</div>' + leiTodosHtml(p);
   if (!cs.todos.length) h += '<div class="pt-vazio">Nenhum comentário ainda.</div>';
+  leiS.numDe = {}; cs.marcados.forEach(function(o){ leiS.numDe[o.c.id] = o.n; });
   cs.marcados.concat(cs.soltos).forEach(function(o){ h += leiCardHtml(p, o); });
   el.innerHTML = h;
   if (leiS.compor){ var t = qs('leiTxt'); if (t) t.focus(); }
@@ -506,10 +532,15 @@ function leiClique(e){
   var rodar = function(url, corpo, ok){ return esJson(url, 'POST', corpo).then(function(){ if (ok) toast(ok); return leiAtualizarDepois(); }).catch(function(er){ toast(er.message); }); };
   if (k === 'pagina'){ var pg = Number(a.getAttribute('data-pg')); if (!leiPodeComentar(p)) return; leiS.compor = { p: pg - 1, pag: pg, ini: 0, fim: 1, quote: 'Página ' + pg, antes: '', depois: '', paragrafo: '', pagina: true }; leiDesenharLado(p, leiComentarios(p), true); var l2 = qs('leiLado'); if (l2 && l2.scrollIntoView) l2.scrollIntoView({ block: 'nearest' }); return; }
   if (k === 'comentar'){ leiS.compor = leiS.sel; leiS.sel = null; var bo = qs('leiLeitura') && qs('leiLeitura').querySelector('.lei-bolha'); if (bo) bo.remove(); try{ window.getSelection().removeAllRanges(); }catch(x){} leiDesenharLado(p, leiComentarios(p), true); var lado = qs('leiLado'); if (lado && lado.scrollIntoView) lado.scrollIntoView({ block: 'nearest' }); return; }
-  if (k === 'cancelar'){ leiS.compor = null; leiDesenharTudo(); return; }
+  if (k === 'novo'){   /* novo comentário sobre o trecho de um comentário que já existe (na versão atual) */
+    if (!leiPodeComentar(p)) return; var oc = leiComentarios(p).todos.filter(function(x){ return x.c.id === cid; })[0]; if (!oc || !oc.pos) return;
+    var an2 = leiAncoraDe(leiS.doc, oc.pos.p, oc.pos.ini, oc.pos.fim); if (!an2 || !an2.quote.trim()) return;
+    leiS.compor = an2; leiS.composRef = cid; leiDesenharLado(p, leiComentarios(p), true); var l3 = qs('leiLado'); if (l3){ l3.scrollTop = 0; } return;
+  }
+  if (k === 'cancelar'){ leiS.compor = null; leiS.composRef = null; leiDesenharTudo(); return; }
   if (k === 'salvar'){
     var t = (qs('leiTxt') || {}).value || ''; if (!t.trim()){ toast('Escreva o comentário.'); return; }
-    var an = leiS.compor; leiS.compor = null; return rodar('/api/peticoes/' + p.id + '/comentar', { texto: t, ancora: an }, 'Comentário salvo.');
+    var an = leiS.compor, rf = leiS.composRef || ''; leiS.compor = null; leiS.composRef = null; return rodar('/api/peticoes/' + p.id + '/comentar', { texto: t, ancora: an, ref: rf || undefined }, 'Comentário salvo.');
   }
   if (k === 'propor' || k === 'resolver' || k === 'reabrir') return rodar('/api/peticoes/' + p.id + '/resolver', { comentario: cid, acao: k });
   if (k === 'todos'){ var at = a.getAttribute('data-pta-todos'), n = p.comentarios.filter(function(x){ return at === 'resolver_todos' ? (x.estado || 'aberto') !== 'resolvido' : (x.estado || 'aberto') === 'aberto'; }).length; if (!n) return; if (at === 'resolver_todos' && !confirm('Marcar ' + n + (n === 1 ? ' comentário' : ' comentários') + ' como resolvido' + (n === 1 ? '' : 's') + '?')) return; return rodar('/api/peticoes/' + p.id + '/resolver', { acao: at }, n + (n === 1 ? ' comentário' : ' comentários') + (at === 'resolver_todos' ? ' resolvido' + (n === 1 ? '' : 's') + '.' : ' marcado' + (n === 1 ? '' : 's') + ' como corrigido' + (n === 1 ? '' : 's') + '.')); }

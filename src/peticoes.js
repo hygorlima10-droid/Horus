@@ -186,6 +186,8 @@ function limparAncora(a) {
   const p = inteiro(a.p, 20000), ini = inteiro(a.ini, 100000), fim = inteiro(a.fim, 100000), quote = typeof a.quote === 'string' ? a.quote.slice(0, 600) : '';
   if (p === null || ini === null || fim === null || fim <= ini || !quote.trim()) return null;
   const o = { p, ini, fim, quote, antes: String(a.antes || '').slice(0, 40), depois: String(a.depois || '').slice(0, 40), paragrafo: String(a.paragrafo || '').slice(0, 1500) };
+  if (typeof a.pAnt === 'string' && a.pAnt.trim()) o.pAnt = a.pAnt.slice(0, 300);   // parágrafo de cima e de baixo (para saber que o trecho foi removido na versão seguinte)
+  if (typeof a.pPos === 'string' && a.pPos.trim()) o.pPos = a.pPos.slice(0, 300);
   if (Number.isInteger(a.pag) && a.pag >= 1 && a.pag <= 5000) o.pag = a.pag;   // PDF: página
   if (a.pagina === true) o.pagina = true;   // comentário da página inteira (PDF escaneado)
   return o;
@@ -279,6 +281,7 @@ export async function peticoesRotas(request, env, partes, auth, deps) {
     if (b.ancora && !ancora) return erro(400, 'invalid', 'Trecho inválido.');
     const com = { id: aleat(), por: a, papel: 'revisor', texto, em: agora, v, estado: 'aberto' };
     if (ancora) com.ancora = ancora;
+    if (b.ref) { const alvo = p.comentarios.find((x) => x.id === String(b.ref)); if (alvo) com.ref = alvo.id; }   // novo comentário sobre um comentário já feito (o trecho foi corrigido, mas ainda não está bom)
     p.comentarios.push(com);
     p.atualizadoEm = agora; await stmtPet(env, p).run();
     return json({ ok: true, peticao: vista(p, auth), comentario: com.id });
