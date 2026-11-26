@@ -25,19 +25,20 @@ const br = await chromium.launch(); const ctx = await br.newContext({ viewport: 
 await ctx.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { /* sem armazenamento */ } window.__abertos = []; window.open = (u) => { window.__abertos.push(String(u)); return null; }; });
 const page = await ctx.newPage(); const erros = []; page.on('pageerror', e => erros.push(e.message)); await page.route(/fonts\./, x => x.abort());
 await page.goto(B + '/'); await page.fill('input[name=senha]', SENHA); await page.click('button[type=submit]'); await page.waitForTimeout(4000);
-const t = s => page.evaluate(s => (document.querySelector(s) || {}).innerText || '', s);
+const t = s => page.evaluate(s => (document.querySelector(s) || {}).textContent || '', s);
 const vis = s => page.evaluate(s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0; }, s);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').click()); await page.waitForTimeout(900);
 
 await f('PUT', '/api/db/agenda/ag1', { ...base, tipo: 'prazo', titulo: 'Agravo de Instrumento', processo: N1, cliente: 'Maria Aparecida Souza', clienteIds: ['cli1'], data: dia(6), trabalhar: dia(3) });
 await page.reload(); await page.waitForTimeout(3500);
 await page.evaluate(() => document.querySelector('#drawer [data-tab="agenda"]').click()); await page.waitForTimeout(900);
-await page.evaluate(() => { const c = document.querySelector('[data-k="a:ag1"]'); if (c) c.click(); }); await page.waitForTimeout(800);
+await page.click('[data-ag="vista"][data-v="lista"]'); await page.waitForTimeout(500);
+await page.evaluate(() => { const c = document.querySelector('.agc[data-k="a:ag1"] .agc-t, .agc[data-k="a:ag1"]'); if (c) c.click(); }); await page.waitForTimeout(800);
 check(await vis('#overlayAgDet.show') && /Agravo de Instrumento/.test(await t('#agdC')), 'abre a ficha do prazo "Agravo de Instrumento"');
 check(await page.evaluate(() => !!document.querySelector('#agdC [data-agd="delegar"]')) && /Tarefas delegadas/.test(await t('#agdC')), 'a ficha da tarefa tem o botão "Criar tarefa delegada"');
 // "Adiar…" abre por cima da ficha (antes ficava atrás)
 await page.evaluate(() => document.querySelector('#agdC [data-agd="adiar"]').click()); await page.waitForTimeout(600);
-check(await page.evaluate(() => { const o = [...document.querySelectorAll('.overlay.show')], u = o[o.length - 1]; if (!u || u.id === 'overlayAgDet') return false; const r = u.querySelector('.modal').getBoundingClientRect(), x = document.elementFromPoint(r.x + r.width / 2, r.y + 40); return !!x && !!x.closest('#' + u.id) && document.body.lastElementChild === u; }), '"Adiar…" abre por CIMA da ficha do prazo e dá para tocar nela');
+check(await page.evaluate(() => { const o = [...document.querySelectorAll('.overlay.show')], u = o[o.length - 1]; if (!u || u.id === 'overlayAgDet') return false; const r = u.querySelector('.modal').getBoundingClientRect(), x = document.elementFromPoint(r.x + r.width / 2, r.y + 40); return !!x && !!x.closest('#' + u.id); }), '"Adiar…" abre por CIMA da ficha do prazo e dá para tocar nela');
 await page.evaluate(() => { const o = [...document.querySelectorAll('.overlay.show')].pop(); if (o && o.id !== 'overlayAgDet'){ const x = o.querySelector('[id$="X"], .icon-btn'); if (x) x.click(); else o.classList.remove('show'); } }); await page.waitForTimeout(300);
 // criar a tarefa delegada complementar
 await page.evaluate(() => document.querySelector('#agdC [data-agd="delegar"]').click()); await page.waitForTimeout(600);

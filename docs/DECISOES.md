@@ -463,3 +463,9 @@ Análise em `docs/INTEGRACAO-PLANILHA-ANALISE.md`; esboço em `docs/esboco-plani
 - **Opção A (recomendada):** uma pílula por dia no cabeçalho ("🚩 6 prazos vencem neste dia ▾"), recolhida; hoje e amanhã abrem sozinhos em vermelho.
 - **Opção B:** tirar as linhas da lista; o dia ganha só um número discreto e os fatais ficam numa visão própria (chip "Fatais", tabela compacta por dia).
 - Esboço: `docs/esboco-agenda-linhas-fatais.png`. Nada foi alterado no app.
+
+## Agenda: prazos fatais do dia em uma pílula (opção A, 26/11/2026) — decisão do proprietário
+- As linhas "Prazo fatal: … (trabalhar até …)" no meio dos cartões viraram **uma pílula no cabeçalho do dia** ("[bandeira] 6 prazos vencem neste dia"), com o ícone de bandeira que o app já usa (sem emoji). Recolhida por padrão; toque abre a lista do dia. **Hoje e amanhã abrem sozinhos, em vermelho.** Vale nas vistas Semana, Mês e Dia.
+- Correção: **"Adiar" (e outras janelas) abria atrás da ficha do prazo** porque a ficha tem nível próprio (`z-index:160`). As janelas que abrem por cima dela (Adiar, protocolo, tarefa delegada, aviso de duplicidade) passaram para o nível 175.
+- Novo: botão **"Criar tarefa delegada"** na ficha da tarefa/prazo da Agenda (tarefa complementar, ex.: tirar as custas de um agravo). A delegada nasce na aba Delegadas ligada ao mesmo processo e cliente (`agendaKey`), com a observação "Complementar à tarefa …", e a ficha da Agenda lista as delegadas ligadas.
+- Obs.: o teste `delegadas` já falhava antes desta etapa (alinhamento do cartão e "tocar de novo desfaz"); não foi tratado aqui.

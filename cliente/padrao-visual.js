@@ -26,21 +26,3 @@
     '#extTopo .plan-linha{min-width:0;align-items:center}#extTopo .plan-linha>span{min-width:0;overflow-wrap:anywhere}#extTopo .plan-linha>button{flex:none}';
   document.head.appendChild(st);
 })();
-/* JANELA QUE ABRE POR CIMA DE OUTRA FICA POR CIMA: todas as janelas (.overlay) têm o mesmo nível, então vale a ordem no HTML — uma janela criada antes (ex.: "Adiar") aparecia ATRÁS
-   da que já estava aberta (ex.: a ficha do prazo) e a data não dava para escolher. Quando uma janela passa a aparecer, ela vai para o fim da página (a mais recente fica na frente). */
-(function(){
-  if (!window.MutationObserver) return;
-  var movendo = false;
-  new MutationObserver(function(ms){
-    if (movendo) return;
-    ms.forEach(function(m){
-      var t = m.target; if (!t || !t.classList || !t.classList.contains('overlay') || !t.classList.contains('show')) return;
-      if (m.oldValue && /(^|\s)show(\s|$)/.test(m.oldValue)) return;   /* já estava aberta: só mudou outra classe */
-      if (t.parentNode !== document.body || document.body.lastElementChild === t) return;
-      var ae = document.activeElement, tinha = ae && t.contains(ae), sc = t.querySelector('.modal-body, .modal'), rol = sc ? sc.scrollTop : 0;
-      movendo = true; try{ document.body.appendChild(t); }finally{ movendo = false; }
-      if (tinha && ae && ae.focus) try{ ae.focus(); }catch(e){}
-      if (sc && rol) sc.scrollTop = rol;
-    });
-  }).observe(document.body, { attributes: true, attributeFilter: ['class'], attributeOldValue: true, subtree: true });
-})();

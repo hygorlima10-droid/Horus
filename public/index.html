@@ -2044,6 +2044,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 
 
 
+
+
+
 <symbol id="ic-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 01-15.5 6.2M3 12A9 9 0 0118.5 5.8M18.5 2v4h-4M5.5 22v-4h4"/></symbol>
 <symbol id="ic-mes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
 <symbol id="ic-lista" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -19358,7 +19361,7 @@ window.__horusTeste = { abrirEdicao: function(id){ abrirEdicao(id); }, marcarPar
    - cartão "Prazos processuais" no Início e avisos no celular (5, 2 e 1 dia antes e no dia, configurável por item)
    ============================================================ */
 var agDocs = [], agOk = false, agEditKey = null, agEditTipo = 'prazo';
-var agS = { vista: 'semana', quadro: 'urgencia', filtro: 'tudo', ref: '', mes: '', sel: '', feitos: false, escopo: 'minha' };
+var agS = { vista: 'semana', quadro: 'urgencia', filtro: 'tudo', ref: '', mes: '', sel: '', feitos: false, escopo: 'minha', fatAb: {} };
 try{ if (localStorage.getItem('horus.agendaEscopo') === 'escritorio') agS.escopo = 'escritorio'; }catch(e){}
 var AG_PADRAO = [5, 2, 1, 0];
 var AG_TIPOS = { prazo: 'Prazo', audiencia: 'Audiência', tarefa: 'Tarefa' };
@@ -19580,6 +19583,7 @@ function agMontarTela(){
     else if (a === 'flt') agdFiltrosAbrir();
     else if (a === 'menu'){ agS.menu = !agS.menu; agRender(); }
     else if (a === 'det') agdAbrir(k);
+    else if (a === 'fatais'){ var iso = b.getAttribute('data-v'); agS.fatAb[iso] = !agFatAberto(iso); agRender(); }
     else if (a === 'copiar') agdCopiarNumero(b.getAttribute('data-n'));
     else if (a === 'nav'){ var n = Number(v); if (agS.vista === 'mes'){ var d = new Date(agS.mes + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); agS.mes = d.toISOString().slice(0, 7); agS.sel = agS.mes + '-01'; } else { agS.ref = pbSoma(agS.ref, 7 * n); } agRender(); }
     else if (a === 'hoje'){ agS.ref = agHoje(); agS.mes = agHoje().slice(0, 7); agS.sel = agHoje(); agRender(); }
@@ -19667,16 +19671,23 @@ function agPontos(l){
   var s = {}; l.forEach(function(i){ if (i.concluido) return; s[i.tipo === 'audiencia' ? 'au' : (i.tipo === 'tarefa' ? 'pe' : 'pr')] = 1; });
   return ['pr', 'au', 'pe'].filter(function(k){ return s[k]; }).map(function(k){ return '<s class="ag-p ' + k + '"></s>'; }).join('');
 }
-/* dia fatal dos prazos que têm dia de trabalhar antes: só uma linha fina de lembrete (o cartão está no dia de trabalhar) */
+/* dia fatal dos prazos que têm dia de trabalhar antes (o cartão está no dia de trabalhar): no cabeçalho do dia fica UMA pílula "N prazos vencem neste dia";
+   toque para abrir a lista daquele dia. Hoje e amanhã abrem sozinhos, em vermelho (é quando importa). */
 function agFatais(l){ var m = {}, hoje = agHoje(); l.forEach(function(i){ if (agTemTrab(i) && i.data >= hoje) (m[i.data] = m[i.data] || []).push(i); }); return m; }
+function agFatAberto(iso){ var o = agS.fatAb[iso]; return o === undefined ? agDias(iso) <= 1 : !!o; }
+function agFatUrg(iso){ return agDias(iso) <= 1; }
 function agLinhaFatal(i){
-  var d = agDias(i.data), q = d === 0 ? 'Vence hoje' : (d === 1 ? 'Vence amanhã' : 'Prazo fatal');
-  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + q + ':</b> ' + escapeHtml(i.titulo) + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
+  return '<div class="ag-fina" data-ag="det" data-k="' + escapeHtml(i.key) + '">' + ico('flag', 16) + '<span><b>' + escapeHtml(i.titulo) + '</b>' + (i.cliente ? ' · ' + escapeHtml(i.cliente) : '') + ' <i>(trabalhar até ' + escapeHtml(agAbrevDia(i.trabalhar)) + ')</i></span></div>';
 }
-function agCabDia(iso){
+function agFatPilula(iso, n){
+  var q = agDias(iso) === 0 ? ' hoje' : (agDias(iso) === 1 ? ' amanhã' : ' neste dia'), ab = agFatAberto(iso);
+  return '<button type="button" class="ag-fpill' + (agFatUrg(iso) ? ' urg' : '') + '" data-ag="fatais" data-v="' + iso + '" aria-expanded="' + (ab ? 'true' : 'false') + '">' + ico('flag', 14) + n + (n === 1 ? ' prazo vence' : ' prazos vencem') + q + '<span class="ag-fp-s">' + (ab ? '▴' : '▾') + '</span></button>';
+}
+function agFatLista(iso, fl){ return fl.length && agFatAberto(iso) ? '<div class="ag-fatbox' + (agFatUrg(iso) ? ' urg' : '') + '">' + fl.map(agLinhaFatal).join('') + '</div>' : ''; }
+function agCabDia(iso, nFat){
   var f = agNomeFeriado(iso), rec = !f && pbRecesso(iso) && pbDow(iso) !== 0 && pbDow(iso) !== 6;
   var nome = PB_DIAS[pbDow(iso)]; nome = nome.charAt(0).toUpperCase() + nome.slice(1).split('-')[0];
-  return '<div class="ag-dia' + (iso === agHoje() ? ' hoje' : '') + '" id="agd-' + iso + '">' + nome + ' · ' + fmtData(iso).slice(0, 5) + (iso === agHoje() ? ' · hoje' : '') + (f ? ' · ' + escapeHtml(f) + ' (sem expediente)' : '') + (rec ? ' · recesso: prazos suspensos' : '') + '</div>';
+  return '<div class="ag-dia' + (iso === agHoje() ? ' hoje' : '') + (nFat ? ' tem-fat' : '') + '" id="agd-' + iso + '"><span>' + nome + ' · ' + fmtData(iso).slice(0, 5) + (iso === agHoje() ? ' · hoje' : '') + (f ? ' · ' + escapeHtml(f) + ' (sem expediente)' : '') + (rec ? ' · recesso: prazos suspensos' : '') + '</span>' + (nFat ? agFatPilula(iso, nFat) : '') + '</div>';
 }
 function agVistaSemana(todos){
   var ini = agIniSemana(agS.ref), dias = [], i;
@@ -19694,7 +19705,7 @@ function agVistaSemana(todos){
   dias.forEach(function(d){
     var l = (por[d] || []).filter(function(x){ return !(agDataAgir(x) < hoje && !x.concluido); }), fl = fat[d] || [];
     if (!l.length && !fl.length && !agNomeFeriado(d)) return;
-    vazio = false; h += agCabDia(d) + agConflitoHtml(l) + l.map(agCartao).join('') + fl.map(agLinhaFatal).join('');
+    vazio = false; h += agCabDia(d, fl.length) + agFatLista(d, fl) + agConflitoHtml(l) + l.map(agCartao).join('');
   });
   if (vazio) h += '<div class="financeiro-vazio">Nada na agenda nesta semana.</div>';
   return h;
@@ -19712,7 +19723,7 @@ function agVistaMes(todos){
   }
   c += '</div><div class="ag-leg"><span><s class="ag-p pr"></s>prazo</span><span><s class="ag-p pe"></s>tarefa</span><span><s class="ag-p au"></s>audiência</span><span><s class="ag-p fe"></s>feriado (TJGO)</span></div>';
   var l = por[agS.sel] || [], fl = fat[agS.sel] || [];
-  c += agCabDia(agS.sel) + agConflitoHtml(l) + (l.length || fl.length ? l.map(agCartao).join('') + fl.map(agLinhaFatal).join('') : '<div class="financeiro-vazio">Nada neste dia.</div>');
+  c += agCabDia(agS.sel, fl.length) + agFatLista(agS.sel, fl) + agConflitoHtml(l) + (l.length || fl.length ? l.map(agCartao).join('') : '<div class="financeiro-vazio">Nada neste dia.</div>');
   return c;
 }
 function agVistaLista(todos){
@@ -20298,7 +20309,7 @@ function agRevClique(a){
     '.acx{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.acx button,.acx a{display:inline-flex;align-items:center;gap:5px;font-family:inherit;border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:8px 14px;min-height:36px;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none}.acx .pri{background:var(--ink);color:var(--bg);border-color:transparent}' +
     '.ini-acoes.ag-acoes.md-um{flex-wrap:wrap;justify-content:flex-start}' +
     '@media(min-width:1000px){.ini-acoes.ag-acoes.md-um{max-width:none;flex-wrap:nowrap}}' +   /* no computador os botões ficam na mesma linha (o limite de 520 px da barra de ações do Início quebrava a 3ª linha) */
-    '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}' +
+    '.agc>.agc-ok{align-self:start;margin-top:22px}.ag-fina{display:flex;gap:8px;align-items:center;font-size:var(--t2);color:var(--ink-soft);padding:6px 10px;border-left:3px solid var(--urgente);background:rgba(217,59,59,.06);border-radius:8px;margin:5px 0;cursor:pointer}.ag-fina b{color:var(--ink)}.ag-dia.tem-fat{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;text-transform:uppercase}.ag-fpill{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:3px 11px;font:800 12px system-ui,sans-serif;background:#E8EBF5;color:#4A5372;cursor:pointer;text-transform:none;letter-spacing:0}.ag-fpill.urg{background:#FDE3E3;color:#B42323}.ag-fp-s{font-size:10px;margin-left:2px}.ag-fatbox{border:1px solid rgba(100,110,140,.25);border-radius:10px;padding:2px 8px;margin:5px 0;background:rgba(100,110,140,.05)}.ag-fatbox.urg{border-color:rgba(217,59,59,.3);background:rgba(217,59,59,.05)}.ag-fatbox .ag-fina{background:transparent;margin:3px 0}' +
     '.agc.pronta{--ag-c:var(--success)}.acx .vd{background:var(--success);color:#fff;border-color:transparent}.agd2>div.ok{border-left-color:var(--success);background:rgba(23,137,90,.09)}.agd2 .ok em{color:var(--success)}' +
     '.agm-h{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}.agm-h b{font-size:var(--t5,18px)}.agm-h small{font-size:var(--t2);color:var(--ink-soft)}.agm-res{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.agm-res span{border-radius:99px;padding:4px 10px;font-size:var(--t1);font-weight:800;background:var(--surface-2,#eceae4);color:var(--ink)}.agm-res .r{background:rgba(217,59,59,.12);color:var(--urgente)}.agm-res .a{background:rgba(42,120,214,.13);color:var(--info)}.agm-res .g{background:rgba(201,133,0,.16);color:#8a5a00}.agm-res .v{background:rgba(23,137,90,.14);color:var(--success)}' +
     '.agm-prog{height:8px;border-radius:99px;background:var(--surface-2,#eceae4);overflow:hidden;margin:2px 0 4px}.agm-prog i{display:block;height:100%;background:var(--success);border-radius:99px}.agm-sec{font-size:var(--t1);font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin:14px 2px 5px;display:flex;justify-content:space-between;color:var(--ink-soft)}.agm-sec.r{color:var(--urgente)}.agm-sec.a{color:var(--info)}.agm-sec.g{color:#8a5a00}.agm-sec.v{color:var(--success)}.agm-sec small{font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink-soft)}' +
@@ -28987,6 +28998,7 @@ function agdDesenhar(){
   } else if (i.fonte === 'alvara'){
     h += '<div class="agd-acoes"><button type="button" class="btn btn-ghost pb-b" data-agd="adiar">Adiar…</button><button type="button" class="btn btn-ghost pb-b" data-agd="acao">Abrir o alvará</button></div>';
   }
+  if (ag || i.fonte === 'caso') h += agdgBloco(i);   /* tarefas delegadas complementares a este item */
   /* processo */
   var num = i.processo ? prNum(i.processo) : '', r = num ? prMapa().m[num] : null, pdoc = r && r.doc ? r.doc : null;
   if (i.processo){
@@ -29043,6 +29055,8 @@ function agdClique(a, k, v){
   else if (a === 'copiar') agdCopiarNumero(v);
   else if (a === 'sit' && i) agdSituacao(i, v);
   else if (a === 'adiar' && i){ agAdiar(i.key); }
+  else if (a === 'delegar' && i){ agCriarDelegada(i.key); }
+  else if (a === 'dgt' && k){ agdFechar(); dgAbrirFicha(k); }
   else if (a === 'editar' && i){ agdFechar(); agAbrir(i.key); }
   else if (a === 'excluir'){ agdExcluir = !agdExcluir; agdDesenhar(); }
   else if (a === 'excluir-nao'){ agdExcluir = false; agdDesenhar(); }
@@ -29185,7 +29199,7 @@ function agdFiltrosAtivos(){ return (agS.resp ? 1 : 0) + ((agS.sit || 'abertos')
 (function(){
   var st = document.createElement('style');
   st.textContent =
-    '#overlayAgDet{z-index:160}#overlayAgZap,#overlayAgFlt{z-index:175}#agdC>*,#agzC>*,#agfC>*{flex-shrink:0}' +
+    '#overlayAgDet{z-index:160}#overlayAgZap,#overlayAgFlt{z-index:175}/* janelas que abrem POR CIMA da ficha do prazo (Adiar, protocolo, tarefa delegada, aviso de duplicidade): precisam de nível maior que o da ficha, senão ficam atrás dela */#overlayAgAdT,#overlayAgAdiar,#overlayAgProt,#overlayAgDg,#overlayDup{z-index:175}#agdC>*,#agzC>*,#agfC>*{flex-shrink:0}' +
     '.agd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.agd-data{font-size:var(--t3);font-weight:700;color:var(--ink-soft);margin-bottom:5px}' +
     '.agd-ic{display:flex;gap:6px}.agd-ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}.agd-ib.perigo{background:rgba(217,59,59,.12);border-color:rgba(217,59,59,.4);color:var(--urgente)}' +
     '.agd-t{font-size:1.25rem;line-height:1.25;margin:10px 0 6px;letter-spacing:-.01em;overflow-wrap:anywhere}.agd-perigo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}' +
@@ -32256,6 +32270,92 @@ function pbdgLancar(){
 })();
 
 /*DP-FIM*/
+/*DA-INICIO*/
+/* Tarefa delegada criada de dentro de uma tarefa (ou prazo) da Agenda: serve para a tarefa COMPLEMENTAR (ex.: tirar as custas de um agravo de instrumento).
+   Botão "Criar tarefa delegada" na ficha do item da Agenda; a delegada nasce na aba Delegadas, já ligada ao mesmo processo e cliente (campo agendaKey = item da Agenda),
+   e a ficha da Agenda passa a listar as tarefas delegadas ligadas a ela (com quem faz, prazo e se já foi feita). Quem recebeu é avisado pelo caminho das demais delegadas. */
+var agdgS = { key: '', resp: '', prazo: '', prio: 'Média' };
+
+function agdgDe(i){
+  if (typeof dgS === 'undefined' || !dgS.ok || !i) return [];
+  return dgS.docs.filter(function(d){ return d.agendaKey && d.agendaKey === i.key; });
+}
+/* bloco da ficha do item: botão + as delegadas já criadas a partir dele */
+function agdgBloco(i){
+  if (typeof dgS !== 'undefined' && !dgS.ok && !dgS.carregando){ dgCarregar(true).then(function(){ try{ if (typeof agdAtualizar === 'function') agdAtualizar(); }catch(e){} }); }
+  var ts = agdgDe(i).sort(function(a, b){ return String(a.criadoEm || '').localeCompare(String(b.criadoEm || '')); });
+  var lis = ts.map(function(t){
+    return '<button type="button" class="agdg-t' + (dgFeita(t) ? ' feita' : '') + '" data-agd="dgt" data-k="' + escapeHtml(t.id) + '" title="Abrir a tarefa nas Delegadas"><span class="agdg-n">' + escapeHtml(t.titulo) + '</span><span class="agdg-m">' + escapeHtml(dgCurto(t.resp) || 'sem responsável') + (t.fatal ? ' · até ' + escapeHtml(fmtData(t.fatal).slice(0, 5)) : '') + ' · ' + escapeHtml(dgStatusDe(t.status)[1]) + '</span></button>';
+  }).join('');
+  return agdBloco('Tarefas delegadas', (lis ? '<div class="agdg-l">' + lis + '</div>' : '<div class="agd-sub" style="margin:0 0 6px">Nenhuma ainda. Use para uma tarefa complementar (ex.: tirar as custas).</div>') +
+    '<div class="agd-acoes"><button type="button" class="btn btn-ghost pb-b" data-agd="delegar">＋ Criar tarefa delegada</button></div>');
+}
+function agdgDiaMais(n){ return somarDias(todayISO(), n); }
+function agCriarDelegada(key){
+  var i = (typeof agdItem === 'function') ? agdItem(key) : agItens({ quadro: true }).filter(function(x){ return x.key === key; })[0]; if (!i) return;
+  if (typeof dgS !== 'undefined' && !dgS.ok && !dgS.carregando) dgCarregar(true);
+  agdgS = { key: i.key, resp: '', prazo: '', prio: 'Média' };
+  var dc = dgClienteDoProcesso(i.processo), cli = i.cliente || dc.nome || '';
+  var ov = sgMontar('overlayAgDg', 'Tarefa delegada'); ov.querySelector('h2').textContent = 'Tarefa delegada';
+  var pess = dgPessoas();
+  var chipsP = pess.map(function(x){ return '<button type="button" class="pbdg-p" data-agdg="resp" data-k="' + escapeHtml(x.k) + '">' + dgAv(x.k) + '<span>' + escapeHtml(String(x.nome).split(/\s+/)[0]) + (x.tipo === 'est' ? ' · est.' : '') + '</span></button>'; }).join('');
+  var fld = function(rot, html, f){ return '<div class="field"><label class="field-label" for="agdg_' + f + '">' + rot + '</label>' + html + '</div>'; };
+  var ctx = 'Complementar à tarefa “' + i.titulo + '” (' + fmtData(i.data) + ').';
+  var h = '<div class="pr-hon-cab"><b>' + escapeHtml(cli || 'Tarefa da Agenda') + '</b><span>' + (i.processo ? 'Proc. ' + escapeHtml(i.processo) + ' · ' : '') + 'a partir de: ' + escapeHtml(i.titulo) + ' · ' + escapeHtml(fmtData(i.data)) + '</span></div>' +
+    fSec('Tarefa', fld('Tarefa *', '<textarea id="agdg_titulo" rows="2" maxlength="200" placeholder="Ex.: tirar as custas do agravo de instrumento"></textarea>', 'titulo') +
+      '<div class="field"><label class="field-label">Quem faz</label><div class="pbdg-ch" id="agdg_pess">' + chipsP + '</div></div>' +
+      '<div class="field"><label class="field-label">Prazo fatal (opcional)</label><div class="pbdg-ch" id="agdg_prazos">' +
+        '<button type="button" class="pbdg-c" data-agdg="prazo" data-d="' + agdgDiaMais(0) + '">Hoje</button><button type="button" class="pbdg-c" data-agdg="prazo" data-d="' + agdgDiaMais(1) + '">Amanhã</button><button type="button" class="pbdg-c" data-agdg="prazo" data-d="' + agdgDiaMais(3) + '">Em 3 dias</button>' + (i.data && i.data >= todayISO() ? '<button type="button" class="pbdg-c" data-agdg="prazo" data-d="' + escapeHtml(i.data) + '">No prazo da tarefa (' + escapeHtml(fmtData(i.data).slice(0, 5)) + ')</button>' : '') + '<button type="button" class="pbdg-c" data-agdg="prazo" data-d="data">Escolher data</button></div>' +
+        '<input type="date" id="agdg_fatal" style="display:none;margin-top:8px"></div>' +
+      '<div class="field"><label class="field-label">Prioridade</label><div class="pbdg-ch" id="agdg_prios">' + DG_PRIO.slice().reverse().map(function(x){ return '<button type="button" class="pbdg-c' + (x[0] === 'Média' ? ' on' : '') + '" data-agdg="prio" data-v="' + x[0] + '">' + x[0] + '</button>'; }).join('') + '</div></div>') +
+    fMais('trabalhar até · observações', fld('Trabalhar até', '<input type="date" id="agdg_trabalhar">', 'trabalhar') + fld('Observações', '<textarea id="agdg_obs" rows="3" maxlength="2000">' + escapeHtml(ctx) + '</textarea>', 'obs')) +
+    '<div class="form-error" id="agdg_erro"></div><div class="f-rod-in"><button type="button" class="btn btn-ghost" data-agdg="cancelar">Cancelar</button><button type="button" class="btn btn-primary" data-agdg="lancar" id="agdg_lancar">Lançar tarefa</button></div>';
+  qs('overlayAgDgC').innerHTML = h;
+  if (!ov.getAttribute('data-agdg')){ ov.setAttribute('data-agdg', '1'); ov.addEventListener('click', agdgClique); }
+  ov.classList.add('show'); try{ fichaMaisEm(qs('overlayAgDgC')); }catch(e){}
+  var t = qs('agdg_titulo'); if (t) t.focus();
+}
+function agdgClique(ev){
+  var b = ev.target.closest ? ev.target.closest('[data-agdg]') : null; if (!b) return;
+  var a = b.getAttribute('data-agdg'), ov = qs('overlayAgDg');
+  if (a === 'resp'){
+    var k = b.getAttribute('data-k'); agdgS.resp = agdgS.resp === k ? '' : k;
+    Array.prototype.forEach.call(qs('agdg_pess').children, function(c){ c.classList.toggle('on', c.getAttribute('data-k') === agdgS.resp); });
+  } else if (a === 'prazo'){
+    var d = b.getAttribute('data-d'), campo = qs('agdg_fatal');
+    if (d === 'data'){ campo.style.display = ''; agdgS.prazo = campo.value || ''; try{ campo.focus(); }catch(e){} }
+    else { campo.style.display = 'none'; campo.value = ''; agdgS.prazo = agdgS.prazo === d ? '' : d; }
+    Array.prototype.forEach.call(qs('agdg_prazos').children, function(c){ var cd = c.getAttribute('data-d'); c.classList.toggle('on', (cd === 'data' && campo.style.display !== 'none') || (cd !== 'data' && cd === agdgS.prazo && campo.style.display === 'none')); });
+  } else if (a === 'prio'){
+    agdgS.prio = b.getAttribute('data-v');
+    Array.prototype.forEach.call(qs('agdg_prios').children, function(c){ c.classList.toggle('on', c.getAttribute('data-v') === agdgS.prio); });
+  } else if (a === 'cancelar') ov.classList.remove('show');
+  else if (a === 'lancar') agdgLancar();
+}
+function agdgLancar(){
+  var err = qs('agdg_erro'), i = (typeof agdItem === 'function') ? agdItem(agdgS.key) : null, titulo = qs('agdg_titulo').value.trim();
+  if (!i) return;
+  if (!titulo){ err.textContent = 'Digite a tarefa.'; qs('agdg_titulo').focus(); return; }
+  var campo = qs('agdg_fatal'), fatal = campo.style.display !== 'none' ? campo.value : agdgS.prazo;
+  var dc = dgClienteDoProcesso(i.processo), me = dgMe();
+  var d = { titulo: titulo, cliente: i.cliente || dc.nome || '', clienteId: dc.id, processo: i.processo || '', resp: agdgS.resp || me, delegadoPor: me, prioridade: agdgS.prio || 'Média', status: 'afazer', trabalhar: qs('agdg_trabalhar').value || '', fatal: fatal || '', obs: qs('agdg_obs').value.trim(), agendaKey: i.key, agendaTitulo: i.titulo, criadoPor: esS.eu ? esS.eu.id : '', criadoEm: new Date().toISOString() };
+  var bt = qs('agdg_lancar'); bt.disabled = true;
+  dgGravar(d).then(function(){
+    dgS.docs.push(d); dgCacheEst = {}; try{ dgAtualizarSelo(); }catch(e){}
+    if (activeTab === 'delegadas') dgRender();
+    qs('overlayAgDg').classList.remove('show'); bt.disabled = false;
+    toast('Tarefa delegada lançada' + (d.resp ? ' · ' + dgCurto(d.resp) : '') + '.');
+    try{ if (typeof agdAtualizar === 'function') agdAtualizar(); }catch(e){}
+  }).catch(function(e){ bt.disabled = false; err.textContent = 'Não consegui lançar: ' + e.message; });
+}
+(function(){
+  var st = document.createElement('style');
+  st.textContent = '.agdg-l{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}.agdg-t{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;width:100%;border:1px solid var(--border);border-left:4px solid #2A78D6;border-radius:10px;background:var(--surface);color:var(--ink);padding:7px 10px;font:inherit;cursor:pointer}.agdg-t.feita{border-left-color:#1F8A4C;opacity:.75}.agdg-n{font-weight:700;font-size:var(--t2)}.agdg-m{font-size:var(--t1);color:var(--ink-soft)}';
+  document.head.appendChild(st);
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { agCriarDelegada: agCriarDelegada, agdgDe: agdgDe });
+})();
+
+/*DA-FIM*/
 /*AI-INICIO*/
 /* Arquivar só a inicial, em lote, a partir das colunas do quadro das Iniciais, e sub-abas na tela Arquivados.
    Arquivar a inicial NÃO arquiva o processo (que continua em Processos); o que ainda há a receber continua na Central de atenção e nas finanças.

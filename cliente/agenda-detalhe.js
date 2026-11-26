@@ -292,7 +292,7 @@ function agdFiltrosAtivos(){ return (agS.resp ? 1 : 0) + ((agS.sit || 'abertos')
 (function(){
   var st = document.createElement('style');
   st.textContent =
-    '#overlayAgDet{z-index:160}#overlayAgZap,#overlayAgFlt{z-index:175}#agdC>*,#agzC>*,#agfC>*{flex-shrink:0}' +
+    '#overlayAgDet{z-index:160}#overlayAgZap,#overlayAgFlt{z-index:175}/* janelas que abrem POR CIMA da ficha do prazo (Adiar, protocolo, tarefa delegada, aviso de duplicidade): precisam de nível maior que o da ficha, senão ficam atrás dela */#overlayAgAdT,#overlayAgAdiar,#overlayAgProt,#overlayAgDg,#overlayDup{z-index:175}#agdC>*,#agzC>*,#agfC>*{flex-shrink:0}' +
     '.agd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.agd-data{font-size:var(--t3);font-weight:700;color:var(--ink-soft);margin-bottom:5px}' +
     '.agd-ic{display:flex;gap:6px}.agd-ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}.agd-ib.perigo{background:rgba(217,59,59,.12);border-color:rgba(217,59,59,.4);color:var(--urgente)}' +
     '.agd-t{font-size:1.25rem;line-height:1.25;margin:10px 0 6px;letter-spacing:-.01em;overflow-wrap:anywhere}.agd-perigo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}' +
