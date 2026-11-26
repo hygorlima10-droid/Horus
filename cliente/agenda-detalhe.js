@@ -91,6 +91,7 @@ function agdDesenhar(){
   } else if (i.fonte === 'alvara'){
     h += '<div class="agd-acoes"><button type="button" class="btn btn-ghost pb-b" data-agd="adiar">Adiar…</button><button type="button" class="btn btn-ghost pb-b" data-agd="acao">Abrir o alvará</button></div>';
   }
+  if (ag || i.fonte === 'caso') h += agdgBloco(i);   /* tarefas delegadas complementares a este item */
   /* processo */
   var num = i.processo ? prNum(i.processo) : '', r = num ? prMapa().m[num] : null, pdoc = r && r.doc ? r.doc : null;
   if (i.processo){
@@ -147,6 +148,8 @@ function agdClique(a, k, v){
   else if (a === 'copiar') agdCopiarNumero(v);
   else if (a === 'sit' && i) agdSituacao(i, v);
   else if (a === 'adiar' && i){ agAdiar(i.key); }
+  else if (a === 'delegar' && i){ agCriarDelegada(i.key); }
+  else if (a === 'dgt' && k){ agdFechar(); dgAbrirFicha(k); }
   else if (a === 'editar' && i){ agdFechar(); agAbrir(i.key); }
   else if (a === 'excluir'){ agdExcluir = !agdExcluir; agdDesenhar(); }
   else if (a === 'excluir-nao'){ agdExcluir = false; agdDesenhar(); }

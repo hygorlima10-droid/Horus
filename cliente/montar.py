@@ -206,6 +206,13 @@ if '/*DP-INICIO*/' in s:
 else:
     assert s.count('/*RS-FIM*/\n') == 1
     s = s.replace('/*RS-FIM*/\n', '/*RS-FIM*/\n' + bloco_dp)
+da_js = open(R + 'cliente/delegada-agenda.js', encoding='utf-8').read()   # criar tarefa delegada de dentro de uma tarefa da Agenda
+bloco_da = '/*DA-INICIO*/\n' + da_js + '\n/*DA-FIM*/\n'
+if '/*DA-INICIO*/' in s:
+    s = re.sub(r'/\*DA-INICIO\*/.*?/\*DA-FIM\*/\n', lambda m: bloco_da, s, flags=re.S)
+else:
+    assert s.count('/*DP-FIM*/\n') == 1
+    s = s.replace('/*DP-FIM*/\n', '/*DP-FIM*/\n' + bloco_da)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:
