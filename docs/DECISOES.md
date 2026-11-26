@@ -457,3 +457,9 @@ Análise em `docs/INTEGRACAO-PLANILHA-ANALISE.md`; esboço em `docs/esboco-plani
 - O que conta como parecido (`cliente/duplicidade.js`): (1) **igual** — mesmo nome e mesma data; (2) **nome parecido e mesma data**; (3) **nome parecido em outra data**, se a tarefa existente ainda está em aberto (concluída em outra data não incomoda); (4) **mesma data e mesmo tipo** com outro nome. Nomes são comparados sem acento, maiúscula, plural e palavras de ligação, e sem verbos genéricos ("juntar", "preparar", "cumprir"…); um nome dentro do outro conta como parecido. Sem processo informado, não compara. O número do processo vale com ou sem pontuação.
 - Onde vale: **Agenda** (nova tarefa, prazo e audiência; o aviso aparece no próprio formulário), **prazo criado a partir da publicação** (confirmação completa e confirmação em um passo), **"próxima providência" do processo** e **tarefas delegadas** (a delegada é comparada com as outras delegadas). Ao **editar** uma tarefa, só vale o "igual" (mesmo tipo, dia e nome), como antes.
 - Não verifica: tarefas repetidas automaticamente, importação de agenda (já evita duplicar pelo identificador) e tarefas sem processo.
+
+## Agenda: linhas "Prazo fatal: … (trabalhar até …)" no meio dos cartões — esboço de 2 opções (26/11/2026, aguardando escolha)
+- Hoje: o cartão do prazo fica no dia de trabalhar; no dia fatal sobra só uma linha de lembrete (sem botões). Com muitos prazos no mesmo dia aparecem várias linhas iguais seguidas no meio dos cartões do dia.
+- **Opção A (recomendada):** uma pílula por dia no cabeçalho ("🚩 6 prazos vencem neste dia ▾"), recolhida; hoje e amanhã abrem sozinhos em vermelho.
+- **Opção B:** tirar as linhas da lista; o dia ganha só um número discreto e os fatais ficam numa visão própria (chip "Fatais", tabela compacta por dia).
+- Esboço: `docs/esboco-agenda-linhas-fatais.png`. Nada foi alterado no app.
