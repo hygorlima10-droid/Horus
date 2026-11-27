@@ -89,7 +89,11 @@ function dspAplicar(){
     '.dsp-rot{display:block;font-size:var(--t1);color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}.dsp-grupo{margin:0 0 10px}.dsp-grupo .dsp-rot{margin-bottom:4px}.dsp-grupo .segmented{display:flex;flex-wrap:wrap;gap:6px;max-width:100%}.dsp-grupo .seg-btn{flex:0 0 auto;padding:8px 11px;font-size:var(--t2)}' +
     '#finDespesas .financeiro-bloco{margin-bottom:14px}' +
     '.abat-lin{white-space:normal;flex-wrap:wrap;gap:6px 10px}#bodyFinanceiro .abat-lin button{height:32px;min-height:32px}' +
-    '@media(max-width:560px){#bodyFinanceiro .financeiro-item:has(.abat-lista){flex-wrap:wrap}#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-right{flex:1 1 100%;width:100%}#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-actions{justify-content:flex-end}}' +
+    /* celular: a linha que tem lista de abatimentos, botão de abatimentos ou menu "⋯" aberto passa o bloco de valor e botões para baixo, em largura total (antes os botões do menu cobriam o texto) */
+    '@media(max-width:560px){#bodyFinanceiro .financeiro-item:has(.abat-lista),#bodyFinanceiro .financeiro-item:has(.btn-abat-lista),#bodyFinanceiro .financeiro-item:has(.menu-aberto){flex-wrap:wrap}' +
+    '#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-right,#bodyFinanceiro .financeiro-item:has(.btn-abat-lista) .financeiro-item-right,#bodyFinanceiro .financeiro-item:has(.menu-aberto) .financeiro-item-right{flex:1 1 100%;width:100%;min-width:0}' +
+    '#bodyFinanceiro .financeiro-item:has(.abat-lista) .financeiro-item-actions,#bodyFinanceiro .financeiro-item:has(.btn-abat-lista) .financeiro-item-actions,#bodyFinanceiro .financeiro-item:has(.menu-aberto) .financeiro-item-actions{justify-content:flex-end}' +
+    '#bodyFinanceiro .financeiro-item-actions.menu-aberto button{flex:1 1 auto;white-space:normal;min-width:0;text-align:center}#bodyFinanceiro .financeiro-item-info{min-width:0;flex:1 1 140px}}' +
     '.dsp-tit{font-size:var(--t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin:14px 4px 6px}' +
     '.dsp-tag{border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}.dsp-tag.ct{background:#EDE7FB;color:#5b3bb0}.dsp-tag.cc{background:#FBEFD2;color:#8A5A0B}.ct-ja-v{font-weight:700;font-variant-numeric:tabular-nums}#finDespesas .ct-busca{width:100%;box-sizing:border-box}';
   document.head.appendChild(st);

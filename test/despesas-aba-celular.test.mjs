@@ -33,6 +33,22 @@ const ov = await p.evaluate(() => {
   return out;
 });
 check(ov.length === 0, 'abatimentos do combustível e cartões da aba não se sobrepõem' + (ov.length ? ': ' + ov.join(' | ') : ''));
+// menu "⋯" do combustível aberto (lista de abatimentos recolhida e aberta): os botões do menu não cobrem o texto da linha
+for (const abertaLista of [false, true]) {
+  await p.evaluate((ab) => { const it = [...document.querySelectorAll('#finDespesas .financeiro-item')].find((x) => /DC Combust/.test(x.innerText)); const lista = !!it.querySelector('.abat-lista'); if (lista !== ab) it.querySelector('.btn-abat-lista').click(); }, abertaLista); await p.waitForTimeout(500);
+  await p.evaluate(() => { const it = [...document.querySelectorAll('#finDespesas .financeiro-item')].find((x) => /DC Combust/.test(x.innerText)); if (!it.querySelector('.menu-aberto')) it.querySelector('[data-menu-toggle]').click(); }); await p.waitForTimeout(600);
+  if (process.env.FOTOS) { await p.evaluate(() => { const e = document.querySelector('#finDespesas .menu-aberto'); if (e) e.scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(300); await p.screenshot({ path: process.env.FOTOS + '/despesas-menu-' + (abertaLista ? 'lista' : 'recolhida') + '.png' }); }
+  const sob = await p.evaluate(() => {
+    const inter = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1, out = [];
+    const it = [...document.querySelectorAll('#finDespesas .financeiro-item')].find((x) => /DC Combust/.test(x.innerText)), info = it.querySelector('.financeiro-item-info'), dir = it.querySelector('.financeiro-item-right');
+    const R = it.getBoundingClientRect(), caixasInfo = [info, ...info.querySelectorAll('*')].filter((e) => e.offsetParent !== null && (e.innerText || '').trim()).map((e) => e.getBoundingClientRect());
+    [...dir.querySelectorAll('button, .v')].forEach((b) => { const x = b.getBoundingClientRect(); if (x.width < 2) return; if (x.left < R.left - 1 || x.right > R.right + 1) out.push('fora da linha: ' + b.innerText.trim().slice(0, 25)); if (caixasInfo.some((c) => inter(c, x) && !info.contains(b))) out.push('cobre o texto: ' + b.innerText.trim().slice(0, 25)); });
+    const bt = [...dir.querySelectorAll('button')].map((b) => ({ t: b.innerText.trim().slice(0, 20), r: b.getBoundingClientRect() })).filter((x) => x.r.width > 2);
+    for (let i = 0; i < bt.length; i++) for (let j = i + 1; j < bt.length; j++) if (inter(bt[i].r, bt[j].r)) out.push('botões sobrepostos: ' + bt[i].t + ' / ' + bt[j].t);
+    return out;
+  });
+  check(sob.length === 0, 'menu "⋯" do combustível aberto (lista de abatimentos ' + (abertaLista ? 'aberta' : 'recolhida') + '): nenhum botão cobre outro nem o texto' + (sob.length ? ': ' + sob.join(' | ') : ''));
+}
 const r = await p.evaluate(() => {
   const sec = document.getElementById('finDespesas'), fora = [];
   sec.querySelectorAll('.financeiro-bloco').forEach((bl) => {
