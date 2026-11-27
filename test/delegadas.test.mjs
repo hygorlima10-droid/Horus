@@ -172,7 +172,7 @@ check(cen.a.includes('Fixa que vence hoje') && !cen.b.includes('Fixa que vence h
 await page.evaluate(() => document.querySelector('#drawer [data-tab="delegadas"]').click()); await page.waitForTimeout(1200);   // a página foi recarregada
 // ---- Fixas (contas do escritório): linha em branco, vencimentos e Central de atenção
 await page.click('.dg-aba >> text=Fixas'); await page.waitForTimeout(500);
-check(await page.locator('#dg_f_titulo').isVisible() && /não entram em Finanças/i.test(await t(page, '#dgWrap')), 'a aba Fixas tem a linha em branco e explica que não entra em Finanças');
+check(await page.locator('#dg_f_titulo').isVisible() && !/não entram em Finanças/i.test(await t(page, '#dgWrap')), 'a aba Fixas tem a linha em branco, sem o texto explicativo');
 await page.fill('#dg_f_titulo', 'Internet do escritório'); await page.fill('#dg_f_valor', '189,90');
 await page.click('tr.dg-novo [data-c="dia"]'); await page.click('#dgDD .dg-dd-i >> text=dia 15'); await page.waitForTimeout(300);
 await page.focus('#dg_f_titulo'); await page.keyboard.press('Enter'); await page.waitForTimeout(1200);
