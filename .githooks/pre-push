@@ -1,0 +1,5 @@
+#!/bin/sh
+# Antes de publicar (git push): confere em segundos que o build está em dia e que a lógica de datas e os leitores continuam certos.
+# Ligue uma vez neste computador:  git config core.hooksPath .githooks      (Para a verificação completa de telas: npm run verificar)
+cd "$(git rev-parse --show-toplevel)" || exit 1
+node test/rodar.mjs unitarios || { echo "Verificação falhou: corrija antes de publicar (ou use git push --no-verify, sabendo o risco)."; exit 1; }

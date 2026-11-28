@@ -1,0 +1,146 @@
+/* ============================================================
+   TEMA OFICIAL · Horus (visual grafite e dourado)
+   Fonte única das cores, raios e fonte. É usado pelo app (index.html) e pela tela de login.
+   Para mudar o visual do app inteiro, mude aqui.
+   ============================================================ */
+  :root{
+    --bg:#F3F3F5;--surface:#FFFFFF;--surface-2:#F0F0F3;--border:#E6E6EA;--ink:#0E0E10;--ink-soft:#6E6E77;
+    --accent:#9A6700;--accent-2:#2A78D6;--accent-ink:#FFFFFF;
+    --urgente:#D93B3B;--tutela:#B7791E;--normal:#17895A;--success:#17895A;--danger:#D93B3B;--info:#2A78D6;
+    --overlay:rgba(10,10,12,0.45);--shadow:0 18px 44px rgba(10,10,12,0.12);
+    --radius-lg:24px;--radius-md:20px;--radius-sm:12px;
+    --font-display:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --c-gold:#EDA100;--c-blue:#2A78D6;--c-green:#1BAF7A;--gold-btn:#A26800;--gold-ink:#FFFFFF;
+    color-scheme:light;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A0A0B;--surface:#131315;--surface-2:#1E1E22;--border:#26262B;--ink:#F5F5F6;--ink-soft:#8D8D95;
+    --accent:#E3B341;--accent-2:#5A9BEA;--accent-ink:#1A1200;
+    --urgente:#F0615E;--tutela:#E3A33B;--normal:#3DBE86;--success:#3DBE86;--danger:#F0615E;--info:#5A9BEA;
+    --overlay:rgba(0,0,0,0.62);--shadow:0 18px 44px rgba(0,0,0,0.6);
+    --c-gold:#C98500;--c-blue:#3987E5;--c-green:#199E70;--gold-btn:#E3B341;--gold-ink:#1A1200;
+    color-scheme:dark;
+  }
+
+/* Marca (logo) e componentes de entrada compartilhados */
+.marca{width:88px;height:88px;border-radius:22px;display:block;box-shadow:0 14px 34px rgba(10,10,12,.28);}
+
+/* Menu lateral no celular: fica parado (não rola de lado) e os nomes longos quebram de linha */
+.drawer,.dr-nav{overflow-x:hidden;}
+.drawer{overscroll-behavior:contain;touch-action:pan-y;}
+.dr-it{white-space:normal;line-height:1.25;overflow-wrap:anywhere;}
+.dr-it .lab{min-width:0;flex:1 1 auto;}
+.dr-grp,.dr-name{white-space:normal;}
+
+/* O cadastro de cliente pode ser aberto de dentro de outras janelas (ficha do processo): fica por cima */
+#overlayClienteEdit{z-index:300;}
+
+/* Janelas abertas de dentro da leitura de uma publicação (cadastro de processo e de inicial) ficam por cima dela */
+#overlayPrEsc,#overlayPr,#overlay{z-index:150;}
+#overlayPrArq{z-index:160;}
+/* Agenda: o editor (aberto também de dentro da leitura de uma publicação, da ficha do processo ou da pergunta do protocolo) fica por cima */
+#overlayAg,#overlayAgProt,#overlayAgAdiar{z-index:170;}
+#overlayImp{z-index:150;}
+#overlayImpPerg{z-index:170;}
+#overlayImpCli{z-index:170;}
+/* backup, exportar CSV e lembretes agora ficam em Configurações: os botões originais continuam no menu, escondidos, para a aba clicar neles */
+#backupBtn,#exportBtn,#abrirLembretesBtn{display:none !important;}
+#relModoSeg{display:none;}
+#overlaySgLix,#overlaySgReg,#overlaySgSeg{z-index:150;}
+#overlaySgLixC>*,#overlaySgRegC>*,#overlaySgSegC>*{flex-shrink:0;}
+/* Segurança: campos de senha como os demais campos dos formulários */
+#overlaySgSeg .field input[type=password]{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:var(--t5);}
+@media (max-width:640px){#overlaySgSeg .field input[type=password]{padding:13px 14px;font-size:16px;}}
+/* Importar compromissos da Agenda */
+#overlayAgi{z-index:180;}
+#agiC>*{flex-shrink:0;}
+
+/* Auditoria 14/11 (Onda 1) */
+.termo.ob-st-a_fazer{background:#6B7280}.termo.ob-st-andamento{background:var(--info)}.termo.ob-st-concluida{background:var(--success)}   /* situação da etapa da obra: antes sem fundo (texto branco invisível) */
+@media(max-width:480px){.an-ult-quadro table{font-size:11px}.an-ult-quadro th,.an-ult-quadro td{padding:6px 3px}.an-ult-quadro th:first-child,.an-ult-quadro td:first-child{white-space:nowrap}}   /* tabela dos 4 cenários cabe no celular */
+.md-abas{position:relative}
+
+
+/* ---------- Onda 3: ícones no lugar de emojis (ico() em cliente/icones.js) ---------- */
+.ico{vertical-align:-3px;flex:none;margin-right:6px}
+.ico:only-child,.pb-mi-i .ico,.agc-ok .ico,.ico-wa{margin-right:0}
+.ico-d{margin:0 0 0 4px}
+.ico-wa{display:block;object-fit:contain}
+button .ico-wa{display:inline-block;vertical-align:middle}
+.ag-f,.acx button,.agsel-cb{display:inline-flex;align-items:center;gap:0}
+.agsel-cb .ico{margin:0}
+
+/* ---------- Onda 3a: alvos de toque ----------
+   Regra única: tudo que se toca tem no mínimo 36 px de altura e de largura; botões principais e campos 44–48 px.
+   Itens pequenos de aparência ganham tamanho de toque maior sem mudar o desenho (preenchimento em volta). */
+.mes-btn{min-width:36px;min-height:40px}
+.btn-text,.md-link,.es-lk{min-height:36px;display:inline-flex;align-items:center}
+.btn-text.pb-b,.btn.pb-b{min-height:36px;display:inline-flex;align-items:center;justify-content:center}
+.es-lk{min-height:40px}
+.md-fase{min-height:44px}
+.seg-btn{min-height:40px}
+.es-b,.ag-f,.md-per button{min-height:36px}
+.agc-ok{width:40px;height:40px}
+.agc-cp{width:36px;height:36px}
+.info-btn{min-width:36px;min-height:36px;display:inline-grid;place-items:center}
+.ag-c{min-height:40px}
+.ct-ed,.btn-mais,.acao-pagar,.kc-del,.kc-avancar{min-height:36px;min-width:36px}
+button.pb-tg{min-height:36px;display:inline-flex;align-items:center}
+summary{min-width:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center}
+.es-x{width:36px;height:36px;margin:-9px -10px -9px -4px;display:inline-grid;place-items:center}
+select.filter-select,.field select{min-height:44px}
+select{min-height:36px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px;flex:none}
+label.ad-it{min-height:44px;display:flex;align-items:center;gap:10px}
+.md-chips button{min-height:40px}
+.kanban-card .kc-acoes button{min-height:36px;min-width:36px;padding:0 6px}
+.btn-text.pb-b,.btn.pb-b{min-width:36px}
+.bt button{min-height:36px;min-width:44px}
+.arq-acoes button{min-height:36px;min-width:44px}
+
+/* ---------- Onda 3b: padrão das fichas de cadastro (blocos, rótulos, campos, Mais detalhes) ---------- */
+.overlay .modal-body{gap:12px}
+.overlay .modal-body .field-label{font-size:14px;font-weight:600;color:var(--ink)}
+.overlay .modal-body .field input[type=text],.overlay .modal-body .field input[type=number],.overlay .modal-body .field input[type=date],.overlay .modal-body .field input[type=tel],.overlay .modal-body .field input[type=email],.overlay .modal-body .field select{min-height:48px;border-radius:14px}
+.f-sec{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:14px}
+.f-sec>.field{margin:0}
+.f-sec-t{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.f-sec .subgroup{background:var(--surface-2);border:0}
+.f-mais{border:1px dashed var(--border);border-radius:18px;background:var(--surface)}
+.f-mais>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:10px 16px;cursor:pointer}
+.f-mais>summary::-webkit-details-marker{display:none}
+.f-mais>summary b{display:block;font-size:14.5px}
+.f-mais>summary small{color:var(--ink-soft);font-size:12px}
+.f-mais>summary .ico{margin:0;transition:transform .15s}
+.f-mais[open]>summary .ico{transform:rotate(180deg)}
+.f-mais-c{padding:0 14px 14px;display:flex;flex-direction:column;gap:14px}
+.f-mais-c>.field{margin:0}
+.overlay .modal-body .segmented{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.overlay .modal-body .segmented:has(> :nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+.overlay .modal-body .segmented:has(> :only-child){grid-template-columns:1fr}
+.overlay .modal-body .segmented .seg-btn{min-height:44px;justify-content:center;text-align:center;white-space:normal;line-height:1.2}
+.overlay .modal-foot{position:sticky;bottom:0;background:var(--surface);padding:12px 16px}
+.overlay .modal-foot .btn{min-height:48px;flex:1;justify-content:center}
+#wrapAcordoHonorarios,#wrapAcordoUnico,#campoAcordoParcelado,#wrapFixo,#wrapExito{display:flex;flex-direction:column;gap:14px}
+#wrapAcordoHonorarios[style*="display:none"],#campoAcordoParcelado[style*="display:none"],#wrapExito[style*="display:none"]{display:none}
+.overlay .parcela-edit-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1.25fr) 40px;gap:6px;align-items:center}
+.overlay .parcela-edit-row input{min-height:44px;width:100%;min-width:0;box-sizing:border-box}
+.overlay .parcela-edit-row .rm-parcela{width:40px;height:40px;border-radius:12px;font-size:20px}
+.f-rod-in{position:sticky;bottom:-20px;background:var(--surface);display:flex;gap:10px;padding:12px 0 4px;margin-top:4px;border-top:1px solid var(--border)}
+.f-rod-in .btn{flex:1;min-height:48px;justify-content:center}
+#agEdCorpo>.btn-text[data-age="excluir"]{align-self:center}
+
+/* ---------- Onda 3e: fichas restantes (OABs, Obra, Baixa, Renegociação, Usuários) ---------- */
+.f-sec.pb-oab{background:var(--surface);gap:10px}
+.f-sec.pb-oab.pb-novo{background:var(--surface-2)}
+#overlayObraForm .modal-body>.f-sec{gap:14px}
+#rnParcelaBox.f-sec[style*="display:none"],#rnContratoBox.f-sec[style*="display:none"]{display:none}
+#rnParaContrato,#rnParaParcela{align-self:flex-start;min-height:40px}
+#overlayBaixa .bx-saldo{border:1px dashed var(--border);border-radius:18px;background:var(--surface);padding:0 14px}
+#overlayBaixa .bx-saldo>summary{min-height:56px;display:flex;align-items:center;font-weight:600;font-size:14.5px;cursor:pointer}
+#overlayUsuariosC .f-sec{margin-bottom:12px}
+.overlay .modal-body select:not([style*="width"]){width:100%}
+
+/* ---------- botão de ação dentro das fichas (sem "+"): contorno, 40 px ---------- */
+.f-add{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3);font-weight:700;cursor:pointer;text-decoration:none}
+.f-add:hover{background:var(--surface-2)}

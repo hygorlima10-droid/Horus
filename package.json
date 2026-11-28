@@ -1,0 +1,18 @@
+{
+  "name": "controle-juridico",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local --persist-to .dev-data",
+    "banco:local": "wrangler d1 execute controle-juridico --local --persist-to .dev-data --file=schema.sql",
+    "banco:remoto": "wrangler d1 execute controle-juridico --remote --file=schema.sql",
+    "deploy": "wrangler deploy",
+    "teste": "node test/rodar.mjs",
+    "verificar:rapido": "python3 cliente/montar.py && node test/rodar.mjs unitarios",
+    "verificar": "python3 cliente/montar.py && node test/rodar.mjs unitarios telas-isoladas",
+    "verificar:telas": "AUD_TELAS=todas TEMPO_MS=1500000 node test/rodar.mjs auditoria-botoes"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

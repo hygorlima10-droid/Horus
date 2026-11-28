@@ -1,0 +1,767 @@
+/* ============================================================
+   LEITOR GERAL DE DOCUMENTOS (objeto LeitorGeral) — lê extrato, boleto e comprovante SEM modelo por banco, para todos os perfis.
+   Funções puras (sem tela): recebem texto/linhas e devolvem dados + prova. O que é padrão oficial lê-se por regra e se confere:
+     - boleto: linha digitável (47 cobrança / 48 arrecadação) com os dígitos verificadores (módulo 10 e 11) e o fator de vencimento;
+     - Pix "copia e cola" / QR (BR Code, padrão EMV do Banco Central) com o CRC16;
+     - ID da transação do Pix (E2E): E + ISPB + data e hora + sequência;
+     - CPF e CNPJ (dígitos verificadores).
+   O que não é padrão (extrato em PDF, comprovante) lê-se pela estrutura comum e se prova pelas contas: ver as seções B e C abaixo.
+   Nada daqui grava ou envia: a leitura é no aparelho. Este arquivo também roda no Node (testes): module.exports no fim.
+   ============================================================ */
+var LeitorGeral = (function(){
+  var onlyDig = function(s){ return String(s == null ? '' : s).replace(/\D/g, ''); };
+  var pad = function(n, t){ return String(n).padStart(t, '0'); };
+
+  /* ---------- bancos (códigos de compensação do Banco Central) ---------- */
+  var BANCOS = { '001': 'Banco do Brasil', '003': 'Banco da Amazônia', '004': 'Banco do Nordeste', '033': 'Santander', '041': 'Banrisul', '070': 'BRB', '077': 'Banco Inter', '085': 'Ailos', '099': 'Uniprime', '104': 'Caixa', '121': 'Agibank', '136': 'Unicred', '197': 'Stone', '208': 'BTG Pactual', '212': 'Banco Original', '218': 'BS2', '237': 'Bradesco', '260': 'Nubank', '290': 'PagBank', '318': 'BMG', '323': 'Mercado Pago', '336': 'C6 Bank', '341': 'Itaú', '380': 'PicPay', '389': 'Mercantil do Brasil', '403': 'Cora', '422': 'Safra', '623': 'Banco Pan', '633': 'Rendimento', '637': 'Sofisa', '655': 'Votorantim', '735': 'Neon', '745': 'Citibank', '748': 'Sicredi', '756': 'Sicoob' };
+  function bancoPorCodigo(cod){ var c = pad(onlyDig(cod).replace(/^0+(?=\d{3})/, '').slice(-3), 3); return BANCOS[c] || ''; }
+  /* nome que aparece no texto do documento -> código (para extrato e comprovante) */
+  var BANCOS_TXT = [[/nu\s*pagamentos|nubank|\bnu\b\s*(?:cpf|ag)|\bnu\s*bank/i, '260'], [/caixa\s+econ[ôo]mica|caixa\.gov\.br|internet\s*banking[^\n]{0,30}caixa|\bCAIXA\b/i, '104'], [/ita[úu]/i, '341'], [/sicoob|sisbr/i, '756'], [/c6\s*bank/i, '336'], [/banco\s+do\s+brasil|\bBB\b\s+(?:conta|ag)/i, '001'], [/bradesco/i, '237'], [/santander/i, '033'], [/banco\s+inter\b|\binter\s+(?:conta|extrato)/i, '077'], [/sicredi/i, '748'], [/mercado\s*pago/i, '323'], [/pagbank|pagseguro/i, '290'], [/picpay/i, '380'], [/neon/i, '735'], [/original/i, '212'], [/safra/i, '422'], [/banrisul/i, '041'], [/\bbrb\b/i, '070'], [/stone/i, '197'], [/btg\s*pactual/i, '208']];
+  function bancoPorTexto(t){ for (var i = 0; i < BANCOS_TXT.length; i++) if (BANCOS_TXT[i][0].test(t)) return BANCOS_TXT[i][1]; return ''; }
+
+  /* ---------- dígitos verificadores ---------- */
+  function mod10(s){ var soma = 0, peso = 2; for (var i = s.length - 1; i >= 0; i--){ var p = (+s[i]) * peso; soma += p > 9 ? p - 9 : p; peso = peso === 2 ? 1 : 2; } return (10 - soma % 10) % 10; }
+  function mod11(s){ var soma = 0, peso = 2; for (var i = s.length - 1; i >= 0; i--){ soma += (+s[i]) * peso; peso = peso === 9 ? 2 : peso + 1; } var r = soma % 11, dv = 11 - r; return dv >= 10 ? 0 : dv; }
+  /* o dígito geral do boleto de cobrança: resto 0, 10 ou 11 vira 1 */
+  function mod11Cobranca(s){ var soma = 0, peso = 2; for (var i = s.length - 1; i >= 0; i--){ soma += (+s[i]) * peso; peso = peso === 9 ? 2 : peso + 1; } var dv = 11 - soma % 11; return (dv === 0 || dv === 10 || dv === 11) ? 1 : dv; }
+
+  /* ---------- fator de vencimento ---------- */
+  function addDias(iso, n){ var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  function difDias(a, b){ return Math.round((Date.parse(a + 'T12:00:00Z') - Date.parse(b + 'T12:00:00Z')) / 86400000); }
+  /* Duas contagens possíveis: a antiga (dias desde 07/10/1997) e a nova, que recomeçou em 1000 no dia 22/02/2025 (ciclo de 9000 dias).
+     Escolhe a data que cai numa janela razoável em torno de hoje (de 3 anos atrás a 2 anos à frente); se as duas cabem ou nenhuma, a mais próxima de hoje. */
+  function vencimentoDoFator(fator, hoje){
+    fator = +fator; if (!fator) return { data: null, semVencimento: true, alternativa: null };
+    hoje = hoje || new Date().toISOString().slice(0, 10);
+    var velha = fator >= 1000 ? addDias('1997-10-07', fator) : null, nova = fator >= 1000 ? addDias('2025-02-22', fator - 1000) : null;
+    if (!velha) return { data: null, semVencimento: false, alternativa: null };
+    var dentro = function(d){ var x = difDias(d, hoje); return x >= -3 * 366 && x <= 2 * 366; };
+    var escolhida;
+    if (dentro(velha) && !dentro(nova)) escolhida = velha; else if (dentro(nova) && !dentro(velha)) escolhida = nova;
+    else escolhida = Math.abs(difDias(velha, hoje)) <= Math.abs(difDias(nova, hoje)) ? velha : nova;
+    return { data: escolhida, semVencimento: false, alternativa: escolhida === velha ? nova : velha };
+  }
+
+  /* ---------- boleto: linha digitável / código de barras ---------- */
+  function limparLinha(txt){ return onlyDig(txt); }
+  /* devolve { tipo, linha, barras, banco, bancoNome, moeda, valor (centavos), vencimento, validos, ok, erros } ou null se não parece boleto */
+  function lerLinhaDigitavel(txt, hoje){
+    var d = limparLinha(txt), erros = [];
+    if (d.length === 44){ return lerBarras(d, hoje, 'barras'); }
+    if (d.length === 47){
+      var campos = [d.slice(0, 9), d.slice(10, 20), d.slice(21, 31)], dvs = [d[9], d[20], d[31]], camposOk = campos.map(function(c, i){ return mod10(c) === +dvs[i]; });
+      var barras = d.slice(0, 4) + d[32] + d.slice(33, 47) + d.slice(4, 9) + d.slice(10, 20) + d.slice(21, 31);
+      var r = lerBarras(barras, hoje, 'cobranca');
+      r.linha = d; r.validos.campos = camposOk; r.ok = r.ok && camposOk.every(Boolean);
+      if (!camposOk.every(Boolean)) r.erros.push('dígito verificador de campo da linha digitável não confere');
+      return r;
+    }
+    if (d.length === 48 && d[0] === '8'){
+      var blocos = [d.slice(0, 12), d.slice(12, 24), d.slice(24, 36), d.slice(36, 48)], ident = d[2], usaMod11 = ident === '8' || ident === '9';
+      var blocosOk = blocos.map(function(b){ var corpo = b.slice(0, 11), dv = +b[11]; return (usaMod11 ? mod11(corpo) : mod10(corpo)) === dv; });
+      var bar = blocos.map(function(b){ return b.slice(0, 11); }).join('');
+      var dvGeral = usaMod11 ? mod11(bar.slice(0, 3) + bar.slice(4)) : mod10(bar.slice(0, 3) + bar.slice(4));
+      var geralOk = dvGeral === +bar[3], valorEfetivo = ident === '6' || ident === '8';
+      return { tipo: 'arrecadacao', linha: d, barras: bar, banco: '', bancoNome: '', moeda: '9', valor: valorEfetivo ? parseInt(bar.slice(4, 15), 10) : null, valorReferencia: !valorEfetivo, vencimento: null, vencimentoAlternativo: null, semVencimento: false, segmento: d[1], validos: { campos: blocosOk, geral: geralOk }, ok: blocosOk.every(Boolean) && geralOk, erros: blocosOk.every(Boolean) && geralOk ? [] : ['dígito verificador não confere'] };
+    }
+    return null;
+  }
+  function lerBarras(b, hoje, tipo){
+    var geralOk = mod11Cobranca(b.slice(0, 4) + b.slice(5)) === +b[4], v = vencimentoDoFator(b.slice(5, 9), hoje), cod = b.slice(0, 3);
+    return { tipo: tipo === 'barras' ? 'cobranca' : tipo, linha: tipo === 'barras' ? '' : '', barras: b, banco: cod, bancoNome: bancoPorCodigo(cod), moeda: b[3], valor: parseInt(b.slice(9, 19), 10), vencimento: v.data, vencimentoAlternativo: v.alternativa, semVencimento: v.semVencimento, validos: { campos: [], geral: geralOk }, ok: geralOk, erros: geralOk ? [] : ['dígito verificador geral não confere'] };
+  }
+  /* procura, num texto qualquer, sequências que parecem linha digitável (com pontos e espaços) ou código de barras, e devolve as que passam nos dígitos */
+  function acharBoletos(texto, hoje){
+    var out = [], vistos = {}, re = /(?:\d[\d.\s-]{40,60}\d)/g, m;
+    while ((m = re.exec(String(texto || '')))){
+      var cands = [m[0]]; var linhas = m[0].split(/\n/); if (linhas.length > 1) cands = cands.concat(linhas);
+      cands.forEach(function(c){
+        var d = onlyDig(c); if ([44, 47, 48].indexOf(d.length) < 0 || vistos[d]) return;
+        var r = lerLinhaDigitavel(d, hoje); if (r && r.ok){ vistos[d] = 1; r.linhaOriginal = c.trim(); out.push(r); }
+      });
+    }
+    return out;
+  }
+  function fmtLinha(r){ var d = r.linha || ''; if (d.length === 47) return d.slice(0, 5) + '.' + d.slice(5, 10) + ' ' + d.slice(10, 15) + '.' + d.slice(15, 21) + ' ' + d.slice(21, 26) + '.' + d.slice(26, 32) + ' ' + d[32] + ' ' + d.slice(33); if (d.length === 48) return d.replace(/(\d{12})(?=\d)/g, '$1 '); return d; }
+
+  /* ---------- Pix copia e cola / QR (BR Code, EMV) ---------- */
+  function crc16(s){ var crc = 0xFFFF; for (var i = 0; i < s.length; i++){ crc ^= s.charCodeAt(i) << 8; for (var k = 0; k < 8; k++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF; } return pad(crc.toString(16).toUpperCase(), 4); }
+  function tlv(s){ var out = {}, i = 0; while (i + 4 <= s.length){ var id = s.slice(i, i + 2), n = parseInt(s.slice(i + 2, i + 4), 10); if (!(n >= 0) || i + 4 + n > s.length) return null; out[id] = s.slice(i + 4, i + 4 + n); i += 4 + n; } return i === s.length ? out : null; }
+  function lerBRCode(txt){
+    var s = String(txt || '').replace(/[\r\n]+/g, '').trim(); var ini = s.indexOf('000201'); if (ini < 0) return null; s = s.slice(ini);   /* espaços dentro do nome contam no tamanho: só tira quebras de linha */
+    var f = tlv(s); if (!f || !f['63'] || f['63'].length !== 4) return null;
+    var pos = s.lastIndexOf('6304'), crcCalc = crc16(s.slice(0, pos + 4)), crcOk = crcCalc === f['63'].toUpperCase();
+    var conta = null; for (var k = 26; k <= 51; k++){ var id = pad(k, 2); if (f[id]){ var t = tlv(f[id]); if (t && /br\.gov\.bcb\.pix/i.test(t['00'] || '')){ conta = t; break; } } }
+    var adic = f['62'] ? tlv(f['62']) : null;
+    return { ok: crcOk && !!conta, crcOk: crcOk, pix: !!conta, dinamico: !!(conta && conta['25']), chave: conta ? (conta['01'] || '') : '', url: conta ? (conta['25'] || '') : '', descricao: conta ? (conta['02'] || '') : '', valor: f['54'] ? Math.round(parseFloat(f['54']) * 100) : null, nome: f['59'] || '', cidade: f['60'] || '', txid: adic ? (adic['05'] || '') : '', moeda: f['53'] || '', bruto: s };
+  }
+  function acharBRCode(texto){ var m = /000201[\s\S]{20,}?6304[0-9A-Fa-f]{4}/.exec(String(texto || '').replace(/\r?\n/g, '')); return m ? lerBRCode(m[0]) : null; }
+
+  /* ---------- ID da transação do Pix (E2E): E + ISPB (8) + data e hora (12) + sequência (11) ---------- */
+  function lerE2E(s){
+    var t = String(s || '').trim(), m = /^([ED])(\d{8})(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})([A-Za-z0-9]{11})$/.exec(t); if (!m) return null;
+    var mes = +m[4], dia = +m[5], h = +m[6], mi = +m[7], ok = mes >= 1 && mes <= 12 && dia >= 1 && dia <= 31 && h < 24 && mi < 60 && +m[3] >= 2020;
+    return { id: t, tipo: m[1] === 'E' ? 'pagamento' : 'devolução', ispb: m[2], data: ok ? m[3] + '-' + m[4] + '-' + m[5] : null, hora: ok ? m[6] + ':' + m[7] : null, sequencia: m[8], dataOk: ok };
+  }
+  function acharE2E(texto){ var m = /\b[ED]\d{8}\d{12}[A-Za-z0-9]{11}\b/.exec(String(texto || '').replace(/[\s]+(?=[A-Za-z0-9]{3,})/g, function(x){ return x; })); if (m) return lerE2E(m[0]); var j = String(texto || '').replace(/\s+/g, ''), m2 = /[ED]\d{8}\d{12}[A-Za-z0-9]{11}/.exec(j); return m2 ? lerE2E(m2[0]) : null; }
+
+  /* ---------- CPF e CNPJ ---------- */
+  function cpfOk(s){ var d = onlyDig(s); if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false; for (var t = 9; t < 11; t++){ var soma = 0; for (var i = 0; i < t; i++) soma += (+d[i]) * (t + 1 - i); var dv = (soma * 10) % 11 % 10; if (dv !== +d[t]) return false; } return true; }
+  function cnpjOk(s){ var d = onlyDig(s); if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false; var pesos = [[5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2], [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]]; for (var t = 0; t < 2; t++){ var soma = 0; for (var i = 0; i < 12 + t; i++) soma += (+d[i]) * pesos[t][i]; var r = soma % 11, dv = r < 2 ? 0 : 11 - r; if (dv !== +d[12 + t]) return false; } return true; }
+
+
+  /* ============================================================
+     B. EXTRATO EM PDF DE QUALQUER BANCO — sem modelo por banco
+     Entrada: rows = linhas da página, cada uma com os pedaços de texto e a posição de cada um: [ [ {s, x, w}, ... ], ... ].
+     Todo extrato tem data, histórico, valor (com sinal, com C/D, em colunas Crédito/Débito, ou por seção "Entradas/Saídas") e quase sempre o saldo.
+     As colunas se acham pelo alinhamento dos números e o que não é padrão é PROVADO pelas contas: saldo anterior + lançamentos = saldo;
+     saldo inicial + entradas − saídas = saldo final; total do dia = soma do dia. Não fechou → selo amarelo (o app avisa, não lança calado).
+     ============================================================ */
+  function norm(s){ return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+  var MES3 = { JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6, JUL: 7, AGO: 8, SET: 9, OUT: 10, NOV: 11, DEZ: 12 };
+  var MESL = { JANEIRO: 1, FEVEREIRO: 2, MARCO: 3, ABRIL: 4, MAIO: 5, JUNHO: 6, JULHO: 7, AGOSTO: 8, SETEMBRO: 9, OUTUBRO: 10, NOVEMBRO: 11, DEZEMBRO: 12 };
+  var NUMRE = '(?:\\d{1,3}(?:\\.\\d{3})+|\\d+),\\d{2}';
+  var RE_VAL = new RegExp('^\\(?\\s*([+-])?\\s*(?:R\\$)?\\s*([+-])?\\s*(' + NUMRE + ')\\s*\\)?\\s*([+-])?\\s*([CD])?$', 'i');
+  /* "1.234,56", "-1.234,56", "R$ -1.234,56", "(1.234,56)", "1.234,56-", "1.234,56 D", "1.234,56 C" -> { c: centavos (positivo), s: +1 | -1 | 0 (sem sinal) } */
+  function lerValor(t){
+    t = String(t || '').trim(); var m = RE_VAL.exec(t); if (!m) return null;
+    var c = Math.round(parseFloat(m[3].replace(/\./g, '').replace(',', '.')) * 100), sin = 0, cd = m[5] ? m[5].toUpperCase() : '';
+    if (m[1] === '-' || m[2] === '-' || m[4] === '-' || /^\(/.test(t) || cd === 'D') sin = -1; else if (m[1] === '+' || m[2] === '+' || m[4] === '+' || cd === 'C') sin = 1;
+    return { c: c, s: sin };
+  }
+  function dataIso(a, m, d){ return (m >= 1 && m <= 12 && d >= 1 && d <= 31) ? a + '-' + pad(m, 2) + '-' + pad(d, 2) : null; }
+  /* { iso } (completa), { dm: [dia, mês] } (sem ano) ou null */
+  function lerData(t){
+    t = String(t || '').trim(); var m, i;
+    if ((m = /^(\d{2})[\/.-](\d{2})[\/.-](\d{4})$/.exec(t))) { i = dataIso(+m[3], +m[2], +m[1]); return i ? { iso: i } : null; }
+    if ((m = /^(\d{2})[\/.-](\d{2})[\/.-](\d{2})$/.exec(t))) { i = dataIso(2000 + (+m[3]), +m[2], +m[1]); return i ? { iso: i } : null; }
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t))) { i = dataIso(+m[1], +m[2], +m[3]); return i ? { iso: i } : null; }
+    if ((m = /^(\d{2})\/(\d{2})$/.exec(t))) return (+m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) ? { dm: [+m[1], +m[2]] } : null;
+    if ((m = /^(\d{1,2})\s+(?:DE\s+)?([A-Za-z]{3,9})\.?(?:\s+(?:DE\s+)?(\d{4}))?$/i.exec(norm(t)))) {
+      var nm = m[2], mes = MESL[nm] || (nm.length === 3 ? MES3[nm] : 0);
+      if (mes) { if (m[3]) { i = dataIso(+m[3], mes, +m[1]); return i ? { iso: i } : null; } return { dm: [+m[1], mes] }; }
+    }
+    return null;
+  }
+  /* uma linha do PDF em células: pedaços vizinhos viram uma célula; depois separa a data no começo e os valores no fim da célula */
+  function celulasDaLinha(row){
+    var its = row.slice().sort(function(a, b){ return a.x - b.x; }), cs = [], cur = null;
+    its.forEach(function(it){
+      var t = String(it.s == null ? '' : it.s).replace(/\s+/g, ' ').trim(); if (!t) return;
+      var w = it.w || 0, cw = (w && String(it.s).length) ? w / String(it.s).length : 5;
+      if (cur && it.x - cur.x1 <= Math.max(7, cw * 1.6)) { cur.t += (it.x - cur.x1 > cw * 0.4 ? ' ' : '') + t; cur.x1 = it.x + w; }
+      else { cur = { t: t, x0: it.x, x1: it.x + w }; cs.push(cur); }
+    });
+    var out = [], fimRe = new RegExp('\\s((?:[+-]\\s*)?(?:R\\$\\s*)?(?:[+-]\\s*)?' + NUMRE + '(?:\\s*[CD+-])?)\\s*$');
+    cs.forEach(function(c){
+      var rest = c.t, x0 = c.x0, m;
+      if ((m = /^(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(\S.*)$/.exec(rest)) && lerData(m[1])) { out.push({ t: m[1], x0: x0, x1: x0 + 40 }); rest = m[2]; x0 += 40; }
+      var fim = [];
+      while ((m = fimRe.exec(rest))) { fim.unshift(m[1]); rest = rest.slice(0, m.index); }
+      if (rest.trim()) out.push({ t: rest.trim(), x0: x0, x1: fim.length ? x0 + rest.length * 5 : c.x1 });
+      fim.forEach(function(v, i){ out.push({ t: v.trim(), x0: c.x1 - (fim.length - i) * 55, x1: c.x1 - (fim.length - 1 - i) * 55 }); });
+    });
+    out.forEach(function(c){ var v = lerValor(c.t), d = v ? null : lerData(c.t); if (v) { c.tipo = 'valor'; c.v = v; } else if (d) { c.tipo = 'data'; c.d = d; } else if (/^\d{4,}$/.test(c.t)) c.tipo = 'doc'; else c.tipo = 'texto'; });
+    return out;
+  }
+  function agrupar(xs, tol){ var cl = []; xs.slice().sort(function(a, b){ return a - b; }).forEach(function(x){ var u = cl[cl.length - 1]; if (u && x - u.max <= tol) { u.n++; u.max = x; u.soma += x; } else cl.push({ n: 1, max: x, soma: x }); }); cl.forEach(function(c){ c.x = c.soma / c.n; }); return cl; }
+
+  /* quem é: banco, agência, conta, titular; período, ano e data de emissão */
+  function lerCabecalho(R){
+    var cab = R.slice(0, 30).map(function(r){ return r.t; }).join('\n') + '\n' + R.slice(-4).map(function(r){ return r.t; }).join('\n'), m;
+    var info = { banco: bancoPorTexto(cab), ag: '', cc: '', titular: { nome: '', doc: '' }, de: null, ate: null, anoRef: null, emitido: null };
+    if ((m = /Conta:?\s*(\d{4})\s*\/\s*\d{3}\s*\/\s*([\d.-]+)/i.exec(cab))) { info.ag = m[1]; info.cc = m[2]; }
+    else { if ((m = /Ag[êe]ncia:?\s*([\d.-]+)/i.exec(cab))) info.ag = m[1]; if ((m = /Conta(?:\s+corrente)?:?\s*(\d[\d.]*-?\d?)/i.exec(cab))) info.cc = m[1]; }
+    if ((m = /(?:Cliente|Titular|Nome):\s*([A-Za-zÀ-ÿ' .]{4,60}?)(?:\s{2,}|\n|$)/.exec(cab))) info.titular.nome = m[1].trim();
+    if ((m = /(?:CPF|CNPJ)[:\s]*(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i.exec(cab))) {
+      info.titular.doc = m[1];
+      if (!info.titular.nome) for (var i = 0; i < Math.min(R.length, 30); i++) if (R[i].t.indexOf(m[1]) >= 0) { for (var k = i - 1; k >= Math.max(0, i - 2); k--) if (/^[A-Za-zÀ-ÿ' .]{6,60}$/.test(R[k].t) && R[k].t.trim().split(/\s+/).length >= 2 && !/EXTRATO|SALDO|PERIODO|MOVIMENT/.test(R[k].n)) { info.titular.nome = R[k].t.trim(); break; } break; }
+    }
+    var N = norm(cab);
+    if ((m = /(\d{2})\/(\d{2})\/(\d{4})\s*(?:A|ATE|-)\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(N))) { info.de = m[3] + '-' + m[2] + '-' + m[1]; info.ate = m[6] + '-' + m[5] + '-' + m[4]; }
+    else if ((m = /(\d{1,2}) DE ([A-Z]+) DE (\d{4}) A (\d{1,2}) DE ([A-Z]+) DE (\d{4})/.exec(N)) && MESL[m[2]] && MESL[m[5]]) { info.de = dataIso(+m[3], MESL[m[2]], +m[1]); info.ate = dataIso(+m[6], MESL[m[5]], +m[4]); }
+    else if ((m = /(\d{1,2}) ([A-Z]{3}) (\d{4}) A (\d{1,2}) ([A-Z]{3}) (\d{4})/.exec(N)) && MES3[m[2]] && MES3[m[5]]) { info.de = dataIso(+m[3], MES3[m[2]], +m[1]); info.ate = dataIso(+m[6], MES3[m[5]], +m[4]); }
+    if (!info.de && (m = /(?:MES|PERIODO)[^\n]*?([A-Z]+)\/(\d{4})/.exec(N)) && MESL[m[1]]) info.anoRef = +m[2];
+    if ((m = /(\d{2})\/(\d{2})\/(\d{4})\s*-?\s*(\d{2}:\d{2})/.exec(cab))) info.emitido = m[3] + '-' + m[2] + '-' + m[1] + 'T' + m[4] + ':00';
+    else if ((m = /GERADO\s+(?:DIA\s+)?(\d{1,2})\s+DE\s+([A-Z]+)\s+DE\s+(\d{4})(?:\s+AS\s+(\d{2}:\d{2}))?/.exec(N)) && MESL[m[2]]) info.emitido = dataIso(+m[3], MESL[m[2]], +m[1]) + 'T' + (m[4] || '00:00') + ':00';
+    if (!info.anoRef) info.anoRef = info.ate ? +info.ate.slice(0, 4) : (info.de ? +info.de.slice(0, 4) : (info.emitido ? +info.emitido.slice(0, 4) : null));
+    return info;
+  }
+  /* colunas de valor: borda direita dos números; o rótulo vem do cabeçalho (Crédito, Débito, Valor, Saldo) */
+  function acharColunas(R){
+    var comVal = R.filter(function(r){ return r.cs.some(function(c){ return c.tipo === 'valor'; }); });
+    if (!comVal.length) return [];
+    var cl = agrupar([].concat.apply([], comVal.map(function(r){ return r.cs.filter(function(c){ return c.tipo === 'valor'; }).map(function(c){ return c.x1; }); })), 14).filter(function(c){ return c.n >= Math.min(3, Math.max(2, Math.floor(comVal.length / 3))); });
+    cl.sort(function(a, b){ return a.x - b.x; });
+    var primeira = R.indexOf(comVal[0]), cab = R.slice(Math.max(0, primeira - 8), primeira + 1);
+    cl.forEach(function(c){
+      var melhor = null, dist = 9999;
+      cab.forEach(function(r){ r.cs.forEach(function(h){ if (h.tipo !== 'texto') return; var cx = (h.x0 + h.x1) / 2, d = Math.min(Math.abs(cx - c.x), Math.abs(h.x1 - c.x)); if (d < dist && d < 70) { var n = norm(h.t), k = /CREDITO|ENTRADA/.test(n) ? 'credito' : (/DEBITO|SAIDA/.test(n) ? 'debito' : (/SALDO/.test(n) ? 'saldo' : (/VALOR/.test(n) ? 'valor' : null))); if (k) { dist = d; melhor = k; } } }); });
+      c.k = melhor;
+    });
+    if (cl.length && cl.every(function(c){ return !c.k; })) { var ks = cl.length === 1 ? ['valor'] : (cl.length === 2 ? ['valor', 'saldo'] : (cl.length === 3 ? ['credito', 'debito', 'saldo'] : [])); cl.forEach(function(c, i){ c.k = ks[i] || 'valor'; }); }
+    return cl;
+  }
+  function varrer(R, info, cols){
+    var T = { lanc: [], ant: null, saldosDia: {}, resumo: {}, totDia: {}, avisos: [] }, dataAtual = null, ctx = 0, ult = null, viuData = false;
+    var colDe = function(c){ var b = null, d = 9999; cols.forEach(function(k){ var x = Math.abs(k.x - c.x1); if (x < d && x < 30) { d = x; b = k; } }); return b; };
+    var resolver = function(d){
+      if (d.iso) return d.iso; if (!info.anoRef) return null; var a = info.anoRef;
+      if (info.de && info.ate && info.de.slice(0, 4) !== info.ate.slice(0, 4)) a = d.dm[1] >= +info.de.slice(5, 7) ? +info.de.slice(0, 4) : +info.ate.slice(0, 4);
+      return dataIso(a, d.dm[1], d.dm[0]);
+    };
+    R.forEach(function(r){
+      var dc = r.cs.filter(function(c){ return c.tipo === 'data'; })[0], vals = r.cs.filter(function(c){ return c.tipo === 'valor'; }), tx = r.cs.filter(function(c){ return c.tipo === 'texto'; });
+      var N = norm(tx.map(function(c){ return c.t; }).join(' ')), ultimoVal = vals.length ? vals[vals.length - 1].v : null;
+      if (dc) { var di = resolver(dc.d); if (di) { dataAtual = di; viuData = true; } }
+      var ent = /TOTAL (DE )?(ENTRADAS|CREDITOS)|ENTRADAS NO (DIA|MES)/.test(N), sai = /TOTAL (DE )?(SAIDAS|DEBITOS)|SAIDAS NO (DIA|MES)/.test(N);
+      if (ent || sai) {   /* subtotal: no resumo do topo ou no começo de cada dia (e passa a valer o sinal da seção) */
+        if (viuData) { ctx = ent ? 1 : -1; if (ultimoVal && dataAtual) { T.totDia[dataAtual] = T.totDia[dataAtual] || {}; T.totDia[dataAtual][ent ? 'e' : 's'] = ultimoVal.c; } }
+        else if (ultimoVal) T.resumo[ent ? 'entradas' : 'saidas'] = ultimoVal.c;
+        return;
+      }
+      if (/^SALDO\b|^\(=\) SALDO|\bSALDO (ANTERIOR|INICIAL|DO DIA|FINAL|EM|DISPONIVEL|ATUAL|TOTAL)\b/.test(N) && ultimoVal) {
+        var sv = (ultimoVal.s || 1) * ultimoVal.c;
+        if (/ANTERIOR|INICIAL/.test(N)) { if (!T.ant) T.ant = { data: dataAtual, valor: sv }; T.resumo.saldoInicial = T.resumo.saldoInicial == null ? sv : T.resumo.saldoInicial; }
+        else if (/FINAL/.test(N)) T.resumo.saldoFinal = sv;
+        else if (/DO DIA|\bEM\b/.test(N) && dataAtual) T.saldosDia[dataAtual] = sv;
+        else if (T.resumo.saldoFinal == null) T.resumo.saldoFinal = sv;
+        return;
+      }
+      if (/RENDIMENTO/.test(N) && ultimoVal && !viuData) { T.resumo.rendimento = (ultimoVal.s || 1) * ultimoVal.c; return; }
+      if (!vals.length) {   /* sem valor: segunda linha da descrição do lançamento de cima */
+        if (ult && tx.length && !dc && r.cs[0].x0 >= ult.xTexto - 8 && !/^(PAGINA|DATA|HISTORICO|VALOR|SALDO|EXTRATO|CREDITO|DEBITO)\b/.test(N)) ult.det.push(tx.map(function(c){ return c.t; }).join(' '));
+        return;
+      }
+      if (!dataAtual || !viuData) return;   /* números do resumo do topo */
+      var valor = null, saldo = null, sin = 0;
+      vals.forEach(function(c){
+        var col = colDe(c), k = col ? col.k : null;
+        if (k === 'saldo') saldo = (c.v.s || 1) * c.v.c;
+        else if (valor === null) { valor = c.v.c; sin = k === 'credito' ? 1 : (k === 'debito' ? -1 : c.v.s); }
+      });
+      if (valor === null) { valor = vals[0].v.c; sin = vals[0].v.s; }
+      if (!sin && ctx) sin = ctx;
+      var l = { data: dataAtual, desc: tx.length ? tx[0].t : '', valor: valor, sinal: sin, saldo: saldo, det: tx.slice(1).map(function(c){ return c.t; }), xTexto: tx.length ? tx[0].x0 : 0 };
+      T.lanc.push(l); ult = l;
+    });
+    return T;
+  }
+  /* o sinal que faltou vem da mudança do saldo; depois da descrição. Valor zero não é lançamento. */
+  function ajustarSinais(T){
+    var prev = T.ant ? T.ant.valor : null;
+    T.lanc.forEach(function(l){
+      if (l.saldo != null && prev != null && l.valor > 0) {
+        var dlt = l.saldo - prev;
+        if (Math.abs(Math.abs(dlt) - l.valor) <= 1) { var s2 = dlt >= 0 ? 1 : -1; if (l.sinal && l.sinal !== s2) l.corrigido = true; l.sinal = s2; }
+      }
+      if (!l.sinal) { var n = norm(l.desc + ' ' + l.det.join(' ')); l.sinal = /RECEBID|CREDIT|CRED |DEPOSITO|ESTORNO|RENDIMENTO|RESGATE|SALARIO|PROVENTO|REEMBOLSO|DEVOLU/.test(n) ? 1 : -1; l.chute = true; }
+      l.v = l.sinal * l.valor;
+      if (l.saldo != null) prev = l.saldo; else if (prev != null) prev += l.v;
+    });
+    T.lanc = T.lanc.filter(function(l){ return l.valor !== 0; });
+  }
+  var DOCRE = /(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\*{3}\.\d{3}\.\d{3}-\*{2})/, DOCPARC = /\b(\d{3}\.\d{3}\.\d{3}|\d{2}\.\d{3}\.\d{3}\/\d{4})\b/;
+  function limparContraparte(l){
+    var txt = l.det.filter(Boolean).join(' '), m = DOCRE.exec(txt);
+    if (m) { l.doc = m[1]; txt = txt.replace(m[0], ' '); } else if ((m = DOCPARC.exec(txt))) txt = txt.replace(m[0], ' ');
+    var partes = txt.split(/\s+-\s+|\s+-$|^-\s+/).map(function(x){ return x.replace(/\s+/g, ' ').trim(); }).filter(function(x){ return x && !/^-$/.test(x); });
+    l.nome = partes[0] || '';
+  }
+  /* prova pelas contas */
+  function provar(T, saldoAnt){
+    var ok = 0, div = [], provas = [], prev = T.ant ? T.ant.valor : null, comSaldo = T.lanc.filter(function(l){ return l.saldo != null; }).length;
+    if (comSaldo) {
+      var okS = 0;
+      T.lanc.forEach(function(l, i){
+        if (l.saldo != null && prev != null) { var esperado = prev + l.v; if (Math.abs(esperado - l.saldo) <= 1) okS++; else div.push({ de: i ? T.lanc[i - 1].data : l.data, ate: l.data, esperado: l.saldo, obtido: esperado }); }
+        prev = l.saldo != null ? l.saldo : (prev != null ? prev + l.v : null);
+      });
+      ok += okS; if (okS) provas.push('saldo linha a linha: ' + okS + ' de ' + comSaldo + ' conferem');
+    }
+    var soma = T.lanc.reduce(function(t, l){ return t + l.v; }, 0), R = T.resumo;
+    if (R.saldoInicial != null && R.saldoFinal != null && !comSaldo) {
+      var esp = R.saldoInicial + soma, esp2 = esp + (R.rendimento || 0);
+      if (Math.abs(esp - R.saldoFinal) <= 1 || Math.abs(esp2 - R.saldoFinal) <= 1) { ok++; provas.push('saldo inicial + movimentos = saldo final'); } else div.push({ de: null, ate: null, esperado: R.saldoFinal, obtido: esp2 });
+    }
+    var ent = T.lanc.filter(function(l){ return l.v > 0; }).reduce(function(t, l){ return t + l.v; }, 0), sai = -T.lanc.filter(function(l){ return l.v < 0; }).reduce(function(t, l){ return t + l.v; }, 0);
+    if (R.entradas != null) { if (Math.abs(ent - R.entradas) <= 1 || Math.abs(ent + (R.rendimento || 0) - R.entradas) <= 1 || Math.abs(ent - (R.rendimento || 0) - R.entradas) <= 1) { ok++; provas.push('total de entradas confere'); } else div.push({ de: null, ate: null, esperado: R.entradas, obtido: ent }); }
+    if (R.saidas != null) { if (Math.abs(sai - R.saidas) <= 1) { ok++; provas.push('total de saídas confere'); } else div.push({ de: null, ate: null, esperado: R.saidas, obtido: sai }); }
+    var dias = Object.keys(T.totDia), okD = 0;
+    dias.forEach(function(d){
+      var e = T.lanc.filter(function(l){ return l.data === d && l.v > 0; }).reduce(function(t, l){ return t + l.v; }, 0), s = -T.lanc.filter(function(l){ return l.data === d && l.v < 0; }).reduce(function(t, l){ return t + l.v; }, 0), tt = T.totDia[d];
+      if ((tt.e == null || Math.abs(e - tt.e) <= 1) && (tt.s == null || Math.abs(s - tt.s) <= 1)) okD++; else div.push({ de: d, ate: d, esperado: (tt.e || 0) - (tt.s || 0), obtido: e - s });
+    });
+    if (dias.length) { ok += okD; if (okD) provas.push('total de cada dia: ' + okD + ' de ' + dias.length + ' conferem'); }
+    var chutes = T.lanc.filter(function(l){ return l.chute; }).length, corrigidos = T.lanc.filter(function(l){ return l.corrigido; }).length;
+    var selo = div.length ? 'amarelo' : (ok > 0 && !chutes ? 'verde' : 'amarelo');
+    if (!ok && !div.length) provas.push('não há saldo nem total para conferir: confira os valores');
+    if (chutes) provas.push(chutes + (chutes === 1 ? ' sinal' : ' sinais') + ' deduzido(s) pela descrição: confira');
+    if (corrigidos) provas.push(corrigidos + (corrigidos === 1 ? ' sinal corrigido' : ' sinais corrigidos') + ' pelo saldo');
+    return { conf: { conferidos: ok, divergencias: div }, selo: selo, provas: provas };
+  }
+  /* o que o resto do Horus espera de um extrato lido (mesmo formato dos leitores por banco) */
+  function lerExtratoGeral(rows){
+    var R = (rows || []).map(function(r){ var cs = celulasDaLinha(r); return { cs: cs, t: cs.map(function(c){ return c.t; }).join('  '), n: norm(cs.map(function(c){ return c.t; }).join(' ')) }; }).filter(function(r){ return r.cs.length; });
+    if (R.length < 4) return null;
+    var info = lerCabecalho(R), cols = acharColunas(R), T = varrer(R, info, cols);
+    if (!T.lanc.length) return null;
+    ajustarSinais(T); T.lanc.forEach(limparContraparte);
+    if (!T.lanc.length) return null;
+    var prova = provar(T), datas = T.lanc.map(function(l){ return l.data; }).sort();
+    var saldos = {}; T.lanc.forEach(function(l){ if (l.saldo != null) saldos[l.data] = l.saldo; }); Object.keys(T.saldosDia).forEach(function(d){ saldos[d] = T.saldosDia[d]; });
+    var ultSaldo = null; T.lanc.forEach(function(l){ if (l.saldo != null) ultSaldo = l.saldo; });
+    var cod = info.banco, slug = cod ? (BANCOS[cod] || 'banco').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '') : 'banco';
+    var r = { banco: cod ? BANCOS[cod] : 'Banco (não identificado)', bancoCodigo: cod, tipoConta: onlyDig(info.titular.doc).length === 14 ? 'pj' : 'pf', ag: info.ag, cc: info.cc, titular: info.titular, formato: 'geral',
+      lanc: T.lanc.map(function(l){ return { data: l.data, desc: l.desc, nome: l.nome, doc: l.doc || '', valor: l.v }; }), saldos: saldos,
+      saldoAtual: T.resumo.saldoFinal != null ? T.resumo.saldoFinal : ultSaldo, emitido: info.emitido || ((info.ate || datas[datas.length - 1]) + 'T23:59:00'),
+      de: info.de || datas[0], ate: info.ate || datas[datas.length - 1], conf: prova.conf, selo: prova.selo, provas: prova.provas, geral: true };
+    r.chave = slug + '-' + (info.ag || '?') + '-' + String(info.cc || '?').replace(/[^0-9A-Za-z-]/g, '');
+    return r;
+  }
+
+
+  /* ============================================================
+     C. COMPROVANTE (Pix, transferência, pagamento) E BOLETO IMPRESSO — por rótulos e tipo do dado, sem modelo por banco
+     Todo comprovante mostra os mesmos campos (valor, data e hora, quem pagou, quem recebeu, CPF/CNPJ, banco, ID da transação, autenticação),
+     só muda o desenho. Cada rótulo tem sinônimos ("Favorecido", "Recebedor", "Para", "Destino"…); o valor fica na mesma linha, ao lado, ou na linha de baixo.
+     Entrada: linhas de texto (PDF: células da linha separadas por 3 espaços; foto: linhas do OCR).
+     ============================================================ */
+  var ROT = [
+    ['valor', /^(valor( pago| total| cobrado| nominal| do documento| da (transferencia|transacao|operacao|parcela|fatura|conta)| do pagamento| \(r\$\))?|total( pago| a pagar)?|montante)$/],
+    ['venc', /^(vencimento|data (de )?vencimento|vence em)$/],
+    ['data', /^(data( e hora| \/ hora)?( d[aeo] ?(transferencia|transacao|operacao|pagamento|efetivacao|debito|credito|agendamento)?)?|efetivad[oa] em|realizad[oa] em|pago em|data\/hora|horario|quando)$/],
+    ['nome', /^(nome( completo| do (favorecido|beneficiario|recebedor|pagador))?|razao social|favorecido|recebedor|titular)$/],
+    ['doc', /^(cpf( ?\/ ?cnpj)?|cnpj|cpf\/cnpj|documento|cpf\/cnpj do (favorecido|beneficiario|pagador))$/],
+    ['inst', /^(instituicao( financeira)?|banco)$/], ['ag', /^(agencia|ag)$/], ['conta', /^(conta( corrente| poupanca| de pagamento)?|numero da conta|tipo de conta)$/], ['chave', /^(chave( pix)?|tipo de chave|chave do favorecido)$/],
+    ['id', /^(id( da (transacao|operacao|transferencia))?|e2e|end ?to ?end ?id|endtoendid|(numero|n[o°]?) (da|do) (transacao|comprovante|protocolo|operacao)|protocolo|codigo (da|de) (transacao|operacao))$/],
+    ['auth', /^(autenticacao( bancaria)?|codigo de autenticacao|numero de autenticacao|autent\.?)$/],
+    ['desc', /^(descricao|mensagem|observacao|finalidade)$/], ['tipoOp', /^(tipo( de (transferencia|operacao|pagamento|pix))?|forma de pagamento|modalidade)$/], ['nosso', /^nosso numero$/]
+  ];
+  var SEC_ORIGEM = /^(origem|quem pagou|de|dados (de|do|da) (quem pagou|pagador|origem|conta de origem|remetente)|pagador|sacado|conta de origem|remetente|debitado de|debitado da conta|quem enviou)$/;
+  var SEC_DESTINO = /^(destino|quem recebeu|para|dados (de|do|da) (quem recebeu|recebedor|favorecido|destino|beneficiario|conta de destino)|favorecido|beneficiario|cedente|recebedor|conta de destino|creditado em|quem vai receber)$/;
+  function limpaRot(t){ return norm(t).toLowerCase().replace(/[:\-–.]+$/, '').trim(); }
+  function rotuloDe(t){ var n = limpaRot(t); for (var i = 0; i < ROT.length; i++) if (ROT[i][1].test(n)) return ROT[i][0]; return null; }
+  function secaoDe(t){ var n = limpaRot(t); return SEC_ORIGEM.test(n) ? 'origem' : (SEC_DESTINO.test(n) ? 'destino' : null); }
+  function celulasTxt(s){ return String(s == null ? '' : s).split(/\s{2,}|\t/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function moedaDe(txt){ var m = /(?:R\$\s*)?([+-]?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/.exec(String(txt || '')); if (!m) return null; var v = lerValor(m[1].replace(/\s+/g, '')); return v ? v.c : null; }
+  /* "10/11/2026 09:42", "10 NOV 2026 - 09:42:10", "10 de novembro de 2026 às 09:42", "2026-11-10 09:42:10" -> { data: 'AAAA-MM-DD', hora: 'HH:MM' } */
+  function dataHoraDe(txt){
+    var t = String(txt || ''), m, data = null, hora = null;
+    if ((m = /(\d{2})[\/.-](\d{2})[\/.-](\d{4})/.exec(t))) data = dataIso(+m[3], +m[2], +m[1]);
+    else if ((m = /(\d{4})-(\d{2})-(\d{2})/.exec(t))) data = dataIso(+m[1], +m[2], +m[3]);
+    else if ((m = /(\d{1,2})\s+(?:DE\s+)?([A-Za-zçÇãÃ]{3,9})\.?\s+(?:DE\s+)?(\d{4})/i.exec(t))) { var nm = norm(m[2]), mes = MESL[nm] || (nm.length === 3 ? MES3[nm] : MES3[nm.slice(0, 3)]); if (mes) data = dataIso(+m[3], mes, +m[1]); }
+    if ((m = /(\d{2}):(\d{2})(?::\d{2})?/.exec(t))) hora = m[1] + ':' + m[2];
+    return data ? { data: data, hora: hora } : null;
+  }
+  function limpaDoc(t){ var m = /(\*{3}\.\d{3}\.\d{3}-\*{2}|\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\*{4}-\*{2}|[\d*]{3}\.[\d*]{3}\.[\d*]{3}-[\d*]{2}|\d{11}|\d{14})/.exec(String(t || '')); return m ? m[1] : ''; }
+  function lerComprovante(linhas, hoje){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).filter(function(x){ return x.trim(); });
+    var txt = L.join('\n'), N = norm(txt), out = { origem: {}, destino: {}, valor: null, data: null, hora: null, id: '', e2e: null, auth: '', descricao: '', tipoOp: '', tipo: '', sentido: '', venc: null, boletos: [], provas: [], selo: 'vermelho' };
+    var sec = null, i = 0;
+    var atribui = function(k, val, s){
+      val = String(val || '').trim(); if (!val) return;
+      var alvo = out[s || 'destino'];
+      if (k === 'valor') { var c = moedaDe(val); if (c != null && out.valor == null) out.valor = c; }
+      else if (k === 'venc') { var dv = dataHoraDe(val); if (dv) out.venc = dv.data; }
+      else if (k === 'data') { var dh = dataHoraDe(val); if (dh && !out.data) { out.data = dh.data; out.hora = dh.hora; } else if (dh && !out.hora && dh.hora) out.hora = dh.hora; }
+      else if (k === 'nome') { if (!alvo.nome) alvo.nome = val.replace(/\s+/g, ' '); }
+      else if (k === 'doc') { var d = limpaDoc(val); if (d && !alvo.doc) alvo.doc = d; }
+      else if (k === 'inst') { if (!alvo.inst) alvo.inst = val; }
+      else if (k === 'ag') { if (!alvo.ag) alvo.ag = val; }
+      else if (k === 'conta') { if (!alvo.conta && /\d/.test(val)) alvo.conta = val; }
+      else if (k === 'chave') { if (!alvo.chave && !/^(cpf|cnpj|e-?mail|telefone|celular|aleatoria|evp)$/i.test(val)) alvo.chave = val; }
+      else if (k === 'id') { var e = lerE2E(val.replace(/\s+/g, '')); if (e && !out.e2e) out.e2e = e; else if (!out.id) out.id = val; }
+      else if (k === 'auth') { if (!out.auth) out.auth = val.replace(/\s+/g, ''); }
+      else if (k === 'desc') { if (!out.descricao) out.descricao = val; }
+      else if (k === 'tipoOp') { if (!out.tipoOp) out.tipoOp = val; }
+    };
+    while (i < L.length) {
+      var cs = celulasTxt(L[i]), first = cs[0] || '', resto = cs.slice(1).join(' '), m = /^([^:]{2,45}):\s*(.*)$/.exec(first);
+      if (m && (rotuloDe(m[1]) || secaoDe(m[1]))) { first = m[1]; resto = (m[2] + ' ' + resto).trim(); }
+      var sx = secaoDe(first), k = rotuloDe(first);
+      if (sx && !resto) {
+        sec = sx;
+        if (/^(beneficiario|pagador|favorecido|recebedor|cedente|sacado|remetente)$/.test(limpaRot(first)) && i + 1 < L.length) { var pn = celulasTxt(L[i + 1]); if (pn.length && !rotuloDe(pn[0]) && !secaoDe(pn[0]) && !/^([^:]{2,45}):/.test(pn[0]) && !/^\d/.test(pn[0])) { atribui('nome', pn.join(' '), sec); i++; } }   /* "Beneficiário" numa linha e o nome na de baixo */
+        i++; continue;
+      }
+      if (sx && resto) { sec = sx; atribui('nome', resto, sec); i++; continue; }
+      if (k) {
+        var val = resto;
+        if (!val && i + 1 < L.length) { var prox = celulasTxt(L[i + 1]); if (prox.length && !rotuloDe(prox[0]) && !secaoDe(prox[0]) && !/^([^:]{2,45}):/.test(prox[0])) { val = prox.join(' '); i++; } }
+        atribui(k, val, sec);
+      }
+      i++;
+    }
+    /* título e sentido */
+    var tit = /COMPROVANTE (DE|DO|DA) ([A-Z ]{3,30})|PIX (ENVIADO|RECEBIDO|AGENDADO)|(TRANSFERENCIA|PAGAMENTO|DEPOSITO|TED|DOC|RECARGA|SAQUE) (REALIZAD[OA]|EFETUAD[OA]|ENVIAD[OA]|RECEBID[OA])/.exec(N);
+    if (/PIX/.test(N) || out.e2e) out.tipo = 'pix'; else if (/\bTED\b/.test(N)) out.tipo = 'ted'; else if (/\bDOC\b/.test(N)) out.tipo = 'doc'; else if (/BOLETO|LINHA DIGITAVEL|CODIGO DE BARRAS/.test(N)) out.tipo = 'boleto'; else if (/TRANSFERENCIA/.test(N)) out.tipo = 'transferencia'; else if (tit) out.tipo = 'pagamento';
+    if (/PIX RECEBID|VOCE RECEBEU|TRANSFERENCIA RECEBID|DEPOSITO|CREDITO EM CONTA/.test(N)) out.sentido = 'entrada'; else if (/PIX ENVIAD|VOCE (PAGOU|ENVIOU|TRANSFERIU)|TRANSFERENCIA (ENVIAD|REALIZAD|EFETUAD)|PAGAMENTO (REALIZAD|EFETUAD|DE (BOLETO|CONTA|FATURA|TITULO|CONVENIO))|COMPRA|PIX AGENDAD/.test(N)) out.sentido = 'saida';
+    if (!out.sentido && out.tipo) { out.sentido = 'saida'; out.sentidoPresumido = true; }   /* comprovante guardado costuma ser de um pagamento seu; o app avisa que presumiu */
+    /* o que o rótulo não pegou: valor, data, ID e boleto em qualquer lugar do texto */
+    if (out.valor == null) { var rs = /R\$\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/.exec(txt); if (rs) out.valor = moedaDe(rs[1]); }
+    if (!out.data) { var dh2 = dataHoraDe(txt); if (dh2) { out.data = dh2.data; out.hora = out.hora || dh2.hora; } }
+    if (!out.e2e) out.e2e = acharE2E(txt);
+    out.boletos = acharBoletos(txt, hoje);
+    if (out.boletos.length) { var b0 = out.boletos[0]; if (!out.tipo || out.tipo === 'pagamento') out.tipo = 'boleto'; out.boleto = b0; if (!out.sentido) out.sentido = 'saida'; }
+    /* prova */
+    var temNome = !!(out.destino.nome || out.origem.nome), temId = !!(out.e2e && out.e2e.dataOk) || (!!out.auth && out.auth.length >= 12) || (out.boleto && out.boleto.ok);
+    if (out.e2e && out.e2e.dataOk) out.provas.push('ID da transação no formato do Pix (' + out.e2e.data + ')');
+    if (out.boleto && out.boleto.ok) out.provas.push('linha digitável do boleto confere');
+    if (out.e2e && out.e2e.dataOk && out.data && out.e2e.data !== out.data) out.provas.push('a data do ID (' + out.e2e.data + ') difere da data lida (' + out.data + '): confira');
+    out.divergeData = !!(out.e2e && out.e2e.dataOk && out.data && Math.abs(difDias(out.e2e.data, out.data)) > 1);
+    if (out.valor != null && out.valor > 0 && out.data) out.selo = (temNome && temId && !out.divergeData) ? 'verde' : 'amarelo'; else out.selo = 'vermelho';
+    if (out.selo !== 'verde') { if (!out.valor) out.provas.push('não achei o valor'); if (!out.data) out.provas.push('não achei a data'); if (!temNome) out.provas.push('não achei o nome de quem pagou ou recebeu'); if (!temId) out.provas.push('sem ID de transação nem autenticação para conferir'); }
+    out.nome = out.sentido === 'entrada' ? (out.origem.nome || out.destino.nome || '') : (out.destino.nome || out.origem.nome || '');
+    return out;
+  }
+
+  /* ---------- que documento é? (pelo conteúdo, não pelo banco) ---------- */
+  function classificar(linhas, rows){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), txt = L.join('\n'), N = norm(txt);
+    if (/OFXHEADER|<OFX>|<STMTTRN>/i.test(txt)) return { tipo: 'ofx', pistas: ['tags OFX'] };
+    var br = acharBRCode(txt); if (br && br.ok) return { tipo: 'pix_copia_cola', pistas: ['Pix copia e cola com CRC válido'] };
+    if (/PROVENTOS ?\/ ?DESCONTOS/.test(N) || (L.filter(function(l){ return !!ccLinhaItem(l); }).length >= 5 && !!ccTotaisPorConta(L)) || (/RENDIMENTOS/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N) && L.filter(function(l){ return /^\d{6}\s/.test(l.trim()); }).length >= 3)) return { tipo: 'contracheque', pistas: ['tabela de proventos e descontos com totais'] };
+    if (pareceFatura(L)) return { tipo: 'fatura', pistas: ['fatura de cartão: vencimento e linhas de compra'] };
+    var bol = acharBoletos(txt), temComp = /COMPROVANTE|RECIBO|AUTENTICACAO|EFETIVAD|REALIZAD[OA] COM SUCESSO/.test(N);
+    var e2e = acharE2E(txt), rot = 0; ['VALOR', 'DATA', 'ORIGEM|QUEM PAGOU|PAGADOR|REMETENTE', 'DESTINO|QUEM RECEBEU|FAVORECIDO|RECEBEDOR|BENEFICIARIO'].forEach(function(p){ if (new RegExp('(^|\\s)(' + p + ')\\b').test(N)) rot++; });
+    if (bol.length && !temComp && /BENEFICIARIO|CEDENTE|VENCIMENTO|SACADO|PAGADOR|NOSSO NUMERO/.test(N)) return { tipo: 'boleto', pistas: ['linha digitável válida', 'rótulos de boleto'] };
+    var datasValores = 0; (rows || []).forEach(function(r){ var cs = celulasDaLinha(r); if (cs.some(function(c){ return c.tipo === 'data'; }) && cs.some(function(c){ return c.tipo === 'valor'; })) datasValores++; });
+    if (!rows) L.forEach(function(l){ if (/(\d{2}\/\d{2}(\/\d{2,4})?)\s.*(\d{1,3}(\.\d{3})*,\d{2})/.test(l)) datasValores++; });
+    if (datasValores >= 4 && !(temComp && datasValores < 6)) return { tipo: 'extrato', pistas: [datasValores + ' linhas com data e valor'] };
+    if (e2e || (temComp && rot >= 2) || rot >= 3) return { tipo: 'comprovante', pistas: [e2e ? 'ID de transação do Pix' : 'campos de comprovante'] };
+    if (bol.length) return { tipo: 'boleto', pistas: ['linha digitável válida'] };
+    return { tipo: null, pistas: [] };
+  }
+  /* boleto impresso (PDF do boleto): a linha digitável é a verdade (valor, vencimento, banco); os rótulos dão o beneficiário e conferem o valor */
+  function lerBoletoDoc(linhas, hoje){
+    var c = lerComprovante(linhas, hoje), b = c.boleto || null;
+    if (!b) return null;
+    var out = { linha: b.linha, linhaFmt: fmtLinha(b), banco: b.banco, bancoNome: b.bancoNome, valor: b.valor, vencimento: b.vencimento || c.venc, vencimentoAlt: b.vencimentoAlternativo, semVencimento: b.semVencimento, tipo: b.tipo, beneficiario: (c.destino.nome || ''), beneficiarioDoc: c.destino.doc || '', pagador: c.origem.nome || '', provas: ['linha digitável confere nos dígitos verificadores'], selo: 'verde' };
+    if (c.valor != null && b.valor != null && c.valor !== b.valor) { out.provas.push('o "valor do documento" (' + (c.valor / 100).toFixed(2).replace('.', ',') + ') difere do valor da linha digitável: pode haver multa, juros ou desconto'); out.valorDocumento = c.valor; out.selo = 'amarelo'; }
+    if (c.venc && b.vencimento && c.venc !== b.vencimento && b.vencimentoAlternativo === c.venc) { out.vencimento = c.venc; out.provas.push('vencimento escrito no boleto (' + c.venc + ') usado no lugar do calculado pelo fator'); }
+    else if (c.venc && b.vencimento && c.venc !== b.vencimento) { out.provas.push('o vencimento escrito (' + c.venc + ') difere do calculado pelo fator (' + b.vencimento + '): confira'); out.selo = 'amarelo'; out.vencimentoEscrito = c.venc; }
+    if (!out.beneficiario) out.provas.push('não achei o nome do beneficiário: informe ao lançar');
+    if (b.tipo === 'arrecadacao' && b.valor == null) out.provas.push('conta de consumo/tributo sem valor na linha: informe o valor');
+    return out;
+  }
+
+
+  /* ============================================================
+     F. CONTRACHEQUE DE SERVIDOR (modelo padrão do Estado de Goiás e parecidos) — sem modelo por órgão
+     A lista "PROVENTOS/DESCONTOS" mistura tudo numa tabela única: código (6 dígitos), descrição, QTDE (horas, ou "parcela de total" nos empréstimos) e valor,
+     SEM coluna de sinal. Quem é provento e quem é desconto sai da CONTA: os totais do rodapé (Rendimentos, Descontos, Líquido) têm de fechar com a
+     soma das linhas (primeiro tenta as primeiras linhas, depois qualquer combinação). Se fechar: selo verde. Entrada: linhas de texto (PDF ou foto).
+     ============================================================ */
+  var CC_ITEM = /^([0-9A-Za-z]{6})\s+(.+?)(?:\s+(\d+\s+de\s+\d+|\S{1,4}))?\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;   /* QTDE ilegível na foto (ex.: "jo)") vira 0 */
+  function ccLinhaItem(l){ l = String(l).trim().replace(/[\]\)\|\s]+$/, '').replace(/(\d)\/(\d{2})$/, '$1,$2'); var m = CC_ITEM.exec(l); if (!m || (m[1].match(/\d/g) || []).length < 3 || !/[A-Za-zÀ-ÿ]{3}/.test(m[2])) return null; var q = /^(\d+)\s+de\s+(\d+)$/.exec(m[3]); return { codigo: m[1], desc: m[2].replace(/\s+/g, ' ').trim(), qtde: q ? 0 : (/^\d+$/.test(m[3]) ? +m[3] : 0), parcela: q ? { n: +q[1], m: +q[2] } : null, valor: ccCentavos(m[4]) }; }
+  /* totais sem depender dos rótulos: uma linha com valores em que rendimentos − descontos = líquido (com ou sem o FGTS na frente) */
+  function ccTotaisPorConta(L){
+    for (var i = L.length - 1; i >= 0; i--){
+      var vs = (L[i].replace(/(\d{1,3}(?:\.\d{3})*) (\d{2})(?=\s|$)/g, '$1,$2').match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(ccCentavos); if (vs.length < 3 || vs.length > 5) continue;
+      for (var k = 0; k + 2 < vs.length; k++) if (vs[k] > 0 && vs[k] - vs[k + 1] === vs[k + 2] && vs[k + 2] > 0) return { rendimentos: vs[k], descontos: vs[k + 1], liquido: vs[k + 2], fgts: k > 0 ? vs[k - 1] : null };
+    }
+    return null;
+  }
+  var CC_MESES = 'JANEIRO|FEVEREIRO|MARCO|ABRIL|MAIO|JUNHO|JULHO|AGOSTO|SETEMBRO|OUTUBRO|NOVEMBRO|DEZEMBRO';
+  function ccCentavos(t){ t = String(t).trim().replace(/^(\d{1,3}(?:\.\d{3})*)\s(\d{2})$/, '$1,$2'); var v = lerValor(t.replace(/\s+/g, '')); return v ? v.c : null; }
+  function ccCategoria(desc, tipo, parcela){
+    var n = norm(desc);
+    if (tipo === 'provento'){
+      if (/SERV(ICO)?\.? ?EXTRA|EXTRAORDINARI|\bAC ?4\b|HORA EXTRA|PLANTAO EXTRA/.test(n)) return 'extra';
+      if (/13 ?(O|º)? ?SAL|DECIMO|NATALINA|13\.? SALARIO/.test(n)) return 'decimo';
+      if (/FERIAS|1\/3 CONST|TERCO CONST/.test(n)) return 'ferias';
+      if (/ABONO(?! FARDAMENTO)/.test(n)) return 'abono';
+      if (/SUBSIDIO|VENCIMENTO|SOLDO|SALARIO BASE|REMUNERACAO/.test(n)) return 'base';
+      return 'adicional';
+    }
+    if (parcela || /EMPRESTIMO|CONSIGNAD|FINANCIAMENTO/.test(n)) return 'consignado';
+    if (/IRRF|IMPOSTO DE RENDA/.test(n)) return 'imposto';
+    if (/CONTRIBUICAO (PENSAO|PREVIDENCI)|PREVIDENCI|PENSAO MILITAR|IPREV|INATIVIDADE/.test(n)) return 'previdencia';
+    if (/IPASGO|PLANO DE SAUDE|SAUDE|ASSISTENCIA|FAS /.test(n)) return 'saude';
+    if (/CARTAO BENEFICIO|VEMCARD/.test(n)) return 'cartao';
+    return 'outro';
+  }
+  /* separa proventos de descontos pela conta dos totais; devolve um vetor de booleanos (true = provento) ou null */
+  function ccSeparar(valores, rend){
+    var s = 0, n = valores.length, i;
+    for (i = 0; i < n; i++){ s += valores[i]; if (s === rend){ return valores.map(function(_, k){ return k <= i; }); } if (s > rend) break; }
+    if (n > 40 || rend > 5000000) return null;   /* subconjunto com soma igual ao total (poucas linhas) */
+    var alc = new Array(rend + 1).fill(-1); alc[0] = n;   /* alc[soma] = índice do item que a alcançou */
+    for (i = 0; i < n; i++){ for (var t = rend; t >= valores[i]; t--) if (alc[t] === -1 && alc[t - valores[i]] !== -1 && alc[t - valores[i]] > i) alc[t] = i; }
+    if (alc[rend] === -1) return null;
+    var res = valores.map(function(){ return false; }), t2 = rend;
+    while (t2 > 0){ var k = alc[t2]; res[k] = true; t2 -= valores[k]; }
+    return res;
+  }
+  /* "parece contracheque": rótulos da tabela, ou várias linhas começando por código de 6 dígitos (mesmo que o texto do PDF esteja bagunçado) */
+  function pareceContracheque(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), N = norm(L.join('\n'));
+    if (/PROVENTOS ?\/ ?DESCONTOS|ROVENTOS ?\/ ?DESCONTO/.test(N)) return true;
+    if (/(RENDIMENTOS|PROVENTOS)/.test(N) && /DESCONTOS/.test(N) && /LIQUIDO/.test(N)) return true;
+    return L.filter(function(l){ return /^\d{6}\s+[A-Za-zÀ-ÿ]{3}/.test(l.trim()) && /\d,\d{2}|\d \d{2}/.test(l); }).length >= 5;
+  }
+  function lerContracheque(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }).map(function(x){ return x.replace(/\s+$/, ''); }).filter(function(x){ return x.trim(); });
+    var N = norm(L.join('\n')), itens = [], i;
+    var entradas = [];   /* na ordem das linhas; a linha cujo valor a foto não deixou ler entra vazia e é resolvida pela conta dos totais */
+    L.forEach(function(l){ var it = ccLinhaItem(l); if (it){ itens.push(it); entradas.push(it); } else if (/^\d{6}\s+[A-Za-zÀ-ÿ]{3}/.test(l.trim()) && !/\d{1,3}(?:\.\d{3})*,\d{2}\s*$/.test(l.trim())){ var rest = l.trim().replace(/^\d{6}\s+/, ''), mq = /(\d+)\s+de\s+(\d+)/.exec(rest); entradas.push({ codigo: l.trim().slice(0, 6), desc: (mq ? rest.slice(0, mq.index) : rest.split(/\s{2,}/)[0]).replace(/[^A-Za-zÀ-ÿ0-9%.\/ -]+/g, ' ').replace(/\s+/g, ' ').trim(), qtde: 0, parcela: mq ? { n: +mq[1], m: +mq[2] } : null, valor: null }); } });
+    if (itens.length < 3) return null;
+    var T = { rendimentos: null, descontos: null, liquido: null, fgts: null, baseIrrf: null }, margem = { consignavel: null, cartao: null };
+    for (i = 0; i < L.length; i++){
+      var ln = norm(L[i]);
+      if (/RENDIMENTOS/.test(ln) && /DESCONTOS/.test(ln) && /LIQUIDO/.test(ln)){
+        var rotulos = L[i].split(/\s{2,}/).map(norm), vals = (L[i + 1] || '').split(/\s{2,}/).map(function(x){ return ccCentavos(x); });
+        rotulos.forEach(function(r, k){ if (vals[k] == null) return; if (/FGTS/.test(r)) T.fgts = vals[k]; else if (/RENDIMENTOS/.test(r)) T.rendimentos = vals[k]; else if (/DESCONTOS/.test(r)) T.descontos = vals[k]; else if (/LIQUIDO/.test(r)) T.liquido = vals[k]; });
+      }
+      if (/BASE IRRF/.test(ln)){ var bv = (L[i + 1] || '').split(/\s{2,}/)[0]; T.baseIrrf = ccCentavos(bv); }
+      if (/LIMITE CONSIG/.test(ln)){ for (var k2 = i + 1; k2 < Math.min(L.length, i + 4); k2++){ var vs = L[k2].split(/\s{2,}/).map(function(x){ return ccCentavos(x); }).filter(function(x){ return x != null; }); if (vs.length){ margem.consignavel = vs[0]; margem.cartao = vs.length > 1 ? vs[1] : null; break; } } }
+    }
+    if (T.rendimentos == null){ var pc = ccTotaisPorConta(L); if (pc){ T.rendimentos = pc.rendimentos; T.descontos = pc.descontos; T.liquido = pc.liquido; if (pc.fgts != null) T.fgts = pc.fgts; } }
+    if (T.rendimentos == null){ var m1 = /RENDIMENTOS\s+([\d.,]+)/.exec(N), m2 = /DESCONTOS\s+([\d.,]+)/.exec(N), m3 = /LIQUIDO\s+([\d.,]+)/.exec(N); if (m1) T.rendimentos = ccCentavos(m1[1]); if (m2) T.descontos = ccCentavos(m2[1]); if (m3) T.liquido = ccCentavos(m3[1]); }
+    var provas = [], vazias = entradas.filter(function(x){ return x.valor === null; });
+    if (vazias.length === 1 && T.rendimentos != null && T.descontos != null){   /* uma só linha ilegível: o valor que falta é o que fecha (proventos + descontos − as outras linhas) */
+      var lido = itens.reduce(function(t, x){ return t + x.valor; }, 0), falta = T.rendimentos + T.descontos - lido;
+      if (falta > 0 && falta < T.rendimentos + T.descontos){ vazias[0].valor = falta; vazias[0].deduzido = true; itens = entradas.filter(function(x){ return x.valor !== null; }); provas.push('não consegui ler o valor de "' + vazias[0].desc + '" na imagem: usei ' + (falta / 100).toFixed(2).replace('.', ',') + ', o que falta para os totais fecharem. Confira'); }
+    } else if (vazias.length) provas.push('não consegui ler o valor de ' + vazias.length + ' linha(s) (' + vazias.map(function(x){ return x.desc || x.codigo; }).join(', ') + '): confira');
+    if (T.rendimentos != null && T.descontos != null && T.liquido != null){
+      var S0 = itens.reduce(function(t, x){ return t + x.valor; }, 0), r0 = T.rendimentos, d0 = T.descontos, l0 = T.liquido, fmt0 = function(v){ return (v / 100).toFixed(2).replace('.', ','); };
+      if (r0 - d0 !== l0){   /* um dos três totais foi lido errado (foto): o que fecha com a soma das linhas vale */
+        if (r0 + (r0 - l0) === S0){ provas.push('o total "Descontos" saiu ' + fmt0(d0) + ' na leitura; usei ' + fmt0(r0 - l0) + ' (rendimentos − líquido, que fecha com as linhas). Confira'); T.descontos = r0 - l0; }
+        else if (l0 + 2 * d0 === S0){ provas.push('o total "Rendimentos" saiu ' + fmt0(r0) + ' na leitura; usei ' + fmt0(l0 + d0) + ' (líquido + descontos, que fecha com as linhas). Confira'); T.rendimentos = l0 + d0; }
+        else if (r0 + d0 === S0){ provas.push('o total "Líquido" saiu ' + fmt0(l0) + ' na leitura; usei ' + fmt0(r0 - d0) + ' (rendimentos − descontos). Confira'); T.liquido = r0 - d0; }
+      }
+      var delta = T.rendimentos + T.descontos - S0;
+      if (delta !== 0 && T.rendimentos - T.descontos === T.liquido){   /* totais conferem entre si, mas as linhas não: um valor lido com um dígito errado */
+        var um = function(a, b){ var x = String(a), y = String(b); if (x.length !== y.length) return false; var n = 0; for (var q = 0; q < x.length; q++) if (x[q] !== y[q]) n++; return n === 1; };
+        var CONF = ['06', '08', '09', '56', '35', '38', '68', '17', '27', '49', '58'];   /* pares de dígitos que a leitura de foto costuma trocar */
+        var plaus = function(a, b){ var x = String(a), y = String(b); for (var q = 0; q < x.length; q++) if (x[q] !== y[q]) return CONF.indexOf(x[q] < y[q] ? x[q] + y[q] : y[q] + x[q]) >= 0; return false; };
+        var cands = itens.filter(function(x){ return x.valor + delta > 0 && um(x.valor, x.valor + delta) && plaus(x.valor, x.valor + delta); });
+        if (cands.length > 1){   /* vários servem: fica o que também deixa separar proventos e descontos pelos totais */
+          var boas = cands.filter(function(c){ var acc = 0, ok = false; itens.forEach(function(x){ acc += (x === c ? x.valor + delta : x.valor); if (acc === T.rendimentos) ok = true; }); return ok; });   /* proventos vêm primeiro na tabela */
+          if (boas.length === 1) cands = boas;
+        }
+        if (cands.length === 1){ provas.push('corrigi "' + cands[0].desc + '" de ' + fmt0(cands[0].valor) + ' para ' + fmt0(cands[0].valor + delta) + ': um dígito foi lido errado e esse é o único valor que fecha com os totais. Confira'); cands[0].valor += delta; cands[0].corrigido = true; }
+      }
+    }
+    var ajustou = provas.length > 0;   /* valor deduzido ou corrigido pela conta: nunca selo verde */
+    var selo = 'amarelo', marca = null, totaisLidos = T.rendimentos != null && T.descontos != null && T.liquido != null;
+    if (T.rendimentos != null) marca = ccSeparar(itens.map(function(x){ return x.valor; }), T.rendimentos);
+    if (!marca){ marca = itens.map(function(x){ return /^2/.test(x.codigo) && !/FARDAMENTO$|^FAS/.test(norm(x.desc)); }); provas.push('não consegui separar proventos e descontos pelos totais: confira'); }
+    itens.forEach(function(x, k){ x.tipo = marca[k] ? 'provento' : 'desconto'; x.cat = ccCategoria(x.desc, x.tipo, x.parcela); });
+    var sp = itens.filter(function(x){ return x.tipo === 'provento'; }).reduce(function(t, x){ return t + x.valor; }, 0), sd = itens.filter(function(x){ return x.tipo === 'desconto'; }).reduce(function(t, x){ return t + x.valor; }, 0);
+    if (T.rendimentos == null) T.rendimentos = sp; if (T.descontos == null) T.descontos = sd; if (T.liquido == null) T.liquido = T.rendimentos - T.descontos;
+    var fechaP = sp === T.rendimentos, fechaD = sd === T.descontos, fechaL = T.rendimentos - T.descontos === T.liquido;
+    if (!totaisLidos) provas.push('não achei os totais do rodapé (rendimentos, descontos e líquido) para conferir: confira linha a linha');
+    else if (fechaP && fechaD && fechaL){ selo = ajustou ? 'amarelo' : 'verde'; provas.push('proventos, descontos e líquido fecham com as linhas' + (ajustou ? ' (depois dos ajustes acima)' : '')); }
+    else { if (!fechaP) provas.push('a soma dos proventos (' + (sp / 100).toFixed(2).replace('.', ',') + ') difere do total "Rendimentos"'); if (!fechaD) provas.push('a soma dos descontos (' + (sd / 100).toFixed(2).replace('.', ',') + ') difere do total "Descontos"'); if (!fechaL) provas.push('rendimentos − descontos não dá o líquido'); }
+    var out = { referencia: null, itens: itens, totais: T, margem: margem, servidor: '', cargo: '', orgao: '', selo: selo, provas: provas };
+    var mr = new RegExp('REFERENCIA[\\s\\S]{0,160}?(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N) || new RegExp('(' + CC_MESES + ')\\s*/\\s*(\\d{4})').exec(N);
+    if (mr){ var mes = MESL[mr[1]]; if (mes) out.referencia = mr[2] + '-' + pad(mes, 2); }
+    for (i = 0; i < L.length; i++){ var nl = norm(L[i]); if (/^NOME SERVIDOR/.test(nl)) out.servidor = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); else if (/^CARGO\b/.test(nl) && !out.cargo) out.cargo = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); else if (/^NOME ORGAO/.test(nl)) out.orgao = (L[i + 1] || '').split(/\s{2,}/)[0].trim(); }
+    if (!out.referencia) provas.push('não achei o mês de referência: informe ao confirmar');
+    return out;
+  }
+
+
+  /* ============================================================
+     G. FATURA DO CARTÃO DE CRÉDITO (CSV ou PDF) — sem modelo por banco
+     CSV: acha o separador, a linha de títulos (data, descrição, valor, parcela, categoria) e o formato do número. PDF: acha as linhas "DD/MM  estabelecimento  [NN/MM]  valor"
+     por seção (compras, internacionais; ignora pagamentos e "próximas faturas"). O VENCIMENTO vem do campo "Vencimento"/"Data de vencimento" do documento (null = o app pergunta).
+     Prova: soma dos lançamentos = "Total dos lançamentos atuais" / "Total da fatura" (PDF). CSV não traz total: amarelo.
+     ============================================================ */
+  function fvCents(t){
+    var x = String(t == null ? '' : t).replace(/R\$|US\$/gi, '').replace(/\s+/g, ''); if (!x) return null;
+    var neg = /^-/.test(x) || /^\(.*\)$/.test(x); x = x.replace(/^[-+(]+|\)$/g, '');
+    if (/^\d{1,3}(\.\d{3})*,\d{1,2}$/.test(x) || /^\d+,\d{1,2}$/.test(x)) x = x.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(,\d{3})*\.\d{1,2}$/.test(x)) x = x.replace(/,/g, '');
+    else if (!/^\d+(\.\d{1,2})?$/.test(x)) return null;
+    var c = Math.round(parseFloat(x) * 100); return isNaN(c) ? null : (neg ? -c : c);
+  }
+  function fvData(t, ref){   /* ISO, DD/MM/AAAA, DD/MM/AA ou DD/MM (o ano sai da data de referência: nunca depois dela por mais de 31 dias) */
+    var x = String(t || '').trim(), m;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(x))) return m[1] + '-' + m[2] + '-' + m[3];
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(x))) return m[3] + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2);
+    if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(x))) return '20' + m[3] + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2);
+    if ((m = /^(\d{1,2})\/(\d{1,2})$/.exec(x)) && ref){ var a = +ref.slice(0, 4), iso = a + '-' + pad(+m[2], 2) + '-' + pad(+m[1], 2); if (difDias(iso, ref) > 31) iso = (a - 1) + iso.slice(4); return iso; }
+    return null;
+  }
+  function fvParcela(t){
+    var m = /(?:^|\s)-?\s*parcela\s+(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})\s*$/i.exec(t) || /(?:^|\s)(\d{1,2})\/(\d{1,2})\s*$/.exec(t);
+    if (!m) return null; var n = +m[1], q = +m[2]; return (n >= 1 && q >= 2 && n <= q) ? { n: n, m: q, texto: m[0] } : null;
+  }
+  /* o que fecha a conta: pagamentos anteriores saem, IOF que se anula sai, parcelas e créditos ficam */
+  function fvFechar(itens, meta){
+    var provas = [], ign = [];
+    itens.forEach(function(it){
+      var n = norm(it.t);
+      if (it.v < 0 && /^PAGAMENTO|^PAGTO|PAGAMENTO (RECEBIDO|EFETUADO|VIA|EM CONTA|DA FATURA)|^OBRIGADO PELO PAGAMENTO/.test(n)){ it.ignorar = 'pagamento da fatura anterior'; }
+      else if (it.v < 0) it.tipo = 'credito';
+    });
+    var iofP = itens.filter(function(i){ return !i.ignorar && i.v > 0 && /^IOF/.test(norm(i.t)); }), iofN = itens.filter(function(i){ return !i.ignorar && i.v < 0 && /IOF/.test(norm(i.t)); });
+    iofN.forEach(function(neg){ var par = iofP.filter(function(p){ return !p.ignorar && p.v === -neg.v; })[0]; if (par){ par.ignorar = neg.ignorar = 'IOF que se anula'; } });
+    var uteis = itens.filter(function(i){ if (i.ignorar){ ign.push({ t: i.t, v: i.v, motivo: i.ignorar }); return false; } return true; });
+    var soma = uteis.reduce(function(t, i){ return t + i.v; }, 0);
+    /* competência: a data da compra; parcela que não é a primeira cai no mês em que a fatura fecha */
+    var datas = uteis.filter(function(i){ return !i.parcela || i.parcela.n === 1; }).map(function(i){ return i.dc; }).sort(), fim = datas.length ? datas[datas.length - 1] : (meta.vencimento || null);
+    uteis.forEach(function(i){ i.d = (i.parcela && i.parcela.n > 1 && fim) ? fim : i.dc; });
+    var ini = uteis.filter(function(i){ return !i.parcela || i.parcela.n === 1; }).map(function(i){ return i.dc; }).sort()[0];
+    meta.periodo = { de: ini || null, ate: fim };
+    return { uteis: uteis, ign: ign, soma: soma, provas: provas };
+  }
+  function fvCsvLinhas(txt){
+    var L = String(txt || '').replace(/^﻿/, '').split(/\r?\n/).filter(function(l){ return l.trim(); }); if (L.length < 2) return null;
+    var cont = { ',': 0, ';': 0, '\t': 0 };
+    L.slice(0, 6).forEach(function(l){ var q = false; for (var i = 0; i < l.length; i++){ var ch = l[i]; if (ch === '"') q = !q; else if (!q && cont[ch] !== undefined) cont[ch]++; } });
+    var d = ';'; if (cont[','] >= cont[';'] && cont[','] >= cont['\t']) d = ','; if (cont['\t'] > cont[d]) d = '\t';
+    if (!cont[d]) return null;
+    return L.map(function(l){ var out = [], cur = '', q = false; for (var i = 0; i < l.length; i++){ var ch = l[i]; if (ch === '"'){ if (q && l[i + 1] === '"'){ cur += '"'; i++; } else q = !q; } else if (ch === d && !q){ out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out.map(function(c){ return c.trim(); }); });
+  }
+  function lerFaturaCsv(txt, nomeArq, hoje){
+    var rows = fvCsvLinhas(txt); if (!rows) return null;
+    var h = -1, col = null;
+    for (var i = 0; i < Math.min(rows.length, 15) && h < 0; i++){
+      var cs = rows[i].map(norm), c = { d: -1, t: -1, v: -1, p: -1, c: -1, saldo: -1, cred: -1 };
+      cs.forEach(function(x, k){
+        if (c.d < 0 && /^(DATA|DATE|DATA DA COMPRA|DATA DE COMPRA|DATA DO LANCAMENTO|DATA LANCAMENTO|DT COMPRA)$/.test(x)) c.d = k;
+        else if (c.t < 0 && /^(TITLE|TITULO|DESCRICAO|DESCRICAO DA COMPRA|HISTORICO|LANCAMENTO|ESTABELECIMENTO|DESCRICAO DO LANCAMENTO)$/.test(x)) c.t = k;
+        else if (/^(AMOUNT|VALOR|VALOR \(EM R\$\)|VALOR EM R\$|VALOR \(R\$\)|VALOR R\$)$/.test(x) && (c.v < 0 || /R\$/.test(x))) c.v = k;
+        else if (c.p < 0 && /^PARCELA/.test(x)) c.p = k;
+        else if (c.c < 0 && /^CATEGORIA/.test(x)) c.c = k;
+        if (/^SALDO/.test(x)) c.saldo = k; if (/^(CREDITO|DEBITO)/.test(x)) c.cred = k;
+      });
+      if (c.d >= 0 && c.t >= 0 && c.v >= 0){ h = i; col = c; }
+    }
+    if (h < 0 || col.saldo >= 0 || col.cred >= 0) return null;   /* sem os três títulos, ou é extrato de conta (com saldo), não fatura */
+    var itens = [];
+    rows.slice(h + 1).forEach(function(r){
+      var d = fvData(r[col.d], hoje), v = fvCents(r[col.v]); if (!d || v === null || !r[col.t]) return;
+      var it = { dc: d, d: d, t: r[col.t].replace(/\s+/g, ' ').trim(), v: v, parcela: null, catBanco: col.c >= 0 ? (r[col.c] || '') : '', tipo: 'compra' };
+      var pc = col.p >= 0 ? /(\d{1,2})\s*(?:\/|de)\s*(\d{1,2})/.exec(r[col.p] || '') : null;
+      if (pc && +pc[2] >= 2) it.parcela = { n: +pc[1], m: +pc[2] }; else { var pt = fvParcela(it.t); if (pt){ it.parcela = { n: pt.n, m: pt.m }; it.t = it.t.replace(pt.texto, '').replace(/\s*-\s*$/, '').trim(); } }
+      itens.push(it);
+    });
+    if (itens.length < 3) return null;
+    var semPag = itens.filter(function(i){ return !/^PAGAMENTO|^PAGTO|PAGAMENTO (RECEBIDO|EFETUADO|VIA|EM CONTA|DA FATURA)/.test(norm(i.t)); });   /* o pagamento da fatura anterior não decide o sinal */
+    var pos = semPag.filter(function(i){ return i.v > 0; }).reduce(function(t, i){ return t + i.v; }, 0), neg = semPag.filter(function(i){ return i.v < 0; }).reduce(function(t, i){ return t - i.v; }, 0);
+    if (neg > pos) itens.forEach(function(i){ i.v = -i.v; });   /* banco que lança a compra como negativo */
+    var meta = { vencimento: null }, f = fvFechar(itens, meta);
+    var banco = bancoPorTexto(norm(nomeArq || '')) || '', dicaVenc = /(\d{4})-(\d{2})-(\d{2})/.exec(nomeArq || '');
+    var provas = ['o arquivo CSV não traz o total da fatura nem o vencimento: confira a soma (' + (f.soma / 100).toFixed(2).replace('.', ',') + ') com o total do aplicativo do banco'];
+    return { formato: 'csv', banco: banco, cartao: '', vencimento: null, dicaVencimento: dicaVenc ? dicaVenc[1] + '-' + dicaVenc[2] + '-' + dicaVenc[3] : null, total: null, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: [], total: 0 }, selo: 'amarelo', provas: provas };
+  }
+  function fvValorRotulo(L, rot){
+    for (var i = 0; i < L.length; i++){ if (!rot.test(norm(L[i]))) continue; var ms = L[i].match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g); if (ms) return fvCents(ms[ms.length - 1]); var nx = (L[i + 1] || '').match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g); if (nx) return fvCents(nx[0]); }
+    return null;
+  }
+  function fvAcharVencimento(L){
+    for (var i = 0; i < L.length; i++){
+      var n = norm(L[i]); if (!/VENCIMENTO/.test(n) || /FECHAMENTO|PROXIM|APOS O VENCIMENTO|ATE O VENCIMENTO|PAGUE|MULTA|JUROS/.test(n)) continue;
+      var m = /(\d{2}\/\d{2}\/\d{4})/.exec(L[i]) || (/^\s*(\d{2}\/\d{2}\/\d{4})\s*$/.exec(L[i + 1] || ''));
+      if (m) return fvData(m[1]);
+    }
+    /* data por extenso: "Data de vencimento: 02 DEZ 2026", "vence em 2 de dezembro de 2026" */
+    var M3 = { JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6, JUL: 7, AGO: 8, SET: 9, OUT: 10, NOV: 11, DEZ: 12 };
+    for (var j = 0; j < L.length; j++){
+      var nj = norm(L[j]); if (!/VENCIMENTO|VENCE EM/.test(nj) || /FECHAMENTO|PROXIM|APOS O VENCIMENTO|ATE O VENCIMENTO|PAGUE|MULTA|JUROS/.test(nj)) continue;
+      var t = nj + ' ' + norm(L[j + 1] || ''), mm = /(\d{1,2})\s+(?:DE\s+)?(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)[A-Z]*\.?\s+(?:DE\s+)?(\d{4})/.exec(t);
+      if (mm) return mm[3] + '-' + pad(M3[mm[2]], 2) + '-' + pad(+mm[1], 2);
+    }
+    return null;
+  }
+  /* data em que ESTA fatura fechou (não a do próximo fechamento): "Fechamento da fatura 25/11/2026", "Fatura fechada em 26 NOV", "Período vigente: 27 OUT a 26 NOV".
+     Só vale se cair de 3 a 45 dias antes do vencimento; senão devolve null e o app pergunta */
+  function fvAcharFechamento(L, venc){
+    if (!venc) return null;
+    var MES3 = { JAN: 1, FEV: 2, MAR: 3, ABR: 4, MAI: 5, JUN: 6, JUL: 7, AGO: 8, SET: 9, OUT: 10, NOV: 11, DEZ: 12 }, va = +venc.slice(0, 4), vm = +venc.slice(5, 7);
+    var dias = function(iso){ return Math.round((Date.UTC(+venc.slice(0, 4), +venc.slice(5, 7) - 1, +venc.slice(8, 10)) - Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))) / 864e5); };
+    for (var i = 0; i < L.length; i++){
+      var n = norm(L[i]); if (!/FECHAMENTO|FECHA EM|FECHOU EM|FATURA FECHADA|PERIODO VIGENTE/.test(n) || /PROXIMO|PROX\.|PROX |PREVISAO|SEGUINTE|MELHOR DIA|VENCIMENTO/.test(n)) continue;
+      var prox = L[i + 1] || '', txt = (/\d{1,2}\/\d{1,2}|\d{1,2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)/.test(n) || /PROXIMO|PROX\.|PREVISAO|VENCIMENTO/.test(norm(prox))) ? n : n + ' ' + norm(prox), ach = [], m, re1 = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/g, re2 = /(\d{1,2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)[A-Z]*\.?(?:\s+(\d{4}))?/g;
+      while ((m = re1.exec(txt))) ach.push({ d: +m[1], m: +m[2], a: m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : null, i: m.index });
+      while ((m = re2.exec(txt))) ach.push({ d: +m[1], m: MES3[m[2]], a: m[3] ? +m[3] : null, i: m.index });
+      ach.sort(function(x, y){ return x.i - y.i; });
+      var u = ach[ach.length - 1]; if (!u || u.m < 1 || u.m > 12 || u.d < 1 || u.d > 31) continue;
+      var ano = u.a || (u.m > vm ? va - 1 : va), iso = ano + '-' + pad(u.m, 2) + '-' + pad(u.d, 2), dd = dias(iso);
+      if (dd >= 3 && dd <= 45) return iso;
+    }
+    return null;
+  }
+  /* PDF de duas colunas (compras à esquerda, internacionais e totais à direita): as células da mesma altura viram duas linhas; esquerda primeiro, depois direita, página por página */
+  function fvColunas(itens, pag, corteX){
+    var monta = function(cells){ var s = '', ult = null; cells.forEach(function(c){ if (ult !== null){ var g = c.x - ult; s += g > 12 ? '   ' : (g > 1 ? ' ' : ''); } s += c.s; ult = c.x + (c.w || 0); }); return s.trim(); };
+    var corte = corteX - 8, out = [], pgs = {}, ordem = [];
+    itens.forEach(function(r, i){ var p = pag[i]; if (!pgs[p]){ pgs[p] = []; ordem.push(p); } pgs[p].push(r); });
+    ordem.forEach(function(p){
+      var esq = [], dir = [];
+      pgs[p].forEach(function(r){ var e = r.filter(function(c){ return c.x < corte; }), d = r.filter(function(c){ return c.x >= corte; }); if (e.length) esq.push(monta(e)); if (d.length) dir.push(monta(d)); });
+      out = out.concat(esq, dir);
+    });
+    return out;
+  }
+  /* onde pode começar a coluna da direita: posições (x) em que várias células começam, com bastante texto à esquerda */
+  function fvCortes(itens){
+    var xs = {}, firsts = itens.map(function(r){ return r[0] ? r[0].x : 0; });
+    itens.forEach(function(r){ r.forEach(function(c){ if (c.x >= 250){ var k = Math.round(c.x / 6), o = xs[k] = xs[k] || { n: 0, min: c.x }; o.n++; if (c.x < o.min) o.min = c.x; } }); });
+    return Object.keys(xs).map(function(k){ return { x: xs[k].min, n: xs[k].n }; }).filter(function(c){ return c.n >= 6 && firsts.filter(function(f){ return f < c.x - 60; }).length >= 6; }).sort(function(a, b){ return b.n - a.n; }).slice(0, 3).map(function(c){ return c.x; });
+  }
+  function lerFaturaPdf(linhas, hoje, itens, pag){
+    var plano = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), r = fvPdfNucleo(plano, hoje);
+    if ((!r || r.selo !== 'verde') && itens && pag && itens.length >= 12){   /* não fechou: o PDF pode ter duas colunas (compras à esquerda, totais à direita): tenta separar */
+      fvCortes(itens).forEach(function(x){ if (r && r.selo === 'verde') return; var r2 = fvPdfNucleo(fvColunas(itens, pag, x), hoje); if (r2 && (!r || r2.selo === 'verde' || r2.itens.length > r.itens.length)) r = r2; });
+    }
+    return r;
+  }
+  function fvPdfNucleo(L, hoje){
+    var N = norm(L.join('\n'));
+    var venc = fvAcharVencimento(L), ref = venc || hoje, secao = 'compras', itens = [], futuras = [], ultimaIntl = null, pagos = [];
+    L.forEach(function(l, k){
+      var n = norm(l);
+      if (/^PAGAMENTOS EFETUADOS|^PAGAMENTOS E CREDITOS|^PAGAMENTOS$/.test(n)) { secao = 'pagamentos'; return; }
+      if (/LANCAMENTOS INTERNACIONAIS|COMPRAS INTERNACIONAIS/.test(n)) { secao = 'inter'; return; }
+      if (/COMPRAS E SAQUES|^LANCAMENTOS NO CARTAO$|LANCAMENTOS DO PERIODO|^LANCAMENTOS: /.test(n) && !/^TOTAL/.test(n)){ secao = 'compras'; return; }
+      if (/COMPRAS PARCELADAS ?- ?PROXIMAS FATURAS|PROXIMAS FATURAS$|PARCELAS FUTURAS/.test(n) && !/^TOTAL|^PROXIMA FATURA /.test(n)){ secao = 'futuras'; return; }
+      if (/^(TOTAL PARA PROXIMAS FATURAS|LIMITES? DE CREDITO|ENCARGOS COBRADOS|SIMULACAO)/.test(n)){ secao = 'fim'; return; }
+      var m = /^(\d{2}\/\d{2}(?:\/\d{2,4})?)\s+(.+?)\s+(-?\s?\d{1,3}(?:\.\d{3})*,\d{2})(?:\s*[^\d\s]{1,2})?\s*$/.exec(l.trim()); if (!m) return;   /* um ponto ou letra solta depois do valor (ruído do PDF) não impede a leitura */
+      var data = fvData(m[1], ref), v = fvCents(m[3]), t = m[2].replace(/\s{2,}/g, ' ').trim(); if (!data || v === null) return;
+      var pc = fvParcela(t), cat = '', prox = (L[k + 1] || '').trim();
+      if (pc) t = t.slice(0, t.length - pc.texto.length).trim();
+      if (pc && pc.n > 1 && !/^\d{2}\/\d{2}\/\d/.test(m[1])){ var lim = addDias(ref, -20), a0 = +ref.slice(0, 4), alvo = a0 + data.slice(4); while (alvo > lim) alvo = (+alvo.slice(0, 4) - 1) + alvo.slice(4); data = alvo; }   /* parcela que não é a primeira: a data impressa é a da compra original, meses antes */
+      if (/^[a-zçãõáéíóúâêô]+\s{2}/i.test(prox) && !/^\d/.test(prox) && !/^(total|dolar|dólar)/i.test(prox)) cat = prox.split(/\s{2,}/)[0].trim().toLowerCase();
+      if (secao === 'futuras'){ futuras.push({ t: t, n: pc ? pc.n : null, m: pc ? pc.m : null, v: v }); return; }
+      if (secao === 'pagamentos'){ if (v < 0) pagos.push({ d: data, t: t, v: -v }); return; }   /* pagamentos da fatura anterior (só para conciliar o total) */
+      if (secao === 'fim') return;
+      if (secao === 'inter') ultimaIntl = data;
+      itens.push({ dc: data, d: data, t: t, v: v, parcela: pc ? { n: pc.n, m: pc.m } : null, catBanco: cat, tipo: 'compra' });
+    });
+    var iof = fvValorRotulo(L, /^REPASSE DE IOF/); if (iof > 0) itens.push({ dc: ultimaIntl || ref, d: ultimaIntl || ref, t: 'IOF das compras internacionais', v: iof, parcela: null, catBanco: '', tipo: 'compra' });
+    if (itens.length < 3) return null;
+    var meta = { vencimento: venc }, f = fvFechar(itens, meta);
+    var totAtuais = fvValorRotulo(L, /TOTAL DOS LANCAMENTOS ATUAIS|TOTAL DE LANCAMENTOS ATUAIS|TOTAL DAS COMPRAS|TOTAL DE COMPRAS/), totFatura = fvValorRotulo(L, /TOTAL DESTA FATURA|TOTAL DA FATURA(?! ANTERIOR)|VALOR TOTAL DA FATURA|VALOR DA FATURA/), tcartao = fvValorRotulo(L, /^LANCAMENTOS NO CARTAO/);
+    var fechamentoLido = fvAcharFechamento(L, venc);
+    var provas = [], selo = 'amarelo', fmt = function(c){ return (c / 100).toFixed(2).replace('.', ','); };
+    var refs = [['Total dos lançamentos atuais', totAtuais], ['Total da fatura', totFatura], ['Lançamentos no cartão', tcartao]].filter(function(x){ return x[1] != null; }), bate = refs.filter(function(x){ return x[1] === f.soma; })[0];
+    if (bate){ selo = 'verde'; provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') confere com "' + bate[0] + '"'); }
+    else if (refs.length) provas.push('a soma dos lançamentos (' + fmt(f.soma) + ') não bate com "' + refs[0][0] + '" (' + fmt(refs[0][1]) + '): confira linha a linha');
+    else provas.push('não achei o total da fatura para conferir a soma (' + fmt(f.soma) + ')');
+    /* o total da fatura pode ser MAIOR que as compras: o banco soma o que sobrou da fatura anterior (pagamento menor), juros e encargos. Mostra de onde vem a diferença */
+    var anterior = fvValorRotulo(L, /^TOTAL DA FATURA ANTERIOR/), totPag = fvValorRotulo(L, /^TOTAL DOS PAGAMENTOS/), saldoFin = fvValorRotulo(L, /SALDO FINANCIADO/), pagList = pagos.reduce(function(t, p){ return t + p.v; }, 0), diferenca = null;
+    if (totFatura != null && totFatura !== f.soma){
+      diferenca = { v: totFatura - f.soma, anterior: anterior, pagos: pagList, pagosLinhas: pagos, totalPagamentos: totPag != null ? Math.abs(totPag) : null, saldoFinanciado: saldoFin, explica: '' };
+      if (anterior != null && pagList > 0 && anterior - pagList === diferenca.v) diferenca.explica = 'resto';
+      provas.push('o total da fatura (' + fmt(totFatura) + ') é ' + fmt(Math.abs(diferenca.v)) + (diferenca.v > 0 ? ' maior' : ' menor') + ' que as compras lidas (' + fmt(f.soma) + ')' + (diferenca.explica === 'resto' ? ': é o que sobrou da fatura anterior (' + fmt(anterior) + ' menos o pagamento listado de ' + fmt(pagList) + ')' : ': confira no aplicativo do banco o que compõe a diferença'));
+    }
+    if (!venc) provas.push('não achei o campo "Vencimento" no documento: informe a data ao confirmar');
+    var cart = /CARTAO\s+(\d{4})[.\s]*[X*]{4}[.\s]*[X*]{4}[.\s]*(\d{4})/.exec(N) || /FINAL\s+(\d{4})/.exec(N);
+    return { formato: 'pdf', banco: bancoPorTexto(N), cartao: cart ? cart[cart.length - 1] : '', vencimento: venc, total: totFatura != null ? totFatura : totAtuais, soma: f.soma, periodo: meta.periodo, itens: f.uteis, ignorados: f.ign, futuras: { lista: futuras, total: futuras.reduce(function(t, x){ return t + x.v; }, 0) }, diferenca: diferenca, fechamentoLido: fechamentoLido, selo: selo, provas: provas };
+  }
+  /* PDF que parece fatura de cartão: "fatura" + vencimento + várias linhas de compra (data, estabelecimento, valor) */
+  function pareceFatura(linhas){
+    var L = (linhas || []).map(function(x){ return Array.isArray(x) ? x.join('   ') : String(x); }), N = norm(L.join('\n'));
+    if (!/FATURA/.test(N) || !/VENCIMENTO/.test(N)) return false;
+    return L.filter(function(l){ return /^\d{2}\/\d{2}(\/\d{2,4})?\s+.+\s-?\d{1,3}(\.\d{3})*,\d{2}\s*$/.test(l.trim()); }).length >= 3 && /LANCAMENTOS|COMPRAS|ESTABELECIMENTO|TRANSACOES/.test(N);
+  }
+
+  return { BANCOS: BANCOS, bancoPorCodigo: bancoPorCodigo, bancoPorTexto: bancoPorTexto, mod10: mod10, mod11: mod11, vencimentoDoFator: vencimentoDoFator, lerLinhaDigitavel: lerLinhaDigitavel, acharBoletos: acharBoletos, fmtLinha: fmtLinha, crc16: crc16, lerBRCode: lerBRCode, acharBRCode: acharBRCode, lerE2E: lerE2E, acharE2E: acharE2E, cpfOk: cpfOk, cnpjOk: cnpjOk, lerExtratoGeral: lerExtratoGeral, lerComprovante: lerComprovante, lerBoletoDoc: lerBoletoDoc, lerContracheque: lerContracheque, pareceContracheque: pareceContracheque, lerFaturaCsv: lerFaturaCsv, lerFaturaPdf: lerFaturaPdf, pareceFatura: pareceFatura, fvCents: fvCents, classificar: classificar, dataHoraDe: dataHoraDe, lerValor: lerValor, lerData: lerData, celulasDaLinha: celulasDaLinha, norm: norm, addDias: addDias, difDias: difDias, onlyDig: onlyDig };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = LeitorGeral;

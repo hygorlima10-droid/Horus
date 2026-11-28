@@ -1,0 +1,18 @@
+{
+  "name": "controle-juridico",
+  "main": "src/index.js",
+  "compatibility_date": "2025-01-01",
+  "keep_vars": true,
+  // Smart Placement foi testado em 28/11 e DESLIGADO em 29/11 (a abertura ficou mais lenta no celular do proprietário); o banco D1 fica nos EUA e o Worker roda perto de quem acessa.
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "controle-juridico", "database_id": "6e63cb30-f3a4-4611-9b53-275284e1fbec" }
+  ],
+  /* Transcrição dos atendimentos: Whisper do Workers AI (cota gratuita diária); a rota só chama quando alguém pede uma transcrição. */
+  "ai": { "binding": "AI" },
+  "r2_buckets": [
+    { "binding": "ARQUIVOS", "bucket_name": "horus-peticoes" }
+  ],
+  "triggers": { "crons": ["0 11 * * 1", "0 13 * * *", "0 15,17,19,21 * * *"] },
+  "observability": { "enabled": true }
+}

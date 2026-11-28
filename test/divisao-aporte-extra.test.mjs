@@ -1,0 +1,34 @@
+// Divisão do mês › "Aportar mais, até R$ …": o aporte de um valor MENOR que o sugerido (R$ 300,00) é aceito, avisa que foi registrado e aparece na linha da reserva ("+ R$ 300,00 a mais").
+// Servidor do grupo 'permissoes':  node test/rodar.mjs divisao-aporte-extra
+import { createRequire } from 'node:module';
+const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
+const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = 'tok-dono-0000000000000000000000000001';
+let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
+const api = async (m, p, b) => fetch(B + '/api/db/' + p, { method: m, headers: { cookie: 'sessao=' + TOK, 'content-type': 'application/json' }, body: b !== undefined ? JSON.stringify(b) : undefined });
+const dia = (n) => new Date(Date.now() - 3 * 3600e3 + n * 864e5).toISOString().slice(0, 10), agora = new Date().toISOString();
+await api('PUT', 'despesas/tmpd1', { nome: 'TMP Aluguel', coluna: 'pj', tipo: 'fixa', valorPadrao: 1500, diaVencimento: 25, categoria: 'estrutura', ativa: true, pagamentos: {}, criadoEm: '2026-01-01T00:00:00.000Z' });
+await api('PUT', 'despesas/tmpd2', { nome: 'TMP Plano', coluna: 'pf', tipo: 'fixa', valorPadrao: 800, diaVencimento: 27, categoria: 'outros', ativa: true, pagamentos: {}, criadoEm: '2026-01-01T00:00:00.000Z' });
+await api('PUT', 'saldos/pj', { coluna: 'pj', saldoAtual: 30000, atualizadoEm: agora, historico: [{ valor: 30000, data: agora }] });
+await api('PUT', 'saldos/pf', { coluna: 'pf', saldoAtual: 200, atualizadoEm: agora, historico: [{ valor: 200, data: agora }] });
+await api('PUT', 'metas/tmpm1', { tipo: 'reserva', coluna: 'pj', nome: 'TMP Reserva', movimentos: [{ id: 'i1', tipo: 'inicial', valor: 1000, dia: dia(-60), data: agora }], criadoEm: agora });
+const br = await chromium.launch(); const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 }); await ctx.addCookies([{ name: 'sessao', value: TOK, url: B }]);
+const p = await ctx.newPage(); const erros = []; p.on('pageerror', (e) => erros.push(e.message)); await p.route(/fonts\./, (r) => r.abort());
+await p.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { } });
+await p.goto(B + '/'); await p.waitForFunction(() => window.__horusEu && window.__horusEu.pronto, null, { timeout: 60000 }); await p.waitForTimeout(2500);
+await p.evaluate(() => document.querySelector('#drawer [data-fin="geral"]').click()); await p.waitForTimeout(1500);
+await p.evaluate(() => document.querySelector('#drawer [data-fin="geral"]').click()); await p.waitForTimeout(1500);
+const bt = await p.evaluate(() => [...document.querySelectorAll('[data-div-aportar]')].map((b) => b.innerText.trim()));
+check(bt.length === 1 && /Aportar mais, até/.test(bt[0]), 'a Divisão do mês mostra "Aportar mais, até R$ …"');
+await p.evaluate(() => { const b = document.querySelector('[data-div-aportar]'); b.scrollIntoView({ block: 'center' }); b.click(); }); await p.waitForTimeout(700);
+check(await p.evaluate(() => document.getElementById('overlayMetaMov').classList.contains('show')), 'o botão abre o formulário do aporte');
+await p.fill('#metaMovValorInput', '300'); await p.waitForTimeout(200);
+await p.click('#saveBtnMetaMov'); await p.waitForTimeout(1200);
+const corpo = await p.evaluate(() => document.body.innerText.replace(/\s+/g, ' '));
+check(/Aporte de R\$ 300,00 registrado em/.test(corpo), 'ao salvar, aparece o aviso "Aporte de R$ 300,00 registrado"');
+const m = (await (await api('GET', 'metas')).json()).docs.find((d) => d.id === 'tmpm1');
+check(m.data.movimentos.filter((x) => x.tipo === 'aporte').length === 1 && m.data.movimentos.some((x) => x.tipo === 'aporte' && x.valor === 300), 'o aporte de R$ 300,00 foi gravado uma vez, mesmo sendo menor que a sugestão');
+const linha = await p.evaluate(() => (document.getElementById('finGeral').innerText || '').replace(/\s+/g, ' '));
+check(/Aporte na reserva[^]*?\+ R\$ 300,00 a mais/.test(linha) || /R\$ 300,00 aportados/.test(linha), 'a linha "Aporte na reserva" mostra o que foi aportado a mais: ' + (linha.match(/Aporte na reserva.{0,80}/) || [''])[0]);
+check(erros.length === 0, 'sem erros de script' + (erros.length ? ': ' + erros.join(' | ') : ''));
+for (const [c, i] of [['metas', 'tmpm1'], ['despesas', 'tmpd1'], ['despesas', 'tmpd2']]) await api('DELETE', c + '/' + i);
+await br.close(); console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo certo'); process.exit(falhas ? 1 : 0);
