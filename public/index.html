@@ -1017,6 +1017,7 @@
   .ob-pago{background:var(--accent);} .ob-apagar{background:var(--accent-2);opacity:.55;}
   .ob-barra.estouro .ob-pago{background:var(--danger);}
   .ob-acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;}
+  .ob-acoes .btn{max-width:100%;white-space:normal;text-align:center;justify-content:center;line-height:1.25;}   /* celular estreito (360 px): o texto comprido quebra em vez de passar da tela */
   .ob-etapa{border-top:1px solid var(--border);padding:10px 0;}
   .ob-etapa-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
   .ob-etapa-nums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--t3);color:var(--ink-soft);} .ob-etapa-nums b{color:var(--ink);font-variant-numeric:tabular-nums;}
@@ -1547,6 +1548,8 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
 <symbol id="ic-quadro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></symbol>
 <symbol id="ic-proc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
 <symbol id="ic-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+
+
 
 
 
@@ -23379,7 +23382,7 @@ function esRevClique(a, k){
   var st = document.createElement('style');
   st.textContent = '#esBarra{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 16px 0;max-width:1180px;margin:0 auto}.es-seg{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:3px}' +
     '.es-b{border:0;background:none;padding:6px 14px;border-radius:9px;font:inherit;font-weight:700;font-size:var(--t2);color:var(--ink-soft);cursor:pointer}.es-b.on{background:#0e0e10;color:#fff}' +
-    '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}/* o número do processo vira botão (abre o cadastro) */.es-num{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);text-decoration:underline;cursor:pointer}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
+    '.es-aviso{font-size:var(--t2);color:var(--ink-soft)}/* o número do processo vira botão (abre o cadastro) */.es-num{border:1px solid var(--border);background:var(--surface-2);border-radius:99px;padding:4px 12px;min-height:32px;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);cursor:pointer}.es-lk{border:0;background:none;color:var(--accent,#C98500);font:inherit;font-weight:700;cursor:pointer;padding:2px 6px}' +
     '.es-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}.es-chip{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border-radius:99px;padding:4px 6px 4px 12px;font-size:var(--t2);font-weight:700}.es-vazio{padding:4px 12px;font-weight:600;color:var(--ink-soft)}' +
     '.es-x{border:0;background:none;color:var(--ink-soft);cursor:pointer;padding:0 6px;font-size:var(--t2)}.es-sec{font-size:var(--t1);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:8px 0 2px}.es-lista{background:var(--surface-2);border-radius:12px;padding:6px 12px;margin:6px 0}' +
     '.es-abas{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.es-aba{border:1px solid var(--border);background:var(--surface);border-radius:99px;padding:5px 12px;font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink-soft);cursor:pointer}.es-aba.on{background:#0e0e10;color:#fff;border-color:#0e0e10}' +
@@ -24091,11 +24094,14 @@ function dgTFixaEstado0(f, hoje){
   var feitas = f.feitas || {}, occ = dgOcorrencias(f, dgTarefaFixaDe(f), pbSoma(hoje, f.repete === 'diaria' ? 45 : (f.repete === 'mensal' ? 35 : 8))), prox = null, cur = null, i;
   for (i = 0; i < occ.length; i++){ if (!prox && !feitas[occ[i].c]) prox = occ[i]; if (!cur && dgMesmoCiclo(f, occ[i].data, hoje)) cur = occ[i]; }
   var ks = Object.keys(feitas).sort(), lf = ks.length ? Object.assign({ c: ks[ks.length - 1] }, feitas[ks[ks.length - 1]]) : null, est;
+  /* o que "Feita" desfaz: o ciclo desta semana/mês; se a tarefa foi marcada adiantada (o dia dela já passou nesta semana e não sobrou ciclo a vencer na janela), a última marcada */
+  var desf = cur && feitas[cur.c] ? cur : null;
+  if (!desf && !prox){ for (i = occ.length - 1; i >= 0; i--) if (feitas[occ[i].c]){ desf = occ[i]; break; } }
   if (prox && prox.data < hoje) est = 'atrasada';
   else if (prox && prox.data === hoje) est = 'hoje';
-  else if (cur && feitas[cur.c]) est = 'feita';
+  else if (desf) est = 'feita';
   else est = 'pendente';
-  return { est: est, prox: prox, cur: cur, feita: lf };
+  return { est: est, prox: prox, cur: cur, desf: desf, feita: lf };
 }
 function dgRepTexto(f){
   if (f.repete === 'diaria') return 'todo dia útil';
@@ -24117,7 +24123,7 @@ function dgOrdemFixa(a, b){
 /* "Feita": marca o ciclo (ou desmarca, se já estava feita) sem tirar a tarefa da lista */
 function dgTFixaFeita(id){
   var d = dgDoc(id); if (!d) return Promise.resolve(); var e = dgTFixaEstado(d), feitas = Object.assign({}, d.feitas || {});
-  if (e.est === 'feita' && e.cur && feitas[e.cur.c]) delete feitas[e.cur.c];
+  if (e.est === 'feita' && e.desf && feitas[e.desf.c]) delete feitas[e.desf.c];
   else if (e.prox) feitas[e.prox.c] = { por: dgMe(), em: new Date().toISOString(), dia: agHoje() };
   else return Promise.resolve();
   var ks = Object.keys(feitas).sort(); while (ks.length > 40) delete feitas[ks.shift()];
@@ -31115,7 +31121,7 @@ function mfCalcHtml(){
   var t = mfCalcTotal(cc, ult), mat = Number(ult.mat) / Number(ult.total);
   h += '<div class="md-card" id="mfcEst"><div class="md-h"><span class="md-k">Estimativa de hoje · ' + mfMesCurto(ult.mes) + '</span></div>' + mfEstHtml(cc, t, ult, mat) + '</div>';
   h += mdCard('Os preços estão subindo?', mfEvolucao(l, cc));
-  h += '<div class="saldo-data" style="margin:6px 4px">É uma <b>referência</b> para acompanhar a alta dos preços, não um orçamento de engenharia. Fontes: IBGE/Caixa (SINAPI, custo médio do m² em Goiás) e FGV (INCC, via Banco Central). <a href="https://sidra.ibge.gov.br/home/sinapi/brasil" target="_blank" rel="noopener">Ver no IBGE</a></div>';
+  h += '<div class="saldo-data" style="margin:6px 4px">É uma <b>referência</b> para acompanhar a alta dos preços, não um orçamento de engenharia. Fontes: IBGE/Caixa (SINAPI, custo médio do m² em Goiás) e FGV (INCC, via Banco Central).</div><div style="margin:0 4px 8px"><a class="btn btn-ghost" href="https://sidra.ibge.gov.br/home/sinapi/brasil" target="_blank" rel="noopener">Ver no IBGE</a></div>';
   return h;
 }
 /* padrão do acabamento: Baixo / Médio / Alto no lugar de digitar um fator. Proporções do CUB (mesmo projeto em 3 padrões):
@@ -32803,7 +32809,7 @@ document.addEventListener('change', function(ev){
     '.rv-in:focus{border-color:var(--ink);background:var(--surface)}.rv-in::placeholder{font-weight:400;color:var(--ink-soft)}' +
     '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4;cursor:pointer}' +
     '.rv-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:14px 0 2px}.rv-dica{font-size:var(--t2);color:var(--ink-soft);margin-bottom:2px}.rv-mut{color:var(--ink-soft)}' +
-    '.rv-rod{margin-top:12px}.rv-esc,.rv-dis{min-height:36px}.rv-pl{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:var(--t2)}.rv-num{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);text-decoration:underline;cursor:pointer}';
+    '.rv-rod{margin-top:12px}.rv-esc,.rv-dis{min-height:36px}.rv-pl{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:var(--t2)}.rv-num{border:1px solid var(--border);background:var(--surface-2);border-radius:99px;padding:4px 12px;min-height:32px;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);cursor:pointer}';
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { rvLinhas: function(){ var L = rvLinhas(); return { grupos: L.grupos.map(function(g){ return { k: g.k, nome: g.nome, n: g.docs.length, extras: g.extras, existe: g.existe ? g.existe.nome : '' }; }), sig: L.sig.map(function(d){ return d.numero; }) }; },
     pbInjetar: function(pubs){ pbS.pubs = (pbS.pubs || []).concat(pubs); },

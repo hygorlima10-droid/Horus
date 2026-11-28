@@ -398,11 +398,14 @@ function dgTFixaEstado0(f, hoje){
   var feitas = f.feitas || {}, occ = dgOcorrencias(f, dgTarefaFixaDe(f), pbSoma(hoje, f.repete === 'diaria' ? 45 : (f.repete === 'mensal' ? 35 : 8))), prox = null, cur = null, i;
   for (i = 0; i < occ.length; i++){ if (!prox && !feitas[occ[i].c]) prox = occ[i]; if (!cur && dgMesmoCiclo(f, occ[i].data, hoje)) cur = occ[i]; }
   var ks = Object.keys(feitas).sort(), lf = ks.length ? Object.assign({ c: ks[ks.length - 1] }, feitas[ks[ks.length - 1]]) : null, est;
+  /* o que "Feita" desfaz: o ciclo desta semana/mês; se a tarefa foi marcada adiantada (o dia dela já passou nesta semana e não sobrou ciclo a vencer na janela), a última marcada */
+  var desf = cur && feitas[cur.c] ? cur : null;
+  if (!desf && !prox){ for (i = occ.length - 1; i >= 0; i--) if (feitas[occ[i].c]){ desf = occ[i]; break; } }
   if (prox && prox.data < hoje) est = 'atrasada';
   else if (prox && prox.data === hoje) est = 'hoje';
-  else if (cur && feitas[cur.c]) est = 'feita';
+  else if (desf) est = 'feita';
   else est = 'pendente';
-  return { est: est, prox: prox, cur: cur, feita: lf };
+  return { est: est, prox: prox, cur: cur, desf: desf, feita: lf };
 }
 function dgRepTexto(f){
   if (f.repete === 'diaria') return 'todo dia útil';
@@ -424,7 +427,7 @@ function dgOrdemFixa(a, b){
 /* "Feita": marca o ciclo (ou desmarca, se já estava feita) sem tirar a tarefa da lista */
 function dgTFixaFeita(id){
   var d = dgDoc(id); if (!d) return Promise.resolve(); var e = dgTFixaEstado(d), feitas = Object.assign({}, d.feitas || {});
-  if (e.est === 'feita' && e.cur && feitas[e.cur.c]) delete feitas[e.cur.c];
+  if (e.est === 'feita' && e.desf && feitas[e.desf.c]) delete feitas[e.desf.c];
   else if (e.prox) feitas[e.prox.c] = { por: dgMe(), em: new Date().toISOString(), dia: agHoje() };
   else return Promise.resolve();
   var ks = Object.keys(feitas).sort(); while (ks.length > 40) delete feitas[ks.shift()];

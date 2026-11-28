@@ -353,7 +353,7 @@ function mfCalcHtml(){
   var t = mfCalcTotal(cc, ult), mat = Number(ult.mat) / Number(ult.total);
   h += '<div class="md-card" id="mfcEst"><div class="md-h"><span class="md-k">Estimativa de hoje · ' + mfMesCurto(ult.mes) + '</span></div>' + mfEstHtml(cc, t, ult, mat) + '</div>';
   h += mdCard('Os preços estão subindo?', mfEvolucao(l, cc));
-  h += '<div class="saldo-data" style="margin:6px 4px">É uma <b>referência</b> para acompanhar a alta dos preços, não um orçamento de engenharia. Fontes: IBGE/Caixa (SINAPI, custo médio do m² em Goiás) e FGV (INCC, via Banco Central). <a href="https://sidra.ibge.gov.br/home/sinapi/brasil" target="_blank" rel="noopener">Ver no IBGE</a></div>';
+  h += '<div class="saldo-data" style="margin:6px 4px">É uma <b>referência</b> para acompanhar a alta dos preços, não um orçamento de engenharia. Fontes: IBGE/Caixa (SINAPI, custo médio do m² em Goiás) e FGV (INCC, via Banco Central).</div><div style="margin:0 4px 8px"><a class="btn btn-ghost" href="https://sidra.ibge.gov.br/home/sinapi/brasil" target="_blank" rel="noopener">Ver no IBGE</a></div>';
   return h;
 }
 /* padrão do acabamento: Baixo / Médio / Alto no lugar de digitar um fator. Proporções do CUB (mesmo projeto em 3 padrões):

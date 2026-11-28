@@ -208,7 +208,7 @@ document.addEventListener('change', function(ev){
     '.rv-in:focus{border-color:var(--ink);background:var(--surface)}.rv-in::placeholder{font-weight:400;color:var(--ink-soft)}' +
     '.rv-tb{display:flex;gap:8px;align-items:flex-start;font-size:var(--t2);color:var(--ink-soft);line-height:1.4;cursor:pointer}' +
     '.rv-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:14px 0 2px}.rv-dica{font-size:var(--t2);color:var(--ink-soft);margin-bottom:2px}.rv-mut{color:var(--ink-soft)}' +
-    '.rv-rod{margin-top:12px}.rv-esc,.rv-dis{min-height:36px}.rv-pl{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:var(--t2)}.rv-num{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);text-decoration:underline;cursor:pointer}';
+    '.rv-rod{margin-top:12px}.rv-esc,.rv-dis{min-height:36px}.rv-pl{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:var(--t2)}.rv-num{border:1px solid var(--border);background:var(--surface-2);border-radius:99px;padding:4px 12px;min-height:32px;font:inherit;font-weight:700;color:var(--accent-ink,#8A5A0B);cursor:pointer}';
   document.head.appendChild(st);
   window.__horusTeste = Object.assign(window.__horusTeste || {}, { rvLinhas: function(){ var L = rvLinhas(); return { grupos: L.grupos.map(function(g){ return { k: g.k, nome: g.nome, n: g.docs.length, extras: g.extras, existe: g.existe ? g.existe.nome : '' }; }), sig: L.sig.map(function(d){ return d.numero; }) }; },
     pbInjetar: function(pubs){ pbS.pubs = (pbS.pubs || []).concat(pubs); },
