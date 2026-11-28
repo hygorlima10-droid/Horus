@@ -234,6 +234,13 @@ if '/*AP-INICIO*/' in s:
 else:
     assert s.count('/*CX-FIM*/\n') == 1
     s = s.replace('/*CX-FIM*/\n', '/*CX-FIM*/\n' + bloco_ap)
+lc_js = open(R + 'cliente/linha-cliente.js', encoding='utf-8').read()   # Linha do tempo do cliente (tudo numa tela só) + registrar contato + copiar resumo
+bloco_lc = '/*LC-INICIO*/\n' + lc_js + '\n/*LC-FIM*/\n'
+if '/*LC-INICIO*/' in s:
+    s = re.sub(r'/\*LC-INICIO\*/.*?/\*LC-FIM\*/\n', lambda m: bloco_lc, s, flags=re.S)
+else:
+    assert s.count('/*AP-FIM*/\n') == 1
+    s = s.replace('/*AP-FIM*/\n', '/*AP-FIM*/\n' + bloco_lc)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:
