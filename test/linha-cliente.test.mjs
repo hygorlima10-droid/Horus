@@ -1,5 +1,5 @@
 // Linha do tempo do cliente: junta publicações, Agenda, honorários, cobranças, promessas e contatos dos processos do cliente numa tela só; filtros, "Próximos", meses,
-// publicações antigas sob demanda, registrar/editar/excluir contato (guardado em cliente.notas) e "Copiar resumo".  Grupo 'telas-isoladas':  node test/rodar.mjs linha-cliente
+// publicações antigas sob demanda, registrar/editar/excluir contato (guardado em cliente.notas).  Grupo 'telas-isoladas':  node test/rodar.mjs linha-cliente
 import { createRequire } from 'node:module';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
 const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = 'tok-dono-0000000000000000000000000001';
@@ -76,18 +76,8 @@ await p.locator('#lcBody [data-lc="nota"]').first().click(); await p.waitForTime
 await p.fill('#lcTexto', 'Vai trazer os documentos na quarta'); await p.click('#lcBody [data-lc="salvar-contato"]'); await p.waitForTimeout(1500);
 cli = (await (await api('GET', 'clientes')).json()).docs.find((d) => d.id === 'lc-c1').data;
 check((cli.notas || []).some((n) => /quarta/.test(n.texto)) && (cli.notas || []).length === 2, 'editar o contato altera o mesmo registro (sem duplicar)');
-// ---- 6) resumo para o cliente
-await p.click('#lcBody [data-lc="resumo"]'); await p.waitForTimeout(400);
-let res = await p.inputValue('#lcResTexto');
-check(/^Olá, Maria!/.test(res) && res.includes(N1) && /Publicação/.test(res) && /Próxima audiência/.test(res) && /14:00/.test(res) && !/Honorários em aberto/.test(res), 'o resumo traz o nome, o processo, as publicações recentes e a próxima audiência (sem honorários por padrão)');
-check(!/outro cliente/i.test(res) && !/Juntar procuração/.test(res) && !/Ligou perguntando/.test(res), 'o resumo não traz tarefa interna, anotação nem dado de outro cliente');
-await p.check('#lcBody [data-lc-op="honorarios"]'); await p.waitForTimeout(300);
-res = await p.inputValue('#lcResTexto');
-check(/Honorários em aberto/.test(res) && /venceu em/.test(res) && /vence em/.test(res), 'marcando "Honorários em aberto", entram as parcelas vencida e a vencer');
-await p.uncheck('#lcBody [data-lc-op="audiencias"]'); await p.waitForTimeout(300);
-check(!/Próxima audiência/.test(await p.inputValue('#lcResTexto')), 'desmarcar "Próximas audiências" tira a linha do texto');
-check(await p.locator('#lcBody [data-lc="res-wa"]').count() === 1, 'com telefone cadastrado há o botão "Abrir no WhatsApp"');
-await p.click('#lcBody [data-lc="res-voltar"]'); await p.waitForTimeout(300);
+// ---- 6) o resumo para o cliente foi retirado: a tela é só para consulta interna
+check(await p.locator('#lcBody [data-lc="resumo"]').count() === 0 && !/Copiar resumo/.test(await p.locator('#lcBody').innerText()), 'não há mais "Copiar resumo" (a linha do tempo é só consulta interna)');
 // excluir o contato pela edição
 await p.click('#lcBody [data-lc="filtro"][data-v="contato"]'); await p.locator('#lcBody [data-lc="nota"]').first().click(); await p.waitForTimeout(300);
 await p.click('#lcBody [data-lc="excluir-contato"]'); await p.waitForTimeout(1500);

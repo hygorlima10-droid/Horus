@@ -32895,12 +32895,11 @@ document.addEventListener('keydown', function(e){
    o dinheiro (honorários, pagamentos, renegociações, cobranças enviadas, promessas) e o que a pessoa registrar (contatos e anotações, guardados em cliente.notas).
    Só leitura, exceto "Registrar contato". Respeita o papel: o servidor já entrega só os processos de cada advogado; estagiário não vê dinheiro.
    Publicações: o app carrega 90 dias; o botão "Carregar publicações antigas" busca até 400 dias (só para esta tela, sem mexer na aba Publicações).
-   "Copiar resumo": texto montado só com dados do cadastro (nenhuma IA), para a pessoa conferir e enviar ao cliente.
    ============================================================ */
 var LC_TIPOS = { pub: ['Publicação', '#7C5CD6'], prazo: ['Prazo', '#D93B3B'], aud: ['Audiência', '#2A78D6'], tar: ['Tarefa', '#C98500'], prox: ['Providência', '#C98500'], din: ['Dinheiro', '#17895A'], marco: ['Marco', '#8A93AD'], reg: ['Registro', '#8A93AD'], contato: ['Contato', '#5B6478'], nota: ['Anotação', '#5B6478'] };
 var LC_FILTROS = [['tudo', 'Tudo'], ['pub', 'Publicações'], ['prazo', 'Prazos'], ['aud', 'Audiências'], ['tar', 'Tarefas'], ['din', 'Dinheiro'], ['contato', 'Contatos']];
 var LC_CANAIS = [['ligacao', 'Ligação'], ['whatsapp', 'WhatsApp'], ['reuniao', 'Reunião'], ['email', 'E-mail']];
-var lcS = { cid: null, filtro: 'tudo', proc: '', mais: 40, antigas: null, carregando: false, contato: null, resumo: null };
+var lcS = { cid: null, filtro: 'tudo', proc: '', mais: 40, antigas: null, carregando: false, contato: null };
 
 function lcCanalRotulo(k){ var r = LC_CANAIS.filter(function(c){ return c[0] === k; })[0]; return r ? r[1] : ''; }
 function lcData(s){ var d = String(s || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''; }
@@ -32994,7 +32993,6 @@ function lcDesenharInt(){
   var c = clienteById(lcS.cid), body = qs('lcBody'); if (!c || !body){ lcFechar(); return; }
   qs('lcTitulo').textContent = c.nome;
   if (lcS.contato){ body.innerHTML = lcContatoHtml(c); return; }
-  if (lcS.resumo){ body.innerHTML = lcResumoHtml(c); return; }
   var hoje = todayISO(), todos = lcEventos(c.id), procs = lcProcessosDe(c.id);
   var dispon = LC_FILTROS.filter(function(f){ return f[0] !== 'din' || ppPodeReceber(); });
   if (!dispon.some(function(f){ return f[0] === lcS.filtro; })) lcS.filtro = 'tudo';
@@ -33003,7 +33001,7 @@ function lcDesenharInt(){
   var pas = ev.filter(function(e){ return !lcEhFuturo(e, hoje); }).sort(function(a, b){ return b.data.localeCompare(a.data); });
   var h = '<div class="fl-filtros">' + dispon.map(function(f){ return '<button type="button" class="seg-btn' + (lcS.filtro === f[0] ? ' active' : '') + '" data-lc="filtro" data-v="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
   if (procs.length > 1) h += '<select class="ext-sel lc-proc" data-lc-proc="1" aria-label="Processo">' + '<option value="">Todos os processos (' + procs.length + ')</option>' + procs.map(function(r){ return '<option value="' + escapeHtml(r.num) + '"' + (lcS.proc === r.num ? ' selected' : '') + '>' + escapeHtml(String(r.numero || r.num) + ' · ' + prTitulo(r)) + '</option>'; }).join('') + '</select>';
-  h += '<div class="lc-acts"><button type="button" class="btn btn-primary" data-lc="novo-contato">+ Registrar contato</button><button type="button" class="btn btn-ghost" data-lc="resumo">Copiar resumo</button></div>';
+  h += '<div class="lc-acts"><button type="button" class="btn btn-primary" data-lc="novo-contato">+ Registrar contato</button></div>';
   if (!ev.length) h += '<div class="financeiro-vazio">Nada para mostrar' + (lcS.filtro !== 'tudo' || lcS.proc ? ' com esses filtros' : ' ainda') + '.</div>';
   if (fut.length) h += '<div class="lc-mes lc-prox">Próximos</div>' + fut.map(lcLinhaHtml).join('');
   var mostra = pas.slice(0, lcS.mais), mesAtual = '';
@@ -33014,10 +33012,10 @@ function lcDesenharInt(){
   body.innerHTML = h;
 }
 function lcAbrir(cid){
-  lcS = { cid: cid, filtro: 'tudo', proc: '', mais: 40, antigas: null, carregando: false, contato: null, resumo: null };
+  lcS = { cid: cid, filtro: 'tudo', proc: '', mais: 40, antigas: null, carregando: false, contato: null };
   qs('overlayLc').classList.add('show'); lcDesenhar();
 }
-function lcFechar(){ var o = qs('overlayLc'); if (o) o.classList.remove('show'); lcS.contato = null; lcS.resumo = null; }
+function lcFechar(){ var o = qs('overlayLc'); if (o) o.classList.remove('show'); lcS.contato = null; }
 function lcCarregarAntigas(){
   if (lcS.carregando || !window.__SERVIDOR) return; lcS.carregando = true; lcDesenhar();
   var cid = lcS.cid;
@@ -33063,52 +33061,6 @@ function lcNovoContato(id){
   lcDesenhar();
 }
 
-/* ---------- copiar resumo para o cliente (só dados do cadastro; nada de IA; a pessoa confere e edita antes de enviar) ---------- */
-function lcPrimeiroNome(nome){
-  var p = String(nome || '').trim().split(/\s+/)[0] || '';
-  return p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : '';
-}
-function lcMontarResumo(c, op){
-  var hoje = todayISO(), L = [], procs = lcProcessosDe(c.id);
-  var ev = lcEventos(c.id), corte = (function(){ var d = new Date(hoje + 'T12:00:00'); d.setDate(d.getDate() - 60); return d.toISOString().slice(0, 10); })();
-  L.push('Olá' + (lcPrimeiroNome(c.nome) ? ', ' + lcPrimeiroNome(c.nome) : '') + '! Segue o resumo atualizado em ' + fmtData(hoje) + '.');
-  var algum = false;
-  procs.forEach(function(r){
-    if (prArquivado(r)) return;
-    var meus = ev.filter(function(e){ return e.proc === r.num; }), linhas = [];
-    if (op.andamentos){
-      var pubs = meus.filter(function(e){ return e.tipo === 'pub' && e.data >= corte && e.data <= hoje; }).sort(function(a, b){ return b.data.localeCompare(a.data); }).slice(0, 4);
-      pubs.forEach(function(e){ linhas.push('• ' + fmtData(e.data) + ': ' + e.titulo + ' (publicado no Diário da Justiça)'); });
-    }
-    if (op.audiencias){
-      meus.filter(function(e){ return e.tipo === 'aud' && e.data >= hoje && !/\|ok/.test(e.estado); }).sort(function(a, b){ return a.data.localeCompare(b.data); }).slice(0, 2).forEach(function(e){ linhas.push('• Próxima audiência: ' + fmtData(e.data) + (e.sub ? ' — ' + e.sub : '') + (e.titulo ? ' (' + e.titulo + ')' : '')); });
-    }
-    if (linhas.length){ algum = true; L.push(''); L.push('Processo ' + String(r.numero || r.num) + (prTitulo(r) ? ' — ' + prTitulo(r) : '')); linhas.forEach(function(x){ L.push(x); }); }
-  });
-  if (op.andamentos && !algum) { L.push(''); L.push('Não houve publicação nova nos seus processos nos últimos 60 dias.'); }
-  if (op.honorarios && ppPodeReceber()){
-    var din = ev.filter(function(e){ return e.tipo === 'din' && /^(Atrasado|A receber)/.test(e.estado); }).sort(function(a, b){ return a.data.localeCompare(b.data); });
-    if (din.length){ L.push(''); L.push('Honorários em aberto:'); din.slice(0, 6).forEach(function(e){ L.push('• ' + e.titulo + (/^Atrasado/.test(e.estado) ? ' — venceu em ' : ' — vence em ') + fmtData(e.data)); }); }
-  }
-  L.push(''); L.push('Qualquer dúvida, estou à disposição.');
-  return L.join('\n');
-}
-function lcResumoHtml(c){
-  var s = lcS.resumo, pode = ppPodeReceber();
-  var op = '<label class="ext-saldo-lab"><input type="checkbox" data-lc-op="andamentos"' + (s.op.andamentos ? ' checked' : '') + '><span>Andamentos recentes <small>(publicações dos últimos 60 dias)</small></span></label>' +
-    '<label class="ext-saldo-lab"><input type="checkbox" data-lc-op="audiencias"' + (s.op.audiencias ? ' checked' : '') + '><span>Próximas audiências</span></label>' +
-    (pode ? '<label class="ext-saldo-lab"><input type="checkbox" data-lc-op="honorarios"' + (s.op.honorarios ? ' checked' : '') + '><span>Honorários em aberto</span></label>' : '');
-  return '<div class="f-sec"><div class="f-sec-t">Resumo para o cliente</div>' + op +
-    '<div class="field"><label class="field-label" for="lcResTexto">Texto (confira e ajuste antes de enviar)</label><textarea id="lcResTexto" rows="12">' + escapeHtml(s.texto) + '</textarea></div>' +
-    '<div class="lc-acts"><button type="button" class="btn btn-primary" data-lc="res-copiar">Copiar texto</button>' + (c.telefone ? '<button type="button" class="btn btn-ghost" data-lc="res-wa">Abrir no WhatsApp</button>' : '') + '<button type="button" class="btn btn-ghost" data-lc="res-voltar">Voltar</button></div>' +
-    '<div class="saldo-data">Montado só com o que está cadastrado no app (sem inteligência artificial). Nada é enviado sozinho.</div></div>';
-}
-function lcAbrirResumo(){
-  var c = clienteById(lcS.cid); if (!c) return;
-  var op = { andamentos: true, audiencias: true, honorarios: false };
-  lcS.resumo = { op: op, texto: lcMontarResumo(c, op) }; lcDesenhar();
-}
-
 /* ---------- cliques ---------- */
 function lcIrPara(fn){ lcFechar(); try{ fecharPerfil(); }catch(e){} setTimeout(fn, 60); }
 (function(){
@@ -33120,8 +33072,6 @@ function lcIrPara(fn){ lcFechar(); try{ fecharPerfil(); }catch(e){} setTimeout(f
   ov.addEventListener('change', function(e){
     var t = e.target;
     if (t.getAttribute && t.getAttribute('data-lc-proc')){ lcS.proc = t.value; lcS.mais = 40; lcDesenhar(); return; }
-    var op = t.getAttribute && t.getAttribute('data-lc-op');
-    if (op && lcS.resumo){ lcS.resumo.op[op] = t.checked; var c = clienteById(lcS.cid); if (c){ lcS.resumo.texto = lcMontarResumo(c, lcS.resumo.op); var ta = qs('lcResTexto'); if (ta) ta.value = lcS.resumo.texto; } }
   });
   ov.addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('[data-lc]') : null; if (!b || b.disabled) return;
@@ -33142,15 +33092,6 @@ function lcIrPara(fn){ lcFechar(); try{ fecharPerfil(); }catch(e){} setTimeout(f
       var cl = JSON.parse(JSON.stringify(c)); cl.notas = (cl.notas || []).filter(function(n){ return n.id !== k.id; }); lcS.contato = null;
       Promise.resolve(persistClienteSet(cl)).then(function(){ lcDesenhar(); }); lcDesenhar(); toast('Contato excluído.');
     }
-    else if (a === 'resumo') lcAbrirResumo();
-    else if (a === 'res-voltar'){ lcS.resumo = null; lcDesenhar(); }
-    else if (a === 'res-copiar'){
-      var ta = qs('lcResTexto'), txt = ta ? ta.value : '';
-      var ok = function(){ toast('Resumo copiado.'); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function(){ ta.select(); try{ document.execCommand('copy'); ok(); }catch(er){} });
-      else { ta.select(); try{ document.execCommand('copy'); ok(); }catch(er){} }
-    }
-    else if (a === 'res-wa'){ var c2 = clienteById(lcS.cid), ta2 = qs('lcResTexto'); if (c2 && c2.telefone) window.open('https://wa.me/' + foneWa(c2.telefone) + '?text=' + encodeURIComponent(ta2 ? ta2.value : ''), '_blank', 'noopener'); }
   });
   var st = document.createElement('style'); st.id = 'lcCss';
   st.textContent = '.fl-filtros{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.lc-proc{width:100%;margin-bottom:10px}.lc-acts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}' +
@@ -33160,7 +33101,7 @@ function lcIrPara(fn){ lcFechar(); try{ fecharPerfil(); }catch(e){} setTimeout(f
     '.lc-chip{align-self:flex-start;border-radius:8px;padding:1px 8px;font-size:var(--t1);font-weight:800;background:rgba(201,133,0,.16);color:#7a5200}.lc-chip.ok{background:rgba(23,137,90,.14);color:#17895A}.lc-chip.neg{background:rgba(217,59,59,.14);color:#B42323}' +
     '.lc-rod{margin-top:12px}.lc-abrir{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;background:var(--surface);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;margin:10px 0;font:inherit;color:var(--ink);cursor:pointer}.lc-abrir small{display:block;color:var(--ink-soft);font-weight:400;font-size:var(--t2)}';
   document.head.appendChild(st);
-  window.__horusTeste = Object.assign(window.__horusTeste || {}, { lcEventos: lcEventos, lcAbrir: lcAbrir, lcMontarResumo: lcMontarResumo, lcS: function(){ return lcS; } });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { lcEventos: lcEventos, lcAbrir: lcAbrir, lcS: function(){ return lcS; } });
 })();
 
 /*LC-FIM*/

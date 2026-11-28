@@ -31,6 +31,22 @@ Preços do catálogo da Cloudflare em novembro/2026 (a plataforma que o app já 
 
 **Recomendação:** começar com o **Whisper turbo da Cloudflare** (barato, mesma plataforma, sem retenção). Se a falta de "quem está falando" incomodar, trocar por Nova-3 ou Grok STT mexendo só numa linha do servidor.
 
+### 3.1 Opções gratuitas para 3 a 5 transcrições por dia (pesquisa de 29/11)
+Premissa: reuniões de 30 a 60 minutos, ou seja, de **1,5 a 5 horas de áudio por dia**. Cotas de terceiros mudam; **conferir na página do fornecedor antes de contratar**.
+
+| Opção | Cota gratuita | Cobre 3 a 5 por dia? | Observações |
+|---|---|---|---|
+| **Cloudflare Workers AI (Whisper turbo)** | **10.000 "neurons" por dia** no plano gratuito (46,63 por minuto de áudio) = **cerca de 214 min/dia** | **Sim para reuniões de até ~45 min** (3 de 1 h = 180 min; 5 de 1 h passam e o excedente custa centavos) | Mesma plataforma do app (nenhuma conta nova); página do modelo marca "zero data retention". Precisa ligar o recurso de IA no Worker. Limite de tamanho por chamada não confirmado: por isso o envio em blocos de poucos minutos. |
+| **Groq (Whisper large-v3 turbo)** | 7.200 s de áudio por hora e **28.800 s por dia = 8 h/dia**; 20 requisições/min; arquivo de até 25 MB no plano gratuito | **Sim, com folga** | Serviço de terceiro (EUA): **conferir os termos de retenção e treinamento**. Arquivos acima de 25 MB precisam ser divididos. |
+| AssemblyAI | crédito **único** de US$ 50 (cerca de 185 h) | Por 1 a 2 meses | Cota que acaba; boa para testar qualidade e separação de falantes. |
+| Deepgram | crédito **único** de US$ 200 (cerca de 26.000 min = 430 h) | Por 3 a 5 meses | Separa quem fala; também acaba. |
+| Speechmatics | 480 min/mês | **Não** (cerca de 8 reuniões de 1 h por mês) | |
+| ElevenLabs Scribe | de 12 a 30 min/mês | **Não** | |
+| Google Gemini API (plano gratuito) | gratuito, limites não confirmados | Talvez | **Não recomendo para este uso:** no plano gratuito o Google usa o conteúdo enviado para melhorar os produtos dele (no plano pago, não). Incompatível com sigilo. |
+| Azure Speech (F0) | 5 h/mês, só em tempo real | **Não** | |
+
+**Recomendação:** usar o **Whisper turbo da própria Cloudflare** como primeira opção (214 min/dia grátis, sem conta nova, sem retenção) e deixar o **Groq como reserva** para os dias em que passar da cota (8 h/dia grátis). Se a separação de quem fala for importante, testar o crédito do Deepgram. Nenhuma opção gratuita de terceiro deve ser usada sem conferir antes o que ela faz com o áudio, por causa do sigilo profissional.
+
 ## 4. "Fidedigno": o que é possível prometer
 A transcrição automática **erra**. O que se vê na prática: nomes próprios e de empresas, **números** (CPF, valores, datas, número de processo), siglas, trechos com ruído ou sobreposição de vozes, e, em silêncios longos, frases inventadas ("alucinação" do reconhecimento). Em áudio limpo de uma sala o resultado costuma ser bom, mas **ninguém deve tratá-lo como ata**.
 
