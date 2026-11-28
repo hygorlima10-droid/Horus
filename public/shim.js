@@ -20,7 +20,7 @@
   function famPermite(nome) { var m = EU.modulos || []; if (nome === 'config' || nome === 'configDono') return true; if (nome === 'obraMov') return m.indexOf('obra') >= 0; if (DONO[nome]) return m.indexOf('financas') >= 0; return false; }
   function semAcesso(nome) { if (EU.papel === 'familiar') return !famPermite(nome); return !!DONO[nome] && EU.papel !== 'proprietario' && !(EU.papel === 'advogado' && nome !== 'obraMov'); }
   /* familiar: pedido a uma área que não é dele nem chega ao servidor (responde 403 de mentira, como o app já espera de quem não tem acesso); nenhum erro, nenhum pedido recusado */
-  var ROTAS_FAM = { db: 1, sync: 1, lote: 1, eu: 1, seguranca: 1, notif: 1, indices: 1, anexos: 1, exportar: 1 };
+  var ROTAS_FAM = { db: 1, sync: 1, saude: 1, lote: 1, eu: 1, seguranca: 1, notif: 1, indices: 1, anexos: 1, exportar: 1 };
   var fetchOrig = window.fetch.bind(window);
   window.fetch = function (entrada, opcoes) {
     var url = typeof entrada === 'string' ? entrada : (entrada && entrada.url) || '';

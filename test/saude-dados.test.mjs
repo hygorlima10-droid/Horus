@@ -80,6 +80,33 @@ await p.click('[data-sd="mostrarDisp"]'); await p.waitForTimeout(300);
 check(await p.locator('[data-sd="rest"]').count() === 1 && /volta sozinho se o dado dele mudar/.test(await t(p, '#overlaySdC')), '"Mostrar item dispensado" lista o item com Restaurar');
 await p.reload(); await p.waitForFunction(() => window.__horusEu && window.__horusEu.pronto, null, { timeout: 60000 }); await p.waitForTimeout(12000);
 check(await p.evaluate(() => window.__horusTeste.sdContagens().atencao) === depois, 'a dispensa continua depois de recarregar o app (' + depois + ')');
+// ---- outro aparelho (contexto novo, sem nada guardado): a dispensa feita aqui já vale lá, e desfazer lá vale aqui
+const aparelho2 = await abrir('dono'); await aparelho2.p.evaluate(() => window.__horusTeste.sdVerificar(true)); await aparelho2.p.waitForTimeout(2500);
+check(await aparelho2.p.evaluate(() => window.__horusTeste.sdContagens().atencao) === depois, 'outro aparelho: a dispensa feita aqui já vale lá (' + depois + ' em "Atenção")');
+await aparelho2.p.evaluate(() => window.__horusTeste.sdAbrir()); await aparelho2.p.waitForTimeout(2500);
+await aparelho2.p.click('[data-sd="mostrarDisp"]'); await aparelho2.p.waitForTimeout(300); await aparelho2.p.click('[data-sd="rest"]'); await aparelho2.p.waitForTimeout(1500);
+check(await aparelho2.p.evaluate(() => window.__horusTeste.sdContagens().atencao) === antes, 'no outro aparelho, Restaurar traz o item de volta lá (' + antes + ')');
+await p.evaluate(() => window.__horusTeste.sdVerificar(true)); await p.waitForTimeout(2500);
+check(await p.evaluate(() => window.__horusTeste.sdContagens().atencao) === antes, 'e aqui o item também volta depois de sincronizar (' + antes + ')');
+await aparelho2.ctx.close();
+// redispensa para o teste seguinte (o dado mudar)
+await p.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await p.waitForTimeout(500);
+await p.evaluate(() => window.__horusTeste.sdAbrir()); await p.waitForTimeout(2500);
+await p.evaluate(() => { const b = document.querySelector('[data-sd="ck"][data-id="fin-dup"]'); if (b.getAttribute('aria-expanded') !== 'true') b.click(); }); await p.waitForTimeout(200);
+await p.locator('[data-sd="disp"][data-id="fin-dup"]').first().click(); await p.waitForTimeout(1500);
+check(await p.evaluate(() => window.__horusTeste.sdContagens().atencao) === depois, 'dispensa de novo (' + depois + ')');
+// o servidor: o carimbo mais novo vale, cada pessoa só vê a própria lista
+const sv = (q, m, b) => fetch(B + '/api/saude', { method: m, headers: { cookie: 'sessao=' + TOK[q], 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }).then(async (r) => ({ s: r.status, j: await r.json().catch(() => ({})) }));
+const T0 = Date.now();
+await sv('dono', 'PUT', { d: { 'teste|a': { s: 'v1', t: T0 + 2000 } } });
+let r1 = await sv('dono', 'PUT', { d: { 'teste|a': { s: 'velho', t: T0 + 1000 } } });
+check(r1.j.d['teste|a'].s === 'v1', 'o servidor guarda o carimbo mais novo (um pedido mais antigo não sobrescreve)');
+r1 = await sv('dono', 'PUT', { d: { 'teste|a': { s: null, t: T0 + 3000 } } });
+check(r1.j.d['teste|a'].s === null, 'desfazer (null) com carimbo mais novo vale');
+const anaLista = await sv('ana', 'GET');
+check(anaLista.s === 200 && !('teste|a' in anaLista.j.d), 'cada pessoa só vê a própria lista de dispensas');
+check((await sv('dono', 'PUT', { d: Object.fromEntries([['x'.repeat(200), { s: 'a', t: 1 }], ['ruim', 'texto'], ['nulo', null]]) })).s === 200 && !('ruim' in (await sv('dono', 'GET')).j.d), 'entradas inválidas são ignoradas');
+check((await sv('caio', 'PUT', { d: { 'eq|b': { s: 'z', t: T0 + 5 } } })).j.d['eq|b'].s === 'z', 'estagiário também tem a lista (mesmo sem cofre próprio)');
 // muda o dado (terceira despesa igual): a assinatura muda e o item volta
 await api('dono', 'PUT', 'despesas/sd-dup3', { nome: 'SD Material de escritório', coluna: 'pf', tipo: 'unica', valor: 321.45, data: dia(-2), mesReferencia: mes0, categoria: 'estrutura', pago: false, criadoEm: agora });
 await p.evaluate(() => document.querySelector('#drawer [data-tab="inicio"]').click()); await p.waitForTimeout(18000);

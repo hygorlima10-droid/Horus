@@ -4,7 +4,7 @@
    não roda sozinho para mandar aviso (nada de e-mail nem notificação): a única coisa automática é o número (bolinha) de itens em "Atenção".
    - Organizada por ÁREA, em abas: Finanças, Jurídico, Equipe e Sistema (cada papel vê as suas: proprietário todas; advogado Finanças e Jurídico; estagiário Equipe; familiar Finanças).
    - 14 checagens. Cada item tem "Abrir" (vai ao cadastro) e "Dispensar": o item some e VOLTA SÓ SE O DADO MUDAR (a dispensa guarda uma "assinatura" do que foi visto).
-   - As dispensas ficam neste aparelho (localStorage, uma lista por pessoa).
+   - As dispensas são da PESSOA, iguais no celular e no computador (guardadas no servidor, em /api/saude; cada aparelho também guarda uma cópia).
    ============================================================ */
 var SD_ABAS = [['fin', 'Finanças'], ['jur', 'Jurídico'], ['eq', 'Equipe'], ['sis', 'Sistema']];
 var SD_POR_PAPEL = { proprietario: ['fin', 'jur', 'eq', 'sis'], advogado: ['fin', 'jur'], estagiario: ['eq'], familiar: ['fin'] };
@@ -19,10 +19,29 @@ function sdSig(s){ var h = 5381; s = String(s); for (var i = 0; i < s.length; i+
 function sdPlural(n, um, varios){ return n + ' ' + (n === 1 ? um : varios); }
 function sdProcTxt(n){ var d = String(n || '').replace(/\D/g, ''); return d.length === 20 ? d.slice(0, 7) + '-' + d.slice(7, 9) + '.' + d.slice(9, 13) + '.' + d.slice(13, 14) + '.' + d.slice(14, 16) + '.' + d.slice(16) : String(n || ''); }
 
-/* ---------- dispensas (por pessoa, neste aparelho) ---------- */
-function sdChaveLS(){ var e = window.__horusEu || {}; return 'horus.saude.v1.' + (e.id || 'u'); }
-function sdDispLer(){ try{ return JSON.parse(localStorage.getItem(sdChaveLS()) || '{}') || {}; }catch(e){ return {}; } }
-function sdDispGravar(o){ try{ localStorage.setItem(sdChaveLS(), JSON.stringify(o)); }catch(e){} }
+/* ---------- dispensas (por pessoa, iguais em todos os aparelhos) ----------
+   Cada chave guarda { s: assinatura do dado que foi dispensado (null = dispensa desfeita), t: carimbo }. O aparelho guarda uma cópia (localStorage) e sincroniza com o servidor
+   (PUT /api/saude): vale o carimbo mais novo de cada chave, então dispensar no celular vale no computador e desfazer também. Sem conexão, continua valendo a cópia do aparelho. */
+function sdChaveLS(){ var e = window.__horusEu || {}; return 'horus.saude.v2.' + (e.id || 'u'); }
+function sdDispTudo(){
+  var t = {}; try{ t = JSON.parse(localStorage.getItem(sdChaveLS()) || '{}') || {}; }catch(e){ t = {}; }
+  if (!Object.keys(t).length){   /* aparelho que ainda tem a lista do formato antigo (só a assinatura por chave): vira o formato novo, com carimbo antigo */
+    try{ var v1 = JSON.parse(localStorage.getItem(sdChaveLS().replace('.v2.', '.v1.')) || '{}') || {}; Object.keys(v1).forEach(function(k){ if (typeof v1[k] === 'string') t[k] = { s: v1[k], t: 1 }; }); }catch(e){}
+  }
+  return t;
+}
+function sdDispGravarTudo(t){ try{ localStorage.setItem(sdChaveLS(), JSON.stringify(t)); }catch(e){} }
+function sdDispLer(){ var t = sdDispTudo(), o = {}; Object.keys(t).forEach(function(k){ if (t[k] && t[k].s !== null && t[k].s !== undefined) o[k] = t[k].s; }); return o; }
+function sdMesclar(a, b){ var o = {}; [a, b].forEach(function(m){ Object.keys(m || {}).forEach(function(k){ var v = m[k]; if (v && typeof v === 'object' && (!o[k] || v.t > o[k].t)) o[k] = { s: v.s === undefined ? null : v.s, t: v.t }; }); }); return o; }
+function sdDispSet(k, sig){ var t = sdDispTudo(); t[k] = { s: sig, t: Date.now() }; sdDispGravarTudo(t); return sdDispEnviar(); }
+function sdDispDel(k){ var t = sdDispTudo(); t[k] = { s: null, t: Date.now() }; sdDispGravarTudo(t); return sdDispEnviar(); }
+function sdDispEnviar(){
+  var local = sdDispTudo();
+  return fetch('/api/saude', { method: 'PUT', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ d: local }) })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){ if (j && j.d){ sdDispGravarTudo(sdMesclar(sdDispTudo(), j.d)); sdAtualizarTela(); } })
+    .catch(function(){});
+}
 
 /* ---------- navegação (fecha a janela e abre o cadastro) ---------- */
 function sdFechar(){ var ov = qs('overlaySd'); if (ov) ov.classList.remove('show'); }
@@ -242,7 +261,7 @@ function sdVerificar(comRede){
   if (sdS.rodando) return Promise.resolve();
   sdS.rodando = true; sdCalcular();
   if (!comRede){ sdS.rodando = false; return Promise.resolve(); }
-  return sdCarregarExtras().then(function(){ sdCalcular(); }).catch(function(){}).then(function(){ sdS.rodando = false; sdAtualizarTela(); });
+  return Promise.all([sdCarregarExtras(), sdDispEnviar()]).then(function(){ sdCalcular(); }).catch(function(){}).then(function(){ sdS.rodando = false; sdAtualizarTela(); });
 }
 /* itens que valem (os dispensados com a mesma assinatura ficam de fora) */
 function sdVisiveis(c){
@@ -316,10 +335,10 @@ function sdClique(a, b){
   else if (a === 'mostrarDisp'){ sdS.mostrarDisp = !sdS.mostrarDisp; sdDesenhar(); }
   else if (a === 'ir'){ var it = sdAcharItem(id, k); if (it && it.go) it.go(); }
   else if (a === 'disp'){
-    var it2 = sdAcharItem(id, k); if (!it2) return; var d = sdDispLer(), chave = id + '|' + k, antes = d[chave]; d[chave] = it2.sig; sdDispGravar(d); sdAtualizarTela();
-    toast('Item dispensado. Ele volta se o dado mudar.', 'Desfazer', function(){ var d2 = sdDispLer(); if (antes === undefined) delete d2[chave]; else d2[chave] = antes; sdDispGravar(d2); sdAtualizarTela(); });
+    var it2 = sdAcharItem(id, k); if (!it2) return; var chave = id + '|' + k, antes = sdDispLer()[chave]; sdDispSet(chave, it2.sig); sdAtualizarTela();
+    toast('Item dispensado. Ele volta se o dado mudar.', 'Desfazer', function(){ if (antes === undefined) sdDispDel(chave); else sdDispSet(chave, antes); sdAtualizarTela(); });
   }
-  else if (a === 'rest'){ var d3 = sdDispLer(); delete d3[id + '|' + k]; sdDispGravar(d3); sdAtualizarTela(); }
+  else if (a === 'rest'){ sdDispDel(id + '|' + k); sdAtualizarTela(); }
 }
 function sdAbrir(){
   var ov = sgMontar('overlaySd', 'Saúde dos dados');
@@ -353,5 +372,5 @@ function sdCss(){
   setTimeout(function(){ sdVerificar(true); }, 9000);
   setInterval(function(){ if (!document.hidden) sdVerificar(true); }, 180000);
   window.addEventListener('horus-escopo', function(){ if (sdS.res) sdCalcular(); });
-  window.__horusTeste = Object.assign(window.__horusTeste || {}, { sdS: sdS, sdVerificar: sdVerificar, sdCalcular: sdCalcular, sdContagens: sdContagens, sdChecksDoPapel: sdChecksDoPapel, sdAbrir: sdAbrir });
+  window.__horusTeste = Object.assign(window.__horusTeste || {}, { sdS: sdS, sdVerificar: sdVerificar, sdCalcular: sdCalcular, sdContagens: sdContagens, sdChecksDoPapel: sdChecksDoPapel, sdAbrir: sdAbrir, sdDispEnviar: sdDispEnviar });
 })();

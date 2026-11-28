@@ -678,6 +678,25 @@ async function sincronizar(request, env, auth) {
   }));
   return json({ c });
 }
+/* PUT/GET /api/saude: as dispensas da "Saúde dos dados" de cada pessoa, iguais em todos os aparelhos. Guarda { chave: { s: assinatura | null, t: carimbo } }; vale o carimbo mais novo de
+   cada chave (null = a dispensa foi desfeita). O pedido PUT manda o que o aparelho tem e recebe o conjunto já juntado. Cada pessoa só enxerga a própria lista. */
+async function saudeRotas(request, env, auth) {
+  const id = 'u:' + (auth && auth.usuario ? auth.usuario.id : 'dono');
+  const lido = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind('_saude', id).first();
+  const d = lido ? JSON.parse(lido.dados) : {};
+  if (request.method === 'PUT') {
+    let corpo; try { corpo = await request.json(); } catch (e) { return erro(400, 'invalid', 'Pedido inválido.'); }
+    const novo = corpo && corpo.d && typeof corpo.d === 'object' ? corpo.d : {}; let mudou = false;
+    for (const [k, v] of Object.entries(novo).slice(0, 2000)) {
+      if (!v || typeof v !== 'object' || k.length > 160 || !Number.isFinite(v.t)) continue;
+      if (!d[k] || v.t > d[k].t) { d[k] = { s: v.s === null ? null : String(v.s).slice(0, 80), t: v.t }; mudou = true; }
+    }
+    const corte = Date.now() - 90 * 864e5; for (const k of Object.keys(d)) if (d[k].s === null && d[k].t < corte) { delete d[k]; mudou = true; }   // dispensas desfeitas há mais de 90 dias saem
+    if (Object.keys(d).length > 3000) return erro(413, 'too_large', 'Dispensas demais.');
+    if (mudou) await gravar(env, '_saude', id, d);
+  } else if (request.method !== 'GET') return erro(405, 'method', 'Método não permitido.');
+  return json({ d });
+}
 /* Tabela única de rotas da API: cada raiz declara quem pode usar ("sessao" = qualquer acesso logado; "proprietario" = só o proprietário).
    Raiz que não está aqui é recusada; /api/enviar é a única pública (tem token próprio). */
 const ROTAS = {
@@ -685,6 +704,7 @@ const ROTAS = {
   notif: ['sessao', (r, e, p, a) => notif(r, e, p, a)], djen: ['sessao', (r, e, p, au) => checarRotaDjen(p, r.method, au) || djenRotas(r, e, p, au)], datajud: ['sessao', (r, e, p) => datajudRotas(r, e, p)],   // para os demais papéis só quando tiverem filtro próprio (etapa 5.3)
   db: ['sessao', (r, e, p, au) => api(r, e, p, au)],
   sync: ['sessao', (r, e, p, au) => sincronizar(r, e, au)],
+  saude: ['sessao', (r, e, p, au) => saudeRotas(r, e, au)],
   lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, ehFamiliarAuth, familiarPodeUsar, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
   backup: ['proprietario', (r, e, p, au) => api(r, e, p, au)], backups: ['proprietario', (r, e, p) => backups(r, e, p)], restaurar: ['proprietario', (r, e, p) => restauracaoRotas(r, e, p)],
   lixeira: ['proprietario', (r, e, p) => lixeiraRotas(r, e, p)], historico: ['sessao', async (r, e, p, a) => historicoRotas(r, e, p, a, a && a.usuario && a.usuario.papel === 'advogado' ? await escopoDoAdvogado(e, a) : null)], auditoria: ['proprietario', (r, e, p) => auditoriaRotas(r, e, p)],
@@ -694,7 +714,7 @@ const ROTAS = {
   eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes, modulos }) => ({ id, papel, nome, oabs, permissoes, modulos }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
 };
 export const RAIZES_API = Object.keys(ROTAS);
-const ROTAS_FAMILIAR = new Set(['db', 'sync', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
+const ROTAS_FAMILIAR = new Set(['db', 'sync', 'saude', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
 /* extratos pelo Atalho do iPhone: só o familiar com o módulo de Finanças (a caixa de entrada e o código são só dele) */
 const ROTAS_FAMILIAR_FIN = new Set(['recebidos', 'atalho']);
 const familiarRotaOk = (rota, auth) => ROTAS_FAMILIAR.has(rota) || (ROTAS_FAMILIAR_FIN.has(rota) && normalizarUsuario(auth.usuario).modulos.includes('financas'));
