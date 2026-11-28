@@ -45,7 +45,8 @@ function cxCasar(linhas, movs, W){
     if (achou){ achou.forEach(function(l){ l.usada = true; }); x.feito = true; out.agrupado.push({ m: m, ls: achou }); }
   });
   M.forEach(function(x){ if (!x.feito) out.so.push({ m: x.m }); });
-  out.soExtrato = L.filter(function(l){ return !l.usada; }).length;
+  out.linhasSo = L.filter(function(l){ return !l.usada; }).map(function(l){ return { d: l.d, abs: l.abs, tipo: l.tipo, t: l.t }; });   /* linhas do banco sem lançamento no app */
+  out.soExtrato = out.linhasSo.length;
   return out;
 }
 

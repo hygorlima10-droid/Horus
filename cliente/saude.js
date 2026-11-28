@@ -116,9 +116,10 @@ function sdFinReserva(){
   (metas || []).forEach(function(m){
     if (m.tipo !== 'reserva') return;
     var ult = ''; (m.movimentos || []).forEach(function(x){ if ((x.tipo === 'rendimento' || x.tipo === 'inicial') && String(x.dia || '') > ult) ult = String(x.dia); });
+    var conf = String((config.extratos || {}).reservaConferidaEm || ''); if (conf > ult) ult = conf;   /* "Marcar a reserva como conferida" na conferência com o extrato */
     if (!ult) ult = String(m.criadoEm || '').slice(0, 10); if (!ult) return;
     var n = sdDias(ult, hoje); if (n < 40) return;
-    out.push({ k: m.id, t: m.nome || 'Reserva de emergência', s: 'valor conferido pela última vez há ' + n + ' dias (' + fmtData(ult) + '): confira com o extrato do banco', sig: m.id + '|' + ult, go: function(){ sdFechar(); try{ sdIrFin('patrimonio'); abrirMovMeta(m.id, 'atualizar'); }catch(e){} } });
+    out.push({ k: m.id, t: m.nome || 'Reserva de emergência', s: 'valor conferido pela última vez há ' + n + ' dias (' + fmtData(ult) + '): confira com o extrato do banco (Conferir com o extrato)', sig: m.id + '|' + ult, go: function(){ sdFechar(); try{ sdIrFin('patrimonio'); if (typeof apAbrirReserva === 'function') apAbrirReserva(); else abrirMovMeta(m.id, 'atualizar'); }catch(e){} } });
   });
   return out;
 }

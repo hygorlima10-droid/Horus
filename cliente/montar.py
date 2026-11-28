@@ -227,6 +227,13 @@ if '/*CX-INICIO*/' in s:
 else:
     assert s.count('/*SD-FIM*/\n') == 1
     s = s.replace('/*SD-FIM*/\n', '/*SD-FIM*/\n' + bloco_cx)
+ap_js = open(R + 'cliente/aplicacoes.js', encoding='utf-8').read()   # Conferir com o extrato, etapa 2: tipos de aplicação por pessoa e reserva x extrato
+bloco_ap = '/*AP-INICIO*/\n' + ap_js + '\n/*AP-FIM*/\n'
+if '/*AP-INICIO*/' in s:
+    s = re.sub(r'/\*AP-INICIO\*/.*?/\*AP-FIM\*/\n', lambda m: bloco_ap, s, flags=re.S)
+else:
+    assert s.count('/*CX-FIM*/\n') == 1
+    s = s.replace('/*CX-FIM*/\n', '/*CX-FIM*/\n' + bloco_ap)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:
