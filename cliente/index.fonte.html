@@ -1348,6 +1348,11 @@
   /* tela de abertura (logo escuro + círculo girando; some sozinha em até 5 s) */
   .abertura{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;background:radial-gradient(620px 420px at 50% 38%,rgba(237,161,0,.16),transparent 66%),#0b0e11;color:#f4efe2;transition:opacity .45s ease;}
   .abertura.sai{opacity:0;pointer-events:none;}
+  .abertura .ab-st{font-size:.95rem;color:rgba(237,197,102,.85);min-height:1.3em;text-align:center;padding:0 20px;}
+  .abertura .ab-barra{width:min(220px,56vw);height:4px;border-radius:4px;background:rgba(237,161,0,.18);overflow:hidden;margin-top:-10px;}
+  .abertura .ab-barra i{display:block;height:100%;width:0;background:#edaa00;border-radius:4px;transition:width .25s ease;}
+  .abertura .ab-entrar{margin-top:6px;border:1px solid rgba(237,161,0,.5);background:transparent;color:#edc566;border-radius:99px;padding:10px 18px;min-height:40px;font:inherit;font-weight:700;cursor:pointer;}
+  .abertura .ab-entrar[hidden]{display:none;}
   .abertura img{width:min(190px,46vw);height:auto;aspect-ratio:1;border-radius:26%;box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(237,161,0,.18);}
   .abertura .ab-nome{font-family:var(--font-display,inherit);font-weight:700;font-size:1.6rem;letter-spacing:.14em;text-transform:uppercase;color:#edc566;margin-top:-6px;}
   .abertura .ab-gira{width:34px;height:34px;border-radius:50%;border:3px solid rgba(237,161,0,.22);border-top-color:#edaa00;animation:ab-gira .9s linear infinite;}
@@ -1378,10 +1383,6 @@
   
   /* Finanças · Visão geral */
   .fv-k{font-size:var(--t1);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
-  /* números "carregando": enquanto as coleções chegam do servidor o valor fica escondido por uma faixa cinza (nunca um total pela metade) */
-  @keyframes skBrilho{to{background-position:-200% 0;}}
-  .sk-ld-inicio #resumoPendente,.sk-ld-inicio #resumoVencido,.sk-ld-inicio #resumoRecebido,.sk-ld-inicio #resumoOrigemMuriloPendente,.sk-ld-inicio #resumoOrigemMuriloRecebido,.sk-ld-inicio #resumoOrigemProprioPendente,.sk-ld-inicio #resumoOrigemProprioRecebido,.sk-ld-inicio #resumoOrigemOutrasRecebido,.sk-ld .fv-big,.sk-ld .fv-tile b{color:transparent!important;-webkit-text-fill-color:transparent;text-shadow:none!important;background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:skBrilho 1.3s linear infinite;border-radius:8px;user-select:none;pointer-events:none;}
-  .sk-ld-inicio #inicioBarra,.sk-ld-inicio #inicioLegenda,.sk-ld-inicio #vencidoChip,.sk-ld .fv-chip,.sk-ld .fv-pat-l,.sk-ld .saldo-data,.sk-ld small{visibility:hidden;}
   .fv-big{font-size:var(--t8);font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:4px 0;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .fv-pat-l{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
   .fv-chip{display:inline-block;font-size:var(--t1);font-weight:700;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);white-space:nowrap;}
@@ -1521,14 +1522,22 @@
 </style>
 <link rel="stylesheet" href="/tema.css?v=1">
 </head>
-<body class="sk-ld-inicio">
-<div class="abertura" id="abertura" role="status" aria-label="Carregando o Horus"><img src="/logo/logo-dark.png?v=1" alt="Horus"><div class="ab-nome">Horus</div><div class="ab-gira" aria-hidden="true"></div></div>
+<body>
+<div class="abertura" id="abertura" role="status" aria-label="Carregando o Horus"><img src="/logo/logo-dark.png?v=1" alt="Horus"><div class="ab-nome">Horus</div><div class="ab-gira" aria-hidden="true"></div><div class="ab-st" id="abStatus" aria-live="polite">Carregando…</div><div class="ab-barra" aria-hidden="true"><i id="abBarra"></i></div><button type="button" class="ab-entrar" id="abEntrar" hidden>Entrar mesmo assim</button></div>
 <script>
 (function(){var el=document.getElementById('abertura');if(!el)return;
 /* testes automáticos (webdriver) pulam a abertura; ?abertura=1 força para conferir */
 if(navigator.webdriver&&!/[?&]abertura=1/.test(location.search)){el.remove();return;}
-var fim=false;function fechar(){if(fim)return;fim=true;el.classList.add('sai');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},500);}
-el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
+/* A abertura é a tela de carregamento de verdade: fica até as coleções principais chegarem do servidor (o app avisa por window.__abertura) e só então mostra o app, já completo.
+   Mostra o andamento ("3 de 11") e a falta de conexão; depois de 8 s oferece "Entrar mesmo assim"; e, se o app não responder em 20 s, abre sozinha (nunca trava a entrada). */
+var fim=false,t0=Date.now(),st=document.getElementById('abStatus'),bar=document.getElementById('abBarra'),ent=document.getElementById('abEntrar');
+function fechar(){if(fim)return;fim=true;el.classList.add('sai');setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},500);}
+window.__abertura={fechar:function(){var resto=Math.max(0,450-(Date.now()-t0));setTimeout(fechar,resto);},
+  progresso:function(n,total){if(fim)return;if(bar)bar.style.width=Math.round(100*n/Math.max(1,total))+'%';if(st)st.textContent=navigator.onLine===false?'Sem conexão com a internet. Tentando de novo…':(n>=total?'Entrando…':'Carregando seus dados… '+n+' de '+total);},
+  texto:function(t){if(st&&!fim)st.textContent=t;}};
+if(ent){ent.addEventListener('click',fechar);}
+setTimeout(function(){if(!fim&&ent){ent.hidden=false;}},8000);
+setTimeout(fechar,20000);})();
 </script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
@@ -3370,8 +3379,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   var configRef = null;
   var snapOk = {};   /* quais coleções já chegaram do servidor (o fechamento dos meses só roda com tudo carregado) */
   /* Abertura do app: as coleções chegam do servidor uma a uma. Antes cada chegada redesenhava a tela e os totais do Início mudavam 3 ou 4 vezes até o valor certo (e o app fazia
-     um desenho completo por coleção). Agora: (1) os números do Início e dos cabeçalhos ficam em "carregando" até TODAS as coleções principais chegarem (ou 12 s, para nunca
-     ficar preso); (2) nesse tempo os desenhos pedidos pelas chegadas são agrupados (uma vez cada, a cada 80 ms); (3) quando tudo chega, desenha uma vez só. */
+     um desenho completo por coleção). Agora a TELA DE ABERTURA (logo + círculo) é a tela de carregamento de verdade: mostra o andamento ("3 de 11"), fica até TODAS as coleções
+     principais chegarem (ou 12 s, para nunca ficar preso), enquanto isso os desenhos pedidos pelas chegadas são agrupados (uma vez cada, a cada 80 ms), e só então abre o app,
+     desenhado uma vez só e já com os números certos. */
   var dadosProntosFlag = false, dadosProntosT0 = Date.now(), renderPend = {}, renderPendTimer = null;
   var COLECOES_PRONTAS = ['casosRef', 'acordosRef', 'alvarasRef', 'clientesRef', 'despesasRef', 'receitasRef', 'metasRef', 'configRef', 'saldosRef', 'extratosRef', 'obraMovRef'];
   function dadosProntos(){
@@ -3393,10 +3403,13 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   }
   (function vigiaProntidao(){
     var t = setInterval(function(){
+      var feitas = COLECOES_PRONTAS.filter(function(k){ return snapOk[k]; }).length;
+      try{ if (window.__abertura) window.__abertura.progresso(feitas, COLECOES_PRONTAS.length); }catch(e){}
       if (!dadosProntos()) return;
       clearInterval(t); clearTimeout(renderPendTimer); renderPendTimer = null;
       renderAgora();
       try{ renderResumoGeral(); renderStats(); renderStatsAcordos(); renderStatsAlvaras(); }catch(e){ console.error('números do Início', e); }
+      try{ if (window.__abertura) window.__abertura.fechar(); }catch(e){}   /* abre o app: já completo, desenhado uma vez */
     }, 100);
   })();
   var editingMetaId = null;
@@ -4646,7 +4659,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   }
 
   function renderResumoGeral(){
-    document.body.classList.toggle('sk-ld-inicio', !dadosProntos());   /* números do Início: só aparecem quando todas as coleções chegaram */
     var sp = computeStats();
     var sa = computeStatsAcordos();
     var sv = computeStatsAlvaras();
@@ -4708,7 +4720,6 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ---------- cabeçalho padrão das abas de documentos (número principal + selos + 2 cartões) ---------- */
   function rsResumo(id, o){
     var el = qs(id); if (!el) return;
-    el.classList.toggle('sk-ld', !dadosProntos());   /* cabeçalho com número: "carregando" até os dados chegarem */
     var chip = o.chip || '';
     var tiles = (o.tiles || []).map(function(t){
       return '<div class="fv-tile"><span class="fv-tl">' + fvIc(t.k, t.cor) + t.rot + '</span><b class="' + (t.cls || '') + '">' + t.v + '</b>' + (t.sub ? '<small>' + t.sub + '</small>' : '') + '</div>';
