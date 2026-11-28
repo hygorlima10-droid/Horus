@@ -220,6 +220,13 @@ if '/*SD-INICIO*/' in s:
 else:
     assert s.count('/*DA-FIM*/\n') == 1
     s = s.replace('/*DA-FIM*/\n', '/*DA-FIM*/\n' + bloco_sd)
+cx_js = open(R + 'cliente/conferencia.js', encoding='utf-8').read()   # Conferir com o extrato (o caminho de volta da leitura de extratos)
+bloco_cx = '/*CX-INICIO*/\n' + cx_js + '\n/*CX-FIM*/\n'
+if '/*CX-INICIO*/' in s:
+    s = re.sub(r'/\*CX-INICIO\*/.*?/\*CX-FIM\*/\n', lambda m: bloco_cx, s, flags=re.S)
+else:
+    assert s.count('/*SD-FIM*/\n') == 1
+    s = s.replace('/*SD-FIM*/\n', '/*SD-FIM*/\n' + bloco_cx)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:

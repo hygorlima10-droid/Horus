@@ -117,9 +117,11 @@ const desp = await (await api('dono', 'GET', 'despesas')).json();
 check(desp.docs.filter((d) => /^SD /.test(d.data.nome || '')).length === 4 && desp.docs.length === 6, 'a verificação não alterou nem criou nenhum lançamento (6 despesas: as de teste)');
 await ctx.close();
 // ---- papéis
-const rotulos = async (q) => { const x = await abrir(q); const r = await x.p.evaluate(() => ({ ids: window.__horusTeste.sdChecksDoPapel().map((c) => c.id), abas: [...new Set(window.__horusTeste.sdChecksDoPapel().map((c) => c.aba))] })); await x.ctx.close(); return r; };
+const rotulos = async (q) => { const x = await abrir(q); await x.p.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await x.p.waitForTimeout(600);
+  const r = await x.p.evaluate(() => ({ ids: window.__horusTeste.sdChecksDoPapel().map((c) => c.id), abas: [...new Set(window.__horusTeste.sdChecksDoPapel().map((c) => c.aba))], regras: document.querySelectorAll('#cfWrap [data-cf="extregras"]').length })); await x.ctx.close(); return r; };
 const ana = await rotulos('ana'), caio = await rotulos('caio');
 check(ana.abas.join() === 'fin,jur' && !ana.ids.includes('sis-backup') && !ana.ids.includes('jur-semadv'), 'advogada: só Finanças e Jurídico, sem backup nem "sem advogado": ' + ana.abas.join());
+check(ana.regras === 1 && caio.regras === 0, 'advogada vê "Extratos: regras que você ensinou" (as dela); estagiário não vê');
 check(caio.abas.join() === 'eq' && caio.ids.join() === 'eq-contas,eq-tarefas', 'estagiário: só Equipe (contas fixas e tarefas): ' + caio.ids.join());
 // ---- celular
 ({ ctx, p } = await abrir('dono', 390, 844));

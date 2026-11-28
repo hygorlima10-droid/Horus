@@ -18,6 +18,8 @@ var CF_LINHAS = [
   { id: 'lixeira', ic: 'trash-2', t: 'Lixeira', s: 'restaurar o que foi excluído (30 dias)', go: function(){ sgLixAbrir(); } },
   { id: 'registro', ic: 'receipt', t: 'Registro de ações', s: 'quem fez o quê, quando', go: function(){ sgRegAbrir(); } },
 ];
+/* advogado (cofre próprio) e familiar com Finanças também têm as regras que o app aprendeu nos extratos deles: só eles as veem e editam */
+function cfPodeRegras(){ return (typeof ppPapel === 'function' && ppPapel() === 'advogado') || (typeof ppFamiliar === 'function' && ppFamiliar() && typeof ffnAtivo === 'function' && ffnAtivo()); }
 function cfLinha(l, fut){
   var tag = l.breve ? '<span class="cf-tag">em breve</span>' : (fut ? '<span class="cf-tag">depois</span>' : '<span class="cf-seta">›</span>');
   return '<button type="button" class="pb-mi cf-it' + ((l.breve || fut) ? ' cf-off' : '') + '"' + ((l.breve || fut) ? ' disabled' : ' data-cf="' + l.id + '"') + '><span class="pb-mi-i">' + ico(l.ic, 20) + '</span><span class="cf-tx">' + escapeHtml(l.t) + '<small>' + escapeHtml(l.s) + '</small></span>' + tag + '</button>';
@@ -32,7 +34,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha(CF_LINHAS[0], false) + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: (typeof ppFamiliar === 'function' && ppFamiliar()) ? 'vencimentos da obra e das contas' : 'resumo do dia, prazos, indicações e repasses' }, false) + ((typeof ppFamiliar === 'function' && ppFamiliar()) ? '' : cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false)) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha(CF_LINHAS[0], false) + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: (typeof ppFamiliar === 'function' && ppFamiliar()) ? 'vencimentos da obra e das contas' : 'resumo do dia, prazos, indicações e repasses' }, false) + ((typeof ppFamiliar === 'function' && ppFamiliar()) ? '' : cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false)) + (cfPodeRegras() ? cfLinha(CF_LINHAS.filter(function(x){ return x.id === 'extregras'; })[0], false) : '') + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +
