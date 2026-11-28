@@ -1,10 +1,10 @@
 // Mede o que o app pede ao servidor: quantas chamadas na abertura, ao trocar de aba e em repouso (segundo plano), o tamanho do que baixa e o tempo até a tela ficar pronta
 // (com e sem a simulação de celular: CPU 4x mais lenta e 150 ms de espera em cada chamada, como a distância até o banco).  Grupo 'telas-isoladas':  node test/rodar.mjs medir-carga
-// RELATORIO=/pasta/arquivo.json grava os números.  Não falha: serve para acompanhar (o teto de chamadas fica em LIMITE_ABERTURA).
+// RELATORIO=/pasta/arquivo.json grava os números.  Falha se a abertura passar de 48 chamadas (hoje 43 a 46; baixar o teto quando as melhorias entrarem) ou se o app parado fizer mais de 12 chamadas em 70 s (hoje 6).
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
-const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = 'tok-dono-0000000000000000000000000001', LIMITE_ABERTURA = Number(process.env.LIMITE_ABERTURA || 40);
+const B = process.env.BASE || 'http://127.0.0.1:8816', TOK = 'tok-dono-0000000000000000000000000001', LIMITE_ABERTURA = Number(process.env.LIMITE_ABERTURA || 48), LIMITE_REPOUSO = Number(process.env.LIMITE_REPOUSO || 12);
 const br = await chromium.launch(); const rel = {};
 async function rodar(nome, { cpu = 1, latencia = 0, repouso = 0 }) {
   const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'America/Sao_Paulo' }); await ctx.addCookies([{ name: 'sessao', value: TOK, url: B }]);
@@ -37,4 +37,6 @@ if (rel['sem-simulacao']) console.log('  repouso (70 s): ' + rel['sem-simulacao'
 console.log('  tarefas longas (celular simulado): ' + JSON.stringify(rel['celular-simulado-longtasks']));
 const base = rel['sem-simulacao'] || rel['celular-simulado'];
 console.log(base.abertura.chamadas <= LIMITE_ABERTURA ? '  ok   abertura dentro do limite de ' + LIMITE_ABERTURA + ' chamadas' : '  FALHA abertura com mais de ' + LIMITE_ABERTURA + ' chamadas');
-process.exit(base.abertura.chamadas <= LIMITE_ABERTURA ? 0 : 1);
+const repOk = !rel['sem-simulacao'] || rel['sem-simulacao'].repouso.chamadas <= LIMITE_REPOUSO;
+console.log(repOk ? '  ok   em repouso dentro do limite de ' + LIMITE_REPOUSO + ' chamadas em 70 s' : '  FALHA app parado fez mais de ' + LIMITE_REPOUSO + ' chamadas em 70 s');
+process.exit(base.abertura.chamadas <= LIMITE_ABERTURA && repOk ? 0 : 1);

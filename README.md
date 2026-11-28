@@ -250,3 +250,10 @@ A janela do texto completo agora tem os mesmos caminhos do cartão: **Cadastrar 
 
 ## Fase 4 (homologação da versão individual) — ver `docs/HOMOLOGACAO.md`
 Varredura automática de todas as abas e sub-abas no computador e no celular (`node test/rodar.mjs homologacao` e `homologacao-celular`).
+
+## Antes de publicar (rotina de proteção, 28/11/2026)
+O Cloudflare publica o que está no repositório e **não** roda o `montar.py`: por isso o `public/index.html` precisa estar gerado e enviado junto.
+1. `python3 cliente/montar.py` — junta os módulos em `cliente/index.fonte.html` e gera `public/index.html` minificado. Pode rodar quantas vezes quiser (não muda nada se nada mudou).
+2. `npm run verificar:rapido` (segundos) — confere que o build está em dia, a lógica de datas (tarefas e contas fixas em dezenas de dias seguidos, em todos os dias da semana) e os leitores. Ligue o aviso automático no `git push`: `git config core.hooksPath .githooks`.
+3. `npm run verificar` (~10 min) — acrescenta a **varredura de telas** (botão sobre botão, botão sobre texto, botão fora da tela, rolagem lateral, erro de JavaScript), o guarda do padrão de botões, o teste da checagem única de coleções e a medição de carga (pedidos na abertura e em repouso). `npm run verificar:telas` olha as 6 telas.
+4. Os testes de cada área (`node test/rodar.mjs <nome>`) continuam valendo; testes que mexem muito no banco rodam em grupos de banco novo (`telas-isoladas`, `diario-isolado`, `permissoes-planilha`).

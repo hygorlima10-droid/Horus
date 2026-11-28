@@ -599,6 +599,7 @@ while _mudou:   # blocos de 1 a 4 linhas repetidos em seguida viram um só
                 del _l[_i + _k:_i + 2 * _k]; _mudou = True
             else: _i += 1
 s = '\n'.join(_l)
+s = re.sub(r'\n{4,}', '\n\n\n', s)   # cada montagem deixava uma linha em branco a mais onde tirava um ícone repetido: limita a 2 linhas em branco seguidas, então rodar de novo não muda mais nada
 open(R + 'cliente/index.fonte.html', 'w', encoding='utf-8').write(s)
 print('montado')
 

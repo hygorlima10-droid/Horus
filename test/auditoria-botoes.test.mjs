@@ -1,6 +1,7 @@
 // Auditoria de tela: percorre todas as abas (e sub-abas) em vários tamanhos de tela e papéis e procura o que o usuário costuma flagrar a olho:
 // botão sobre botão, botão sobre texto, botão fora da tela, tela que rola para o lado e erro de JavaScript. Também abre as janelas de "novo/adicionar".
-// Grupo 'permissoes' (porta 8816):  node test/rodar.mjs auditoria-botoes   (RELATORIO=/pasta/arquivo.json grava tudo; sem ele só falha se achar algo)
+// Grupo 'telas-isoladas' (porta 8816):  node test/rodar.mjs auditoria-botoes   (RELATORIO=/pasta/arquivo.json grava tudo; FOTOS=/pasta guarda uma foto de cada achado)
+// Por padrão olha 3 telas (proprietário no celular e no computador, estagiário no celular, ~4 min); AUD_TELAS=todas olha as 6 (~10 min); AUD_TELAS=0,3 escolhe pelo número.
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
 const { chromium } = createRequire('/opt/node22/lib/node_modules/')('playwright');
@@ -51,7 +52,7 @@ const AUDITAR = () => {
   return out;
 };
 const FECHAR = () => { document.querySelectorAll('.overlay.show').forEach((o) => o.classList.remove('show')); document.querySelectorAll('[class*=menu-aberto]').forEach(() => 0); };
-for (const [quem, w, h] of TELAS.filter((_, i) => !process.env.AUD_TELAS || process.env.AUD_TELAS.split(',').includes(String(i)))) {
+for (const [quem, w, h] of TELAS.filter((_, i) => process.env.AUD_TELAS === 'todas' || (process.env.AUD_TELAS ? process.env.AUD_TELAS.split(',') : ['0', '3', '5']).includes(String(i)))) {
   const ctx = await br.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, timezoneId: 'America/Sao_Paulo' }); await ctx.addCookies([{ name: 'sessao', value: TOK[quem], url: B }]);
   const p = await ctx.newPage(); p.on('pageerror', (e) => erros.push(`${quem}@${w} erro JS: ${e.message}`)); p.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource|net::ERR/.test(m.text())) erros.push(`${quem}@${w} console: ${m.text().slice(0, 160)}`); }); await p.route(/fonts\./, (r) => r.abort());
   await p.addInitScript(() => { try { localStorage.setItem('horus.leituraAuto', '0'); } catch (e) { } });

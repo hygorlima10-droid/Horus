@@ -7,7 +7,7 @@ Desempenho: aprovados os itens 1 (uma checagem só), 5 (minificar) e 8 (Smart Pl
 
 | Ordem | Ferramenta | Esforço | Depende de | Por que nesta posição |
 |---|---|---|---|---|
-| 0 | **Q1 varredura de tela na rotina** e **Q2 datas fixas nos testes** | P | nada | Rede de proteção antes de mexer em mais telas. Q1 já existe (`auditoria-botoes`); falta rodar a cada versão. Q2 acaba com a falha que vai e volta. |
+| 0 | **Q1 varredura de tela na rotina** e **Q2 datas fixas nos testes** — **FEITO em 28/11** (ver `docs/DECISOES.md`) | P | nada | Rede de proteção antes de mexer em mais telas. Q1 já existe (`auditoria-botoes`); falta rodar a cada versão. Q2 acaba com a falha que vai e volta. |
 | 1 | **Saúde dos dados** (Configurações › Verificar) | P a M | `duplicidade.js` | Só leitura, baixo risco, valor imediato. Vira a rede de segurança das próximas ferramentas (confere se as novas gravações não criam duplicado ou lançamento órfão). |
 | 2 | **Cobrança com um toque** | P | nada | Pequena e útil já. Cria o **registro de contatos** ("cobrado em…") que a Linha do tempo vai usar. |
 | 3 | **Conferir com o extrato** | M | leitor geral (já existe) | Maior ganho financeiro; só propõe, nunca grava sozinha. Vem antes das telas novas porque usa o que já está pronto. |
