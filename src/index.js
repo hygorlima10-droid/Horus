@@ -17,6 +17,7 @@ import { calendarioRotas, calendarioFeed } from './calendario.js';
 import { planilhaRotas, planilhaSync } from './planilha.js';
 import { equipeRotas, semAdvogadoRotas, agendaRotas } from './responsaveis.js';
 import { peticoesRotas, somarOp, r2Bloqueado } from './peticoes.js';
+import { atendimentosRotas } from './atendimentos.js';
 import { atalhoRotas, resolverCodigo, registrarUso, MAX_ARQ_EXTRATO } from './atalho.js';
 import { paginasDeAcesso, autenticar, segurancaRotas, temProprietario, proprietario } from './acesso.js';
 import { auditoriaRotas, historicoRotas, lixeiraRotas, limparSeguranca, stmtRegistro, stmtLixeira, registraColecao, vaiParaLixeira, tituloDe, mudancas, autorDe } from './auditoria.js';
@@ -711,6 +712,7 @@ const ROTAS = {
   seguranca: ['sessao', (r, e, p, a) => segurancaRotas(r, e, p, a)], usuarios: ['proprietario', (r, e, p, a) => usuariosRotas(r, e, p, a)],
   indices: ['sessao', (r, e, p, a) => (ehDono(a) || ehFamiliarAuth(a) ? indicesRotas(r, e, p, a) : erro(403, 'forbidden', 'Só o proprietário pode usar isto.'))], calendario: ['sessao', (r, e, p, a) => calendarioRotas(r, e, p, a)], planilha: ['sessao', (r, e, p, a) => planilhaRotas(r, e, p, a)], equipe: ['sessao', (r, e) => equipeRotas(r, e)], agenda: ['sessao', (r, e, p, a) => agendaRotas(r, e, p, a)], 'sem-advogado': ['proprietario', (r, e, p, a) => semAdvogadoRotas(r, e, p, a)],
   peticoes: ['sessao', (r, e, p, a) => peticoesRotas(r, e, p, a, { enviarAviso, donoId })],
+  atendimentos: ['sessao', (r, e, p, a) => atendimentosRotas(r, e, p, a)],
   eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes, modulos }) => ({ id, papel, nome, oabs, permissoes, modulos }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
 };
 export const RAIZES_API = Object.keys(ROTAS);

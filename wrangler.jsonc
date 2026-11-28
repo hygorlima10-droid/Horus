@@ -8,6 +8,8 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "controle-juridico", "database_id": "6e63cb30-f3a4-4611-9b53-275284e1fbec" }
   ],
+  /* Transcrição dos atendimentos: Whisper do Workers AI (cota gratuita diária); a rota só chama quando alguém pede uma transcrição. */
+  "ai": { "binding": "AI" },
   "r2_buckets": [
     { "binding": "ARQUIVOS", "bucket_name": "horus-peticoes" }
   ],
