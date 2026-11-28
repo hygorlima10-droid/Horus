@@ -665,12 +665,26 @@ export default {
 };
 const ICONES = new Set(['/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/favicon-32.png', '/favicon-48.png', '/favicon.ico', '/tema.css', '/manifest.webmanifest', '/sw.js']);
 
+/* GET /api/sync?c=casos,agenda,…: a "ficha" (quantidade + última alteração) de VÁRIAS coleções num pedido só. O app antes fazia um pedido por coleção a cada 15 s
+   (11 pedidos, 11 autenticações); agora faz um. Cada coleção passa pelo MESMO caminho de GET /api/db/<coleção>?resumo=1 (mesmas permissões, mesmos cofres e mesmo filtro por
+   papel), então o resultado é idêntico ao dos pedidos separados; a coleção que a pessoa não pode ler vem como null (o app trata como "sem acesso"). Nomes reservados (_x) são ignorados. */
+async function sincronizar(request, env, auth) {
+  const nomes = [...new Set((new URL(request.url).searchParams.get('c') || '').split(',').filter((x) => NOME.test(x)))].slice(0, 30), c = {};
+  await Promise.all(nomes.map(async (n) => {
+    try {
+      const r = await api(new Request(new URL('/api/db/' + n + '?resumo=1', request.url), { method: 'GET', headers: request.headers }), env, ['db', n], auth);
+      c[n] = r.ok ? await r.json() : null;
+    } catch (e) { c[n] = null; }
+  }));
+  return json({ c });
+}
 /* Tabela única de rotas da API: cada raiz declara quem pode usar ("sessao" = qualquer acesso logado; "proprietario" = só o proprietário).
    Raiz que não está aqui é recusada; /api/enviar é a única pública (tem token próprio). */
 const ROTAS = {
   ler: ['proprietario', (r, e, p) => ler(r, e, p)], recebidos: ['sessao', (r, e, p, a) => recebidos(r, e, p, a)], atalho: ['sessao', (r, e, p, a) => atalhoRotas(r, e, p, a)], anexos: ['sessao', (r, e, p, a) => (ehDono(a) || ehFamiliarAuth(a) ? anexos(r, e, p, a) : erro(403, 'forbidden', 'Só o proprietário pode usar isto.'))], exportar: ['sessao', (r, e, p, a) => exportarCofre(r, e, p, a)],
   notif: ['sessao', (r, e, p, a) => notif(r, e, p, a)], djen: ['sessao', (r, e, p, au) => checarRotaDjen(p, r.method, au) || djenRotas(r, e, p, au)], datajud: ['sessao', (r, e, p) => datajudRotas(r, e, p)],   // para os demais papéis só quando tiverem filtro próprio (etapa 5.3)
   db: ['sessao', (r, e, p, au) => api(r, e, p, au)],
+  sync: ['sessao', (r, e, p, au) => sincronizar(r, e, au)],
   lote: ['sessao', (r, e, p, au) => loteRotas(r, e, p, au, { stmtGravar, NOME, MAX_DOC, checarColecao: (c, a) => checarColecao(c, a) || checarAcessoColecao(c, a), resolverColecao, doCofre, ehAdvogadoAuth, ehFamiliarAuth, familiarPodeUsar, PESSOAL, autorizarGravacao, autorizarExclusao, atividade: (env2, f) => avisarAtividade(env2, enviarAviso, f), CONFLITO })],
   backup: ['proprietario', (r, e, p, au) => api(r, e, p, au)], backups: ['proprietario', (r, e, p) => backups(r, e, p)], restaurar: ['proprietario', (r, e, p) => restauracaoRotas(r, e, p)],
   lixeira: ['proprietario', (r, e, p) => lixeiraRotas(r, e, p)], historico: ['sessao', async (r, e, p, a) => historicoRotas(r, e, p, a, a && a.usuario && a.usuario.papel === 'advogado' ? await escopoDoAdvogado(e, a) : null)], auditoria: ['proprietario', (r, e, p) => auditoriaRotas(r, e, p)],
@@ -680,7 +694,7 @@ const ROTAS = {
   eu: ['sessao', (r, e, p, a) => json(a && a.usuario ? (({ id, papel, nome, oabs, permissoes, modulos }) => ({ id, papel, nome, oabs, permissoes, modulos }))(normalizarUsuario(a.usuario)) : { papel: 'proprietario', nome: '', oabs: [], permissoes: { excluir: true, verTotais: true } })],   // quem está usando (a tela esconde o que é só do proprietário)
 };
 export const RAIZES_API = Object.keys(ROTAS);
-const ROTAS_FAMILIAR = new Set(['db', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
+const ROTAS_FAMILIAR = new Set(['db', 'sync', 'lote', 'eu', 'seguranca', 'notif', 'indices', 'anexos', 'exportar']);
 /* extratos pelo Atalho do iPhone: só o familiar com o módulo de Finanças (a caixa de entrada e o código são só dele) */
 const ROTAS_FAMILIAR_FIN = new Set(['recebidos', 'atalho']);
 const familiarRotaOk = (rota, auth) => ROTAS_FAMILIAR.has(rota) || (ROTAS_FAMILIAR_FIN.has(rota) && normalizarUsuario(auth.usuario).modulos.includes('financas'));

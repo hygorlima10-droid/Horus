@@ -3,7 +3,7 @@
 //   node test/extratos-c6.test.mjs
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { execSync } from 'node:child_process';
 let falhas = 0; const check = (c, m) => { console.log((c ? '  ok   ' : '  FALHA ') + m); if (!c) falhas++; };
-const H = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+const H = fs.readFileSync(new URL('../cliente/index.fonte.html', import.meta.url), 'utf8');
 const fatia = (a, b) => { const i = H.indexOf(a), j = H.indexOf(b, i); if (i < 0 || j < 0) throw new Error('trecho não achado: ' + a.slice(0, 40)); return H.slice(i, j); };
 const EX = new Function(fatia('var EX = (function(){', "if (typeof module !== 'undefined' && module.exports) module.exports = EX;") + '; return EX;')();
 const estado = { senha: '', auto: true, rodando: false };

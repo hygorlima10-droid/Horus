@@ -3,6 +3,9 @@
   "main": "src/index.js",
   "compatibility_date": "2025-01-01",
   "keep_vars": true,
+  // Smart Placement (28/11): o Cloudflare mede onde o Worker responde mais depressa (perto do banco D1, que fica nos EUA) e roda lá; se não ganhar, fica no lugar de sempre.
+  // Para desfazer: apague a linha abaixo e publique de novo.
+  "placement": { "mode": "smart" },
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
   "d1_databases": [
     { "binding": "DB", "database_name": "controle-juridico", "database_id": "6e63cb30-f3a4-4611-9b53-275284e1fbec" }

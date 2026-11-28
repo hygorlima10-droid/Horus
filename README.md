@@ -3,7 +3,8 @@
 O mesmo app que rodava dentro do Claude, agora num servidor seu (Cloudflare), com banco de dados próprio e login.
 
 ## Como funciona (resumo)
-- `public/index.html` — o app (igual ao oficial, versão etapa 28).
+- `cliente/index.fonte.html` — o app, legível (é nele que se edita; os módulos de `cliente/*.js` entram nele por `python3 cliente/montar.py`).
+- `public/index.html` — o mesmo app **minificado** (sem comentários e espaços), gerado por `cliente/minificar.mjs` no fim do `montar.py`; **é o que vai para o ar. Não edite à mão**: edite `cliente/index.fonte.html` ou os módulos e rode `python3 cliente/montar.py`, e depois publique os dois arquivos.
 - `public/shim.js` — faz o app falar com o banco do servidor em vez do banco do Claude.
 - `src/index.js` — o servidor: confere o login, guarda e entrega os dados.
 - `schema.sql` — a tabela do banco.

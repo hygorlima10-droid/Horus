@@ -1,7 +1,7 @@
-# Injeta cliente/pergunte.js dentro de public/index.html (entre marcadores) e liga os ganchos. Pode rodar de novo sem duplicar.
+# Injeta cliente/pergunte.js e os demais módulos dentro de cliente/index.fonte.html (entre marcadores; é o arquivo legível, onde se edita) e depois gera public/index.html minificado (cliente/minificar.mjs) e liga os ganchos. Pode rodar de novo sem duplicar.
 import re
 R = '/home/user/Controle-de-Iniciais/'
-s = open(R + 'public/index.html', encoding='utf-8').read()
+s = open(R + 'cliente/index.fonte.html', encoding='utf-8').read()
 mod = open(R + 'cliente/pergunte.js', encoding='utf-8').read()
 bloco = '/*PA-INICIO*/\n' + mod + '\n/*PA-FIM*/\n'
 if '/*PA-INICIO*/' in s:
@@ -599,7 +599,7 @@ while _mudou:   # blocos de 1 a 4 linhas repetidos em seguida viram um só
                 del _l[_i + _k:_i + 2 * _k]; _mudou = True
             else: _i += 1
 s = '\n'.join(_l)
-open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
+open(R + 'cliente/index.fonte.html', 'w', encoding='utf-8').write(s)
 print('montado')
 
 # (o rcDiv_* das fichas de Inicial, Acordo e Alvará agora faz parte do HTML fixo, no bloco Responsáveis)
@@ -607,4 +607,8 @@ print('montado')
 
 # ---------- Familiar: a barra de baixo do celular ganha "Construção" (só aparece para o familiar com o módulo; ver cliente/papel.js) ----------
 rep('<button type="button" class="bt-it" id="btMais">', '<button type="button" class="bt-it bt-fam" data-tab="obra"><svg><use href="#ic-house"/></svg><span>Construção</span></button>\n    <button type="button" class="bt-it" id="btMais">')
-open(R + 'public/index.html', 'w', encoding='utf-8').write(s)
+open(R + 'cliente/index.fonte.html', 'w', encoding='utf-8').write(s)
+
+# ---------- gera public/index.html (o que vai para o ar) a partir do arquivo legível: sem comentários nem espaços ----------
+import subprocess
+subprocess.run(['node', R + 'cliente/minificar.mjs'], check=True)

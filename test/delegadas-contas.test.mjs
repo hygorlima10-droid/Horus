@@ -87,4 +87,6 @@ await page.click('.dg-aba >> text=Histórico de contas'); await page.waitForTime
 check(await page.locator('.dg-mob .dg-card').count() >= 1 && await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'celular: o Histórico vira cartões e não rola para o lado');
 check(erros.length === 0, 'celular: sem erros de JavaScript' + (erros.length ? ': ' + erros.join(' | ') : ''));
 await br.close();
+// limpa o que criou: as contas atrasadas lotariam a Central de atenção dos testes seguintes (o grupo compartilha o banco)
+for (const d of await lista()) if (d.tipo === 'fixa') await f('DELETE', '/api/db/delegadas/' + d.id);
 console.log(falhas ? falhas + ' FALHA(S)' : 'TUDO OK'); process.exit(falhas ? 1 : 0);

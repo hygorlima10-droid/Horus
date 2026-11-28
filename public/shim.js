@@ -20,7 +20,7 @@
   function famPermite(nome) { var m = EU.modulos || []; if (nome === 'config' || nome === 'configDono') return true; if (nome === 'obraMov') return m.indexOf('obra') >= 0; if (DONO[nome]) return m.indexOf('financas') >= 0; return false; }
   function semAcesso(nome) { if (EU.papel === 'familiar') return !famPermite(nome); return !!DONO[nome] && EU.papel !== 'proprietario' && !(EU.papel === 'advogado' && nome !== 'obraMov'); }
   /* familiar: pedido a uma área que não é dele nem chega ao servidor (responde 403 de mentira, como o app já espera de quem não tem acesso); nenhum erro, nenhum pedido recusado */
-  var ROTAS_FAM = { db: 1, lote: 1, eu: 1, seguranca: 1, notif: 1, indices: 1, anexos: 1, exportar: 1 };
+  var ROTAS_FAM = { db: 1, sync: 1, lote: 1, eu: 1, seguranca: 1, notif: 1, indices: 1, anexos: 1, exportar: 1 };
   var fetchOrig = window.fetch.bind(window);
   window.fetch = function (entrada, opcoes) {
     var url = typeof entrada === 'string' ? entrada : (entrada && entrada.url) || '';
@@ -87,6 +87,24 @@
     Object.keys(colecoes).forEach(function (k) { colecoes[k].avisar(); });
     try { window.dispatchEvent(new CustomEvent('horus-escopo')); } catch (e) { }
   };
+  /* Vigia das coleções: a cada 15 s (só com a tela à vista) um pedido /api/sync traz a "ficha" de todas as coleções já lidas; só a que mudou é relida.
+     Se o servidor não responder ao /api/sync (versão antiga, falha), volta ao jeito antigo: uma checagem por coleção. */
+  var vigiadas = {}, vigiaTimer = null;
+  function vigiar() {
+    if (document.hidden || !EU.pronto) return;
+    var lista = Object.keys(vigiadas).map(function (n) { return vigiadas[n]; }).filter(function (c) { return c.carregada && !c.parcial && !semAcesso(c.nome); });
+    if (!lista.length) return;
+    var porUma = function () { lista.forEach(function (c) { c.carregar().catch(function () { }); }); };
+    req('GET', '/api/sync?c=' + lista.map(function (c) { return encodeURIComponent(c.nome); }).join(',')).then(function (r) {
+      lista.forEach(function (c) {
+        var x = r && r.c ? r.c[c.nome] : null;
+        if (!x) { c.carregar().catch(function () { }); return; }   // sem a ficha desta coleção: checa sozinha
+        if (c.pendentes > 0 || (x.n + '|' + x.t) === c.token) return;
+        c.lerTudo().catch(function () { });
+      });
+    }, porUma);
+  }
+  function ligarVigia() { if (!vigiaTimer) vigiaTimer = setInterval(vigiar, 15000); }
   function colecao(nome) {
     if (colecoes[nome]) return colecoes[nome];
     var c = colecoes[nome] = { nome: nome, mapa: {}, versoes: {}, fila: {}, inscritos: [], carregada: false, parcial: false, pendentes: 0, assinatura: '', token: '', timer: null };
@@ -139,7 +157,7 @@
     };
     c.iniciarVigia = function () {
       if (c.timer) return;
-      c.timer = setInterval(function () { if (!document.hidden) c.carregar().catch(function () {}); }, 15000);
+      c.timer = true; vigiadas[c.nome] = c; ligarVigia();   /* uma checagem só, para todas as coleções vigiadas (antes: um pedido por coleção a cada 15 s) */
     };
     return c;
   }
