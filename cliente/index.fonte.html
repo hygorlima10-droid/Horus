@@ -1378,6 +1378,10 @@
   
   /* Finanças · Visão geral */
   .fv-k{font-size:var(--t1);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+  /* números "carregando": enquanto as coleções chegam do servidor o valor fica escondido por uma faixa cinza (nunca um total pela metade) */
+  @keyframes skBrilho{to{background-position:-200% 0;}}
+  .sk-ld-inicio #resumoPendente,.sk-ld-inicio #resumoVencido,.sk-ld-inicio #resumoRecebido,.sk-ld-inicio #resumoOrigemMuriloPendente,.sk-ld-inicio #resumoOrigemMuriloRecebido,.sk-ld-inicio #resumoOrigemProprioPendente,.sk-ld-inicio #resumoOrigemProprioRecebido,.sk-ld-inicio #resumoOrigemOutrasRecebido,.sk-ld .fv-big,.sk-ld .fv-tile b{color:transparent!important;-webkit-text-fill-color:transparent;text-shadow:none!important;background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);background-size:200% 100%;animation:skBrilho 1.3s linear infinite;border-radius:8px;user-select:none;pointer-events:none;}
+  .sk-ld-inicio #inicioBarra,.sk-ld-inicio #inicioLegenda,.sk-ld-inicio #vencidoChip,.sk-ld .fv-chip,.sk-ld .fv-pat-l,.sk-ld .saldo-data,.sk-ld small{visibility:hidden;}
   .fv-big{font-size:var(--t8);font-weight:700;letter-spacing:-.02em;line-height:1.1;margin:4px 0;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .fv-pat-l{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
   .fv-chip{display:inline-block;font-size:var(--t1);font-weight:700;padding:2px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-soft);white-space:nowrap;}
@@ -1517,7 +1521,7 @@
 </style>
 <link rel="stylesheet" href="/tema.css?v=1">
 </head>
-<body>
+<body class="sk-ld-inicio">
 <div class="abertura" id="abertura" role="status" aria-label="Carregando o Horus"><img src="/logo/logo-dark.png?v=1" alt="Horus"><div class="ab-nome">Horus</div><div class="ab-gira" aria-hidden="true"></div></div>
 <script>
 (function(){var el=document.getElementById('abertura');if(!el)return;
@@ -3365,6 +3369,36 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   var config = {};
   var configRef = null;
   var snapOk = {};   /* quais coleções já chegaram do servidor (o fechamento dos meses só roda com tudo carregado) */
+  /* Abertura do app: as coleções chegam do servidor uma a uma. Antes cada chegada redesenhava a tela e os totais do Início mudavam 3 ou 4 vezes até o valor certo (e o app fazia
+     um desenho completo por coleção). Agora: (1) os números do Início e dos cabeçalhos ficam em "carregando" até TODAS as coleções principais chegarem (ou 12 s, para nunca
+     ficar preso); (2) nesse tempo os desenhos pedidos pelas chegadas são agrupados (uma vez cada, a cada 80 ms); (3) quando tudo chega, desenha uma vez só. */
+  var dadosProntosFlag = false, dadosProntosT0 = Date.now(), renderPend = {}, renderPendTimer = null;
+  var COLECOES_PRONTAS = ['casosRef', 'acordosRef', 'alvarasRef', 'clientesRef', 'despesasRef', 'receitasRef', 'metasRef', 'configRef', 'saldosRef', 'extratosRef', 'obraMovRef'];
+  function dadosProntos(){
+    if (dadosProntosFlag) return true;
+    if (storageMode === 'local'){ dadosProntosFlag = true; return true; }
+    if (storageMode !== 'db') return Date.now() - dadosProntosT0 > 12000 ? (dadosProntosFlag = true) : false;
+    var ok = COLECOES_PRONTAS.every(function(k){ return snapOk[k]; }) && !(window.__horusDb && window.__horusDb.completo && !window.__horusDb.completo());
+    if (ok || Date.now() - dadosProntosT0 > 12000) dadosProntosFlag = true;
+    return dadosProntosFlag;
+  }
+  function renderAgora(){
+    var l = renderPend; renderPend = {}; renderPendTimer = null;
+    Object.keys(l).forEach(function(k){ try{ l[k](); }catch(e){ console.error('desenho', k, e); } });
+  }
+  function renderAoChegar(fn){
+    if (dadosProntosFlag){ fn(); return; }
+    renderPend[fn.name || String(Math.random())] = fn;
+    if (!renderPendTimer) renderPendTimer = setTimeout(renderAgora, 80);
+  }
+  (function vigiaProntidao(){
+    var t = setInterval(function(){
+      if (!dadosProntos()) return;
+      clearInterval(t); clearTimeout(renderPendTimer); renderPendTimer = null;
+      renderAgora();
+      try{ renderResumoGeral(); renderStats(); renderStatsAcordos(); renderStatsAlvaras(); }catch(e){ console.error('números do Início', e); }
+    }, 100);
+  })();
   var editingMetaId = null;
   var metaMovId = null;
   var metaHistId = null;
@@ -3628,7 +3662,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var raw = d.data() || {};
           return Object.assign({}, raw, { id: d.id });
         });
-        render();
+        renderAoChegar(render);
       }, function(err){
         console.error('db onSnapshot error', err);
         if (err && (err.code === 'not_granted' || err.code === 'capability_disabled')){
@@ -3643,7 +3677,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var raw = d.data() || {};
           return Object.assign({}, raw, { id: d.id });
         });
-        renderAcordos();
+        renderAoChegar(renderAcordos);
       }, function(err){
         console.error('db onSnapshot error (acordos)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3656,7 +3690,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var raw = d.data() || {};
           return Object.assign({}, raw, { id: d.id });
         });
-        renderAlvaras();
+        renderAoChegar(renderAlvaras);
       }, function(err){
         console.error('db onSnapshot error (alvaras)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3669,7 +3703,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var raw = d.data() || {};
           return Object.assign({}, raw, { id: d.id });
         });
-        renderClientesTudo();
+        renderAoChegar(renderClientesTudo);
       }, function(err){
         console.error('db onSnapshot error (clientes)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3683,7 +3717,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           return Object.assign({}, raw, { id: d.id });
         });
         if (typeof fatNormalizaDespesas === 'function') fatNormalizaDespesas();   /* a despesa da fatura mostra o vencimento (Central de atenção) */
-        renderFinanceiro();
+        renderAoChegar(renderFinanceiro);
       }, function(err){
         console.error('db onSnapshot error (despesas)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3696,7 +3730,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var raw = d.data() || {};
           return Object.assign({}, raw, { id: d.id });
         });
-        renderFinanceiro();
+        renderAoChegar(renderFinanceiro);
       }, function(err){
         console.error('db onSnapshot error (receitas)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3706,7 +3740,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       metasRef = db.collection('metas');
       metasRef.limit(LIMITE_COLECAO).onSnapshot(function(snap){ snapOk.metasRef = true;
         metas = snap.docs.map(function(d){ return Object.assign({}, d.data() || {}, { id: d.id }); });
-        renderFinanceiro();
+        renderAoChegar(renderFinanceiro);
       }, function(err){
         console.error('db onSnapshot error (metas)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3717,9 +3751,9 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       configRef.limit(50).onSnapshot(function(snap){ snapOk.configRef = true;
         snap.docs.forEach(function(d){ config[d.id] = d.data() || {}; });
         configCarregado = true;
-        aoMudarConfig();
+        renderAoChegar(aoMudarConfig);
         if (typeof anFechAgendar === 'function') anFechAgendar();
-        renderExtratos(); renderInicioExtratos();
+        renderAoChegar(renderExtratos); renderAoChegar(renderInicioExtratos);
         extTentarSyncAuto();
       }, function(err){
         console.error('db onSnapshot error (config)', err);
@@ -3733,7 +3767,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
           var existenteTime = (existente && existente.atualizadoEm) ? new Date(existente.atualizadoEm).getTime() : -1;
           if (incomingTime >= existenteTime) saldos[d.id] = incoming;
         });
-        renderFinanceiro();
+        renderAoChegar(renderFinanceiro);
       }, function(err){
         console.error('db onSnapshot error (saldos)', err);
         if (!(err && (err.code === 'not_granted' || err.code === 'capability_disabled'))){
@@ -3746,7 +3780,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
         if (typeof extNormalizaCartao === 'function') extNormalizaCartao(extratos);
         if (typeof fatNormalizaDespesas === 'function') fatNormalizaDespesas();   /* compras do cartão ficam no mês da FATURA (mesmo as já lançadas) */
         extSnapOk = true;
-        renderExtratos(); renderInicioExtratos(); renderPainelAtencao();
+        renderAoChegar(renderExtratos); renderAoChegar(renderInicioExtratos); renderAoChegar(renderPainelAtencao);
         extTentarSyncAuto();
         impAutoLer(0);
       }, function(err){
@@ -3755,7 +3789,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
       obraMovRef = db.collection('obraMov');
       obraMovRef.limit(LIMITE_COLECAO).onSnapshot(function(snap){ snapOk.obraMovRef = true;
         obraMov = snap.docs.map(function(d){ return Object.assign({}, d.data() || {}, { id: d.id }); });
-        renderTudo();
+        renderAoChegar(renderTudo);
       }, function(err){
         console.error('db onSnapshot error (obraMov)', err);
       });
@@ -4612,6 +4646,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   }
 
   function renderResumoGeral(){
+    document.body.classList.toggle('sk-ld-inicio', !dadosProntos());   /* números do Início: só aparecem quando todas as coleções chegaram */
     var sp = computeStats();
     var sa = computeStatsAcordos();
     var sv = computeStatsAlvaras();
@@ -4673,6 +4708,7 @@ el.addEventListener('click',fechar);setTimeout(fechar,2800);})();
   /* ---------- cabeçalho padrão das abas de documentos (número principal + selos + 2 cartões) ---------- */
   function rsResumo(id, o){
     var el = qs(id); if (!el) return;
+    el.classList.toggle('sk-ld', !dadosProntos());   /* cabeçalho com número: "carregando" até os dados chegarem */
     var chip = o.chip || '';
     var tiles = (o.tiles || []).map(function(t){
       return '<div class="fv-tile"><span class="fv-tl">' + fvIc(t.k, t.cor) + t.rot + '</span><b class="' + (t.cls || '') + '">' + t.v + '</b>' + (t.sub ? '<small>' + t.sub + '</small>' : '') + '</div>';
