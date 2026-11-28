@@ -213,6 +213,13 @@ if '/*DA-INICIO*/' in s:
 else:
     assert s.count('/*DP-FIM*/\n') == 1
     s = s.replace('/*DP-FIM*/\n', '/*DP-FIM*/\n' + bloco_da)
+sd_js = open(R + 'cliente/saude.js', encoding='utf-8').read()   # Configurações › Saúde dos dados (14 checagens, só leitura)
+bloco_sd = '/*SD-INICIO*/\n' + sd_js + '\n/*SD-FIM*/\n'
+if '/*SD-INICIO*/' in s:
+    s = re.sub(r'/\*SD-INICIO\*/.*?/\*SD-FIM\*/\n', lambda m: bloco_sd, s, flags=re.S)
+else:
+    assert s.count('/*DA-FIM*/\n') == 1
+    s = s.replace('/*DA-FIM*/\n', '/*DA-FIM*/\n' + bloco_sd)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:

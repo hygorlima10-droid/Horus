@@ -94,6 +94,13 @@ for (const [quem, w, h] of TELAS.filter((_, i) => process.env.AUD_TELAS === 'tod
       if (await p.evaluate(() => !!document.querySelector('.overlay.show'))) await registra(tab + ' ⊕ ' + tx); await p.evaluate(FECHAR); await p.waitForTimeout(150);
     }
   }
+  // janela "Saúde dos dados" (todas as abas dela)
+  if (await p.evaluate(() => !!(window.__horusTeste && window.__horusTeste.sdAbrir))) {
+    await p.evaluate(() => window.__horusTeste.sdAbrir()); await p.waitForTimeout(2500); await registra('saude');
+    const abasSd = await p.evaluate(() => [...document.querySelectorAll('#overlaySdC [data-sd="aba"]')].map((b) => b.getAttribute('data-v')));
+    for (const a of abasSd) { await p.evaluate((a) => document.querySelector('#overlaySdC [data-sd="aba"][data-v="' + a + '"]').click(), a); await p.waitForTimeout(300); await p.evaluate(() => document.querySelectorAll('#overlaySdC [data-sd="ck"]').forEach((b) => { if (b.getAttribute('aria-expanded') !== 'true') b.click(); })); await p.waitForTimeout(300); await registra('saude › ' + a); }
+    await p.evaluate(FECHAR);
+  }
   await ctx.close();
 }
 await br.close();

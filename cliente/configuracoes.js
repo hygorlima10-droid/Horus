@@ -5,6 +5,7 @@
    Usuários e Perfis e permissões já têm o lugar marcado para a fase de usuários.
    ============================================================ */
 var CF_LINHAS = [
+  { id: 'saude', ic: 'heart-pulse', t: 'Saúde dos dados', s: 'duplicados, transferências soltas, atrasos e cadastros para conferir', go: function(){ if (typeof sdAbrir === 'function') sdAbrir(); } },
   { id: 'notif', ic: 'bell', t: 'Notificações e lembretes do iPhone', s: 'avisos de prazos, publicações e compromissos', go: function(){ if (typeof ntAbrir === 'function') ntAbrir(); } },
   { id: 'backup', ic: 'archive', t: 'Backup e restauração', s: 'cópias, restaurar com segurança, voltar', go: function(){ var b = qs('backupBtn'); if (b) b.click(); } },
   { id: 'csv', ic: 'file-up', t: 'Exportar lista (CSV)', s: 'Iniciais, acordos, alvarás, clientes', go: function(){ var b = qs('exportBtn'); if (b) b.click(); } },
@@ -31,7 +32,7 @@ function cfRender(){
     });
   }
   if (typeof ppDono === 'function' && !ppDono()){   /* advogado e estagiário: só a conta deles (senha, aparelhos, avisos de acesso) */
-    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: (typeof ppFamiliar === 'function' && ppFamiliar()) ? 'vencimentos da obra e das contas' : 'resumo do dia, prazos, indicações e repasses' }, false) + ((typeof ppFamiliar === 'function' && ppFamiliar()) ? '' : cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false)) + '</div>';
+    w.innerHTML = '<div class="pb-painel pb-menu">' + cfLinha(CF_LINHAS[0], false) + cfLinha({ id: 'seguranca', ic: 'lock', t: 'Minha conta', s: 'trocar a senha, aparelhos conectados, avisos de acesso' }, false) + cfLinha({ id: 'notif', ic: 'bell', t: 'Avisos neste celular', s: (typeof ppFamiliar === 'function' && ppFamiliar()) ? 'vencimentos da obra e das contas' : 'resumo do dia, prazos, indicações e repasses' }, false) + ((typeof ppFamiliar === 'function' && ppFamiliar()) ? '' : cfLinha({ id: 'cal', ic: 'calendar-days', t: 'Audiências no calendário', s: 'assinar no Calendário do iPhone (só audiências)' }, false)) + '</div>';
     return;
   }
   w.innerHTML = '<div class="pb-painel pb-menu">' + CF_LINHAS.map(function(l){ return cfLinha(l, false); }).join('') + '</div>' +
