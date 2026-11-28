@@ -241,6 +241,13 @@ if '/*LC-INICIO*/' in s:
 else:
     assert s.count('/*AP-FIM*/\n') == 1
     s = s.replace('/*AP-FIM*/\n', '/*AP-FIM*/\n' + bloco_lc)
+at_js = open(R + 'cliente/atendimentos.js', encoding='utf-8').read()   # Atendimentos: gravar, transcrever, ficha de atendimento
+bloco_at = '/*AT-INICIO*/\n' + at_js + '\n/*AT-FIM*/\n'
+if '/*AT-INICIO*/' in s:
+    s = re.sub(r'/\*AT-INICIO\*/.*?/\*AT-FIM\*/\n', lambda m: bloco_at, s, flags=re.S)
+else:
+    assert s.count('/*LC-FIM*/\n') == 1
+    s = s.replace('/*LC-FIM*/\n', '/*LC-FIM*/\n' + bloco_at)
 ai_js = open(R + 'cliente/arquivar-iniciais.js', encoding='utf-8').read()
 bloco_ai = '/*AI-INICIO*/\n' + ai_js + '\n/*AI-FIM*/\n'
 if '/*AI-INICIO*/' in s:

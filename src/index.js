@@ -17,7 +17,7 @@ import { calendarioRotas, calendarioFeed } from './calendario.js';
 import { planilhaRotas, planilhaSync } from './planilha.js';
 import { equipeRotas, semAdvogadoRotas, agendaRotas } from './responsaveis.js';
 import { peticoesRotas, somarOp, r2Bloqueado } from './peticoes.js';
-import { atendimentosRotas } from './atendimentos.js';
+import { atendimentosRotas, limparAudiosAntigos } from './atendimentos.js';
 import { atalhoRotas, resolverCodigo, registrarUso, MAX_ARQ_EXTRATO } from './atalho.js';
 import { paginasDeAcesso, autenticar, segurancaRotas, temProprietario, proprietario } from './acesso.js';
 import { auditoriaRotas, historicoRotas, lixeiraRotas, limparSeguranca, stmtRegistro, stmtLixeira, registraColecao, vaiParaLixeira, tituloDe, mudancas, autorDe } from './auditoria.js';
@@ -658,7 +658,7 @@ async function enviarSemanal(env) {
 }
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(event.cron === '0 13 * * *' ? (async () => { try { await lerDjen(env); } catch (e) { console.error('leitura do DJEN', e); } try { await limparSeguranca(env); } catch (e) { console.error('limpeza', e); } try { await buscarIndices(env); } catch (e) { console.error('índices da construção', e); } await enviarResumoDiario(env); })() : (event.cron === '0 15,17,19,21 * * *' ? (async () => { try { const r = await relerSePreciso(env, { sempre: [17, 21].includes(new Date(event.scheduledTime).getUTCHours()) }); if (r && r.novas) await enviarResumoDiario(env, { soPublicacoes: true }); } catch (e) { console.error('releitura do DJEN', e); } })() : (async () => { try { await fazerBackup(env); } catch (e) { console.error('backup', e); } try { await enviarSemanal(env); } catch (e) { console.error('resumo semanal', e); } })()));
+    ctx.waitUntil(event.cron === '0 13 * * *' ? (async () => { try { await lerDjen(env); } catch (e) { console.error('leitura do DJEN', e); } try { await limparSeguranca(env); } catch (e) { console.error('limpeza', e); } try { await limparAudiosAntigos(env); } catch (e) { console.error('áudios antigos', e); } try { await buscarIndices(env); } catch (e) { console.error('índices da construção', e); } await enviarResumoDiario(env); })() : (event.cron === '0 15,17,19,21 * * *' ? (async () => { try { const r = await relerSePreciso(env, { sempre: [17, 21].includes(new Date(event.scheduledTime).getUTCHours()) }); if (r && r.novas) await enviarResumoDiario(env, { soPublicacoes: true }); } catch (e) { console.error('releitura do DJEN', e); } })() : (async () => { try { await fazerBackup(env); } catch (e) { console.error('backup', e); } try { await enviarSemanal(env); } catch (e) { console.error('resumo semanal', e); } })()));
   },
   async fetch(request, env, ctx) {
     return comSeguranca(await tratar(request, env, ctx));

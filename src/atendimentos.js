@@ -14,11 +14,14 @@
      PUT    /api/atendimentos/<id>/trecho/<n>?dur=<segundos>   corpo = o áudio do trecho n (até 25 MB); refazer o mesmo n substitui
      GET    /api/atendimentos/<id>/trecho/<n>       o áudio (aceita Range: o Safari exige)
      POST   /api/atendimentos/<id>/transcrever      { trecho?, refazer?, provedor? }  → transcreve UM trecho pendente por chamada; devolve quanto falta
+     POST   /api/atendimentos/<id>/resumir          { provedor? }  → a "Ficha de atendimento" (resumo da transcrição, com o horário de cada item)
+     GET    /api/atendimentos/config                { apagarAudioDias, uso }   ·   PUT (só o proprietário): { apagarAudioDias: 0 | dias }
      DELETE /api/atendimentos/<id>?soAudio=1        apaga o áudio (e mantém a transcrição) ou, sem soAudio, tudo
    ============================================================ */
 import { ehDono } from './politica.js';
 import { somarOp, r2Bloqueado, MAX_ARQUIVO } from './peticoes.js';
 import { transcrever, provedoresDisponiveis, PROVEDORES, ORDEM_PADRAO } from './transcricao.js';
+import { resumir, resumosDisponiveis, PROVEDORES_RESUMO, ORDEM_RESUMO } from './resumo-atendimento.js';
 
 const COL = '_atendimentos';
 const MAX_TRECHOS = 400, LIM_AUDIO = 8 * 1024 ** 3;
@@ -31,7 +34,9 @@ const quem = (auth) => (auth && auth.usuario ? { id: auth.usuario.id || '', pape
 
 async function ler(env, id) { const r = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ? AND id = ?').bind(COL, id).first(); return r ? JSON.parse(r.dados) : null; }
 async function gravar(env, d) { await env.DB.prepare('INSERT INTO docs (colecao,id,dados,atualizado) VALUES (?,?,?,?) ON CONFLICT(colecao,id) DO UPDATE SET dados=excluded.dados, atualizado=excluded.atualizado').bind(COL, d.id, JSON.stringify(d), Date.now()).run(); }
-async function todos(env) { const { results } = await env.DB.prepare('SELECT dados FROM docs WHERE colecao = ?').bind(COL).all(); return results.map((r) => JSON.parse(r.dados)); }
+async function todos(env) { const { results } = await env.DB.prepare("SELECT dados FROM docs WHERE colecao = ? AND id != '_cfg'").bind(COL).all(); return results.map((r) => JSON.parse(r.dados)); }
+async function lerCfg(env) { const c = await ler(env, '_cfg'); return { apagarAudioDias: Math.max(0, Math.min(Number(c && c.apagarAudioDias) || 0, 3650)) }; }
+const listaProv = (env) => ({ provedores: provedoresDisponiveis(env).filter((k) => k !== 'teste').map((k) => ({ id: k, nome: PROVEDORES[k].nome })), resumoProvedores: resumosDisponiveis(env).filter((k) => k !== 'teste').map((k) => ({ id: k, nome: PROVEDORES_RESUMO[k].nome })) });
 
 export function podeUsarAtendimentos(auth) { return ehDono(auth) || quem(auth).papel === 'advogado'; }
 const podeVer = (auth, d) => ehDono(auth) || (quem(auth).papel === 'advogado' && d.uid === quem(auth).id);
@@ -58,7 +63,7 @@ function textoCompleto(d) {
   }
   return itens;
 }
-const completo = (d, env) => ({ ...resumo(d), trechos: (d.trechos || []).map((t) => ({ i: t.i, dur: t.dur, tam: t.tam, mime: t.mime, temAudio: !!t.r2, provedor: (d.transc && d.transc[t.i] && d.transc[t.i].provedor) || '' })), itens: textoCompleto(d), falantes: d.falantes || {}, erro: d.erro || '', provedores: provedoresDisponiveis(env).filter((k) => k !== 'teste').map((k) => ({ id: k, nome: PROVEDORES[k].nome, separaFalantes: PROVEDORES[k].separaFalantes })) });
+const completo = (d, env) => ({ ...resumo(d), trechos: (d.trechos || []).map((t) => ({ i: t.i, dur: t.dur, tam: t.tam, mime: t.mime, temAudio: !!t.r2, provedor: (d.transc && d.transc[t.i] && d.transc[t.i].provedor) || '' })), itens: textoCompleto(d), falantes: d.falantes || {}, erro: d.erro || '', resumo: d.resumo || null, ...listaProv(env) });
 
 async function bytesGuardados(env) { return (await todos(env)).reduce((s, d) => s + (d.trechos || []).reduce((a, t) => a + (t.r2 ? t.tam || 0 : 0), 0), 0); }
 
@@ -73,7 +78,7 @@ export async function atendimentosRotas(request, env, partes, auth) {
       const cli = url.searchParams.get('cliente') || '', caso = url.searchParams.get('caso') || '';
       const lista = (await todos(env)).filter((d) => podeVer(auth, d) && (!cli || d.clienteId === cli) && (!caso || d.casoId === caso)).map(resumo);
       lista.sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.criadoEm).localeCompare(String(a.criadoEm)));
-      return json({ itens: lista, provedores: provedoresDisponiveis(env).filter((k) => k !== 'teste').map((k) => ({ id: k, nome: PROVEDORES[k].nome, separaFalantes: PROVEDORES[k].separaFalantes })) });
+      return json({ itens: lista, ...listaProv(env) });
     }
     if (m === 'POST') {
       const b = await request.json().catch(() => ({}));
@@ -83,8 +88,19 @@ export async function atendimentosRotas(request, env, partes, auth) {
     return erro(405, 'method', 'Método não permitido.');
   }
 
+  if (id === 'config') {
+    if (m === 'PUT') {
+      if (!ehDono(auth)) return erro(403, 'forbidden', 'Só o proprietário muda isto.');
+      const b = await request.json().catch(() => ({})); const dias = Math.max(0, Math.min(parseInt(b.apagarAudioDias, 10) || 0, 3650));
+      await gravar(env, { id: '_cfg', apagarAudioDias: dias }); return json({ apagarAudioDias: dias });
+    }
+    if (m !== 'GET') return erro(405, 'method', 'Método não permitido.');
+    const meus = (await todos(env)).filter((d) => podeVer(auth, d));
+    return json({ ...(await lerCfg(env)), uso: { nAtend: meus.length, bytes: meus.reduce((s2, d) => s2 + (d.trechos || []).reduce((a, t) => a + (t.r2 ? t.tam || 0 : 0), 0), 0) }, ...listaProv(env) });
+  }
+
   const d = await ler(env, id);
-  if (!d || !podeVer(auth, d)) return erro(404, 'not_found', 'Atendimento não encontrado.');
+  if (!d || id === '_cfg' || !podeVer(auth, d)) return erro(404, 'not_found', 'Atendimento não encontrado.');
 
   if (!sub) {
     if (m === 'GET') return json(completo(d, env));
@@ -159,5 +175,30 @@ export async function atendimentosRotas(request, env, partes, auth) {
     await gravar(env, d);
     return json({ ok: true, feito: t.i, provedor: r.provedor, faltam: pend.length - 1, status: statusDe(d) });
   }
+  if (sub === 'resumir' && m === 'POST') {
+    const b = await request.json().catch(() => ({}));
+    const itens = textoCompleto(d); if (!itens.length) return erro(409, 'sem_texto', 'Primeiro é preciso ter a transcrição.');
+    const durTotal = (d.trechos || []).reduce((s2, t) => s2 + (t.dur || 0), 0);
+    try { d.resumo = await resumir(env, itens, durTotal, { falantes: d.falantes, ordem: b.provedor && PROVEDORES_RESUMO[b.provedor] ? [b.provedor, ...ORDEM_RESUMO.filter((k) => k !== b.provedor)] : ORDEM_RESUMO }); }
+    catch (e) {
+      const msg = e && e.curto ? 'A transcrição é curta demais para resumir.' : (e && e.semProvedor ? 'Nenhum serviço de resumo está ligado.' : 'Não consegui montar a ficha agora. A transcrição continua guardada; tente de novo daqui a pouco.');
+      return erro(e && e.semProvedor ? 503 : (e && e.curto ? 409 : 502), 'resumo', msg);
+    }
+    await gravar(env, d); return json(completo(d, env));
+  }
   return erro(404, 'not_found', 'Rota não encontrada.');
+}
+
+/* uma vez por dia (cron): apaga o ÁUDIO dos atendimentos mais antigos que o prazo escolhido pelo proprietário (a transcrição fica). Sem prazo (padrão), não apaga nada. */
+export async function limparAudiosAntigos(env, agora = Date.now()) {
+  if (!env.ARQUIVOS) return 0;
+  const { apagarAudioDias } = await lerCfg(env); if (!apagarAudioDias) return 0;
+  const corte = agora - apagarAudioDias * 86400000; let n = 0;
+  for (const d of await todos(env)) {
+    if (!(d.trechos || []).some((t) => t.r2)) continue;
+    const ref = Date.parse(d.criadoEm || '') || 0; if (!ref || ref > corte) continue;
+    for (const t of d.trechos) if (t.r2) { await env.ARQUIVOS.delete(t.r2); await somarOp(env, 'classeA'); t.r2 = ''; }
+    d.audioApagadoEm = new Date(agora).toISOString(); await gravar(env, d); n++;
+  }
+  return n;
 }

@@ -66,6 +66,9 @@ function lcEventos(cid){
       add(p.data, 'din', 'Promessa de pagamento' + (p.obs ? ': ' + p.obs : ''), '', p.cumprida ? 'Cumprida|ok' : (venc ? 'Venceu|neg' : 'Aguardando'), '');
     });
   }
+  /* atendimentos gravados (o app carrega a lista do cliente em segundo plano) */
+  var atl = (typeof atCache !== 'undefined' && atCache[cid] && atCache[cid].itens) || [];
+  atl.forEach(function(a){ add(a.data, 'contato', 'Atendimento: ' + a.titulo, (typeof atDurTxt === 'function' ? atDurTxt(a.dur) : '') + (a.temTexto ? ' · gravado e transcrito' : ' · gravado'), '', 'atend|' + a.id, ''); });
   /* contatos e anotações */
   (c.notas || []).forEach(function(n){
     var canal = lcCanalRotulo(n.canal);
@@ -88,6 +91,7 @@ function lcLinhaHtml(e){
   if (a[0] === 'pub') btn = '<button type="button" class="btn-text pb-b" data-lc="pub" data-v="' + escapeHtml(a[1]) + '">ver ›</button>';
   else if (a[0] === 'ag') btn = '<button type="button" class="btn-text pb-b" data-lc="ag" data-v="' + escapeHtml(a.slice(1).join('|')) + '">abrir ›</button>';
   else if (a[0] === 'doc') btn = '<button type="button" class="btn-text pb-b" data-lc="doc" data-v="' + escapeHtml(a[1] + '|' + a[2]) + '">abrir ›</button>';
+  else if (a[0] === 'atend') btn = '<button type="button" class="btn-text pb-b" data-lc="atend" data-v="' + escapeHtml(a[1]) + '">abrir ›</button>';
   else if (a[0] === 'nota') btn = '<button type="button" class="btn-text pb-b" data-lc="nota" data-v="' + escapeHtml(a[1]) + '">editar</button>';
   var chip = est[0] ? '<span class="lc-chip ' + (est[1] || '') + '">' + escapeHtml(est[0]) + '</span>' : '';
   var proc = e.proc && !lcS.proc ? lcNumFmt(e.proc) : '';
@@ -122,7 +126,7 @@ function lcDesenharInt(){
 }
 function lcAbrir(cid){
   lcS = { cid: cid, filtro: 'tudo', proc: '', mais: 40, antigas: null, carregando: false, contato: null };
-  qs('overlayLc').classList.add('show'); lcDesenhar();
+  qs('overlayLc').classList.add('show'); lcDesenhar(); try{ if (typeof atCarregarCliente === 'function') atCarregarCliente(cid); }catch(e){}
 }
 function lcFechar(){ var o = qs('overlayLc'); if (o) o.classList.remove('show'); lcS.contato = null; }
 function lcCarregarAntigas(){
@@ -191,6 +195,7 @@ function lcIrPara(fn){ lcFechar(); try{ fecharPerfil(); }catch(e){} setTimeout(f
     else if (a === 'pub') lcIrPara(function(){ setActiveTab('publicacoes'); setTimeout(function(){ pbAbrirDetalhe(v); }, 80); });
     else if (a === 'ag') lcIrPara(function(){ agAbrir(v); });
     else if (a === 'doc') lcIrPara(function(){ var p = v.split('|'), dc = p[0] === 'peticao' ? docDe('caso', p[1]) : null; if (dc && dc.doProcesso) abrirEdicao(dc.id); else irParaRelacionado(p[0], p[1]); });
+    else if (a === 'atend') lcIrPara(function(){ atS.aba = 'texto'; atS.erro = ''; atAbrir(v); });
     else if (a === 'novo-contato') lcNovoContato('');
     else if (a === 'nota') lcNovoContato(v);
     else if (a === 'canal'){ lcLerContato(); lcS.contato.canal = v; lcDesenhar(); }

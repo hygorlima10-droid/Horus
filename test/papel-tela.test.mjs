@@ -46,7 +46,7 @@ for (const q of ['ana', 'caio']) {
   check(totais === (q === 'caio'), q === 'caio' ? 'estagiário sem "Ver totais": totais escondidos' : 'advogada com "Ver totais" (padrão): totais visíveis');
   await p.evaluate(() => document.querySelector('#drawer [data-tab="configuracoes"]').click()); await p.waitForTimeout(500);
   const cf = await p.locator('#cfWrap').innerText();
-  check(/Minha conta/.test(cf) && !/Usuários|Backup|Exportar|Lixeira|Registro|Extratos/.test(cf), 'a tela "Minha conta" só tem a conta da pessoa: ' + cf.replace(/\n/g, ' | ').slice(0, 120));
+  check(/Minha conta/.test(cf) && !/Usuários|Backup|Exportar|Lixeira|Registro/.test(cf) && (q === 'ana' || !/Extratos|Transcrição/.test(cf)), 'a tela "Minha conta" só tem a conta da pessoa: ' + cf.replace(/\n/g, ' | ').slice(0, 120));
   await p.evaluate(() => document.querySelector('#cfWrap [data-cf="seguranca"]').click()); await p.waitForTimeout(900);
   const sg = await p.locator('#overlaySgSegC').innerText().catch((e) => 'ERRO ' + e.message.slice(0, 60));
   check(/sessões abertas/i.test(sg) && p.recusados.length === 0, 'senha e aparelhos funcionam para a própria pessoa: ' + sg.replace(/\n/g, ' ').slice(0, 80) + ' · ' + p.recusados.join(','));

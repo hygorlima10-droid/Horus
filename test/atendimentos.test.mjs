@@ -40,8 +40,24 @@ check(a.status === 206 && a.headers.get('content-range') === `bytes 0-9/${total}
 a = await f('dono', 'GET', `/${id}/trecho/0`, undefined, { range: 'bytes=999999-' });
 check(a.status === 416, 'Range fora do arquivo devolve 416');
 // 6) nomes dos falantes e dados
-r = await J(await f('dono', 'PUT', `/${id}`, { titulo: 'Maria: demissão', falantes: { 0: 'Cliente', 1: 'Advogado' }, data: '2026-11-20' }));
-check(r.s === 200 && r.j.titulo === 'Maria: demissão' && r.j.falantes['0'] === 'Cliente' && r.j.data === '2026-11-20', 'renomeia os falantes e muda título e data');
+r = await J(await f('dono', 'PUT', `/${id}`, { titulo: 'Maria: demissão', data: '2026-11-20' }));
+check(r.s === 200 && r.j.titulo === 'Maria: demissão' && r.j.data === '2026-11-20', 'muda título e data');
+// 6b) ficha de atendimento (resumo), com o provedor simulado
+r = await J(await f('dono', 'POST', '', {})); const vazio = r.j.id;
+check((await J(await f('dono', 'POST', `/${vazio}/resumir`, {}))).s === 409, 'sem transcrição, a ficha é recusada (409)');
+await f('dono', 'DELETE', `/${vazio}`);
+r = await J(await f('dono', 'POST', `/${id}/resumir`, {}));
+check(r.s === 200 && r.j.resumo && r.j.resumo.provedor === 'teste' && r.j.resumo.secoes.fatos.length === 2 && r.j.resumo.secoes.fatos[0].t === 0 && r.j.resumo.naoMencionado[0] === 'data dos fatos', 'gera a ficha: fatos com o horário de cada fala e o que não foi mencionado');
+check(r.j.resumo.secoes.valoresDatas.length === 1 && r.j.resumo.secoes.valoresDatas[0].conferir === true, 'o número que o modelo inventou (99999) vem marcado "conferir"');
+r = await J(await f('dono', 'GET', `/${id}`));
+check(r.j.resumo && r.j.resumo.secoes.fatos.length === 2, 'a ficha fica guardada no atendimento');
+// 6c) configuração: prazo para apagar o áudio
+r = await J(await f('dono', 'GET', '/config'));
+check(r.s === 200 && r.j.apagarAudioDias === 0 && r.j.uso.nAtend === 1 && r.j.uso.bytes > 0, 'a configuração começa em "nunca apagar" e mostra o uso (1 atendimento)');
+r = await J(await f('dono', 'PUT', '/config', { apagarAudioDias: 90 }));
+check(r.s === 200 && r.j.apagarAudioDias === 90 && (await J(await f('dono', 'GET', '/config'))).j.apagarAudioDias === 90, 'o proprietário muda o prazo');
+check((await f('ana', 'PUT', '/config', { apagarAudioDias: 1 })).status === 403 && (await f('caio', 'GET', '/config')).status === 403, 'advogado não muda o prazo; estagiário nem vê');
+check((await J(await f('dono', 'GET', ''))).j.itens.length === 1, 'a configuração não aparece como atendimento na lista');
 // 7) lista com filtro por cliente
 r = await J(await f('dono', 'GET', '?cliente=c1'));
 check(r.s === 200 && r.j.itens.length === 1 && r.j.itens[0].id === id && r.j.itens[0].temTexto && !('itens' in r.j.itens[0]), 'a lista filtra por cliente e não traz o texto');
@@ -55,7 +71,7 @@ check((await f('bruno', 'GET', `/${idAna}`)).status === 404 && (await f('ana', '
 r = await J(await f('ana', 'GET', ''));
 check(r.j.itens.length === 1 && r.j.itens[0].id === idAna, 'a advogada lista só o que ela gravou');
 r = await J(await f('dono', 'GET', ''));
-check(r.j.itens.length === 2, 'o proprietário lista todos');
+check(r.j.itens.length === 2 && Array.isArray(r.j.provedores) && Array.isArray(r.j.resumoProvedores), 'o proprietário lista todos');
 // 9) falha do provedor: o áudio fica guardado e o erro é claro
 await f('ana', 'PUT', `/${idAna}/trecho/0?dur=60`, audio('FALHAR'), { 'content-type': 'audio/mp4' });
 r = await J(await f('ana', 'POST', `/${idAna}/transcrever`, {}));
